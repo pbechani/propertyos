@@ -1,0 +1,194 @@
+---
+alwaysApply: true
+---
+
+# Real Estate & Construction Trust Platform
+
+## Comprehensive Product Requirements Document (PRD)
+
+------------------------------------------------------------------------
+
+## 1. Product Vision
+
+To build a trusted digital infrastructure for property buying,
+construction management, and supplier marketplaces, with a strong focus
+on transparency, accountability, and diaspora confidence in emerging
+markets.
+
+Inspired by: - Procore (construction project management) - Property24
+(property marketplace) - Upwork (contractor marketplace) - Alibaba
+(supplier marketplace)
+
+------------------------------------------------------------------------
+
+## 2. Problem Statement
+
+### 2.1 Property Market Problems
+
+-   Double selling of land
+-   Fake or incomplete documentation
+-   No ownership history transparency
+-   Unscrupulous agents
+-   Lack of buyer education
+-   No fraud reporting infrastructure
+
+### 2.2 Construction Problems
+
+-   No cost visibility
+-   No reliable project managers
+-   No verified supplier database
+-   No material price transparency
+-   Poor communication
+-   Budget overruns
+-   Delays without accountability
+
+### 2.3 Diaspora Problems
+
+-   Buyer not onsite
+-   No trust in reporting
+-   No centralized audit trail
+-   High fraud risk
+-   Poor legal recourse
+
+------------------------------------------------------------------------
+
+## 3. Core Modules
+
+1.  Property Marketplace\
+2.  Construction Project Management\
+3.  Contractor & Professional Marketplace\
+4.  Supplier Marketplace\
+5.  Financial & Escrow System\
+6.  Trust & Identity System\
+7.  Monitoring & Verification System\
+8.  Communication & Documentation Hub\
+9.  Analytics & Risk Engine\
+10. Lifecycle & Property Management
+
+------------------------------------------------------------------------
+
+## 4. Functional Requirements
+
+### MODULE 1: Property Marketplace
+
+-   Property listings (land, residential, commercial, off-plan)
+-   Title deed upload and verification workflow
+-   Verification badges (Verified / Pending / Unverified)
+-   Ownership history tracking
+-   Agent profiles with ratings
+-   Fraud reporting system
+
+### MODULE 2: Construction Project Management
+
+-   Project dashboard (budget vs actual, timeline, milestones)
+-   Budget baseline and change order management
+-   Milestone-based payment approvals
+-   Bill of Quantities generator
+
+### MODULE 3: Contractor Marketplace
+
+-   Contractor profiles with certifications
+-   Project bidding system
+-   Performance metrics (completion %, budget adherence, disputes)
+
+### MODULE 4: Supplier Marketplace
+
+-   Supplier verification
+-   Product catalog with pricing
+-   RFQ (Request for Quotation) system
+-   Delivery tracking with geo-tagged proof
+
+### MODULE 5: Financial & Escrow System
+
+-   Multi-currency escrow wallet
+-   Milestone-based fund release
+-   Full transaction audit trail
+-   Budget overrun alerts
+
+### MODULE 6: Trust & Identity System
+
+-   KYC verification for all service providers
+-   Reputation scoring engine
+
+### MODULE 7: Monitoring & Verification
+
+-   Geo-tagged, timestamped progress uploads
+-   Independent site inspection booking
+-   Immutable progress records
+
+### MODULE 8: Communication Hub
+
+-   Centralized project messaging
+-   Version-controlled document vault
+-   Digital change order approvals
+
+### MODULE 9: Analytics & Risk Engine
+
+-   Project Risk Score
+-   Property Risk Score
+-   Material Price Index (cement, bricks, steel)
+
+### MODULE 10: Lifecycle Management
+
+-   Warranty tracking
+-   Maintenance scheduling
+-   Rental management system
+
+------------------------------------------------------------------------
+
+## 5. Non-Functional Requirements
+
+-   End-to-end encryption
+-   Role-based access control
+-   Cloud-native scalable architecture
+-   Regulatory compliance (financial & data protection)
+-   99.5% uptime target
+
+------------------------------------------------------------------------
+
+## 6. Monetization Model
+
+-   Property sale commission
+-   Escrow transaction fees
+-   Contractor subscription plans
+-   Supplier marketplace commission
+-   Premium verification fees
+-   Data analytics subscriptions
+
+------------------------------------------------------------------------
+
+## 7. MVP Scope (Phase 1)
+
+-   Verified property listings
+-   Contractor profiles
+-   Basic project dashboard
+-   Milestone payments (manual escrow)
+-   Geo-tagged progress uploads
+-   Document vault
+-   Basic rating system
+
+------------------------------------------------------------------------
+
+## 8. Success Metrics
+
+-   Reduction in fraud incidents
+-   Verified listing ratio
+-   Average project cost variance
+-   Escrow transaction volume
+-   Active diaspora users
+
+------------------------------------------------------------------------
+
+## 9. Long-Term Vision
+
+-   National property data authority
+-   Risk scoring standard for lenders
+-   API integration with banks and government
+-   Construction price benchmark authority
+-   Financial services expansion
+
+------------------------------------------------------------------------
+
+**Positioning Statement:**\
+A digital trust infrastructure for real estate and construction in
+emerging markets.
