@@ -1,0 +1,13 @@
+{
+  "name": "@pribec/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "echo 'Mobile app - React Native setup pending'",
+    "lint": "echo 'Mobile app - linting pending'",
+    "test": "echo 'Mobile app - tests pending'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

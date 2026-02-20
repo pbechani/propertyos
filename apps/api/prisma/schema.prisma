@@ -1,0 +1,123 @@
+// PRIBEC Database Schema
+// PostgreSQL configuration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["identity", "property", "sales", "financial", "construction", "marketplace", "logistics", "inspection", "analytics", "ai_engine", "audit", "common"]
+}
+
+// ============================================
+// COMMON SCHEMA - Shared Lookup Tables
+// ============================================
+
+model Country {
+  code         String  @id @db.VarChar(2)
+  name         String  @db.VarChar(100)
+  currencyCode String? @map("currency_code") @db.VarChar(3)
+  phoneCode    String  @map("phone_code") @db.VarChar(5)
+  isActive     Boolean @default(true) @map("is_active")
+
+  @@schema("common")
+  @@map("countries")
+}
+
+model Currency {
+  code          String  @id @db.VarChar(3)
+  name          String  @db.VarChar(50)
+  symbol        String  @db.VarChar(5)
+  decimalPlaces Int     @default(2) @map("decimal_places") @db.SmallInt
+  isActive      Boolean @default(true) @map("is_active")
+
+  @@schema("common")
+  @@map("currencies")
+}
+
+// ============================================
+// AUDIT SCHEMA - Cross-cutting Audit Logs
+// ============================================
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemaName String   @map("schema_name") @db.VarChar(50)
+  tableName  String   @map("table_name") @db.VarChar(100)
+  recordId   String   @map("record_id") @db.Uuid
+  action     String   @db.VarChar(20) // INSERT, UPDATE, DELETE
+  oldData    Json?    @map("old_data") @db.JsonB
+  newData    Json?    @map("new_data") @db.JsonB
+  userId     String?  @map("user_id") @db.Uuid
+  ipAddress  String?  @map("ip_address") @db.Inet
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([schemaName, tableName, recordId], name: "idx_audit_logs_record")
+  @@index([userId], name: "idx_audit_logs_user")
+  @@index([createdAt], name: "idx_audit_logs_created")
+  @@schema("audit")
+  @@map("logs")
+}
+
+// ============================================
+// IDENTITY SCHEMA - Users, Roles, KYC
+// ============================================
+
+// Note: Full user models will be added in Sprint 02
+// This is a placeholder to establish the schema
+
+// ============================================
+// PROPERTY SCHEMA - Listings, Ownership
+// ============================================
+
+// Note: Property models will be added in Sprint 03
+
+// ============================================
+// SALES SCHEMA - Purchase Pipeline
+// ============================================
+
+// Note: Sales progression models will be added in Sprint 04
+
+// ============================================
+// FINANCIAL SCHEMA - Escrow, Ledger (Event-Sourced)
+// ============================================
+
+// Note: Financial models will be added in Sprint 05
+
+// ============================================
+// CONSTRUCTION SCHEMA - Projects, Milestones
+// ============================================
+
+// Note: Construction models will be added in Sprint 06
+
+// ============================================
+// MARKETPLACE SCHEMA - Contractors, Suppliers
+// ============================================
+
+// Note: Marketplace models will be added in Sprint 07
+
+// ============================================
+// LOGISTICS SCHEMA - Transport, Delivery
+// ============================================
+
+// Note: Logistics models will be added in Sprint 10
+
+// ============================================
+// INSPECTION SCHEMA - Requirements, Results
+// ============================================
+
+// Note: Inspection models will be added in Sprint 09
+
+// ============================================
+// ANALYTICS SCHEMA - Risk Scores, Predictions
+// ============================================
+
+// Note: Analytics models will be added in Sprint 11
+
+// ============================================
+// AI_ENGINE SCHEMA - Design Sessions, Generated Content
+// ============================================
+
+// Note: AI models will be added in Sprint 12

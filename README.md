@@ -110,22 +110,138 @@ A financial-grade digital infrastructure for property buying, construction manag
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js >= 20.0.0
+- npm >= 10.0.0
+- Docker Desktop (for local development)
+- mkcert (optional, for local HTTPS)
+
+### First-Time Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repo-url>
+   cd pribec
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your local configuration
+   ```
+
+4. **Generate local SSL certificates (optional)**
+   ```bash
+   # Install mkcert first if not already installed
+   # macOS: brew install mkcert
+   # Linux: https://github.com/FiloSottile/mkcert#installation
+   
+   ./scripts/generate-local-certs.sh
+   ```
+
+5. **Start infrastructure services**
+   ```bash
+   npm run docker:up
+   
+   # Wait for all services to be healthy (30-60 seconds)
+   # You can monitor logs with: npm run docker:logs
+   ```
+
+6. **Verify all services are healthy**
+   ```bash
+   # Check PostgreSQL
+   docker exec -it pribec-postgres psql -U pribec -d pribec_dev -c "\dn"
+   
+   # Check Redis
+   docker exec -it pribec-redis redis-cli ping
+   
+   # Check RabbitMQ Management UI
+   open http://localhost:15672  # user: pribec, password: pribec_dev_password
+   
+   # Check MinIO Console
+   open http://localhost:9001  # user: pribec_access_key, password: pribec_secret_key
+   
+   # Check Kibana
+   open http://localhost:5601
+   
+   # Check Grafana
+   open http://localhost:3002  # user: admin, password: admin
+   
+   # Check Prometheus
+   open http://localhost:9090
+   ```
+
+7. **Run database migrations**
+   ```bash
+   npm run db:migrate
+   ```
+
+8. **Start development servers**
+   ```bash
+   # Start all apps (API + Web)
+   npm run dev
+   
+   # Or start individual apps
+   npm run dev --workspace=apps/api
+   npm run dev --workspace=apps/web
+   ```
+
+9. **Verify API is running**
+   ```bash
+   curl http://localhost:3001/api/v1/health
+   
+   # Check Swagger documentation
+   open http://localhost:3001/api/docs
+   ```
+
+### Development Workflow
+
 ```bash
-# Clone repository
-git clone <repo-url>
-cd pribec
+# Run linting
+npm run lint
 
-# Start development environment
-docker-compose up -d
+# Run tests
+npm run test
 
-# Install dependencies
-npm install
+# Run E2E tests
+npm run test:e2e
 
-# Run migrations
-npm run migrate --workspace=apps/api
+# Run tests with coverage
+npm run test:cov
 
-# Start development servers
-npm run dev
+# Format code
+npm run format
+
+# Build all apps
+npm run build
+
+# Clean all build artifacts
+npm run clean
+```
+
+### Docker Commands
+
+```bash
+# Start all services
+npm run docker:up
+
+# Stop all services
+npm run docker:down
+
+# View logs
+npm run docker:logs
+
+# Restart a specific service
+docker-compose -f docker/docker-compose.yml restart postgres
+
+# Run with HTTPS proxy
+docker-compose -f docker/docker-compose.yml --profile https up
 ```
 
 ---

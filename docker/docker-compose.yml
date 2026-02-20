@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: pribec-postgres
+    environment:
+      POSTGRES_USER: pribec
+      POSTGRES_PASSWORD: pribec_dev_password
+      POSTGRES_DB: pribec_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pribec -d pribec_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pribec-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: pribec-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pribec-network
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pribec-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: pribec
+      RABBITMQ_DEFAULT_PASS: pribec_dev_password
+    ports:
+      - '5672:5672' # AMQP
+      - '15672:15672' # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pribec-network
+
+  # MinIO - S3-compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: pribec-minio
+    environment:
+      MINIO_ROOT_USER: pribec_access_key
+      MINIO_ROOT_PASSWORD: pribec_secret_key
+    ports:
+      - '9000:9000' # API
+      - '9001:9001' # Console
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - pribec-network
+
+  # Elasticsearch for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: pribec-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+    ports:
+      - '9200:9200'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -s http://localhost:9200/_cluster/health | grep -q green',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pribec-network
+
+  # Kibana for Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: pribec-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - '5601:5601'
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pribec-network
+
+  # Prometheus for Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pribec-prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - pribec-network
+
+  # Grafana for Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pribec-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - '3002:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - pribec-network
+
+  # Nginx - HTTPS Proxy (for local development)
+  # Run ./scripts/generate-local-certs.sh first
+  nginx:
+    image: nginx:alpine
+    container_name: pribec-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      - pribec-network
+    profiles:
+      - https  # Only starts with: docker-compose --profile https up
+
+  # HashiCorp Vault - Secrets Management
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: pribec-vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: pribec-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - '8200:8200'
+    volumes:
+      - vault_data:/vault/data
+      - ./vault/config:/vault/config:ro
+      - ./vault/policies:/vault/policies:ro
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+    healthcheck:
+      test: ['CMD', 'vault', 'status']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pribec-network
+
+  # PostgreSQL Exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: pribec-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://pribec:pribec_dev_password@postgres:5432/pribec_dev?sslmode=disable
+    ports:
+      - '9187:9187'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: pribec-redis-exporter
+    command: --redis.addr=redis:6379
+    ports:
+      - '9121:9121'
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  elasticsearch_data:
+  prometheus_data:
+  grafana_data:
+  vault_data:
+
+networks:
+  pribec-network:
+    driver: bridge

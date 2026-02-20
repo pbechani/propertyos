@@ -3,7 +3,15 @@
     "allow": [
       "Bash(wc:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: establish design baseline for PRIBEC platform\n\nInitial documentation establishing the architectural foundation:\n\n- README.md: Project overview, tech stack, structure\n- CLAUDE.md: PRD, workflow, PDRs \\(8 architectural decisions\\)\n- design/design.md: Comprehensive architecture analysis\n- design/design-phase.md: 18-phase implementation plan\n- design/sprints/: 12 sprint specifications with data models and APIs\n- .cursor/rules/epics.md: 15 engineering epics breakdown\n\nKey decisions documented:\n- Modular monolith architecture \\(PDR-001\\)\n- NestJS backend with TypeScript \\(PDR-002\\)\n- PostgreSQL with event sourcing for financials \\(PDR-003\\)\n- Offline-first mobile with SQLite \\(PDR-005\\)\n- Schema-per-bounded-context \\(PDR-006\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: establish design baseline for PRIBEC platform\n\nInitial documentation establishing the architectural foundation:\n\n- README.md: Project overview, tech stack, structure\n- CLAUDE.md: PRD, workflow, PDRs \\(8 architectural decisions\\)\n- design/design.md: Comprehensive architecture analysis\n- design/design-phase.md: 18-phase implementation plan\n- design/sprints/: 12 sprint specifications with data models and APIs\n- .cursor/rules/epics.md: 15 engineering epics breakdown\n\nKey decisions documented:\n- Modular monolith architecture \\(PDR-001\\)\n- NestJS backend with TypeScript \\(PDR-002\\)\n- PostgreSQL with event sourcing for financials \\(PDR-003\\)\n- Offline-first mobile with SQLite \\(PDR-005\\)\n- Schema-per-bounded-context \\(PDR-006\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(docker:*)",
+      "Bash(docker info:*)",
+      "Bash(chmod:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm pkg:*)",
+      "Bash(npm -w @pribec/api test)"
     ]
   }
 }

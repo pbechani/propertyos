@@ -1,0 +1,31 @@
+# PRIBEC Terraform Variables
+# Copy to terraform.tfvars and fill in values
+# NEVER commit terraform.tfvars to git
+
+# General
+project_name = "pribec"
+environment  = "dev"  # dev, staging, prod
+aws_region   = "us-east-1"
+
+# Networking
+vpc_cidr = "10.0.0.0/16"
+
+# Database
+db_instance_class    = "db.t3.medium"
+db_allocated_storage = 20
+db_name              = "pribec"
+db_username          = "pribec_admin"
+db_password          = "CHANGE_ME_SECURE_PASSWORD"
+
+# Redis
+redis_node_type = "cache.t3.micro"
+
+# ECS
+api_image         = "pribec/api:latest"
+api_cpu           = 512
+api_memory        = 1024
+api_desired_count = 2
+
+# Domain
+domain_name   = "pribec.app"
+api_subdomain = "api"
