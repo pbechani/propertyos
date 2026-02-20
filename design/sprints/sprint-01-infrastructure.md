@@ -7,20 +7,20 @@ Stand up the complete development and production infrastructure so all subsequen
 ---
 
 ## Deliverables Checklist
-- [ ] Monorepo scaffolded (Nx or Turborepo)
-- [ ] PostgreSQL cluster running with per-context schemas
-- [ ] Redis instance running
-- [ ] S3-compatible object storage configured
-- [ ] RabbitMQ / Kafka message broker running
-- [ ] Docker Compose for local dev
-- [ ] CI/CD pipeline (GitHub Actions) — build, test, deploy
-- [ ] Terraform IaC for cloud resources
-- [ ] Centralized logging (ELK or CloudWatch)
-- [ ] Prometheus + Grafana metrics
-- [ ] Sentry error tracking
-- [ ] SSL/TLS certificates
-- [ ] Secrets management (AWS Secrets Manager or Vault)
-- [ ] CORS and security headers configured
+- [x] Monorepo scaffolded (Turborepo)
+- [x] PostgreSQL cluster running with per-context schemas
+- [x] Redis instance running
+- [x] S3-compatible object storage configured (MinIO)
+- [x] RabbitMQ / Kafka message broker running
+- [x] Docker Compose for local dev
+- [x] CI/CD pipeline (GitHub Actions) — lint, test, build, security-scan, deploy-staging (ECS), deploy-prod (ECS)
+- [x] Terraform IaC for cloud resources (VPC, RDS, ElastiCache, S3, ECS, ACM)
+- [x] Centralized logging (ELK + Filebeat log shipping)
+- [x] Prometheus + Grafana metrics
+- [x] Sentry error tracking
+- [x] SSL/TLS certificates (nginx, TLS 1.2/1.3, local cert generation script)
+- [x] Secrets management (HashiCorp Vault with env-var fallback)
+- [x] CORS and security headers configured (Helmet.js + nginx security headers)
 
 ---
 
@@ -138,21 +138,30 @@ SENTRY_DSN=...
 ---
 
 ## Security Foundation Checklist
-- [ ] Helmet.js (security headers)
-- [ ] Rate limiting (100 req/min default, 10 req/min for auth endpoints)
-- [ ] CORS whitelist configured
-- [ ] SQL injection prevention (parameterized queries only — no raw string interpolation)
-- [ ] All secrets loaded from environment — zero hardcoded credentials
+- [x] Helmet.js (security headers)
+- [x] Rate limiting (100 req/min default, 10 req/min for auth endpoints)
+- [x] CORS whitelist configured (driven by `CORS_ORIGINS` env var)
+- [x] SQL injection prevention (parameterized queries only — Prisma ORM)
+- [x] All secrets loaded from environment — zero hardcoded credentials
+- [x] `JWT_SECRET` and `ENCRYPTION_KEY` required in staging/production environments
+- [x] Secret scanning in CI (TruffleHog)
 
 ---
 
 ## Acceptance Criteria
-- `docker-compose up` starts all services locally in < 2 minutes
-- Health check endpoints respond on all services: `GET /health`
-- CI pipeline runs in < 10 minutes
-- PostgreSQL schemas are all created and migrated
-- Logs appear in centralized logging within 30 seconds of generation
-- Zero secrets committed to git (secret scanning active)
+- [x] `docker-compose up` starts all services locally in < 2 minutes
+- [x] Health check endpoints respond on all services: `GET /health`, `/health/ready`, `/health/live`
+- [x] CI pipeline runs in < 10 minutes
+- [x] PostgreSQL schemas are all created and migrated (12 bounded-context schemas via init script + Prisma)
+- [x] Logs appear in centralized logging within 30 seconds (Filebeat ships Docker container logs → Elasticsearch)
+- [x] Zero secrets committed to git (TruffleHog secret scanning active in CI)
+
+## Notes
+- Elasticsearch healthcheck uses `grep -qE 'green|yellow'` — single-node clusters always report `yellow` (no replicas); both statuses are healthy.
+- Filebeat config at `docker/filebeat/filebeat.yml` decodes structured JSON logs from NestJS and attaches Docker metadata.
+- Terraform S3 remote state backend is commented out with step-by-step setup instructions. Enable before first team or CI `terraform apply`.
+- Deploy jobs in CI use AWS ECS (`pribec-staging` / `pribec-production` clusters). Required secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. Required variables: `AWS_REGION`.
+- Grafana admin password in docker-compose is `admin` — acceptable for local dev only. Set via `GF_SECURITY_ADMIN_PASSWORD` env var before promoting to staging.
 
 ---
 

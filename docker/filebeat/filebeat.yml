@@ -1,0 +1,45 @@
+# PRIBEC Filebeat Configuration
+# Ships Docker container logs to Elasticsearch
+# Documentation: https://www.elastic.co/guide/en/beats/filebeat/current/index.html
+
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: unix:///var/run/docker.sock
+      # Decode JSON log lines produced by NestJS / pino structured logging
+      - decode_json_fields:
+          fields: ['message']
+          target: ''
+          overwrite_keys: true
+          add_error_key: true
+
+# Tag all events with the application name for easy filtering in Kibana
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - drop_fields:
+      fields: ['agent.ephemeral_id', 'ecs.version']
+      ignore_missing: true
+
+output.elasticsearch:
+  hosts: ['${ELASTICSEARCH_HOST:http://elasticsearch:9200}']
+  index: 'pribec-logs-%{+yyyy.MM.dd}'
+  # Bulk settings - tune for production if log volume is high
+  bulk_max_size: 512
+  worker: 2
+
+setup.template:
+  name: 'pribec-logs'
+  pattern: 'pribec-logs-*'
+  settings:
+    index.number_of_shards: 1
+    index.number_of_replicas: 0   # Single-node: no replicas possible
+
+setup.ilm.enabled: false  # Disable ILM for simplicity; enable in production
+
+# Logging for Filebeat itself
+logging.level: warning
+logging.to_files: false

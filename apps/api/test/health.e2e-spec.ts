@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request, { type Response } from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Health Endpoints (e2e)', () => {
@@ -35,7 +35,7 @@ describe('Health Endpoints (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status');
           expect(res.body).toHaveProperty('timestamp');
           expect(res.body).toHaveProperty('uptime');
@@ -49,7 +49,7 @@ describe('Health Endpoints (e2e)', () => {
     it('should have healthy API status', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health')
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body.checks.api.status).toBe('ok');
         });
     });
@@ -60,7 +60,7 @@ describe('Health Endpoints (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/ready')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status');
           expect(res.body).toHaveProperty('checks');
         });
@@ -72,7 +72,7 @@ describe('Health Endpoints (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/live')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status', 'ok');
         });
     });

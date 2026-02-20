@@ -62,6 +62,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      rabbitmq:
+        image: rabbitmq:3-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,12 +100,14 @@ jobs:
         env:
           DATABASE_URL: postgres://pribec:pribec_test_password@localhost:5432/pribec_test
           REDIS_URL: redis://localhost:6379
+          RABBITMQ_URL: amqp://localhost:5672
 
       - name: Run test coverage
         run: npm run test:cov
         env:
           DATABASE_URL: postgres://pribec:pribec_test_password@localhost:5432/pribec_test
           REDIS_URL: redis://localhost:6379
+          RABBITMQ_URL: amqp://localhost:5672
 
       - name: Check coverage threshold
         run: |
@@ -184,15 +196,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: build-artifacts
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Deploy to staging
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: pribec-api
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Deploying to staging environment..."
-          # Add actual deployment steps here (e.g., AWS, Vercel, etc.)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f apps/api/Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy to ECS staging
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          aws ecs update-service \
+            --cluster pribec-staging \
+            --service pribec-api-staging \
+            --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster pribec-staging \
+            --services pribec-api-staging
 
   deploy-prod:
     name: Deploy to Production
@@ -206,12 +241,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: build-artifacts
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Deploy to production
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag staging image as production release
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: pribec-api
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          echo "Deploying to production environment..."
-          # Add actual deployment steps here
+          # Re-tag the image already pushed during staging deploy
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids imageTag=${{ github.sha }} \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name $ECR_REPOSITORY \
+            --image-tag $RELEASE_TAG \
+            --image-manifest "$MANIFEST"
+
+      - name: Deploy to ECS production
+        run: |
+          aws ecs update-service \
+            --cluster pribec-production \
+            --service pribec-api-production \
+            --force-new-deployment
+          aws ecs wait services-stable \
+            --cluster pribec-production \
+            --services pribec-api-production

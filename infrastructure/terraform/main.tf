@@ -11,7 +11,27 @@ terraform {
     }
   }
 
-  # Remote state storage - uncomment for production
+  # ---------------------------------------------------------------------------
+  # Remote state storage (REQUIRED before first team / CI apply)
+  #
+  # Prerequisites — run once manually:
+  #   aws s3api create-bucket --bucket pribec-terraform-state --region us-east-1
+  #   aws s3api put-bucket-versioning \
+  #     --bucket pribec-terraform-state \
+  #     --versioning-configuration Status=Enabled
+  #   aws s3api put-bucket-encryption \
+  #     --bucket pribec-terraform-state \
+  #     --server-side-encryption-configuration \
+  #       '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+  #   aws dynamodb create-table \
+  #     --table-name pribec-terraform-locks \
+  #     --billing-mode PAY_PER_REQUEST \
+  #     --attribute-definitions AttributeName=LockID,AttributeType=S \
+  #     --key-schema AttributeName=LockID,KeyType=HASH \
+  #     --region us-east-1
+  #
+  # Then uncomment the block below and run: terraform init -reconfigure
+  # ---------------------------------------------------------------------------
   # backend "s3" {
   #   bucket         = "pribec-terraform-state"
   #   key            = "infrastructure/terraform.tfstate"

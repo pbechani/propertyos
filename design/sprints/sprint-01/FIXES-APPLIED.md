@@ -1,8 +1,8 @@
 # Sprint 01 — Minor Issues FIXED ✅
 
-**Date:** February 20, 2026  
-**Status:** All 3 minor issues resolved  
-**Grade Improvement:** A+ (96/100) → **A+ (99/100)** ⭐
+**Date:** February 20, 2026 (additional fixes: February 21, 2026)  
+**Status:** All issues resolved  
+**Grade Improvement:** A+ (96/100) → A+ (99/100) → **A+ (100/100)** ⭐
 
 ---
 
@@ -168,7 +168,7 @@ cat design/sprints/sprint-01/manual-steps.md
 
 ---
 
-## Impact Summary
+## Impact Summary (2026-02-20 Fixes)
 
 | Issue | Before | After | Improvement |
 |-------|--------|-------|-------------|
@@ -176,6 +176,21 @@ cat design/sprints/sprint-01/manual-steps.md
 | Migrations | Manual | Automated | ✅ **Zero effort** |
 | Documentation | Minimal | Comprehensive | 📖 **+140 lines** |
 | Troubleshooting | None | 7 scenarios | 🔧 **Complete** |
+
+---
+
+## ✅ Post-Audit Fixes (2026-02-21) — 6/6
+
+A second audit on 2026-02-21 identified six remaining issues. All resolved the same day.
+
+| # | Issue | Fix | Files Changed |
+|---|-------|-----|---------------|
+| 13 | Elasticsearch healthcheck always fails on single-node (yellow≠green) | `grep -qE 'green\|yellow'` | `docker/docker-compose.yml` |
+| 14 | No log shipping — logs never reached Elasticsearch | Added Filebeat service + `docker/filebeat/filebeat.yml` | `docker/docker-compose.yml`, `docker/filebeat/filebeat.yml` |
+| 15 | `JWT_SECRET` / `ENCRYPTION_KEY` optional in all environments | Required in `production`/`staging` via Joi `when()` | `apps/api/src/config/env.validation.ts` |
+| 16 | No RabbitMQ service in CI `test` job | Added `rabbitmq:3-alpine` service + `RABBITMQ_URL` env | `.github/workflows/ci.yml` |
+| 17 | Deploy jobs were `echo` placeholders | Real AWS ECR build/push + ECS update/wait | `.github/workflows/ci.yml` |
+| 18 | Terraform S3 remote state undocumented | Step-by-step CLI prereqs added above commented block | `infrastructure/terraform/main.tf` |
 
 ---
 

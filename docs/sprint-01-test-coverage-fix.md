@@ -1,5 +1,27 @@
 # Sprint 01 Test Coverage Fix — Summary
 
+## Follow-up (2026-02-21): E2E Compile & Bootstrap Fix
+
+### Additional Issue Identified
+After introducing infrastructure E2E tests, `npm run test:e2e` failed before execution due to TypeScript import/type issues and missing required environment variables during `AppModule` bootstrap.
+
+### Additional Resolution
+1. ✅ Updated E2E imports from namespace-style `supertest` to default import with explicit `Response` typing
+2. ✅ Added explicit response callback typing to remove implicit `any` errors
+3. ✅ Added Jest E2E setup file (`apps/api/test/setup-e2e.ts`) that sets required defaults:
+   - `NODE_ENV=test`
+   - `DATABASE_URL`
+   - `REDIS_URL`
+   - `RABBITMQ_URL`
+   - `CORS_ORIGINS`
+4. ✅ Registered setup file in `apps/api/test/jest-e2e.json` via `setupFiles`
+5. ✅ Updated infrastructure metrics assertion to `/api/v1/metrics` to match API global prefix
+6. ✅ Aligned E2E bootstrap with production app middleware/config setup (Helmet, CORS, Swagger)
+
+### Verification Status
+- TypeScript compile blockers resolved.
+- Full runtime E2E pass requires local Postgres and Redis availability; if infrastructure is down, tests fail at module init as expected.
+
 ## Issue Identified
 Sprint 01 audit revealed **only 2 test files** existed (`health.service.spec.ts`, `health.controller.spec.ts`), while the CI pipeline expected comprehensive unit and integration tests with 80% coverage threshold.
 

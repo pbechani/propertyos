@@ -7,7 +7,16 @@ Steps that must be performed manually to complete the infrastructure setup.
 
 ---
 
-## ✅ Critical Fixes Completed
+## ✅ Post-Audit Fixes Applied (2026-02-21)
+
+- ✅ **Filebeat added** — `docker/filebeat/filebeat.yml` created; `filebeat` service in docker-compose ships logs to Elasticsearch
+- ✅ **ES healthcheck fixed** — Single-node `yellow` status now accepted
+- ✅ **JWT/Encryption secrets required in prod/staging** — `env.validation.ts` updated
+- ✅ **RabbitMQ in CI** — `rabbitmq:3-alpine` service added to test job
+- ✅ **Real ECS deploy steps** — CI now builds/pushes to ECR and deploys to ECS
+- ✅ **Terraform remote state** — Setup prerequisites documented in `main.tf`
+
+## ✅ Critical Fixes Completed (2026-02-20)
 
 The following critical issues identified in the audit have been fixed:
 
@@ -68,30 +77,56 @@ chmod +x scripts/init-vault.sh
 
 ### 8. Configure GitHub Secrets
 Add to **Repository → Settings → Secrets → Actions**:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION`
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
-- `SENTRY_DSN`
-- `SNYK_TOKEN`
+- `AWS_ACCESS_KEY_ID` — Required for CI deploy jobs
+- `AWS_SECRET_ACCESS_KEY` — Required for CI deploy jobs
+- `CODECOV_TOKEN` — Required for coverage upload
+- `SENTRY_DSN` — Optional (error tracking)
+- `SNYK_TOKEN` — Optional (vulnerability scanning)
+
+Add to **Repository → Settings → Variables → Actions**:
+- `AWS_REGION` — e.g. `us-east-1`
+- `TURBO_TEAM` — Turborepo remote cache team name (optional)
 
 ---
 
 ## Production Only
 
-### 9. Configure AWS & Apply Terraform
+### 9. Bootstrap Terraform Remote State (first time only)
 ```bash
-aws configure
+# Create the S3 state bucket
+aws s3api create-bucket --bucket pribec-terraform-state --region us-east-1
+aws s3api put-bucket-versioning \
+  --bucket pribec-terraform-state \
+  --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption \
+  --bucket pribec-terraform-state \
+  --server-side-encryption-configuration \
+    '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+
+# Create the DynamoDB lock table
+aws dynamodb create-table \
+  --table-name pribec-terraform-locks \
+  --billing-mode PAY_PER_REQUEST \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --region us-east-1
+
+# Then uncomment the backend "s3" block in infrastructure/terraform/main.tf
+# and run:
+cd infrastructure/terraform
+terraform init -reconfigure
+```
+
+### 10. Apply Terraform
+```bash
 cd infrastructure/terraform
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with actual values
-terraform init
 terraform plan
 terraform apply
 ```
 
-### 10. Configure DNS for SSL
+### 11. Configure DNS for SSL
 Add CNAME records for ACM certificate validation after Terraform creates them.
 
 ---

@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
+import request, { type Response } from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Infrastructure (e2e)', () => {
@@ -13,7 +16,17 @@ describe('Infrastructure (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
 
-    // Apply the same global pipes as in main.ts
+    const configService = app.get(ConfigService);
+
+    // Apply the same configuration as main.ts
+    app.use(helmet());
+    app.enableCors({
+      origin: configService.get<string>('CORS_ORIGINS')?.split(',') || [
+        'http://localhost:3000',
+      ],
+      credentials: true,
+    });
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -23,6 +36,16 @@ describe('Infrastructure (e2e)', () => {
     );
 
     app.setGlobalPrefix('api/v1');
+
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('PRIBEC API')
+      .setDescription('Real Estate & Construction Trust Platform API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
 
     await app.init();
   });
@@ -36,7 +59,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status');
           expect(res.body).toHaveProperty('timestamp');
           expect(res.body).toHaveProperty('version');
@@ -51,7 +74,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/ready')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status');
           expect(res.body).toHaveProperty('checks');
         });
@@ -61,7 +84,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/live')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('status');
           expect(res.body.status).toBe('ok');
         });
@@ -69,9 +92,9 @@ describe('Infrastructure (e2e)', () => {
   });
 
   describe('Metrics Endpoint', () => {
-    it('/metrics (GET) - should return Prometheus metrics', () => {
+    it('/api/v1/metrics (GET) - should return Prometheus metrics', () => {
       return request(app.getHttpServer())
-        .get('/metrics')
+        .get('/api/v1/metrics')
         .expect(200)
         .expect('Content-Type', /text\/plain/);
     });
@@ -90,7 +113,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/live')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           // Helmet security headers
           expect(res.headers).toHaveProperty('x-content-type-options');
           expect(res.headers['x-content-type-options']).toBe('nosniff');
@@ -104,7 +127,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/health/live')
         .expect(200)
-        .expect((res) => {
+        .expect((res: Response) => {
           // Throttler rate limit headers
           expect(res.headers).toHaveProperty('x-ratelimit-limit');
           expect(res.headers).toHaveProperty('x-ratelimit-remaining');
@@ -143,7 +166,7 @@ describe('Infrastructure (e2e)', () => {
       return request(app.getHttpServer())
         .get('/api/v1/invalid-route')
         .expect(404)
-        .expect((res) => {
+        .expect((res: Response) => {
           expect(res.body).toHaveProperty('statusCode');
           expect(res.body).toHaveProperty('message');
           expect(res.body.statusCode).toBe(404);

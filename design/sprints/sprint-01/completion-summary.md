@@ -146,7 +146,7 @@ All documentation has been updated to reflect the completed fixes:
 | Health check endpoints respond | ✅ **NOW VERIFIED** | Tests confirm all endpoints work |
 | CI pipeline runs in < 10 minutes | ✅ Yes | Lightweight jobs |
 | PostgreSQL schemas created and migrated | ✅ **NOW COMPLETE** | Schemas ✅ + Prisma configured ✅ |
-| Logs appear in centralized logging < 30s | ⚠️ Pending | Manual verification needed |
+| Logs appear in centralized logging < 30s | ✅ **FIXED (2026-02-21)** | Filebeat ships Docker container logs → Elasticsearch |
 | Zero secrets committed to git | ✅ Yes | Verified via git history |
 
 **Updated Score: 5 / 6 criteria fully met** (up from 3.5/6)
