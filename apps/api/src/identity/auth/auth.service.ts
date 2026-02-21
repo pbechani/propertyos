@@ -221,6 +221,26 @@ export class AuthService {
     });
   }
 
+  async revokeAllSessions(userId: string): Promise<void> {
+    const tokens = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM identity.refresh_tokens
+      WHERE user_id = ${userId}::uuid AND revoked_at IS NULL
+    `;
+
+    if (tokens.length > 0) {
+      await this.prisma.$executeRaw`
+        UPDATE identity.refresh_tokens
+        SET revoked_at = NOW()
+        WHERE user_id = ${userId}::uuid AND revoked_at IS NULL
+      `;
+
+      for (const token of tokens) {
+        await this.redisService.del(`session:${userId}:${token.id}`);
+      }
+    }
+  }
+
   async forgotPassword(
     email: string,
     requestContext: { ip: string; userAgent?: string | null },
@@ -276,6 +296,7 @@ export class AuthService {
     `;
 
     await this.redisService.del(key);
+    await this.revokeAllSessions(value.userId);
 
     await this.auditService.log({
       eventId: 'user.password_reset_completed',
@@ -429,6 +450,10 @@ export class AuthService {
 
     if (expiry.endsWith('m')) {
       return new Date(now + Number(expiry.replace('m', '')) * 60 * 1000);
+    }
+
+    if (expiry.endsWith('s')) {
+      return new Date(now + Number(expiry.replace('s', '')) * 1000);
     }
 
     return new Date(now + 7 * 24 * 60 * 60 * 1000);

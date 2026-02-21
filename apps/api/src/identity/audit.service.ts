@@ -52,6 +52,8 @@ export class AuditService {
     resourceType?: string;
     from?: string;
     to?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<unknown[]> {
     const conditions: Prisma.Sql[] = [];
 
@@ -75,22 +77,26 @@ export class AuditService {
       ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
       : Prisma.sql``;
 
+    const limit = filters.limit ? Math.min(filters.limit, 1000) : 200;
+    const offset = filters.offset ?? 0;
+
     return this.prisma.$queryRaw`
       SELECT id, event_id, actor_id, actor_role, action, resource_type, resource_id, payload, ip_address, user_agent, device_metadata, created_at
       FROM identity.audit_logs
       ${whereClause}
       ORDER BY created_at DESC
-      LIMIT 200
+      LIMIT ${limit} OFFSET ${offset}
     `;
   }
 
-  async findByActor(actorId: string): Promise<unknown[]> {
+  async findByActor(actorId: string, limit: number = 200, offset: number = 0): Promise<unknown[]> {
+    const safeLimit = Math.min(limit, 1000);
     return this.prisma.$queryRaw`
       SELECT id, event_id, actor_id, actor_role, action, resource_type, resource_id, payload, created_at
       FROM identity.audit_logs
       WHERE actor_id = ${actorId}::uuid
       ORDER BY created_at DESC
-      LIMIT 200
+      LIMIT ${safeLimit} OFFSET ${offset}
     `;
   }
 }

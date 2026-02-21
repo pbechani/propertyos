@@ -17,6 +17,7 @@ import { RolesGuard } from './rbac/roles.guard';
 import { Roles } from './rbac/roles.decorator';
 import { AssignRoleDto, UpdateMeDto, UpdateUserStatusDto } from './users.dto';
 import { AuditService } from './audit.service';
+import { AuthService } from './auth/auth.service';
 
 type RequestUser = {
   sub: string;
@@ -31,6 +32,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
+    private readonly authService: AuthService,
   ) {}
 
   @Get('me')
@@ -76,6 +78,10 @@ export class UsersController {
     @Body() body: UpdateUserStatusDto,
   ): Promise<Record<string, unknown>> {
     const user = await this.usersService.updateStatus(id, body.status);
+
+    if (body.status === 'suspended' || body.status === 'deleted') {
+      await this.authService.revokeAllSessions(id);
+    }
 
     await this.auditService.log({
       eventId: 'user.status_changed',

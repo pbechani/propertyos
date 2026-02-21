@@ -125,6 +125,24 @@ describe('KycService', () => {
     });
   });
 
+  // ─── startReview ──────────────────────────────────────────────────────────
+
+  describe('startReview', () => {
+    it('updates status to under_review and sets reviewer_id', async () => {
+      const updated = { ...baseKyc, status: 'under_review', reviewer_id: 'admin-uuid' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([updated]);
+
+      const result = await service.startReview('kyc-uuid-0001', 'admin-uuid');
+      expect(result.status).toBe('under_review');
+      expect(result.reviewer_id).toBe('admin-uuid');
+    });
+
+    it('throws NotFoundException if KYC record does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      await expect(service.startReview('bad-id', 'admin-uuid')).rejects.toThrow(NotFoundException);
+    });
+  });
+
   // ─── approve ──────────────────────────────────────────────────────────────
 
   describe('approve', () => {

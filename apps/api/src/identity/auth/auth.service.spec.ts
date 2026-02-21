@@ -320,6 +320,7 @@ describe('AuthService', () => {
     it('updates hash in DB, deletes Redis key, and logs audit', async () => {
       mockRedis.getJson.mockResolvedValueOnce({ userId: USER_ID });
       mockPrisma.$executeRaw.mockResolvedValueOnce(1n);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // For revokeAllSessions
       mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
 
       await service.resetPassword('valid-token', 'NewP@ssword1', requestCtx);

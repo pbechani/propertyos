@@ -170,6 +170,28 @@ export class AdminKycController {
     return this.kycService.sanitize(row);
   }
 
+  @Post(':id/start-review')
+  async startReview(
+    @Req() req: RequestMeta,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<Record<string, unknown>> {
+    const updated = await this.kycService.startReview(id, req.user.sub);
+
+    await this.auditService.log({
+      eventId: 'kyc.under_review',
+      actorId: req.user.sub,
+      actorRole: 'admin',
+      action: 'start_review_kyc',
+      resourceType: 'kyc_verification',
+      resourceId: updated.id,
+      payload: { previous_status: 'pending', new_status: 'under_review' },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
+    return this.kycService.sanitize(updated);
+  }
+
   @Post(':id/approve')
   async approve(
     @Req() req: RequestMeta,

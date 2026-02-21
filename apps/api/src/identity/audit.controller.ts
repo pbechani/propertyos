@@ -23,12 +23,29 @@ export class AuditController {
     @Query('resource_type') resourceType?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ): Promise<unknown[]> {
-    return this.auditService.findAdminLogs({ actorId, resourceType, from, to });
+    return this.auditService.findAdminLogs({
+      actorId,
+      resourceType,
+      from,
+      to,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
   }
 
   @Get('audit-logs/me')
-  myLogs(@Req() req: { user: RequestUser }): Promise<unknown[]> {
-    return this.auditService.findByActor(req.user.sub);
+  myLogs(
+    @Req() req: { user: RequestUser },
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<unknown[]> {
+    return this.auditService.findByActor(
+      req.user.sub,
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
+    );
   }
 }

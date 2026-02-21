@@ -90,6 +90,23 @@ export class KycService {
     return rows[0];
   }
 
+  async startReview(id: string, reviewerId: string): Promise<KycRow> {
+    const rows = await this.prisma.$queryRaw<KycRow[]>`
+      UPDATE identity.kyc_verifications
+      SET status = 'under_review',
+          reviewer_id = ${reviewerId}::uuid,
+          reviewed_at = NOW()
+      WHERE id = ${id}::uuid
+      RETURNING id, user_id, status, id_document_url, id_document_type, address_proof_url, business_registration_url, selfie_url, reviewer_id, reviewer_notes, reviewed_at, submitted_at, created_at
+    `;
+
+    if (!rows[0]) {
+      throw new NotFoundException('KYC verification not found');
+    }
+
+    return rows[0];
+  }
+
   async approve(id: string, reviewerId: string, reviewerNotes?: string): Promise<KycRow> {
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
