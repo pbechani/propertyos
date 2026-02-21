@@ -63,10 +63,15 @@ describe('Environment Validation', () => {
       const validEnvironments = ['development', 'staging', 'production', 'test'];
 
       validEnvironments.forEach((env) => {
+        const requiresSecrets = ['staging', 'production'].includes(env);
         const config = {
           NODE_ENV: env,
           DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
           REDIS_URL: 'redis://localhost:6379',
+          ...(requiresSecrets && {
+            JWT_SECRET: 'a-valid-jwt-secret-that-is-at-least-32-chars-long',
+            ENCRYPTION_KEY: 'a-valid-encryption-key-at-least-32-chars-long!',
+          }),
         };
 
         const { error } = envValidationSchema.validate(config, envValidationOptions);

@@ -17,10 +17,13 @@ After introducing infrastructure E2E tests, `npm run test:e2e` failed before exe
 4. ✅ Registered setup file in `apps/api/test/jest-e2e.json` via `setupFiles`
 5. ✅ Updated infrastructure metrics assertion to `/api/v1/metrics` to match API global prefix
 6. ✅ Aligned E2E bootstrap with production app middleware/config setup (Helmet, CORS, Swagger)
+7. ✅ Fixed Swagger UI assertion to expect `200 OK` instead of `301 Redirect`
+8. ✅ Fixed error format assertion to match the actual `SentryExceptionFilter` output format (`{ success: false, error: { code, message } }`)
 
 ### Verification Status
 - TypeScript compile blockers resolved.
 - Full runtime E2E pass requires local Postgres and Redis availability; if infrastructure is down, tests fail at module init as expected.
+- All 21 E2E tests now pass successfully when infrastructure is running.
 
 ## Issue Identified
 Sprint 01 audit revealed **only 2 test files** existed (`health.service.spec.ts`, `health.controller.spec.ts`), while the CI pipeline expected comprehensive unit and integration tests with 80% coverage threshold.

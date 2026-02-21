@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics';
 import { SentryModule, SentryExceptionFilter } from './common/sentry';
 import { envValidationSchema, envValidationOptions } from './config';
+import { IdentityModule } from './identity/identity.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { envValidationSchema, envValidationOptions } from './config';
     // Feature modules
     HealthModule,
     MetricsModule,
+    IdentityModule,
   ],
   providers: [
     {

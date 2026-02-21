@@ -11,7 +11,8 @@
       "@pribec/shared-types": ["../../packages/shared-types/src"]
     },
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "incremental": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test"]

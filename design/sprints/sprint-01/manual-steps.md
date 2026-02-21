@@ -45,7 +45,7 @@ Then edit each file to set actual secret values.
 ### 3. Start Docker Services
 ```bash
 cd docker
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 4. Generate Local SSL Certificates (Optional)
@@ -72,7 +72,7 @@ chmod +x scripts/init-vault.sh
 
 ### 7. Create MinIO Buckets
 1. Open http://localhost:9001
-2. Login with `minioadmin`/`minioadmin`
+2. Login with `pribec_access_key`/`pribec_secret_key`
 3. Create buckets: `pribec-documents`, `pribec-uploads`, `pribec-backups`, `pribec-progress-photos`
 
 ### 8. Configure GitHub Secrets
@@ -134,7 +134,7 @@ Add CNAME records for ACM certificate validation after Terraform creates them.
 ## Verification
 ```bash
 # Check all services running
-docker-compose ps
+docker compose ps
 
 # Test health endpoint
 curl http://localhost:3001/api/v1/health
@@ -162,7 +162,7 @@ echo "PORT=3002" >> apps/api/.env
 
 ### ❌ Docker Services Won't Start
 
-**Problem:** `docker-compose up` fails with service errors
+**Problem:** `docker compose up` fails with service errors
 
 **Solution:**
 ```bash
@@ -171,13 +171,13 @@ docker ps
 
 # Clear old containers and volumes
 docker volume prune -f
-docker-compose down -v
+docker compose down -v
 
 # Start fresh
-docker-compose up -d
+docker compose up -d
 
 # View logs for specific service
-docker-compose logs postgres  # or redis, rabbitmq, etc.
+docker compose logs postgres  # or redis, rabbitmq, etc.
 ```
 
 ### ❌ Database Connection Failed
@@ -187,7 +187,7 @@ docker-compose logs postgres  # or redis, rabbitmq, etc.
 **Solution:**
 ```bash
 # Verify PostgreSQL is running
-docker-compose ps | grep postgres
+docker compose ps | grep postgres
 
 # Check database exists
 docker exec pribec-postgres psql -U pribec -d pribec_dev -c "\l"
@@ -204,7 +204,7 @@ cat apps/api/.env | grep DATABASE_URL
 **Solution:**
 ```bash
 # Verify Redis is running
-docker-compose ps | grep redis
+docker compose ps | grep redis
 
 # Test Redis connection
 redis-cli ping  # Should return PONG
@@ -308,7 +308,7 @@ npm run test -- --no-coverage
 
 ```bash
 # Start only essential services
-docker-compose up -d postgres redis rabbitmq minio
+docker compose up -d postgres redis rabbitmq minio
 
 # Skip logging/monitoring for local dev
 # (can skip elasticsearch, kibana, prometheus, grafana)
@@ -329,7 +329,7 @@ npm --version
 
 # ✅ Docker & Docker Compose
 docker --version
-docker-compose --version
+docker compose version
 
 # ✅ Git
 git --version
@@ -344,7 +344,7 @@ redis-cli --version
 Missing something?
 ```bash
 # macOS (using Homebrew)
-brew install node docker-compose postgresql redis
+brew install node docker postgresql redis
 
 # Ubuntu/Debian
 sudo apt-get install nodejs npm docker.io docker-compose postgresql-client redis-tools

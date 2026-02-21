@@ -35,6 +35,22 @@ export const envValidationSchema = Joi.object({
   }),
   JWT_EXPIRY: Joi.string().default('15m'),
   REFRESH_TOKEN_EXPIRY: Joi.string().default('7d'),
+  BCRYPT_ROUNDS: Joi.number().default(12),
+  EMAIL_VERIFICATION_TOKEN_EXPIRY_MINUTES: Joi.number().default(60),
+  PASSWORD_RESET_TOKEN_EXPIRY_MINUTES: Joi.number().default(30),
+  FRONTEND_URL: Joi.string().default('http://localhost:3000'),
+
+  // OAuth
+  GOOGLE_OAUTH_CLIENT_ID: Joi.string().optional(),
+  APPLE_OAUTH_CLIENT_ID: Joi.string().optional(),
+  FACEBOOK_OAUTH_CLIENT_ID: Joi.string().optional(),
+
+  // Notifications
+  SENDGRID_API_KEY: Joi.string().optional(),
+  SENDGRID_FROM_EMAIL: Joi.string().email().optional(),
+  TWILIO_ACCOUNT_SID: Joi.string().optional(),
+  TWILIO_AUTH_TOKEN: Joi.string().optional(),
+  TWILIO_FROM_NUMBER: Joi.string().optional(),
   ENCRYPTION_KEY: Joi.string().min(32).when('NODE_ENV', {
     is: Joi.valid('production', 'staging'),
     then: Joi.required(),

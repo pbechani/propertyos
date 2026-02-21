@@ -104,7 +104,7 @@ describe('Infrastructure (e2e)', () => {
     it('/api/docs (GET) - should return Swagger UI', () => {
       return request(app.getHttpServer())
         .get('/api/docs')
-        .expect(301); // Redirect to /api/docs/
+        .expect(200); // Swagger UI HTML
     });
   });
 
@@ -167,9 +167,10 @@ describe('Infrastructure (e2e)', () => {
         .get('/api/v1/invalid-route')
         .expect(404)
         .expect((res: Response) => {
-          expect(res.body).toHaveProperty('statusCode');
-          expect(res.body).toHaveProperty('message');
-          expect(res.body.statusCode).toBe(404);
+          expect(res.body).toHaveProperty('success', false);
+          expect(res.body).toHaveProperty('error');
+          expect(res.body.error).toHaveProperty('code', 'NOT_FOUND');
+          expect(res.body.error).toHaveProperty('message');
         });
     });
   });
