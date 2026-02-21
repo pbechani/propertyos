@@ -15,7 +15,8 @@ export class SentryService implements OnModuleInit {
       return;
     }
 
-    const environment = this.configService.get<string>('NODE_ENV') || 'development';
+    const environment =
+      this.configService.get<string>('NODE_ENV') || 'development';
 
     Sentry.init({
       dsn,

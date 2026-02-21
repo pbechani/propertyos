@@ -102,9 +102,7 @@ describe('Infrastructure (e2e)', () => {
 
   describe('API Documentation', () => {
     it('/api/docs (GET) - should return Swagger UI', () => {
-      return request(app.getHttpServer())
-        .get('/api/docs')
-        .expect(200); // Swagger UI HTML
+      return request(app.getHttpServer()).get('/api/docs').expect(200); // Swagger UI HTML
     });
   });
 
@@ -137,9 +135,7 @@ describe('Infrastructure (e2e)', () => {
 
   describe('CORS', () => {
     it('should handle CORS preflight requests', () => {
-      return request(app.getHttpServer())
-        .options('/api/v1/health')
-        .expect(204);
+      return request(app.getHttpServer()).options('/api/v1/health').expect(204);
     });
   });
 
@@ -215,13 +211,11 @@ describe('Infrastructure (e2e)', () => {
   describe('Observability', () => {
     it('should track response time in health checks', async () => {
       const start = Date.now();
-      
-      await request(app.getHttpServer())
-        .get('/api/v1/health')
-        .expect(200);
-      
+
+      await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+
       const duration = Date.now() - start;
-      
+
       // Health check should respond quickly (< 1 second)
       expect(duration).toBeLessThan(1000);
     });

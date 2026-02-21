@@ -89,7 +89,10 @@ describe('RedisService', () => {
 
       await service.set('test-key', 'test-value');
 
-      expect(mockRedisClient.set).toHaveBeenCalledWith('test-key', 'test-value');
+      expect(mockRedisClient.set).toHaveBeenCalledWith(
+        'test-key',
+        'test-value',
+      );
     });
 
     it('should set value with TTL', async () => {
@@ -97,7 +100,12 @@ describe('RedisService', () => {
 
       await service.set('test-key', 'test-value', 3600);
 
-      expect(mockRedisClient.set).toHaveBeenCalledWith('test-key', 'test-value', 'EX', 3600);
+      expect(mockRedisClient.set).toHaveBeenCalledWith(
+        'test-key',
+        'test-value',
+        'EX',
+        3600,
+      );
     });
   });
 
@@ -137,7 +145,10 @@ describe('RedisService', () => {
 
       await service.setJson('user:1', testObject);
 
-      expect(mockRedisClient.set).toHaveBeenCalledWith('user:1', JSON.stringify(testObject));
+      expect(mockRedisClient.set).toHaveBeenCalledWith(
+        'user:1',
+        JSON.stringify(testObject),
+      );
     });
 
     it('should set JSON value with TTL', async () => {

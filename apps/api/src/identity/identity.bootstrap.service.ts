@@ -14,7 +14,9 @@ export class IdentityBootstrapService implements OnModuleInit {
       await this.seedPermissions();
       await this.seedRolePermissions();
     } catch {
-      this.logger.warn('Identity seed skipped. Run database migrations for Sprint 02 tables.');
+      this.logger.warn(
+        'Identity seed skipped. Run database migrations for Sprint 02 tables.',
+      );
     }
   }
 
@@ -51,7 +53,10 @@ export class IdentityBootstrapService implements OnModuleInit {
   }
 
   private async seedRolePermissions(): Promise<void> {
-    const mappings: Record<string, Array<{ resource: string; action: string }>> = {
+    const mappings: Record<
+      string,
+      Array<{ resource: string; action: string }>
+    > = {
       buyer_seller: [
         { resource: 'property', action: 'read' },
         { resource: 'project', action: 'read' },
@@ -113,7 +118,9 @@ export class IdentityBootstrapService implements OnModuleInit {
       }
 
       for (const permission of permissions) {
-        const permissionRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        const permissionRows = await this.prisma.$queryRaw<
+          Array<{ id: string }>
+        >`
           SELECT id FROM identity.permissions
           WHERE resource = ${permission.resource} AND action = ${permission.action}
           LIMIT 1

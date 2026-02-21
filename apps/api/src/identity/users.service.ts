@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database';
 import { IDENTITY_ROLES } from './identity.constants';
 
@@ -36,8 +40,12 @@ export class UsersService {
     return users[0];
   }
 
-  async findByEmail(email: string): Promise<(UserRecord & { password_hash: string | null }) | null> {
-    const users = await this.prisma.$queryRaw<(UserRecord & { password_hash: string | null })[]>`
+  async findByEmail(
+    email: string,
+  ): Promise<(UserRecord & { password_hash: string | null }) | null> {
+    const users = await this.prisma.$queryRaw<
+      (UserRecord & { password_hash: string | null })[]
+    >`
       SELECT id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at, password_hash
       FROM identity.users
       WHERE LOWER(email) = LOWER(${email})
@@ -63,7 +71,15 @@ export class UsersService {
     return created[0];
   }
 
-  async updateMe(userId: string, updates: Partial<{ firstName: string; lastName: string; phone: string; avatarUrl: string }>): Promise<UserRecord> {
+  async updateMe(
+    userId: string,
+    updates: Partial<{
+      firstName: string;
+      lastName: string;
+      phone: string;
+      avatarUrl: string;
+    }>,
+  ): Promise<UserRecord> {
     const current = await this.findById(userId);
     const nextFirstName = updates.firstName ?? current.first_name;
     const nextLastName = updates.lastName ?? current.last_name;
@@ -84,7 +100,10 @@ export class UsersService {
     return updated[0];
   }
 
-  async updateStatus(userId: string, status: 'active' | 'suspended' | 'deleted'): Promise<UserRecord> {
+  async updateStatus(
+    userId: string,
+    status: 'active' | 'suspended' | 'deleted',
+  ): Promise<UserRecord> {
     const updated = await this.prisma.$queryRaw<UserRecord[]>`
       UPDATE identity.users
       SET status = ${status}, updated_at = NOW()
@@ -99,7 +118,9 @@ export class UsersService {
     return updated[0];
   }
 
-  async listUserRoles(userId: string): Promise<Array<{ id: string; name: string; display_name: string }>> {
+  async listUserRoles(
+    userId: string,
+  ): Promise<Array<{ id: string; name: string; display_name: string }>> {
     return this.prisma.$queryRaw`
       SELECT r.id, r.name, r.display_name
       FROM identity.user_roles ur
@@ -109,7 +130,11 @@ export class UsersService {
     `;
   }
 
-  async assignRole(userId: string, roleName: string, assignedBy: string): Promise<void> {
+  async assignRole(
+    userId: string,
+    roleName: string,
+    assignedBy: string,
+  ): Promise<void> {
     if (!(IDENTITY_ROLES as readonly string[]).includes(roleName)) {
       throw new BadRequestException('Invalid role');
     }

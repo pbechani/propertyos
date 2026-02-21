@@ -12,7 +12,7 @@ describe('Health Endpoints (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Apply same configuration as main.ts
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(

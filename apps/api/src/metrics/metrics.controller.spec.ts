@@ -13,7 +13,11 @@ describe('MetricsController', () => {
         {
           provide: MetricsService,
           useValue: {
-            getMetrics: jest.fn().mockResolvedValue('# HELP test_metric Test metric\n# TYPE test_metric gauge\ntest_metric 1'),
+            getMetrics: jest
+              .fn()
+              .mockResolvedValue(
+                '# HELP test_metric Test metric\n# TYPE test_metric gauge\ntest_metric 1',
+              ),
           },
         },
       ],

@@ -19,7 +19,9 @@ describe('PrismaService', () => {
   describe('healthCheck', () => {
     it('should return true when database is connected', async () => {
       // Mock the $queryRaw method
-      jest.spyOn(service, '$queryRaw').mockResolvedValueOnce([{ '?column?': 1 }]);
+      jest
+        .spyOn(service, '$queryRaw')
+        .mockResolvedValueOnce([{ '?column?': 1 }]);
 
       const result = await service.healthCheck();
 
@@ -28,7 +30,9 @@ describe('PrismaService', () => {
     });
 
     it('should return false when database query fails', async () => {
-      jest.spyOn(service, '$queryRaw').mockRejectedValueOnce(new Error('Connection error'));
+      jest
+        .spyOn(service, '$queryRaw')
+        .mockRejectedValueOnce(new Error('Connection error'));
 
       const result = await service.healthCheck();
 
@@ -60,7 +64,9 @@ describe('PrismaService', () => {
 
   describe('lifecycle methods', () => {
     it('should connect on module init', async () => {
-      const connectSpy = jest.spyOn(service, '$connect').mockResolvedValueOnce();
+      const connectSpy = jest
+        .spyOn(service, '$connect')
+        .mockResolvedValueOnce();
 
       await service.onModuleInit();
 
@@ -68,7 +74,9 @@ describe('PrismaService', () => {
     });
 
     it('should disconnect on module destroy', async () => {
-      const disconnectSpy = jest.spyOn(service, '$disconnect').mockResolvedValueOnce();
+      const disconnectSpy = jest
+        .spyOn(service, '$disconnect')
+        .mockResolvedValueOnce();
 
       await service.onModuleDestroy();
 
@@ -76,7 +84,9 @@ describe('PrismaService', () => {
     });
 
     it('should throw error when connection fails', async () => {
-      jest.spyOn(service, '$connect').mockRejectedValueOnce(new Error('Connection failed'));
+      jest
+        .spyOn(service, '$connect')
+        .mockRejectedValueOnce(new Error('Connection failed'));
 
       await expect(service.onModuleInit()).rejects.toThrow('Connection failed');
     });

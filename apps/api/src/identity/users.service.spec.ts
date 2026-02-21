@@ -54,7 +54,9 @@ describe('UsersService', () => {
 
     it('throws NotFoundException when user does not exist', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.findById('missing-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('missing-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -97,8 +99,8 @@ describe('UsersService', () => {
     it('merges partial updates with current values', async () => {
       const updated = { ...baseUser, first_name: 'Bob' };
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([baseUser])   // findById current
-        .mockResolvedValueOnce([updated]);   // UPDATE ... RETURNING
+        .mockResolvedValueOnce([baseUser]) // findById current
+        .mockResolvedValueOnce([updated]); // UPDATE ... RETURNING
       const result = await service.updateMe(baseUser.id, { firstName: 'Bob' });
       expect(result.first_name).toBe('Bob');
     });
@@ -116,7 +118,9 @@ describe('UsersService', () => {
 
     it('throws NotFoundException when no row affected', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.updateStatus('ghost-id', 'active')).rejects.toThrow(NotFoundException);
+      await expect(service.updateStatus('ghost-id', 'active')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -124,7 +128,9 @@ describe('UsersService', () => {
 
   describe('listUserRoles', () => {
     it('returns list of role objects', async () => {
-      const roles = [{ id: 'r1', name: 'buyer_seller', display_name: 'Buyer / Seller' }];
+      const roles = [
+        { id: 'r1', name: 'buyer_seller', display_name: 'Buyer / Seller' },
+      ];
       mockPrisma.$queryRaw.mockResolvedValueOnce(roles);
       const result = await service.listUserRoles(baseUser.id);
       expect(result).toEqual(roles);
@@ -172,7 +178,10 @@ describe('UsersService', () => {
 
   describe('getUserRoleNames', () => {
     it('returns array of role name strings', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ name: 'buyer_seller' }, { name: 'agent' }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { name: 'buyer_seller' },
+        { name: 'agent' },
+      ]);
       const result = await service.getUserRoleNames(baseUser.id);
       expect(result).toEqual(['buyer_seller', 'agent']);
     });
@@ -212,7 +221,9 @@ describe('UsersService', () => {
   describe('markEmailVerified', () => {
     it('executes UPDATE without throwing', async () => {
       mockPrisma.$executeRaw.mockResolvedValueOnce(1n);
-      await expect(service.markEmailVerified(baseUser.id)).resolves.toBeUndefined();
+      await expect(
+        service.markEmailVerified(baseUser.id),
+      ).resolves.toBeUndefined();
     });
   });
 

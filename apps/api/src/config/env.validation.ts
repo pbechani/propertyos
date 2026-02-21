@@ -28,11 +28,13 @@ export const envValidationSchema = Joi.object({
 
   // Secrets
   // Required in staging/production; optional in development/test where Vault may supply them
-  JWT_SECRET: Joi.string().min(32).when('NODE_ENV', {
-    is: Joi.valid('production', 'staging'),
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
+  JWT_SECRET: Joi.string()
+    .min(32)
+    .when('NODE_ENV', {
+      is: Joi.valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
   JWT_EXPIRY: Joi.string().default('15m'),
   REFRESH_TOKEN_EXPIRY: Joi.string().default('7d'),
   BCRYPT_ROUNDS: Joi.number().default(12),
@@ -51,11 +53,13 @@ export const envValidationSchema = Joi.object({
   TWILIO_ACCOUNT_SID: Joi.string().optional(),
   TWILIO_AUTH_TOKEN: Joi.string().optional(),
   TWILIO_FROM_NUMBER: Joi.string().optional(),
-  ENCRYPTION_KEY: Joi.string().min(32).when('NODE_ENV', {
-    is: Joi.valid('production', 'staging'),
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
+  ENCRYPTION_KEY: Joi.string()
+    .min(32)
+    .when('NODE_ENV', {
+      is: Joi.valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
 
   // Vault
   VAULT_ENABLED: Joi.boolean().default(false),

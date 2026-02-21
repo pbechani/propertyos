@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { IdentityRole, IDENTITY_ROLES } from '../../identity.constants';
 
 export class RegisterDto {

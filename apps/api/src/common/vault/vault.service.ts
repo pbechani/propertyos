@@ -15,23 +15,31 @@ export class VaultService implements OnModuleInit {
   private vaultAddr: string;
   private vaultToken: string;
   private enabled: boolean;
-  private secretCache: Map<string, { data: Record<string, string>; expiry: number }> = new Map();
+  private secretCache: Map<
+    string,
+    { data: Record<string, string>; expiry: number }
+  > = new Map();
   private readonly cacheTtl = 300000; // 5 minutes
 
   constructor(private readonly configService: ConfigService) {
-    this.vaultAddr = this.configService.get<string>('VAULT_ADDR') || 'http://localhost:8200';
+    this.vaultAddr =
+      this.configService.get<string>('VAULT_ADDR') || 'http://localhost:8200';
     this.vaultToken = this.configService.get<string>('VAULT_TOKEN') || '';
     this.enabled = this.configService.get<boolean>('VAULT_ENABLED', false);
   }
 
   async onModuleInit() {
     if (!this.enabled) {
-      this.logger.warn('Vault is disabled - using environment variables for secrets');
+      this.logger.warn(
+        'Vault is disabled - using environment variables for secrets',
+      );
       return;
     }
 
     if (!this.vaultToken) {
-      this.logger.warn('Vault token not configured - secrets management disabled');
+      this.logger.warn(
+        'Vault token not configured - secrets management disabled',
+      );
       this.enabled = false;
       return;
     }
@@ -95,7 +103,10 @@ export class VaultService implements OnModuleInit {
     }
   }
 
-  async getDatabaseCredentials(): Promise<{ username: string; password: string } | null> {
+  async getDatabaseCredentials(): Promise<{
+    username: string;
+    password: string;
+  } | null> {
     const secret = await this.getSecret('pribec/database');
     if (!secret) return null;
 

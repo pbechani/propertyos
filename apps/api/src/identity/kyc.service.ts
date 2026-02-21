@@ -107,7 +107,11 @@ export class KycService {
     return rows[0];
   }
 
-  async approve(id: string, reviewerId: string, reviewerNotes?: string): Promise<KycRow> {
+  async approve(
+    id: string,
+    reviewerId: string,
+    reviewerNotes?: string,
+  ): Promise<KycRow> {
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
       SET status = 'approved',
@@ -125,7 +129,11 @@ export class KycService {
     return rows[0];
   }
 
-  async reject(id: string, reviewerId: string, reviewerNotes?: string): Promise<KycRow> {
+  async reject(
+    id: string,
+    reviewerId: string,
+    reviewerNotes?: string,
+  ): Promise<KycRow> {
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
       SET status = 'rejected',

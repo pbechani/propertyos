@@ -66,7 +66,13 @@ export class SentryExceptionFilter implements ExceptionFilter {
     if (!body) return {};
 
     const sanitized = { ...body };
-    const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'creditCard'];
+    const sensitiveFields = [
+      'password',
+      'token',
+      'secret',
+      'apiKey',
+      'creditCard',
+    ];
 
     for (const field of sensitiveFields) {
       if (field in sanitized) {

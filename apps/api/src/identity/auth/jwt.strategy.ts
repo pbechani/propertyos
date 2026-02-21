@@ -7,7 +7,9 @@ import { JwtPayload } from './auth.types';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
-    const secret = configService.get<string>('JWT_SECRET') ?? 'development-only-jwt-secret-change-me-123456';
+    const secret =
+      configService.get<string>('JWT_SECRET') ??
+      'development-only-jwt-secret-change-me-123456';
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),

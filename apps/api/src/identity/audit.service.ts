@@ -89,7 +89,11 @@ export class AuditService {
     `;
   }
 
-  async findByActor(actorId: string, limit: number = 200, offset: number = 0): Promise<unknown[]> {
+  async findByActor(
+    actorId: string,
+    limit: number = 200,
+    offset: number = 0,
+  ): Promise<unknown[]> {
     const safeLimit = Math.min(limit, 1000);
     return this.prisma.$queryRaw`
       SELECT id, event_id, actor_id, actor_role, action, resource_type, resource_id, payload, created_at

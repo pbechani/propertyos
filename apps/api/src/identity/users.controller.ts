@@ -36,14 +36,17 @@ export class UsersController {
   ) {}
 
   @Get('me')
-  async me(@Req() req: { user: RequestUser }): Promise<Record<string, unknown>> {
+  async me(
+    @Req() req: { user: RequestUser },
+  ): Promise<Record<string, unknown>> {
     const user = await this.usersService.findById(req.user.sub);
     return this.usersService.sanitizeUser(user);
   }
 
   @Patch('me')
   async updateMe(
-    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Req()
+    req: { user: RequestUser; ip: string; headers: Record<string, string> },
     @Body() body: UpdateMeDto,
   ): Promise<Record<string, unknown>> {
     const updated = await this.usersService.updateMe(req.user.sub, body);
@@ -65,7 +68,9 @@ export class UsersController {
 
   @Roles('admin')
   @Get(':id')
-  async findUserById(@Param('id', new ParseUUIDPipe()) id: string): Promise<Record<string, unknown>> {
+  async findUserById(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<Record<string, unknown>> {
     const user = await this.usersService.findById(id);
     return this.usersService.sanitizeUser(user);
   }
@@ -73,7 +78,8 @@ export class UsersController {
   @Roles('admin')
   @Patch(':id/status')
   async updateUserStatus(
-    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Req()
+    req: { user: RequestUser; ip: string; headers: Record<string, string> },
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateUserStatusDto,
   ): Promise<Record<string, unknown>> {
@@ -100,14 +106,17 @@ export class UsersController {
 
   @Roles('admin')
   @Get(':id/roles')
-  async listRoles(@Param('id', new ParseUUIDPipe()) id: string): Promise<Array<{ id: string; name: string; display_name: string }>> {
+  async listRoles(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<Array<{ id: string; name: string; display_name: string }>> {
     return this.usersService.listUserRoles(id);
   }
 
   @Roles('admin')
   @Post(':id/roles')
   async assignRole(
-    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Req()
+    req: { user: RequestUser; ip: string; headers: Record<string, string> },
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: AssignRoleDto,
   ): Promise<{ success: boolean }> {
@@ -131,7 +140,8 @@ export class UsersController {
   @Roles('admin')
   @Delete(':id/roles/:roleId')
   async removeRole(
-    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Req()
+    req: { user: RequestUser; ip: string; headers: Record<string, string> },
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('roleId', new ParseUUIDPipe()) roleId: string,
   ): Promise<{ success: boolean }> {

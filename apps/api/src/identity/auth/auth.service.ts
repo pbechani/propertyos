@@ -38,14 +38,20 @@ export class AuthService {
     private readonly notificationService: NotificationService,
     private readonly auditService: AuditService,
   ) {
-    this.accessTokenExpiry = this.configService.get<string>('JWT_EXPIRY') ?? '15m';
-    this.refreshTokenExpiry = this.configService.get<string>('REFRESH_TOKEN_EXPIRY') ?? '7d';
+    this.accessTokenExpiry =
+      this.configService.get<string>('JWT_EXPIRY') ?? '15m';
+    this.refreshTokenExpiry =
+      this.configService.get<string>('REFRESH_TOKEN_EXPIRY') ?? '7d';
     this.bcryptRounds = this.configService.get<number>('BCRYPT_ROUNDS') ?? 12;
     this.emailTokenExpiryMinutes =
-      this.configService.get<number>('EMAIL_VERIFICATION_TOKEN_EXPIRY_MINUTES') ?? 60;
+      this.configService.get<number>(
+        'EMAIL_VERIFICATION_TOKEN_EXPIRY_MINUTES',
+      ) ?? 60;
     this.passwordTokenExpiryMinutes =
-      this.configService.get<number>('PASSWORD_RESET_TOKEN_EXPIRY_MINUTES') ?? 30;
-    this.frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+      this.configService.get<number>('PASSWORD_RESET_TOKEN_EXPIRY_MINUTES') ??
+      30;
+    this.frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
   }
 
   async register(
@@ -53,7 +59,9 @@ export class AuthService {
     requestContext: { ip: string; userAgent?: string | null },
   ): Promise<{ user: Record<string, unknown>; tokens: AuthTokens }> {
     if (!dto.isValidRole()) {
-      throw new BadRequestException('Invalid role provided during registration');
+      throw new BadRequestException(
+        'Invalid role provided during registration',
+      );
     }
 
     const existing = await this.usersService.findByEmail(dto.email);
@@ -70,7 +78,11 @@ export class AuthService {
       phone: dto.phone,
     });
 
-    await this.usersService.assignRole(user.id, dto.role ?? DEFAULT_ROLE, user.id);
+    await this.usersService.assignRole(
+      user.id,
+      dto.role ?? DEFAULT_ROLE,
+      user.id,
+    );
 
     const verifyToken = randomUUID();
     const verifyKey = `auth:verify-email:${verifyToken}`;
@@ -114,7 +126,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(dto.password, user.password_hash);
+    const passwordValid = await bcrypt.compare(
+      dto.password,
+      user.password_hash,
+    );
     if (!passwordValid) {
       await this.trackFailedLogin(requestContext.ip);
       throw new UnauthorizedException('Invalid credentials');
@@ -148,7 +163,14 @@ export class AuthService {
     requestContext: { ip: string; userAgent?: string | null },
   ): Promise<AuthTokens> {
     const refreshHash = this.hashToken(refreshToken);
-    const rows = await this.prisma.$queryRaw<Array<{ id: string; user_id: string; expires_at: Date; revoked_at: Date | null }>>`
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        user_id: string;
+        expires_at: Date;
+        revoked_at: Date | null;
+      }>
+    >`
       SELECT id, user_id, expires_at, revoked_at
       FROM identity.refresh_tokens
       WHERE token_hash = ${refreshHash}
@@ -156,7 +178,11 @@ export class AuthService {
     `;
 
     const tokenRow = rows[0];
-    if (!tokenRow || tokenRow.revoked_at || tokenRow.expires_at.getTime() < Date.now()) {
+    if (
+      !tokenRow ||
+      tokenRow.revoked_at ||
+      tokenRow.expires_at.getTime() < Date.now()
+    ) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -191,7 +217,9 @@ export class AuthService {
   ): Promise<void> {
     const refreshHash = this.hashToken(refreshToken);
 
-    const tokens = await this.prisma.$queryRaw<Array<{ id: string; user_id: string }>>`
+    const tokens = await this.prisma.$queryRaw<
+      Array<{ id: string; user_id: string }>
+    >`
       SELECT id, user_id
       FROM identity.refresh_tokens
       WHERE token_hash = ${refreshHash}
@@ -205,7 +233,9 @@ export class AuthService {
         WHERE id = ${tokens[0].id}::uuid
       `;
 
-      await this.redisService.del(`session:${tokens[0].user_id}:${tokens[0].id}`);
+      await this.redisService.del(
+        `session:${tokens[0].user_id}:${tokens[0].id}`,
+      );
     }
 
     await this.auditService.log({
@@ -301,7 +331,8 @@ export class AuthService {
     await this.auditService.log({
       eventId: 'user.password_reset_completed',
       actorId: value.userId,
-      actorRole: (await this.usersService.getUserRoleNames(value.userId))[0] ?? null,
+      actorRole:
+        (await this.usersService.getUserRoleNames(value.userId))[0] ?? null,
       action: 'reset_password',
       resourceType: 'user',
       resourceId: value.userId,
@@ -334,7 +365,8 @@ export class AuthService {
     await this.auditService.log({
       eventId: 'user.email_verified',
       actorId: value.userId,
-      actorRole: (await this.usersService.getUserRoleNames(value.userId))[0] ?? null,
+      actorRole:
+        (await this.usersService.getUserRoleNames(value.userId))[0] ?? null,
       action: 'verify_email',
       resourceType: 'user',
       resourceId: value.userId,
@@ -391,7 +423,10 @@ export class AuthService {
     };
   }
 
-  private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+  private async issueTokens(
+    userId: string,
+    email: string,
+  ): Promise<AuthTokens> {
     const roles = await this.usersService.getUserRoleNames(userId);
     const kycStatus = await this.usersService.getLatestKycStatus(userId);
 
@@ -423,7 +458,10 @@ export class AuthService {
         userId,
         issuedAt: new Date().toISOString(),
       },
-      Math.max(60, Math.floor((refreshExpiresAt.getTime() - Date.now()) / 1000)),
+      Math.max(
+        60,
+        Math.floor((refreshExpiresAt.getTime() - Date.now()) / 1000),
+      ),
     );
 
     return {
@@ -441,7 +479,9 @@ export class AuthService {
   private resolveExpiryDate(expiry: string): Date {
     const now = Date.now();
     if (expiry.endsWith('d')) {
-      return new Date(now + Number(expiry.replace('d', '')) * 24 * 60 * 60 * 1000);
+      return new Date(
+        now + Number(expiry.replace('d', '')) * 24 * 60 * 60 * 1000,
+      );
     }
 
     if (expiry.endsWith('h')) {

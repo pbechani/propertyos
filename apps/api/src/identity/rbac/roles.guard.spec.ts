@@ -6,7 +6,9 @@ describe('RolesGuard', () => {
   let guard: RolesGuard;
   let reflector: jest.Mocked<Reflector>;
 
-  const buildContext = (user: { id: string; email: string; roles: string[] } | undefined) => ({
+  const buildContext = (
+    user: { id: string; email: string; roles: string[] } | undefined,
+  ) => ({
     getHandler: jest.fn(),
     getClass: jest.fn(),
     switchToHttp: () => ({
@@ -15,7 +17,9 @@ describe('RolesGuard', () => {
   });
 
   beforeEach(() => {
-    reflector = { getAllAndOverride: jest.fn() } as unknown as jest.Mocked<Reflector>;
+    reflector = {
+      getAllAndOverride: jest.fn(),
+    } as unknown as jest.Mocked<Reflector>;
     guard = new RolesGuard(reflector);
   });
 
@@ -44,19 +48,31 @@ describe('RolesGuard', () => {
   describe('when user has a required role', () => {
     it('returns true for exact role match', () => {
       reflector.getAllAndOverride.mockReturnValue(['admin']);
-      const ctx = buildContext({ id: 'u1', email: 'a@b.com', roles: ['admin'] });
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['admin'],
+      });
       expect(guard.canActivate(ctx as unknown as ExecutionContext)).toBe(true);
     });
 
     it('returns true when user has one of multiple required roles', () => {
       reflector.getAllAndOverride.mockReturnValue(['admin', 'inspector']);
-      const ctx = buildContext({ id: 'u1', email: 'a@b.com', roles: ['inspector'] });
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['inspector'],
+      });
       expect(guard.canActivate(ctx as unknown as ExecutionContext)).toBe(true);
     });
 
     it('returns true when user has additional roles beyond required', () => {
       reflector.getAllAndOverride.mockReturnValue(['agent']);
-      const ctx = buildContext({ id: 'u1', email: 'a@b.com', roles: ['buyer_seller', 'agent'] });
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['buyer_seller', 'agent'],
+      });
       expect(guard.canActivate(ctx as unknown as ExecutionContext)).toBe(true);
     });
   });
@@ -66,20 +82,30 @@ describe('RolesGuard', () => {
   describe('when user lacks required role', () => {
     it('throws ForbiddenException', () => {
       reflector.getAllAndOverride.mockReturnValue(['admin']);
-      const ctx = buildContext({ id: 'u1', email: 'a@b.com', roles: ['buyer_seller'] });
-      expect(() => guard.canActivate(ctx as unknown as ExecutionContext)).toThrow(ForbiddenException);
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['buyer_seller'],
+      });
+      expect(() =>
+        guard.canActivate(ctx as unknown as ExecutionContext),
+      ).toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException when user has no roles at all', () => {
       reflector.getAllAndOverride.mockReturnValue(['admin']);
       const ctx = buildContext({ id: 'u1', email: 'a@b.com', roles: [] });
-      expect(() => guard.canActivate(ctx as unknown as ExecutionContext)).toThrow(ForbiddenException);
+      expect(() =>
+        guard.canActivate(ctx as unknown as ExecutionContext),
+      ).toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException when user object is missing', () => {
       reflector.getAllAndOverride.mockReturnValue(['admin']);
       const ctx = buildContext(undefined);
-      expect(() => guard.canActivate(ctx as unknown as ExecutionContext)).toThrow(ForbiddenException);
+      expect(() =>
+        guard.canActivate(ctx as unknown as ExecutionContext),
+      ).toThrow(ForbiddenException);
     });
   });
 

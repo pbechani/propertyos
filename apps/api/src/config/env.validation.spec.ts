@@ -13,7 +13,10 @@ describe('Environment Validation', () => {
         ENCRYPTION_KEY: 'b'.repeat(32),
       };
 
-      const { error } = envValidationSchema.validate(validEnv, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        validEnv,
+        envValidationOptions,
+      );
 
       expect(error).toBeUndefined();
     });
@@ -24,7 +27,10 @@ describe('Environment Validation', () => {
         REDIS_URL: 'redis://localhost:6379',
       };
 
-      const { error } = envValidationSchema.validate(invalidEnv, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        invalidEnv,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('DATABASE_URL');
@@ -36,7 +42,10 @@ describe('Environment Validation', () => {
         DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
       };
 
-      const { error } = envValidationSchema.validate(invalidEnv, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        invalidEnv,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('REDIS_URL');
@@ -48,7 +57,10 @@ describe('Environment Validation', () => {
         REDIS_URL: 'redis://localhost:6379',
       };
 
-      const { value, error } = envValidationSchema.validate(minimalEnv, envValidationOptions);
+      const { value, error } = envValidationSchema.validate(
+        minimalEnv,
+        envValidationOptions,
+      );
 
       expect(error).toBeUndefined();
       expect(value.NODE_ENV).toBe('development');
@@ -60,7 +72,12 @@ describe('Environment Validation', () => {
     });
 
     it('should validate NODE_ENV options', () => {
-      const validEnvironments = ['development', 'staging', 'production', 'test'];
+      const validEnvironments = [
+        'development',
+        'staging',
+        'production',
+        'test',
+      ];
 
       validEnvironments.forEach((env) => {
         const requiresSecrets = ['staging', 'production'].includes(env);
@@ -74,7 +91,10 @@ describe('Environment Validation', () => {
           }),
         };
 
-        const { error } = envValidationSchema.validate(config, envValidationOptions);
+        const { error } = envValidationSchema.validate(
+          config,
+          envValidationOptions,
+        );
         expect(error).toBeUndefined();
       });
     });
@@ -86,7 +106,10 @@ describe('Environment Validation', () => {
         REDIS_URL: 'redis://localhost:6379',
       };
 
-      const { error } = envValidationSchema.validate(invalidEnv, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        invalidEnv,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('NODE_ENV');
@@ -99,7 +122,10 @@ describe('Environment Validation', () => {
         JWT_SECRET: 'short',
       };
 
-      const { error } = envValidationSchema.validate(shortSecret, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        shortSecret,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('JWT_SECRET');
@@ -112,7 +138,10 @@ describe('Environment Validation', () => {
         ENCRYPTION_KEY: 'short',
       };
 
-      const { error } = envValidationSchema.validate(shortKey, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        shortKey,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('ENCRYPTION_KEY');
@@ -127,7 +156,10 @@ describe('Environment Validation', () => {
         VAULT_TOKEN: 'test-token',
       };
 
-      const { error } = envValidationSchema.validate(vaultEnabled, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        vaultEnabled,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('VAULT_ADDR');
@@ -142,7 +174,10 @@ describe('Environment Validation', () => {
         // Missing VAULT_TOKEN
       };
 
-      const { error } = envValidationSchema.validate(vaultEnabled, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        vaultEnabled,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.message).toContain('VAULT_TOKEN');
@@ -159,7 +194,10 @@ describe('Environment Validation', () => {
         S3_SECRET_KEY: 'secret-key',
       };
 
-      const { error } = envValidationSchema.validate(withS3, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        withS3,
+        envValidationOptions,
+      );
 
       expect(error).toBeUndefined();
     });
@@ -171,7 +209,10 @@ describe('Environment Validation', () => {
         SENTRY_DSN: '',
       };
 
-      const { error } = envValidationSchema.validate(withEmptySentry, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        withEmptySentry,
+        envValidationOptions,
+      );
 
       expect(error).toBeUndefined();
     });
@@ -183,7 +224,10 @@ describe('Environment Validation', () => {
         UNKNOWN_VAR: 'some-value',
       };
 
-      const { error } = envValidationSchema.validate(withUnknown, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        withUnknown,
+        envValidationOptions,
+      );
 
       expect(error).toBeUndefined();
     });
@@ -202,7 +246,10 @@ describe('Environment Validation', () => {
         // Missing DATABASE_URL and REDIS_URL
       };
 
-      const { error } = envValidationSchema.validate(multipleErrors, envValidationOptions);
+      const { error } = envValidationSchema.validate(
+        multipleErrors,
+        envValidationOptions,
+      );
 
       expect(error).toBeDefined();
       expect(error?.details).toBeDefined();

@@ -29,10 +29,7 @@ describe('KycService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        KycService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [KycService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get(KycService);
@@ -97,7 +94,10 @@ describe('KycService', () => {
 
   describe('listPending', () => {
     it('returns array of pending and under_review records', async () => {
-      const records = [baseKyc, { ...baseKyc, id: 'kyc-uuid-0002', status: 'under_review' }];
+      const records = [
+        baseKyc,
+        { ...baseKyc, id: 'kyc-uuid-0002', status: 'under_review' },
+      ];
       mockPrisma.$queryRaw.mockResolvedValueOnce(records);
       const result = await service.listPending();
       expect(result).toHaveLength(2);
@@ -121,7 +121,9 @@ describe('KycService', () => {
 
     it('throws NotFoundException when record is missing', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.getById('no-such-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getById('no-such-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -129,7 +131,11 @@ describe('KycService', () => {
 
   describe('startReview', () => {
     it('updates status to under_review and sets reviewer_id', async () => {
-      const updated = { ...baseKyc, status: 'under_review', reviewer_id: 'admin-uuid' };
+      const updated = {
+        ...baseKyc,
+        status: 'under_review',
+        reviewer_id: 'admin-uuid',
+      };
       mockPrisma.$queryRaw.mockResolvedValueOnce([updated]);
 
       const result = await service.startReview('kyc-uuid-0001', 'admin-uuid');
@@ -139,7 +145,9 @@ describe('KycService', () => {
 
     it('throws NotFoundException if KYC record does not exist', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.startReview('bad-id', 'admin-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.startReview('bad-id', 'admin-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -147,16 +155,27 @@ describe('KycService', () => {
 
   describe('approve', () => {
     it('sets status to approved and records reviewer', async () => {
-      const approved = { ...baseKyc, status: 'approved', reviewer_id: 'admin-uuid', reviewed_at: new Date() };
+      const approved = {
+        ...baseKyc,
+        status: 'approved',
+        reviewer_id: 'admin-uuid',
+        reviewed_at: new Date(),
+      };
       mockPrisma.$queryRaw.mockResolvedValueOnce([approved]);
-      const result = await service.approve('kyc-uuid-0001', 'admin-uuid', 'All good');
+      const result = await service.approve(
+        'kyc-uuid-0001',
+        'admin-uuid',
+        'All good',
+      );
       expect(result.status).toBe('approved');
       expect(result.reviewer_id).toBe('admin-uuid');
     });
 
     it('throws NotFoundException when KYC row does not exist', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.approve('no-such-id', 'admin-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.approve('no-such-id', 'admin-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -172,14 +191,20 @@ describe('KycService', () => {
         reviewed_at: new Date(),
       };
       mockPrisma.$queryRaw.mockResolvedValueOnce([rejected]);
-      const result = await service.reject('kyc-uuid-0001', 'admin-uuid', 'Document unclear');
+      const result = await service.reject(
+        'kyc-uuid-0001',
+        'admin-uuid',
+        'Document unclear',
+      );
       expect(result.status).toBe('rejected');
       expect(result.reviewer_notes).toBe('Document unclear');
     });
 
     it('throws NotFoundException when KYC row does not exist', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.reject('no-such-id', 'admin-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.reject('no-such-id', 'admin-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

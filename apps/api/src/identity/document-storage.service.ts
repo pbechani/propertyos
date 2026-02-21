@@ -21,7 +21,10 @@ export class DocumentStorageService {
     this.validateFile(params.file);
     await this.scanForVirus(params.file);
 
-    const extension = this.getFileExtension(params.file.originalname, params.file.mimetype);
+    const extension = this.getFileExtension(
+      params.file.originalname,
+      params.file.mimetype,
+    );
     const key = `${params.context}/${params.userId}/${params.documentType}/${randomUUID()}.${extension}`;
 
     return {
@@ -32,7 +35,9 @@ export class DocumentStorageService {
 
   private validateFile(file: Express.Multer.File): void {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException('Invalid file type. Allowed: PDF, JPG, PNG, HEIC');
+      throw new BadRequestException(
+        'Invalid file type. Allowed: PDF, JPG, PNG, HEIC',
+      );
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {

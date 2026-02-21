@@ -27,7 +27,7 @@ export class HealthService {
   async check(): Promise<HealthCheckResult> {
     const dbHealthy = await this.prisma.healthCheck();
     const redisHealthy = await this.redis.healthCheck();
-    
+
     const dbStatus: 'ok' | 'error' = dbHealthy ? 'ok' : 'error';
     const redisStatus: 'ok' | 'error' = redisHealthy ? 'ok' : 'error';
 
@@ -35,11 +35,11 @@ export class HealthService {
       api: { status: 'ok' as const },
       database: {
         status: dbStatus,
-        message: dbHealthy ? 'Connected' : 'Disconnected'
+        message: dbHealthy ? 'Connected' : 'Disconnected',
       },
       redis: {
         status: redisStatus,
-        message: redisHealthy ? 'Connected' : 'Disconnected'
+        message: redisHealthy ? 'Connected' : 'Disconnected',
       },
     };
 

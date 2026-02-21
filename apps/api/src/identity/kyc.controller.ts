@@ -165,7 +165,9 @@ export class AdminKycController {
   }
 
   @Get(':id')
-  async getOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Record<string, unknown>> {
+  async getOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<Record<string, unknown>> {
     const row = await this.kycService.getById(id);
     return this.kycService.sanitize(row);
   }
@@ -198,11 +200,22 @@ export class AdminKycController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: ReviewKycDto,
   ): Promise<Record<string, unknown>> {
-    const updated = await this.kycService.approve(id, req.user.sub, body.reviewerNotes);
+    const updated = await this.kycService.approve(
+      id,
+      req.user.sub,
+      body.reviewerNotes,
+    );
     const user = await this.usersService.findById(updated.user_id);
-    await this.notificationService.sendEmail(user.email, 'KYC approved', 'Your KYC is approved.');
+    await this.notificationService.sendEmail(
+      user.email,
+      'KYC approved',
+      'Your KYC is approved.',
+    );
     if (user.phone) {
-      await this.notificationService.sendSms(user.phone, 'Your KYC has been approved.');
+      await this.notificationService.sendSms(
+        user.phone,
+        'Your KYC has been approved.',
+      );
     }
 
     await this.auditService.log({
@@ -226,11 +239,22 @@ export class AdminKycController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: ReviewKycDto,
   ): Promise<Record<string, unknown>> {
-    const updated = await this.kycService.reject(id, req.user.sub, body.reviewerNotes);
+    const updated = await this.kycService.reject(
+      id,
+      req.user.sub,
+      body.reviewerNotes,
+    );
     const user = await this.usersService.findById(updated.user_id);
-    await this.notificationService.sendEmail(user.email, 'KYC rejected', 'Your KYC was rejected.');
+    await this.notificationService.sendEmail(
+      user.email,
+      'KYC rejected',
+      'Your KYC was rejected.',
+    );
     if (user.phone) {
-      await this.notificationService.sendSms(user.phone, 'Your KYC has been rejected.');
+      await this.notificationService.sendSms(
+        user.phone,
+        'Your KYC has been rejected.',
+      );
     }
 
     await this.auditService.log({

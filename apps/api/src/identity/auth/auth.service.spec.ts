@@ -13,6 +13,8 @@ import { NotificationService } from '../notification.service';
 import { RedisService } from '../../cache';
 import { PrismaService } from '../../database';
 
+import * as bcrypt from 'bcrypt';
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -42,7 +44,7 @@ describe('AuthService', () => {
       const map: Record<string, unknown> = {
         JWT_EXPIRY: '15m',
         REFRESH_TOKEN_EXPIRY: '7d',
-        BCRYPT_ROUNDS: 1,            // use 1 round in tests for speed
+        BCRYPT_ROUNDS: 1, // use 1 round in tests for speed
         EMAIL_VERIFICATION_TOKEN_EXPIRY_MINUTES: 60,
         PASSWORD_RESET_TOKEN_EXPIRY_MINUTES: 30,
         FRONTEND_URL: 'http://localhost:3000',
@@ -118,13 +120,16 @@ describe('AuthService', () => {
   // ─── register ─────────────────────────────────────────────────────────────
 
   describe('register', () => {
-    const dto = Object.assign(
-      Object.create({ isValidRole: () => true }),
-      { email: EMAIL, password: PASSWORD, firstName: 'Alice', lastName: 'Smith', role: 'buyer_seller' },
-    );
+    const dto = Object.assign(Object.create({ isValidRole: () => true }), {
+      email: EMAIL,
+      password: PASSWORD,
+      firstName: 'Alice',
+      lastName: 'Smith',
+      role: 'buyer_seller',
+    });
 
     it('creates user, assigns role, sends verification email, and returns tokens', async () => {
-      mockUsers.findByEmail.mockResolvedValueOnce(null);     // not existing
+      mockUsers.findByEmail.mockResolvedValueOnce(null); // not existing
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockUsers.assignRole.mockResolvedValueOnce(undefined);
       mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
@@ -144,7 +149,9 @@ describe('AuthService', () => {
 
     it('throws BadRequestException when email already exists', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
-      await expect(service.register(dto, requestCtx)).rejects.toThrow(BadRequestException);
+      await expect(service.register(dto, requestCtx)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException for invalid role', async () => {
@@ -153,7 +160,9 @@ describe('AuthService', () => {
         dto,
         { role: 'overlord' },
       );
-      await expect(service.register(badRoleDto, requestCtx)).rejects.toThrow(BadRequestException);
+      await expect(service.register(badRoleDto, requestCtx)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -161,15 +170,20 @@ describe('AuthService', () => {
 
   describe('login', () => {
     // Use real bcrypt for the valid-password test because we need a matching hash
-    const bcrypt = require('bcrypt');
 
     it('returns tokens for correct credentials', async () => {
       const hash = bcrypt.hashSync(PASSWORD, 1);
-      mockRedis.get.mockResolvedValueOnce(null);                         // no failed attempts
-      mockUsers.findByEmail.mockResolvedValueOnce({ ...baseUser, password_hash: hash });
+      mockRedis.get.mockResolvedValueOnce(null); // no failed attempts
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        password_hash: hash,
+      });
       mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
 
-      const result = await service.login({ email: EMAIL, password: PASSWORD }, requestCtx);
+      const result = await service.login(
+        { email: EMAIL, password: PASSWORD },
+        requestCtx,
+      );
 
       expect(result.tokens.accessToken).toBe('signed-access-token');
       expect(mockUsers.markLastLogin).toHaveBeenCalledWith(USER_ID);
@@ -179,8 +193,11 @@ describe('AuthService', () => {
     });
 
     it('increments failed-attempt counter and throws UnauthorizedException for wrong password', async () => {
-      mockRedis.get.mockResolvedValueOnce(null);                         // no previous failures
-      mockUsers.findByEmail.mockResolvedValueOnce({ ...baseUser, password_hash: '$2b$12$wronghash' });
+      mockRedis.get.mockResolvedValueOnce(null); // no previous failures
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        password_hash: '$2b$12$wronghash',
+      });
 
       await expect(
         service.login({ email: EMAIL, password: 'WrongPassword' }, requestCtx),
@@ -198,12 +215,15 @@ describe('AuthService', () => {
       mockUsers.findByEmail.mockResolvedValueOnce(null);
 
       await expect(
-        service.login({ email: 'nobody@example.com', password: PASSWORD }, requestCtx),
+        service.login(
+          { email: 'nobody@example.com', password: PASSWORD },
+          requestCtx,
+        ),
       ).rejects.toThrow(UnauthorizedException);
     });
 
     it('blocks login after 5 failed attempts (rate limit)', async () => {
-      mockRedis.get.mockResolvedValueOnce('5');   // 5 attempts already recorded
+      mockRedis.get.mockResolvedValueOnce('5'); // 5 attempts already recorded
 
       await expect(
         service.login({ email: EMAIL, password: PASSWORD }, requestCtx),
@@ -217,8 +237,10 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('revokes the refresh token and deletes the session key', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id', user_id: USER_ID }]);
-      mockPrisma.$executeRaw.mockResolvedValueOnce(1n);  // UPDATE revoke
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: 'rt-id', user_id: USER_ID },
+      ]);
+      mockPrisma.$executeRaw.mockResolvedValueOnce(1n); // UPDATE revoke
       mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
 
       await service.logout('raw-refresh-token', USER_ID, requestCtx);
@@ -231,7 +253,7 @@ describe('AuthService', () => {
     });
 
     it('still logs audit when refresh token is not found in db', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([]);      // token row missing
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // token row missing
       mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
 
       await service.logout('stale-token', USER_ID, requestCtx);
@@ -249,9 +271,16 @@ describe('AuthService', () => {
     it('rotates the refresh token and returns new token pair', async () => {
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([{ id: 'rt-id', user_id: USER_ID, expires_at: futureDate, revoked_at: null }]) // lookup
-        .mockResolvedValueOnce([{ id: 'new-rt-id' }]);  // insert new token
-      mockPrisma.$executeRaw.mockResolvedValueOnce(1n);  // revoke old
+        .mockResolvedValueOnce([
+          {
+            id: 'rt-id',
+            user_id: USER_ID,
+            expires_at: futureDate,
+            revoked_at: null,
+          },
+        ]) // lookup
+        .mockResolvedValueOnce([{ id: 'new-rt-id' }]); // insert new token
+      mockPrisma.$executeRaw.mockResolvedValueOnce(1n); // revoke old
       mockUsers.findById.mockResolvedValueOnce(baseUser);
 
       const result = await service.refresh('old-refresh-token', requestCtx);
@@ -263,25 +292,41 @@ describe('AuthService', () => {
     it('throws UnauthorizedException for revoked token', async () => {
       const futureDate = new Date(Date.now() + 60_000);
       mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { id: 'rt-id', user_id: USER_ID, expires_at: futureDate, revoked_at: new Date() },
+        {
+          id: 'rt-id',
+          user_id: USER_ID,
+          expires_at: futureDate,
+          revoked_at: new Date(),
+        },
       ]);
 
-      await expect(service.refresh('revoked-token', requestCtx)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.refresh('revoked-token', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('throws UnauthorizedException for expired token', async () => {
       const pastDate = new Date(Date.now() - 1000);
       mockPrisma.$queryRaw.mockResolvedValueOnce([
-        { id: 'rt-id', user_id: USER_ID, expires_at: pastDate, revoked_at: null },
+        {
+          id: 'rt-id',
+          user_id: USER_ID,
+          expires_at: pastDate,
+          revoked_at: null,
+        },
       ]);
 
-      await expect(service.refresh('expired-token', requestCtx)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.refresh('expired-token', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('throws UnauthorizedException when token not found', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
 
-      await expect(service.refresh('unknown-token', requestCtx)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.refresh('unknown-token', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -309,7 +354,9 @@ describe('AuthService', () => {
     it('silently returns when user does not exist (no enumeration)', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(null);
 
-      await expect(service.forgotPassword('nobody@x.com', requestCtx)).resolves.toBeUndefined();
+      await expect(
+        service.forgotPassword('nobody@x.com', requestCtx),
+      ).resolves.toBeUndefined();
       expect(mockNotification.sendEmail).not.toHaveBeenCalled();
     });
   });
@@ -369,7 +416,9 @@ describe('AuthService', () => {
     it('throws UnauthorizedException for invalid token', async () => {
       mockRedis.getJson.mockResolvedValueOnce(null);
 
-      await expect(service.verifyEmail('bad-token', requestCtx)).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.verifyEmail('bad-token', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -398,8 +447,8 @@ describe('AuthService', () => {
 
     it('creates new user and assigns default role on first OAuth login', async () => {
       mockUsers.findByEmail
-        .mockResolvedValueOnce(null)         // first call — not found
-        .mockResolvedValueOnce(baseUser);    // second call after create
+        .mockResolvedValueOnce(null) // first call — not found
+        .mockResolvedValueOnce(baseUser); // second call after create
 
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id' }]);
@@ -414,7 +463,11 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException when providerToken is absent', async () => {
       await expect(
-        service.oauthLogin('google', { ...oauthDto, providerToken: '' }, requestCtx),
+        service.oauthLogin(
+          'google',
+          { ...oauthDto, providerToken: '' },
+          requestCtx,
+        ),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
