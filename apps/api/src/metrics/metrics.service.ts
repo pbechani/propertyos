@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import {
   register,
   collectDefaultMetrics,
@@ -8,7 +8,7 @@ import {
 } from 'prom-client';
 
 @Injectable()
-export class MetricsService implements OnModuleInit {
+export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private httpRequestDuration!: Histogram<string>;
   private httpRequestTotal!: Counter<string>;
   private activeConnections!: Gauge<string>;
@@ -40,6 +40,10 @@ export class MetricsService implements OnModuleInit {
       help: 'Number of active connections',
       registers: [register],
     });
+  }
+
+  onModuleDestroy() {
+    register.clear();
   }
 
   async getMetrics(): Promise<string> {

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Data-Driven Agent Hub - PropMarket</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "accent": "#0ea5e9",
+                        "background-light": "#f8fafc",
+                        "surface": "#ffffff",
+                        "border-muted": "#e2e8f0",
+                        "text-muted": "#64748b"
+                    },
+                    fontFamily: {
+                        "sans": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f8fafc;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+            font-size: 20px;
+        }
+        .chart-bar {
+            transition: height 0.3s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-slate-900 antialiased">
+<div class="flex min-h-screen">
+<aside class="w-64 bg-white border-r border-border-muted flex flex-col fixed h-full z-50">
+<div class="p-6 flex items-center gap-3">
+<div class="flex items-center justify-center bg-primary text-white rounded-lg p-1.5">
+<span class="material-symbols-outlined">home_work</span>
+</div>
+<h2 class="text-slate-900 text-lg font-bold tracking-tight">PropMarket</h2>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<p class="px-3 py-2 text-[10px] font-bold text-text-muted uppercase tracking-wider">Dashboard</p>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-primary bg-primary/5 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span> Overview
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span> Analytics
+            </a>
+<p class="px-3 py-2 mt-6 text-[10px] font-bold text-text-muted uppercase tracking-wider">Management</p>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">list_alt</span> My Listings
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span> Leads
+                <span class="ml-auto bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold">12</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_today</span> Schedule
+            </a>
+<p class="px-3 py-2 mt-6 text-[10px] font-bold text-text-muted uppercase tracking-wider">Account</p>
+<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+            </a>
+</nav>
+<div class="p-4 border-t border-border-muted">
+<div class="flex items-center gap-3 p-2">
+<img alt="Agent" class="size-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiMr5wPaoVMKBIhEsLWJ2s-roj86AGgjdHAKvtYmC47NqGG45jQ_7BZs2GKFvCXwDoRPnHPN9WAahUk5gHtRvcuOFEq1VL8wAMJiBilIcsU1Zs2O8fgZAFwjbq2xr_HuZ6vfj_KfaKy_8-JtHk8M2QbGmTLkIMNU8g2oLXdTEWo3meUhTdbdPb7dhB3WoRie5SBaS9IH9OyS1ve1uBgBo0Wrxh_j78JQXuRBqLyg4U3zLHXA3ByyzkpuVEmq7Ntu0_7qIwYl39hOA"/>
+<div class="min-w-0">
+<p class="text-xs font-bold truncate">Marcus Thorne</p>
+<p class="text-[10px] text-text-muted truncate">Senior Associate</p>
+</div>
+<button class="ml-auto text-text-muted">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</div>
+</aside>
+<main class="flex-1 ml-64 min-h-screen bg-slate-50 p-8">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h1 class="text-2xl font-extrabold text-slate-900">Data-Driven Agent Hub</h1>
+<p class="text-sm text-text-muted">Performance insights for Monday, May 14th</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex bg-white border border-border-muted rounded-lg p-1">
+<button class="px-3 py-1.5 text-xs font-bold text-slate-900 bg-slate-100 rounded-md">7D</button>
+<button class="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-slate-900">1M</button>
+<button class="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-slate-900">3M</button>
+</div>
+<button class="flex items-center gap-2 bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:brightness-110 transition-all">
+<span class="material-symbols-outlined !text-sm">add</span> New Listing
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<div class="bg-white p-6 rounded-xl border border-border-muted shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-sm font-bold text-slate-700">Sales Velocity</h3>
+<span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">+12.5%</span>
+</div>
+<div class="h-32 flex items-end gap-2 mb-4">
+<div class="flex-1 bg-slate-100 rounded-t h-[40%]"></div>
+<div class="flex-1 bg-slate-100 rounded-t h-[55%]"></div>
+<div class="flex-1 bg-slate-100 rounded-t h-[45%]"></div>
+<div class="flex-1 bg-slate-100 rounded-t h-[70%]"></div>
+<div class="flex-1 bg-primary rounded-t h-[90%] shadow-lg shadow-primary/20"></div>
+<div class="flex-1 bg-slate-100 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-slate-100 rounded-t h-[75%]"></div>
+</div>
+<div class="flex justify-between text-[10px] font-bold text-text-muted">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-border-muted shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-sm font-bold text-slate-700">Lead Source Breakdown</h3>
+<span class="material-symbols-outlined text-text-muted">more_horiz</span>
+</div>
+<div class="flex items-center justify-center gap-8 h-32">
+<div class="relative size-24 rounded-full border-[10px] border-slate-100 border-t-primary border-r-primary/60 flex items-center justify-center">
+<span class="text-xs font-black">284</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-primary"></div>
+<span class="text-[10px] font-bold text-slate-600">Organic (65%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-primary/60"></div>
+<span class="text-[10px] font-bold text-slate-600">Paid (25%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-slate-100"></div>
+<span class="text-[10px] font-bold text-slate-600">Referral (10%)</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-border-muted shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold text-slate-700">Weekly Highlights</h3>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between border-b border-slate-50 pb-3">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<span class="text-xs font-semibold text-slate-600">Total Page Views</span>
+</div>
+<span class="text-xs font-bold">12,402</span>
+</div>
+<div class="flex items-center justify-between border-b border-slate-50 pb-3">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+<span class="material-symbols-outlined">chat_bubble</span>
+</div>
+<span class="text-xs font-semibold text-slate-600">Inquiries Recieved</span>
+</div>
+<span class="text-xs font-bold">84</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+<span class="material-symbols-outlined">star</span>
+</div>
+<span class="text-xs font-semibold text-slate-600">Avg. Listing Score</span>
+</div>
+<span class="text-xs font-bold">9.2/10</span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+<div class="xl:col-span-2 bg-white rounded-xl border border-border-muted shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-slate-100 flex items-center justify-between">
+<h3 class="text-sm font-bold text-slate-700">Listing Performance</h3>
+<div class="flex gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-text-muted !text-sm">search</span>
+<input class="pl-8 pr-3 py-1.5 text-xs rounded-lg border-border-muted focus:ring-primary/20 bg-slate-50/50 w-48" placeholder="Filter listings..." type="text"/>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50 border-b border-slate-100">
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Property</th>
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Price</th>
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Inquiries</th>
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Views</th>
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Trend</th>
+<th class="px-6 py-3 text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Property" class="size-10 rounded object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="min-w-0">
+<p class="text-xs font-bold text-slate-900 truncate">88 Sunset Boulevard</p>
+<p class="text-[10px] text-text-muted">West Hills</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-bold">$1.25M</td>
+<td class="px-6 py-4 text-xs">42</td>
+<td class="px-6 py-4 text-xs">1,240</td>
+<td class="px-6 py-4">
+<div class="flex items-center text-emerald-600">
+<span class="material-symbols-outlined !text-sm">trending_up</span>
+<span class="text-[10px] font-bold ml-1">8%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600">Active</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Property" class="size-10 rounded object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+<div class="min-w-0">
+<p class="text-xs font-bold text-slate-900 truncate">204 Sky View</p>
+<p class="text-[10px] text-text-muted">Downtown City</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-bold">$450K</td>
+<td class="px-6 py-4 text-xs">18</td>
+<td class="px-6 py-4 text-xs">630</td>
+<td class="px-6 py-4">
+<div class="flex items-center text-slate-400">
+<span class="material-symbols-outlined !text-sm">trending_flat</span>
+<span class="text-[10px] font-bold ml-1">--</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600">Pending</span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="Property" class="size-10 rounded object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjVBqA8cw7-F0O53eMKknOpf5IYcn2_nF2k0_jS5v7aBxTEf_s3ldUA9jIUMxLcUn0ykjutHrPj2TmPec6SGLx5YDXfTZW7eb5FnPBJDYOxuqtWS_AcS8leUUuFVbC5ZVx7NPT38kakwED3I2cGNq3KBnZdKtSS4_TiOMW6tt5v6DPQfmgqJT1peHtJPmtC2A4-jhVxYtrv4KyjKcJfoBUH6ZKxai3oGE3N0ibSFp7cQJS4LH1diWpeqU6qQpxZ5eClbjz-EDWbQA"/>
+<div class="min-w-0">
+<p class="text-xs font-bold text-slate-900 truncate">45 Green Oaks</p>
+<p class="text-[10px] text-text-muted">Riverside Suburb</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-xs font-bold">$785K</td>
+<td class="px-6 py-4 text-xs">31</td>
+<td class="px-6 py-4 text-xs">925</td>
+<td class="px-6 py-4">
+<div class="flex items-center text-red-500">
+<span class="material-symbols-outlined !text-sm">trending_down</span>
+<span class="text-[10px] font-bold ml-1">3%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">Inactive</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-slate-100 mt-auto bg-slate-50/30 flex items-center justify-between">
+<p class="text-[10px] text-text-muted font-bold uppercase">Showing 3 of 14 active listings</p>
+<button class="text-xs font-bold text-primary hover:underline">View All Listings</button>
+</div>
+</div>
+<div class="bg-white rounded-xl border border-border-muted shadow-sm flex flex-col overflow-hidden">
+<div class="p-6 border-b border-slate-100 flex items-center justify-between">
+<h3 class="text-sm font-bold text-slate-700">Recent Leads</h3>
+<button class="text-text-muted hover:text-slate-900">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2 max-h-[480px]">
+<div class="p-3 rounded-lg border border-slate-50 hover:border-primary/20 hover:bg-primary/[0.02] transition-all cursor-pointer group">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-600">JS</div>
+<div>
+<p class="text-xs font-bold group-hover:text-primary transition-colors">Jane Smith</p>
+<p class="text-[10px] text-text-muted">Interested in: 88 Sunset Blvd</p>
+</div>
+</div>
+<span class="size-2 rounded-full bg-primary shadow-sm shadow-primary/40"></span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-text-muted font-medium">Added 12m ago</span>
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold rounded">New</span>
+</div>
+</div>
+</div>
+<div class="p-3 rounded-lg border border-slate-50 hover:border-primary/20 hover:bg-primary/[0.02] transition-all cursor-pointer group">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-600">RT</div>
+<div>
+<p class="text-xs font-bold group-hover:text-primary transition-colors">Robert Taylor</p>
+<p class="text-[10px] text-text-muted">Buying Budget: $900k+</p>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-text-muted font-medium">Added 3h ago</span>
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[9px] font-bold rounded">Negotiating</span>
+</div>
+</div>
+</div>
+<div class="p-3 rounded-lg border border-slate-50 hover:border-primary/20 hover:bg-primary/[0.02] transition-all cursor-pointer group">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-600">MK</div>
+<div>
+<p class="text-xs font-bold group-hover:text-primary transition-colors">Mariah Kane</p>
+<p class="text-[10px] text-text-muted">Viewing: Sky View #204</p>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-text-muted font-medium">Added 1d ago</span>
+<div class="flex gap-1">
+<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded">Contacted</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-slate-100 bg-slate-50/30">
+<button class="w-full text-center text-xs font-bold text-slate-600 hover:text-primary transition-colors">Manage All Leads</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

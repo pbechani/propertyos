@@ -222,6 +222,21 @@ Query parameters for `GET /api/v1/properties`:
 
 ---
 
+## UI/UX Design Guideline
+
+Use **[property24.com](https://www.property24.com)** as the primary visual and UX reference for all frontend work in this sprint. The goal is a modern, slick, and professional interface that builds buyer and agent trust.
+
+Key design principles to adopt:
+- Clean, card-based property listings with high-quality image carousels
+- Prominent search bar with inline filter chips (type, price range, location)
+- Sticky header with quick-access navigation for buyers and agents
+- Map/list split-view for search results
+- Trust signals prominently displayed (verified badge, agent rating, listing date)
+- Mobile-first responsive layouts — construction workers and diaspora users are primarily mobile
+- Fast-loading hero images with skeleton loaders while data fetches
+
+---
+
 ## SEO Requirements (Next.js SSR)
 Each property listing page must have:
 - `<title>`: `{bedrooms}BR {type} in {city} | Platform Name`

@@ -4,12 +4,13 @@ import { MetricsService } from './metrics.service';
 
 describe('MetricsService', () => {
   let service: MetricsService;
+  let module: TestingModule;
 
   beforeEach(async () => {
     // Clear the registry before each test to avoid "already registered" errors
     register.clear();
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [MetricsService],
     }).compile();
 
@@ -20,7 +21,14 @@ describe('MetricsService', () => {
 
   afterEach(() => {
     // Clear registry after each test
+    service.onModuleDestroy();
     register.clear();
+  });
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
   });
 
   it('should be defined', () => {

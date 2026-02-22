@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PRIBEC - Buy, Sell &amp; Build with Confidence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "pribec-navy": "#0A1628",
+                        "pribec-gold": "#F5A623",
+                        "pribec-gold-light": "#FFC55F",
+                        "pribec-gray": "#F8F9FA",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #F5A623;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #E2E8F0;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-pribec-gray text-slate-900 antialiased">
+<div class="relative flex min-h-screen flex-col group/design-root overflow-x-hidden">
+<div class="bg-pribec-navy text-white text-xs py-2 px-6 md:px-20 border-b border-white/10 flex justify-between items-center">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-pribec-gold">verified_user</span> Financial-Grade Trust Platform</span>
+<span class="hidden md:flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-pribec-gold">public</span> Global Diaspora Support</span>
+</div>
+<div class="flex items-center gap-4">
+<a class="hover:text-pribec-gold transition-colors" href="#">Help Center</a>
+<a class="hover:text-pribec-gold transition-colors" href="#">Currency: USD</a>
+</div>
+</div>
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap bg-white shadow-sm px-6 md:px-20 py-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-pribec-navy text-pribec-gold rounded-lg p-2">
+<span class="material-symbols-outlined text-3xl filled-icon">security</span>
+</div>
+<h2 class="text-pribec-navy text-2xl font-extrabold leading-tight tracking-tight">PRIBEC</h2>
+</div>
+<nav class="hidden lg:flex flex-1 justify-center ml-10">
+<div class="flex items-center gap-8">
+<a class="text-slate-700 text-sm font-bold hover:text-pribec-navy transition-colors" href="#">Buy Property</a>
+<a class="text-slate-700 text-sm font-bold hover:text-pribec-navy transition-colors" href="#">Sell</a>
+<a class="text-slate-700 text-sm font-bold hover:text-pribec-navy transition-colors" href="#">Build</a>
+<a class="text-slate-700 text-sm font-bold hover:text-pribec-navy transition-colors" href="#">Escrow Services</a>
+<a class="text-slate-700 text-sm font-bold hover:text-pribec-navy transition-colors" href="#">Agents</a>
+</div>
+</nav>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center text-pribec-navy font-bold text-sm px-4 py-2 hover:bg-slate-50 rounded-lg">
+                Log In
+            </button>
+<button class="flex items-center justify-center bg-pribec-navy text-white text-sm font-bold px-6 py-2.5 rounded-lg shadow-lg hover:bg-slate-800 transition-all">
+                Get Started
+            </button>
+</div>
+</header>
+<section class="relative w-full bg-pribec-navy pt-16 pb-32 px-4 overflow-hidden">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<div class="absolute right-0 top-0 w-1/2 h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-pribec-gold via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center gap-10">
+<div class="flex flex-col gap-6 text-center max-w-3xl">
+<div class="inline-flex items-center justify-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 w-fit mx-auto backdrop-blur-sm">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-xs font-semibold text-white tracking-wide uppercase">Secure Transaction Protocol Active</span>
+</div>
+<h1 class="text-white text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
+                    Buy, Sell &amp; Build with <span class="text-pribec-gold">Confidence</span>
+</h1>
+<p class="text-slate-300 text-lg md:text-xl font-medium max-w-2xl mx-auto">
+                    The trusted platform for diaspora property investment. Verified listings, escrow protection, and transparent construction updates.
+                </p>
+<div class="flex flex-wrap justify-center gap-4 mt-2">
+<span class="flex items-center gap-1.5 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-green-400 text-lg filled-icon">verified</span> Verified Listings
+                    </span>
+<span class="flex items-center gap-1.5 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-pribec-gold text-lg filled-icon">lock</span> Escrow Protected
+                    </span>
+<span class="flex items-center gap-1.5 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-blue-400 text-lg filled-icon">gavel</span> Legally Vetted
+                    </span>
+</div>
+</div>
+<div class="w-full bg-white rounded-xl shadow-2xl p-1 mt-6">
+<div class="flex bg-slate-100 rounded-t-lg overflow-x-auto scrollbar-hide">
+<button class="flex-1 py-4 text-center text-sm font-bold text-pribec-navy bg-white border-t-2 border-pribec-gold">Residential</button>
+<button class="flex-1 py-4 text-center text-sm font-bold text-slate-500 hover:text-pribec-navy hover:bg-white/50 border-t-2 border-transparent transition-colors">Land</button>
+<button class="flex-1 py-4 text-center text-sm font-bold text-slate-500 hover:text-pribec-navy hover:bg-white/50 border-t-2 border-transparent transition-colors">Commercial</button>
+<button class="flex-1 py-4 text-center text-sm font-bold text-slate-500 hover:text-pribec-navy hover:bg-white/50 border-t-2 border-transparent transition-colors">Off-Plan</button>
+<button class="flex-1 py-4 text-center text-sm font-bold text-slate-500 hover:text-pribec-navy hover:bg-white/50 border-t-2 border-transparent transition-colors">New Build</button>
+</div>
+<div class="p-4 md:p-6 flex flex-col gap-5">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+<div class="md:col-span-4 relative">
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Location</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
+<input class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-pribec-navy focus:border-pribec-navy outline-none text-slate-800" placeholder="City, Area or Zip" type="text"/>
+</div>
+</div>
+<div class="md:col-span-3 relative">
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Type</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">domain</span>
+<select class="w-full pl-10 pr-8 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-pribec-navy focus:border-pribec-navy outline-none text-slate-800 appearance-none">
+<option>Any Type</option>
+<option>House</option>
+<option>Apartment</option>
+<option>Villa</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm">expand_more</span>
+</div>
+</div>
+<div class="md:col-span-3 relative px-2">
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Price: <span class="text-pribec-navy">$500k</span></label>
+<input class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" max="2000000" min="50000" step="10000" type="range" value="500000"/>
+<div class="flex justify-between text-[10px] text-slate-400 mt-1">
+<span>$50k</span>
+<span>$2M+</span>
+</div>
+</div>
+<div class="md:col-span-2 flex items-center h-[50px] bg-slate-50 rounded-lg px-3 border border-slate-200">
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="relative w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+<span class="ms-2 text-xs font-bold text-slate-700">Verified Only</span>
+</label>
+</div>
+</div>
+<div class="border-t border-slate-100 pt-4 flex justify-end">
+<button class="bg-pribec-gold text-pribec-navy font-extrabold py-3 px-8 rounded-lg hover:bg-pribec-gold-light shadow-lg transition-all flex items-center gap-2">
+<span class="material-symbols-outlined">search</span>
+                            Search Properties
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 bg-white relative -mt-10 rounded-t-[2.5rem] z-20">
+<div class="max-w-7xl mx-auto px-6">
+<div class="text-center mb-16">
+<span class="text-pribec-gold font-bold uppercase tracking-widest text-xs mb-2 block">Our Promise</span>
+<h2 class="text-3xl font-black text-pribec-navy">Why Choose PRIBEC?</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="p-8 rounded-2xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-14 h-14 bg-pribec-navy rounded-xl flex items-center justify-center text-pribec-gold mb-6">
+<span class="material-symbols-outlined text-3xl filled-icon">shield_lock</span>
+</div>
+<h3 class="text-lg font-bold text-pribec-navy mb-3">Fraud Protection</h3>
+<p class="text-slate-500 text-sm leading-relaxed">Advanced identity verification and title deed authentication to ensure every transaction is legitimate.</p>
+</div>
+<div class="p-8 rounded-2xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-14 h-14 bg-pribec-navy rounded-xl flex items-center justify-center text-pribec-gold mb-6">
+<span class="material-symbols-outlined text-3xl filled-icon">lock</span>
+</div>
+<h3 class="text-lg font-bold text-pribec-navy mb-3">Escrow Security</h3>
+<p class="text-slate-500 text-sm leading-relaxed">Funds are held securely in a regulated escrow account and only released upon milestone completion.</p>
+</div>
+<div class="p-8 rounded-2xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-14 h-14 bg-pribec-navy rounded-xl flex items-center justify-center text-pribec-gold mb-6">
+<span class="material-symbols-outlined text-3xl filled-icon">visibility</span>
+</div>
+<h3 class="text-lg font-bold text-pribec-navy mb-3">Full Transparency</h3>
+<p class="text-slate-500 text-sm leading-relaxed">Track every stage of your purchase or build with real-time updates, photos, and legal document access.</p>
+</div>
+<div class="p-8 rounded-2xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:-translate-y-1 transition-transform duration-300">
+<div class="w-14 h-14 bg-pribec-navy rounded-xl flex items-center justify-center text-pribec-gold mb-6">
+<span class="material-symbols-outlined text-3xl filled-icon">flight_takeoff</span>
+</div>
+<h3 class="text-lg font-bold text-pribec-navy mb-3">Diaspora Ready</h3>
+<p class="text-slate-500 text-sm leading-relaxed">Designed specifically for remote buyers, with currency support and international legal compliance.</p>
+</div>
+</div>
+</div>
+</section>
+<div class="bg-pribec-navy py-12 border-y border-white/5">
+<div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-4">
+<div class="text-center md:text-left">
+<p class="text-3xl font-extrabold text-white">2,400+</p>
+<p class="text-slate-400 text-sm font-medium">Verified Properties</p>
+</div>
+<div class="h-10 w-[1px] bg-white/10 hidden md:block"></div>
+<div class="text-center md:text-left">
+<p class="text-3xl font-extrabold text-white">$150M+</p>
+<p class="text-slate-400 text-sm font-medium">Securely Transacted</p>
+</div>
+<div class="h-10 w-[1px] bg-white/10 hidden md:block"></div>
+<div class="text-center md:text-left">
+<p class="text-3xl font-extrabold text-white">98%</p>
+<p class="text-slate-400 text-sm font-medium">Successful Closures</p>
+</div>
+<div class="h-10 w-[1px] bg-white/10 hidden md:block"></div>
+<div class="text-center md:text-left">
+<p class="text-3xl font-extrabold text-white">14</p>
+<p class="text-slate-400 text-sm font-medium">Checkpoints per Deal</p>
+</div>
+</div>
+</div>
+<main class="bg-pribec-gray w-full py-20 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="flex items-end justify-between mb-10">
+<div>
+<h2 class="text-3xl font-black tracking-tight text-pribec-navy">Featured Verified Listings</h2>
+<p class="text-slate-500 font-medium mt-2">Properties that have passed our rigorous 14-point due diligence check.</p>
+</div>
+<button class="hidden md:flex items-center gap-2 text-pribec-navy font-bold border-b-2 border-pribec-gold pb-1 hover:gap-3 transition-all">
+                    View All Inventory <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:shadow-pribec-navy/5 transition-all duration-300 relative">
+<div class="absolute inset-0 bg-pribec-navy/90 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+<span class="material-symbols-outlined text-green-400 text-5xl mb-3">task_alt</span>
+<h4 class="text-white font-bold text-xl mb-1">Due Diligence Passed</h4>
+<p class="text-slate-300 text-sm mb-6">Legal title, land survey, and owner ID verified.</p>
+<button class="bg-pribec-gold text-pribec-navy text-sm font-bold px-6 py-3 rounded-lg pointer-events-auto hover:bg-white transition-colors">
+                             View Progress Report
+                         </button>
+</div>
+<div class="relative h-64 overflow-hidden">
+<img alt="Luxury Villa" class="w-full h-full object-cover" data-alt="Luxury modern villa with glass walls" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute top-4 left-4 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-[14px]">verified</span> PRIBEC Verified
+                        </div>
+<div class="absolute bottom-4 left-4 bg-pribec-navy/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">
+                            14-Stage Pipeline Active
+                        </div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-black text-pribec-navy">$1,250,000</h3>
+<span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded">Residential</span>
+</div>
+<p class="text-slate-500 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">location_on</span>
+                            88 Sunset Boulevard, West Hills
+                        </p>
+<div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4">
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bed</span>
+<span class="text-sm font-bold">4</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bathtub</span>
+<span class="text-sm font-bold">3</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">square_foot</span>
+<span class="text-sm font-bold">280m²</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:shadow-pribec-navy/5 transition-all duration-300 relative">
+<div class="absolute inset-0 bg-pribec-navy/90 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+<span class="material-symbols-outlined text-green-400 text-5xl mb-3">task_alt</span>
+<h4 class="text-white font-bold text-xl mb-1">Due Diligence Passed</h4>
+<p class="text-slate-300 text-sm mb-6">Legal title, land survey, and owner ID verified.</p>
+<button class="bg-pribec-gold text-pribec-navy text-sm font-bold px-6 py-3 rounded-lg pointer-events-auto hover:bg-white transition-colors">
+                             View Progress Report
+                         </button>
+</div>
+<div class="relative h-64 overflow-hidden">
+<img alt="Modern Apartment" class="w-full h-full object-cover" data-alt="Modern stylish apartment complex with balconies" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+<div class="absolute top-4 left-4 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-[14px]">verified</span> PRIBEC Verified
+                        </div>
+<div class="absolute bottom-4 left-4 bg-pribec-navy/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">
+                            14-Stage Pipeline Active
+                        </div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-black text-pribec-navy">$450,000</h3>
+<span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded">New Build</span>
+</div>
+<p class="text-slate-500 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">location_on</span>
+                            204 Sky View, Downtown City
+                        </p>
+<div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4">
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bed</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bathtub</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">square_foot</span>
+<span class="text-sm font-bold">95m²</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-xl hover:shadow-pribec-navy/5 transition-all duration-300 relative">
+<div class="absolute inset-0 bg-pribec-navy/90 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+<span class="material-symbols-outlined text-green-400 text-5xl mb-3">task_alt</span>
+<h4 class="text-white font-bold text-xl mb-1">Due Diligence Passed</h4>
+<p class="text-slate-300 text-sm mb-6">Legal title, land survey, and owner ID verified.</p>
+<button class="bg-pribec-gold text-pribec-navy text-sm font-bold px-6 py-3 rounded-lg pointer-events-auto hover:bg-white transition-colors">
+                             View Progress Report
+                         </button>
+</div>
+<div class="relative h-64 overflow-hidden">
+<img alt="Family Home" class="w-full h-full object-cover" data-alt="Spacious suburban family home with lawn" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjVBqA8cw7-F0O53eMKknOpf5IYcn2_nF2k0_jS5v7aBxTEf_s3ldUA9jIUMxLcUn0ykjutHrPj2TmPec6SGLx5YDXfTZW7eb5FnPBJDYOxuqtWS_AcS8leUUuFVbC5ZVx7NPT38kakwED3I2cGNq3KBnZdKtSS4_TiOMW6tt5v6DPQfmgqJT1peHtJPmtC2A4-jhVxYtrv4KyjKcJfoBUH6ZKxai3oGE3N0ibSFp7cQJS4LH1diWpeqU6qQpxZ5eClbjz-EDWbQA"/>
+<div class="absolute top-4 left-4 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-md">
+<span class="material-symbols-outlined text-[14px]">verified</span> PRIBEC Verified
+                        </div>
+<div class="absolute bottom-4 left-4 bg-pribec-navy/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">
+                            14-Stage Pipeline Active
+                        </div>
+</div>
+<div class="p-6">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-black text-pribec-navy">$785,000</h3>
+<span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded">Residential</span>
+</div>
+<p class="text-slate-500 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">location_on</span>
+                            45 Green Oaks, Riverside Suburb
+                        </p>
+<div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4">
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bed</span>
+<span class="text-sm font-bold">3</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">bathtub</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-700">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">square_foot</span>
+<span class="text-sm font-bold">185m²</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<section class="bg-white py-16 border-t border-slate-100">
+<div class="max-w-7xl mx-auto px-6">
+<h2 class="text-2xl font-black text-pribec-navy mb-8 text-center">Top Rated Partners</h2>
+<div class="flex flex-wrap justify-center gap-8">
+<div class="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-pribec-gold/30 hover:shadow-lg transition-all min-w-[280px]">
+<div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Agent" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbzwjak5eIDQB0jE8ZY69KJvQZPSjUWeKN7RAfGqtVa3jsOFkLpRe8oO8mYUXqha5zplic1-m27ipoimZ5onmNoIL_qqxB-wPuufOum94Jjo8jj-mnhFdYknQV5fcXY22azDiSowrEuhIUdEXm4J8jMDLMNRbGa6g1nZQJUej2OfhyXTOC7EYgj1gTe1EDNdu-csO-ov7KBgGiORq8L0rLk0QEfGnfPPg7ZY92gZNu4_LMkFIhiemU5CVMPEyZ0c14flzIrYhDAKE"/>
+</div>
+<div>
+<h4 class="font-bold text-pribec-navy">Sarah Jenkins</h4>
+<div class="flex items-center gap-1 text-xs text-slate-500 mb-1">
+<span class="material-symbols-outlined text-pribec-gold text-[14px] filled-icon">star</span> 4.9 (120 deals)
+                        </div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-pribec-gold bg-pribec-navy px-2 py-0.5 rounded">Platinum Partner</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-pribec-gold/30 hover:shadow-lg transition-all min-w-[280px]">
+<div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Agent" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIgF17Tt_zv7Z71gjGJwBsXaNtn-8_tCFbW2bPhsPQYw3wrqFbpp-DgnyYtzYoYengT5wzc_RfObMl796T8BjKUDsSp5eYW5kKIGUIjd3UxLx4iiDah1qtlxZEEMo-vZeye82qnAhbx-F-7ZWPLTNXcmd2fHv_axwK1RcNYP0nkuX5O0b_GDUa_-jW6TkkDVcZNw7gqhA4Ikx8GPJBjWupezqkccBYiRB0X4iH7G6oilhj29ROak2Iz_hhLv_JiYsdUykGtdu3X8w"/>
+</div>
+<div>
+<h4 class="font-bold text-pribec-navy">David M.</h4>
+<div class="flex items-center gap-1 text-xs text-slate-500 mb-1">
+<span class="material-symbols-outlined text-pribec-gold text-[14px] filled-icon">star</span> 5.0 (85 deals)
+                        </div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-white bg-slate-400 px-2 py-0.5 rounded">Gold Partner</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-pribec-gold/30 hover:shadow-lg transition-all min-w-[280px]">
+<div class="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Agent" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADMS-FbISIpZmjVfewi3NmskPOnmya-Kp_KKhbFfw83cD2WIbDMgmA7HbuWkBwWwwmhleHa38Q-EXpkvEXbbFoN0B1X-6IXqY_BdCki4ZsVrikSXYYoNnwWzIyX0_S-ajtp1LpJkdt0QeSptqWQ0UD7hlEBrmDbB58g7yF_UXSQoVw7Zco4DFJRjfq5cLsLv15n1s4AYff-P7kLn1AsisKHYK4hbyYK4SwwyPKAkeFqfgcYxrBIuVHxmk2m1G7OI7nvZTqXmlZOj0"/>
+</div>
+<div>
+<h4 class="font-bold text-pribec-navy">Elena R.</h4>
+<div class="flex items-center gap-1 text-xs text-slate-500 mb-1">
+<span class="material-symbols-outlined text-pribec-gold text-[14px] filled-icon">star</span> 4.8 (210 deals)
+                        </div>
+<span class="text-[10px] font-bold uppercase tracking-wider text-pribec-gold bg-pribec-navy px-2 py-0.5 rounded">Platinum Partner</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<footer class="bg-pribec-navy text-slate-300 py-16 px-6">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-white/10 pb-12">
+<div class="space-y-6">
+<div class="flex items-center gap-3 text-white">
+<span class="material-symbols-outlined text-2xl text-pribec-gold filled-icon">security</span>
+<h2 class="text-xl font-extrabold">PRIBEC</h2>
+</div>
+<p class="text-sm leading-relaxed text-slate-400">Secure real estate transactions for the global citizen. Building trust through transparency and technology.</p>
+<div class="flex gap-4">
+<a class="size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-pribec-gold hover:text-pribec-navy transition-colors" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="size-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-pribec-gold hover:text-pribec-navy transition-colors" href="#"><span class="material-symbols-outlined">share</span></a>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Platform</h3>
+<ul class="space-y-3 text-sm">
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Verified Listings</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Escrow Process</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Construction Updates</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Legal Services</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Support</h3>
+<ul class="space-y-3 text-sm">
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Fraud Prevention</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Dispute Resolution</a></li>
+<li><a class="hover:text-pribec-gold transition-colors" href="#">Contact Us</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Stay Informed</h3>
+<p class="text-sm text-slate-400">Receive market reports and verified listing alerts.</p>
+<div class="flex flex-col gap-3">
+<input class="bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:ring-1 focus:ring-pribec-gold outline-none text-white placeholder-slate-500" placeholder="Email address" type="email"/>
+<button class="bg-pribec-gold text-pribec-navy font-bold py-3 rounded-lg hover:bg-white transition-all">Subscribe</button>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
+<p>© 2024 PRIBEC Trust Platform. All rights reserved.</p>
+<div class="flex gap-8">
+<a class="hover:text-white" href="#">Privacy Policy</a>
+<a class="hover:text-white" href="#">Terms of Service</a>
+<a class="hover:text-white" href="#">AML Compliance</a>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

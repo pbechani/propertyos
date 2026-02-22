@@ -172,7 +172,19 @@ export class UsersService {
     return rows.map((row) => row.name);
   }
 
-  async getLatestKycStatus(userId: string): Promise<string> {
+  async getUserPermissions(
+    userId: string,
+  ): Promise<Array<{ resource: string; action: string }>> {
+    return this.prisma.$queryRaw<Array<{ resource: string; action: string }>>`
+      SELECT DISTINCT p.resource, p.action
+      FROM identity.user_roles ur
+      JOIN identity.role_permissions rp ON rp.role_id = ur.role_id
+      JOIN identity.permissions p ON p.id = rp.permission_id
+      WHERE ur.user_id = ${userId}::uuid
+    `;
+  }
+
+  async getLatestKycStatus(userId: string): Promise<string | null> {
     const rows = await this.prisma.$queryRaw<Array<{ status: string }>>`
       SELECT status
       FROM identity.kyc_verifications
@@ -181,7 +193,7 @@ export class UsersService {
       LIMIT 1
     `;
 
-    return rows[0]?.status ?? 'pending';
+    return rows[0]?.status ?? null;
   }
 
   async markLastLogin(userId: string): Promise<void> {

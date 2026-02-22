@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Property Detail View - PropertyMarket</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .sticky-sidebar { position: sticky; top: 2rem; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<!-- Top Navigation Bar -->
+<header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl">domain</span>
+<h1 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">PropertyMarket</h1>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Buy</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Rent</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Sell</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Commercial</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary" placeholder="Search area, city..." type="text"/>
+</div>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-all">List Property</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-white dark:border-slate-800">
+<img class="h-full w-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB49U5u6fkqGjBvoFR27ZwuuBc1uoxISJofZbjOBifdibnWFKm5bsOAwwQF5IOCnxCvtXAKFypZh2oWeMOhZmS-hol8nI9BhJb07SGfvPbVd9QRTq_3gs5gaC3f40-_SPbXB5tQqpjGcQ-LsT6Vdwz0G8tnJ4U_2ztlMUBay38vQl5LzvQyOn5zGTBNo1ZY_RmZEbAUoz8LjSHVmOkuPxlxvvHm4lL19hn0ojsvVgE967ftN_onvKYBocvrw2iETvVRu5L8nYEOj0k"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<a class="hover:text-primary" href="#">Western Cape</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<a class="hover:text-primary" href="#">Cape Town</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">Sea Point</span>
+</nav>
+<!-- Image Gallery Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-3 h-[500px] mb-8 overflow-hidden rounded-xl">
+<div class="md:col-span-2 md:row-span-2 relative group cursor-pointer">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Main luxury property living room with view" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYOJ2jILO7U7oBNjhjHSurY9LNrJ3R1FP58YI3yl9KDly21jYgz1nOr8itbLJu3C8FBZtQEGteFJK6TdlwF54pIxgD9c2KrwpVn7SQWQYYD8s2KrLZnkM5O9qsMjDcjMrhkTVSklqKfVO9_6bJkAGvDeL7Bfwv3nr164sznBeP7EIcRZ_Jcb0R9yS3qC-7_TCYB08Dme0ZzstavJVawSCHEvrZHBbFk8wVC3nA8GMK9zjOHrDM3RPiYB2niTgGyLZbSA0UY8-sfdE"/>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Modern kitchen interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABNCwYWx-oAarQf6M5tm8GVfmJU44qmrZzDrmhZINSk5a40pSxX1cblc-2L1dz48vauOTktXklmy8rhbWh2f4GuC4m82XrE88eJfu8hOi7zZ7O-bvw98VD4Ez_rIWNkNm8a_PMBjuyiQKy003PjTBJWwRw6ZmLeROMXfnaLrYiBY6oadsTqK_AWw6uffdUVFXoLnGk-2_Q1EfvPpz5sFjEGlqYDLQGZzkecaJWa2bbB_ddtHaTePprKZfWEifblYImHj_XzDZuzcg"/>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Property balcony with sea view" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2bO333JjHrFUJD6R_qZTuJ8ngj47Nh84Twv-namMLx3T-U7DMQzbvvVtKlkmPwvrQAEYVTjXMP0K5TiK__aOjUQOIumhvAS_iNSfQUgm0asl63WKKbwo0hzU6MzcwFShgoFboxhS2MxYHsWyLnZk83hkVMHTmB90CxGI3n1stvq0MVS9zaITaDLCr1pKZTyFnShF3S9BzfNv0VpeDHcxiph9B60fpuQ9tYR81uPaMAMl3nKgklW_U4CtQgGT-rjBJEtdhgHcgcnc"/>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Primary bedroom suite" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWtJOtvmv3UNFkVHkZbRQnMhx4G9_mkXBY6TLb6Pg-10kt4NtqJIoIS70pmZApEWKsd7I9ouGxWzU9NlvWYI0vVudn7ktjhe5RAn0_KAK2q5G3T-7yhuQZoWJrdT_7-k3TydRk1vsp5cLCmxwMiq0QSef1mUiyMohKkECdqO-Owu7DcmwfjFRRGrRjsgjr_wKBMkkZneJbCTUXu5EFJuhAOLxt2zXLoEUwB0JvbkE_AeoiPllTKPvlFMD8Lu0uS5pbPEwPaapnB9A"/>
+</div>
+<div class="relative group cursor-pointer overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Modern luxury bathroom" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNgG5nzvKP5ckph4l99g7oPIu8ULH25iotiDjU2P-dwliy36r644ExEeE_jplhPk36siR1bdYODwAIzQrxDP5LQrYn53f092WYy3Op9OKWfVNrslrEwo3K7GoUwECfBwYqD4_-TP1HGVauyNeoX-P4Ax8UW31mbw0XCkQSAj7m-s4vN7UeVVpJ2RWkaycdEH2kM6TgEclE9SM8i82RTvSBbnIDzknpViMMgaBwp7EOYjSR9w3rdvXuB89YK2hN3osgYaA1gnvZ4dk"/>
+<button class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md text-slate-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg hover:bg-white transition-all">
+<span class="material-symbols-outlined text-lg">grid_view</span>
+                    View all photos
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<!-- Left Content Area -->
+<div class="lg:col-span-2 space-y-8">
+<!-- Header Info -->
+<div class="flex flex-col md:flex-row justify-between items-start gap-4">
+<div>
+<h2 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-2">R 12,500,000</h2>
+<p class="text-slate-500 dark:text-slate-400 text-lg flex items-center gap-1">
+<span class="material-symbols-outlined text-primary">location_on</span>
+                            42 Beach Road, Sea Point, Cape Town, 8005
+                        </p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">favorite</span>
+</button>
+<button class="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">share</span>
+</button>
+</div>
+</div>
+<!-- Key Features Bar -->
+<div class="flex flex-wrap gap-8 py-6 border-y border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">bed</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Bedrooms</p>
+<p class="text-lg font-bold">4 Bedrooms</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">bathtub</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Bathrooms</p>
+<p class="text-lg font-bold">3.5 Baths</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">directions_car</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Parking</p>
+<p class="text-lg font-bold">2 Garage</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">square_foot</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Floor Area</p>
+<p class="text-lg font-bold">280 m²</p>
+</div>
+</div>
+</div>
+<!-- Description Section -->
+<section>
+<h3 class="text-2xl font-bold mb-4">Property Description</h3>
+<div class="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 leading-relaxed space-y-4">
+<p>This exquisite contemporary residence in the heart of Sea Point offers an unparalleled coastal lifestyle. Designed with meticulous attention to detail, the property features expansive open-plan living areas that flow seamlessly onto a large terrace with breathtaking views of the Atlantic Ocean.</p>
+<p>The state-of-the-art kitchen is equipped with integrated high-end appliances and a separate scullery. Each of the four bedrooms is generously sized, with the primary suite boasting a private balcony, walk-in dressing room, and a luxurious en-suite bathroom.</p>
+<p>Perfect for entertaining, the home includes a dedicated media room and an automated smart home system controlling lighting, security, and climate across all levels.</p>
+</div>
+<button class="mt-4 text-primary font-bold flex items-center gap-1 hover:underline">
+                        Read more description
+                        <span class="material-symbols-outlined">expand_more</span>
+</button>
+</section>
+<!-- Amenities Grid -->
+<section>
+<h3 class="text-2xl font-bold mb-6">Features &amp; Amenities</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Air Conditioning</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Swimming Pool</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Security System</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Fiber Internet</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Pet Friendly</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<span>Gym</span>
+</div>
+</div>
+</section>
+<!-- Map Section -->
+<section>
+<div class="flex justify-between items-end mb-4">
+<h3 class="text-2xl font-bold">Location</h3>
+<p class="text-primary font-medium">Sea Point, Cape Town</p>
+</div>
+<div class="w-full h-80 rounded-xl overflow-hidden bg-slate-200 relative">
+<img class="w-full h-full object-cover" data-alt="Satellite map view of Sea Point area" data-location="Cape Town" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3KAXtAz5nNvrbUuPwS9adF-H-Crils9UR0abu28Q7n10sUHZG44i3J0b5taRstlZYDlW9tVWUvfIjpU-dcPKtITPdhjwjyJpbjZnDqGPWZp_j6lG0fUNfX91R8qNPnehSKpOyqpoUfT9LDm3Vh5G68n3ADV1o3S4cTTxQNCtO1ZB0vL1yKYITHPejq0yXn8PxhIJJ2t3TSVVIpZd8rxqxkEuGe-7HXz33ZlWvxWTCUlgxnn5V6BNzj_zlIz7BVG8RckNv9-akW9k"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-primary text-white p-3 rounded-full shadow-2xl animate-bounce">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Sidebar - Sticky Contact -->
+<aside class="lg:col-span-1">
+<div class="sticky-sidebar space-y-6">
+<!-- Agent Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-6">
+<div class="flex items-center gap-4 mb-6">
+<div class="h-16 w-16 rounded-full overflow-hidden border-2 border-slate-100 dark:border-slate-800">
+<img class="h-full w-full object-cover" data-alt="Real estate agent portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWna7o8_UE993kWZkoUBQVuuHY8xc7pR6C4hv30Nkp4pUAxZfqEtMuAsBzxFyDCqNhDNtjP4Zxrsdb4GPFyM3pHiX0-OEJu111GNdXG6ZmQHU9x4thi6FeONTFVoINOq61PSBZ1afS4kmVXEjrHwSH_mg1YOuOMyDRSsftJL9HXM2vtp2ZmHuV72DVrlmgiGrgobU6pV596Y7R4zaxvGZXPpkG4QAfUHtpxz9o8nvPp6LZweGvHGYF4GqjSFSRLgkuoqMzU-F_vbk"/>
+</div>
+<div>
+<div class="flex items-center gap-1">
+<h4 class="font-bold text-lg">David Mitchell</h4>
+<span class="material-symbols-outlined text-primary text-lg" title="Verified Agent">verified</span>
+</div>
+<p class="text-slate-500 text-sm">Platinum Realty Group</p>
+</div>
+</div>
+<form class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="John Doe" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="john@example.com" type="email"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="+27 00 000 0000" type="tel"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
+<textarea class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="I am interested in this property..." rows="4"></textarea>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20" type="submit">
+                                Send Inquiry
+                            </button>
+</form>
+<div class="mt-4 flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-lg">call</span>
+<span class="text-sm font-semibold">Call</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-lg">chat</span>
+<span class="text-sm font-semibold">WhatsApp</span>
+</button>
+</div>
+</div>
+<!-- Market Insights -->
+<div class="bg-primary/5 rounded-xl p-6 border border-primary/10">
+<h5 class="font-bold text-slate-900 dark:text-white mb-2">Market Insight</h5>
+<p class="text-sm text-slate-600 dark:text-slate-400">Properties in Sea Point have seen a 8.5% increase in value over the last 12 months. This listing is priced competitively for the area.</p>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-12 mt-20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+<div class="col-span-1 md:col-span-2">
+<div class="flex items-center gap-2 text-primary mb-4">
+<span class="material-symbols-outlined text-3xl">domain</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold tracking-tight">PropertyMarket</h2>
+</div>
+<p class="text-slate-500 max-w-sm">The leading marketplace for buying and renting luxury real estate in Southern Africa. Discover your dream home today.</p>
+</div>
+<div>
+<h6 class="font-bold text-slate-900 dark:text-white mb-4">Quick Links</h6>
+<ul class="space-y-2 text-slate-500 text-sm">
+<li><a class="hover:text-primary" href="#">Featured Listings</a></li>
+<li><a class="hover:text-primary" href="#">Recent Sales</a></li>
+<li><a class="hover:text-primary" href="#">Mortgage Calculator</a></li>
+<li><a class="hover:text-primary" href="#">Agent Directory</a></li>
+</ul>
+</div>
+<div>
+<h6 class="font-bold text-slate-900 dark:text-white mb-4">Legal</h6>
+<ul class="space-y-2 text-slate-500 text-sm">
+<li><a class="hover:text-primary" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary" href="#">Terms of Service</a></li>
+<li><a class="hover:text-primary" href="#">Cookie Policy</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
+<p>© 2024 PropertyMarket. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary" href="#">Facebook</a>
+<a class="hover:text-primary" href="#">Instagram</a>
+<a class="hover:text-primary" href="#">Twitter</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

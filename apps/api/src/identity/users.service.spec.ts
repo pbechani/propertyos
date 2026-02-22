@@ -26,8 +26,10 @@ describe('UsersService', () => {
     $executeRaw: jest.fn(),
   };
 
+  let module: TestingModule;
+
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
@@ -38,6 +40,12 @@ describe('UsersService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
+  });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -202,10 +210,10 @@ describe('UsersService', () => {
       expect(result).toBe('approved');
     });
 
-    it('defaults to pending when no KYC record exists', async () => {
+    it('returns null when no KYC record exists', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
       const result = await service.getLatestKycStatus(baseUser.id);
-      expect(result).toBe('pending');
+      expect(result).toBeNull();
     });
   });
 

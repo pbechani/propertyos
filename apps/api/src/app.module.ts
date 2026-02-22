@@ -10,6 +10,7 @@ import { MetricsModule } from './metrics';
 import { SentryModule, SentryExceptionFilter } from './common/sentry';
 import { envValidationSchema, envValidationOptions } from './config';
 import { IdentityModule } from './identity/identity.module';
+import { PropertyModule } from './property/property.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { IdentityModule } from './identity/identity.module';
     HealthModule,
     MetricsModule,
     IdentityModule,
+    PropertyModule,
   ],
   providers: [
     {

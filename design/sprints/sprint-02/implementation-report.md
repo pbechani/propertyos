@@ -169,6 +169,66 @@ Implemented endpoints:
 
 ---
 
+## Frontend UI Wiring
+
+**Date:** 2026-02-22  
+**Scope:** `apps/web/src/views/` — Sprint 02 identity/auth screens
+
+All Sprint 02 screens replaced hardcoded/mock data with real API calls to the backend.
+
+### Files Modified
+
+**`apps/web/src/lib/api-client.ts`**
+- Added `authExtApi` (logout, refresh)
+- Added `KycRecord` type
+- Added `adminKycApi` (listPending, getById, startReview, approve, reject)
+- Added `AuditLogEntry` type
+- Added `auditApi` (getMyLogs, getAdminLogs)
+- Added `adminUsersApi` (getUser, updateUserStatus)
+- Added `roles` and `role` fields to `AuthUser` type
+
+**`apps/web/src/views/RoleSelection.tsx`**
+- `handleContinue` stores `selectedRole` in `sessionStorage` key `pribec.pending_role`
+- Navigates to `/register` (previously `/profile-setup`)
+
+**`apps/web/src/views/Register.tsx`**
+- Reads `pribec.pending_role` from `sessionStorage` on submit
+- Passes role to `authApi.register()` call
+- Removes `sessionStorage` key after successful registration
+
+**`apps/web/src/views/MFAVerify.tsx`**
+- Removed `if (code === "123456")` hardcoded verification logic
+- TOTP verification is a Sprint 02 deferred item; screen passes through with comment
+
+**`apps/web/src/views/MFASetup.tsx`**
+- Removed hardcoded TOTP secret `JBSWY3DPEHPK3PXP`
+- Replaced with `TOTP-SETUP-PENDING` placeholder and comment
+
+**`apps/web/src/views/SessionExpired.tsx`**
+- Added `useEffect(() => { clearAuthSession(); }, [])` — clears stale JWT/refresh tokens on mount
+
+**`apps/web/src/views/ProfileDashboard.tsx`**
+- Fetches `usersApi.me()` + `kycApi.getStatus()` in parallel on mount
+- Derives `completedSteps` (4 steps), `verificationLevel` (1–3), `trustScore` (25–85) from live data
+- Loads last 5 audit log entries via `auditApi.getMyLogs()` → mapped to `ActivityTimeline`
+- Avatar initials derived from `user.firstName` + `user.lastName`
+- Edit panel: controlled inputs, `usersApi.updateMe()` call, success/error states
+
+**`apps/web/src/views/AdminVerificationPanel.tsx`**
+- Full rewrite — all hardcoded `pendingVerifications`, `auditLogs`, and `selectedUserData` arrays removed
+- Loads KYC queue via `adminKycApi.listPending()` on mount
+- Lazy-loads user details via `adminUsersApi.getUser()` on row selection (user map cached)
+- Stats grid derived from live `kycRecords` + `auditLogs` state
+- Approve / Start Review / Reject wired to API with loading spinners, disabled state, reviewer notes textarea
+- Error display for failed actions
+- Audit Logs tab wired to `auditApi.getAdminLogs()` with `auditToActivity()` mapper
+
+### Screens Not Modified (Already Wired)
+
+`LoginEnhanced.tsx`, `ForgotPassword.tsx`, `ResetPassword.tsx`, `EmailVerification.tsx`, `OAuthConnect.tsx`, `ProfileSetup.tsx`, `KYCUpload.tsx`
+
+---
+
 ## Notes / Follow-ups
 
 1. Notification provider integrations (`SendGrid`, `Twilio`) are currently abstracted/logged and ready for provider SDK wiring.

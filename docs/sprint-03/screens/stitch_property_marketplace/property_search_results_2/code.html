@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PRIBEC Verified Search Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            DEFAULT: "#0A1628",
+                            light: "#152642",
+                            dark: "#050B14"
+                        },
+                        gold: {
+                            DEFAULT: "#F5A623",
+                            light: "#FFB947",
+                            dark: "#D48806"
+                        },
+                        green: {
+                            DEFAULT: "#22C55E",
+                            light: "#4ADE80",
+                            dark: "#16A34A"
+                        },
+                        orange: {
+                            DEFAULT: "#F59E0B",
+                            light: "#FBBF24",
+                            dark: "#D97706"
+                        },
+                        "background-light": "#F8FAFC",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 font-display flex flex-col h-screen overflow-hidden">
+<header class="sticky top-0 z-50 w-full bg-navy text-white shadow-lg border-b border-navy-light shrink-0">
+<div class="w-full px-6 h-16 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-gold rounded flex items-center justify-center text-navy font-black text-xl">P</div>
+<h1 class="text-xl font-extrabold tracking-tight text-white">PRIBEC<span class="text-gold">.</span></h1>
+</div>
+<div class="hidden md:flex flex-1 max-w-xl items-center bg-navy-light rounded-lg border border-slate-700 px-3 py-2 mx-4 focus-within:ring-2 focus-within:ring-gold/50 transition-all">
+<span class="material-symbols-outlined text-slate-400 text-xl mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full text-white placeholder:text-slate-400" placeholder="Search city, neighborhood, or ZIP..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center gap-2 mr-4">
+<button class="px-3 py-1.5 rounded-full bg-navy-light border border-slate-700 text-xs font-medium hover:border-gold/50 hover:text-gold transition-colors">For Sale</button>
+<button class="px-3 py-1.5 rounded-full bg-navy-light border border-slate-700 text-xs font-medium hover:border-gold/50 hover:text-gold transition-colors">Price</button>
+<button class="px-3 py-1.5 rounded-full bg-navy-light border border-slate-700 text-xs font-medium hover:border-gold/50 hover:text-gold transition-colors">Beds</button>
+</div>
+<button class="hidden sm:flex items-center gap-2 text-gold hover:text-white transition-colors text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">bookmark</span>
+                Save Search
+            </button>
+<div class="h-8 w-px bg-slate-700 mx-1"></div>
+<div class="flex items-center gap-3 cursor-pointer hover:bg-navy-light p-1.5 rounded-lg transition-colors">
+<div class="w-8 h-8 rounded-full bg-slate-600 overflow-hidden border border-gold">
+<img class="w-full h-full object-cover" data-alt="User profile avatar smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9cUKB6emvSLkHosIGMkxbj7wBmmQg1HHVZq0INPGw9ZQsKZSXUXXRVo5KDJgUs2tT9q0brkyFDPXzqRBcjeBmlahiD6xeEoN036AoEInMgnyBIlAAKcSGXj-LSdXH4_rnv3gtdpoqfUz4TWzz2eQPQZRBLsbz_y7nKcY-oJQ3rJWVPfimN-kQ6970kHlpT2pL9kkRam-AuemINEXMYXQehSi5iMwT9Q2Eof9hVHGN2bIW0PLUAVwz1nsYcFgZmk3vb-dMwXv01h4"/>
+</div>
+<div class="hidden xl:block">
+<p class="text-xs font-bold text-white leading-tight">Dr. A. Ojo</p>
+<p class="text-[10px] text-slate-400 leading-tight">Verified Investor</p>
+</div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-80 bg-white border-r border-slate-200 overflow-y-auto hidden xl:block z-30 flex-shrink-0 pb-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+<div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+<h2 class="font-bold text-navy flex items-center gap-2">
+<span class="material-symbols-outlined">tune</span> Filters
+            </h2>
+<button class="text-xs font-semibold text-slate-500 hover:text-navy">Reset All</button>
+</div>
+<div class="p-5 space-y-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green filled">verified_user</span>
+<span class="text-sm font-bold text-navy">Verified Only</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-navy">lock</span>
+<span class="text-sm font-medium text-slate-700">Escrow Ready</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-navy"></div>
+</label>
+</div>
+<hr class="border-slate-100"/>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Property Type</h3>
+<div class="grid grid-cols-2 gap-2">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded border-slate-300 text-navy focus:ring-navy" type="checkbox"/>
+<span class="text-sm text-slate-600">House</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-slate-300 text-navy focus:ring-navy" type="checkbox"/>
+<span class="text-sm text-slate-600">Apartment</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-slate-300 text-navy focus:ring-navy" type="checkbox"/>
+<span class="text-sm text-slate-600">Land</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-slate-300 text-navy focus:ring-navy" type="checkbox"/>
+<span class="text-sm text-slate-600">Commercial</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Price Range</h3>
+<div class="flex items-center justify-between text-xs text-navy font-bold mb-2">
+<span>R 1M</span>
+<span>R 50M+</span>
+</div>
+<div class="relative h-2 bg-slate-200 rounded-full">
+<div class="absolute left-0 right-1/2 top-0 bottom-0 bg-navy rounded-full"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-navy rounded-full cursor-pointer shadow"></div>
+<div class="absolute right-1/2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-navy rounded-full cursor-pointer shadow"></div>
+</div>
+<div class="mt-3 flex gap-2">
+<input class="w-full text-xs border border-slate-300 rounded p-1.5" type="text" value="R 1,000,000"/>
+<input class="w-full text-xs border border-slate-300 rounded p-1.5" type="text" value="R 25,000,000"/>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Location Radius</h3>
+<select class="w-full text-sm border-slate-300 rounded-lg focus:ring-navy focus:border-navy">
+<option>+ 0 km</option>
+<option>+ 5 km</option>
+<option selected="">+ 10 km</option>
+<option>+ 20 km</option>
+</select>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Rooms</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-600">Bedrooms</span>
+<div class="flex items-center border border-slate-200 rounded-lg bg-slate-50">
+<button class="px-2 py-1 hover:bg-slate-200 rounded-l text-slate-500">-</button>
+<span class="px-3 text-sm font-semibold text-navy">3+</span>
+<button class="px-2 py-1 hover:bg-slate-200 rounded-r text-slate-500">+</button>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-600">Bathrooms</span>
+<div class="flex items-center border border-slate-200 rounded-lg bg-slate-50">
+<button class="px-2 py-1 hover:bg-slate-200 rounded-l text-slate-500">-</button>
+<span class="px-3 text-sm font-semibold text-navy">2+</span>
+<button class="px-2 py-1 hover:bg-slate-200 rounded-r text-slate-500">+</button>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Agent Tier</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 border border-transparent hover:border-slate-100">
+<input class="text-gold focus:ring-gold border-slate-300" name="agent_tier" type="radio"/>
+<span class="material-symbols-outlined text-gold text-lg">workspace_premium</span>
+<span class="text-sm font-medium text-slate-700">Gold Tier</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 border border-transparent hover:border-slate-100">
+<input class="text-slate-400 focus:ring-slate-400 border-slate-300" name="agent_tier" type="radio"/>
+<span class="material-symbols-outlined text-slate-400 text-lg">workspace_premium</span>
+<span class="text-sm font-medium text-slate-700">Silver Tier</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 border border-transparent hover:border-slate-100">
+<input class="text-orange-700 focus:ring-orange-700 border-slate-300" name="agent_tier" type="radio"/>
+<span class="material-symbols-outlined text-orange-700 text-lg">workspace_premium</span>
+<span class="text-sm font-medium text-slate-700">Bronze Tier</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Construction Stage</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1 bg-navy text-white text-xs rounded-full border border-navy">Completed</button>
+<button class="px-3 py-1 bg-white text-slate-600 text-xs rounded-full border border-slate-200 hover:border-navy">Off-Plan</button>
+<button class="px-3 py-1 bg-white text-slate-600 text-xs rounded-full border border-slate-200 hover:border-navy">Foundation</button>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+<div class="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green">check_circle</span>
+<h2 class="text-lg font-bold text-navy">142 Verified Properties Found</h2>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-500 font-medium">Sort by:</span>
+<select class="bg-slate-50 border-slate-200 rounded text-sm font-semibold focus:ring-navy focus:border-navy cursor-pointer py-1.5 pl-3 pr-8 text-navy">
+<option>Relevance</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+<option>Pipeline Stage</option>
+</select>
+</div>
+<div class="flex bg-slate-100 rounded p-1 border border-slate-200">
+<button class="p-1 rounded bg-white shadow-sm text-navy"><span class="material-symbols-outlined text-sm">grid_view</span></button>
+<button class="p-1 rounded hover:bg-white hover:shadow-sm text-slate-400"><span class="material-symbols-outlined text-sm">view_list</span></button>
+</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 items-center">
+<span class="text-xs font-semibold text-slate-400 uppercase tracking-wide mr-1">Applied:</span>
+<div class="flex items-center gap-1 bg-navy/5 text-navy border border-navy/10 px-2 py-1 rounded text-xs font-medium">
+                    Cape Town <button class="hover:text-red-500"><span class="material-symbols-outlined text-sm align-middle">close</span></button>
+</div>
+<div class="flex items-center gap-1 bg-green/10 text-green-700 border border-green/20 px-2 py-1 rounded text-xs font-medium">
+                    Verified Only <button class="hover:text-green-900"><span class="material-symbols-outlined text-sm align-middle">close</span></button>
+</div>
+<div class="flex items-center gap-1 bg-navy/5 text-navy border border-navy/10 px-2 py-1 rounded text-xs font-medium">
+                    R 5M - R 20M <button class="hover:text-red-500"><span class="material-symbols-outlined text-sm align-middle">close</span></button>
+</div>
+<button class="text-xs text-navy font-semibold hover:underline ml-2">Clear All</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6">
+<div class="bg-orange-50 border-l-4 border-orange p-4 mb-6 rounded shadow-sm flex items-start gap-3">
+<span class="material-symbols-outlined text-orange">warning</span>
+<div>
+<h4 class="text-sm font-bold text-orange-800">Fraud Alert: Unverified Listings Detected</h4>
+<p class="text-xs text-orange-700 mt-1">We have hidden 3 listings that did not pass our initial blockchain verification check. Always ensure the green verified shield is present before proceeding.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+<article class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg transition-all group flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Modern luxury villa with pool at sunset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtAD5257ehfpdHbtnHsNoS7sssYNDZwMBWNs2a3pVBVFEOiTIu_VEONhlXoWEMz149dai0Q_ODEUcR9m-hJtWBR-hQREkusLQx8jbhPNSSQyp0sl1_siI96B4JVCMUN2-QOVF2ELNqSoIdQa55fXJgFa3xqkOEacoQYEEDikRuhAIoRlyDILBA1DQFmLa6U8WrK6ipnl8xG8ZcPT6fjSh6Sb1bkdmRPobAXSKoMZvwmTpR2Pp54LNY9jWBdumoIT3AvT6Brhlypic"/>
+<div class="absolute top-4 left-4 bg-green/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white shadow-md flex items-center gap-1.5 border border-green-400">
+<span class="material-symbols-outlined text-base">shield</span> VERIFIED
+                        </div>
+<button class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 backdrop-blur hover:bg-white text-navy transition-colors shadow-sm border border-slate-100">
+<span class="material-symbols-outlined text-xl">bookmark_border</span>
+</button>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+<div class="flex justify-between items-end mb-1">
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Transaction Pipeline</span>
+<span class="text-[10px] font-bold text-gold">Stage 3 of 14</span>
+</div>
+<div class="w-full bg-slate-600/50 rounded-full h-1.5 backdrop-blur-sm">
+<div class="bg-gold h-1.5 rounded-full" style="width: 21%"></div>
+</div>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="text-2xl font-extrabold text-navy">R 12,500,000</h3>
+<p class="text-slate-500 text-sm font-medium mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400">location_on</span>
+                                    Camps Bay, Cape Town
+                                </p>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-2 mb-5 py-3 border-y border-slate-100">
+<div class="text-center">
+<span class="block text-lg font-bold text-slate-700">4</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Beds</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">3.5</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Baths</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">2</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Garage</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">340</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">m²</span>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-5">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Real estate agent headshot portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhuB9K5yx4FUM79Ig96cj0_H64dKeZPxWEMNjBzPL17Qtw3Fmtq4p-BCJWZB3UW_676Pb8ZsTwZtWIZQ0--1o0_UZXa8zbhXWCvZipOKxni1FCLnUm5fR2uNeIvt7rHqEWs0bd_WQdyrC8sQkE1x1ZjzQ0rBjxjZAYsdKS6ZvneXZ3v2nk7sTejnrY0dsHUyeY7CZ3UpLfWBywPMDhTIJwVFkbOeSfk3ZFts_iF3rJSgSOEizQu29EFgD3Qm-MUeK7GC9L-1y6VIQ"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-1">
+<span class="text-sm font-bold text-navy">Sarah Jenkins</span>
+<span class="material-symbols-outlined text-gold text-sm" title="Gold Tier Agent">workspace_premium</span>
+</div>
+<span class="text-xs text-slate-500">PRIBEC Premier Agent</span>
+</div>
+</div>
+<div class="mt-auto grid grid-cols-2 gap-3">
+<button class="bg-transparent border border-navy text-navy hover:bg-navy/5 text-sm font-bold py-2.5 rounded-lg transition-colors">
+                                Save
+                            </button>
+<button class="bg-navy text-white hover:bg-navy-light text-sm font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                                View Details
+                            </button>
+</div>
+</div>
+</article>
+<article class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg transition-all group flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Modern upscale apartment interior living room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU7SfkOAZJJWJtROdorPM2EfB7K1wZJca1uTySlWXWj4g93wVDJsoNC4LCvKV_OH26THvfqDnx-o2gFDHTYorM4yFhxi6geBfIIzzlQxXr06PRWX8DMv94zDmFZZUHcYSe6czLQY6KKeTHPUzcOQlmjDsR_vfSnerSwZgRq-4ROqAazj4B2TBb7Hngj-Ig9zllYDwIaOU5rQooENfa0AXBMTik-DsjIbXZiUXlwR8X8bc7qbuwGfpcLA2Ug3WijhMvzsH9nnV-O4w"/>
+<div class="absolute top-4 left-4 bg-green/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white shadow-md flex items-center gap-1.5 border border-green-400">
+<span class="material-symbols-outlined text-base">shield</span> VERIFIED
+                        </div>
+<button class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 backdrop-blur hover:bg-white text-navy transition-colors shadow-sm border border-slate-100">
+<span class="material-symbols-outlined text-xl">bookmark_border</span>
+</button>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+<div class="flex justify-between items-end mb-1">
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Transaction Pipeline</span>
+<span class="text-[10px] font-bold text-gold">Stage 1 of 14</span>
+</div>
+<div class="w-full bg-slate-600/50 rounded-full h-1.5 backdrop-blur-sm">
+<div class="bg-gold h-1.5 rounded-full" style="width: 7%"></div>
+</div>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="text-2xl font-extrabold text-navy">R 4,250,000</h3>
+<p class="text-slate-500 text-sm font-medium mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400">location_on</span>
+                                    Sea Point, Cape Town
+                                </p>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-2 mb-5 py-3 border-y border-slate-100">
+<div class="text-center">
+<span class="block text-lg font-bold text-slate-700">2</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Beds</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">2</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Baths</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">1</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Garage</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">112</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">m²</span>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-5">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Professional female realtor agent portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoBNSvIcEo9cAG_6S1QRdh5O5vkUwotAMMIif5nhXzqi6o22GpmqgkPFQqEuaCKUHtS3GTMuu-fd1zN9UAIkLMDL3ZAkOsWB7d1ZgBhCMndEB9mxmLPPNvnTBt9j5JynrRXCoD0fSqHPaCyW99LFaIjNixnPBDmmCUTz-4-oNC9wvIid15xrI3I41shpcql4yNCTnARNJiZaJtkDsBnAykgd2kAMZFuwIgXNH6UMFrZy29FP87Fc57ZDsV9vOINfj2Os_11F155aQ"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-1">
+<span class="text-sm font-bold text-navy">Michelle V.</span>
+<span class="material-symbols-outlined text-slate-400 text-sm" title="Silver Tier Agent">workspace_premium</span>
+</div>
+<span class="text-xs text-slate-500">Pam Golding Properties</span>
+</div>
+</div>
+<div class="mt-auto grid grid-cols-2 gap-3">
+<button class="bg-transparent border border-navy text-navy hover:bg-navy/5 text-sm font-bold py-2.5 rounded-lg transition-colors">
+                                Save
+                            </button>
+<button class="bg-navy text-white hover:bg-navy-light text-sm font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                                View Details
+                            </button>
+</div>
+</div>
+</article>
+<article class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-200 hover:shadow-lg transition-all group flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Traditional suburban house with white picket fence" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRKo0Fw8SdwIlMEIoTDeFedRrBcz_vz3ciOw5emLI0mkrj4cmeo2JlpCUbekchuVNdzOuS3Uky3sEMbHqezTRH9EAZZvcGArg9xULnCXim4S2WXqGolU4nvc-cGUwquNweIBBB1qo51mUvDLJITmjEDEcRqkWru-ThPB3MEu-1kHjZOhWY_ww9kFGtSDEMd4q3mT4ym1rj5TKdhh1iDrG2ku3xevxpSO-GDFQ3TMYDhOrDNU0uYbL3mrewfWMViYr_dG73T3hQyNY"/>
+<div class="absolute top-4 left-4 bg-green/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white shadow-md flex items-center gap-1.5 border border-green-400">
+<span class="material-symbols-outlined text-base">shield</span> VERIFIED
+                        </div>
+<button class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 backdrop-blur hover:bg-white text-navy transition-colors shadow-sm border border-slate-100">
+<span class="material-symbols-outlined text-xl">bookmark_border</span>
+</button>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-12">
+<div class="flex justify-between items-end mb-1">
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Transaction Pipeline</span>
+<span class="text-[10px] font-bold text-gold">Stage 5 of 14</span>
+</div>
+<div class="w-full bg-slate-600/50 rounded-full h-1.5 backdrop-blur-sm">
+<div class="bg-gold h-1.5 rounded-full" style="width: 35%"></div>
+</div>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h3 class="text-2xl font-extrabold text-navy">R 8,900,000</h3>
+<p class="text-slate-500 text-sm font-medium mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400">location_on</span>
+                                    Constantia, Cape Town
+                                </p>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-2 mb-5 py-3 border-y border-slate-100">
+<div class="text-center">
+<span class="block text-lg font-bold text-slate-700">5</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Beds</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">4</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Baths</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">3</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Garage</span>
+</div>
+<div class="text-center border-l border-slate-100">
+<span class="block text-lg font-bold text-slate-700">520</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">m²</span>
+</div>
+</div>
+<div class="flex items-center gap-3 mb-5">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">person</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-1">
+<span class="text-sm font-bold text-navy">Private Seller</span>
+</div>
+<span class="text-xs text-slate-500">Direct Listing</span>
+</div>
+</div>
+<div class="mt-auto grid grid-cols-2 gap-3">
+<button class="bg-transparent border border-navy text-navy hover:bg-navy/5 text-sm font-bold py-2.5 rounded-lg transition-colors">
+                                Save
+                            </button>
+<button class="bg-navy text-white hover:bg-navy-light text-sm font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                                View Details
+                            </button>
+</div>
+</div>
+</article>
+</div>
+<div class="flex items-center justify-center gap-2 py-4 mb-8">
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-navy hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg bg-navy text-white font-bold text-sm shadow-md">1</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-navy hover:bg-slate-50 hover:text-navy font-bold text-sm">2</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-navy hover:bg-slate-50 hover:text-navy font-bold text-sm">3</button>
+<span class="px-2 text-slate-400 font-bold">...</span>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 bg-white text-navy hover:bg-slate-50 hover:text-navy transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</main>
+<aside class="hidden xl:block w-[40%] relative bg-slate-100 border-l border-slate-200">
+<div class="absolute inset-0 z-0 bg-slate-200">
+<img class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="Satellite map view of coastal city neighborhood" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaoLJVoPMYAR6nhl5N2a0oejwcTiYe3UQpG_4f9w0cZ5Bg8q41iertt5ZP599fnhJI3md9ZDfuAqITucGxzC5TIEGAP1ZSdPLGOu2_twZdSswbHwIOXpu4V-DR_jAQuOlVEr2lM3mwEuMC-ydlEyH_crrWpBhJBBgzLvePGwKJ7_B7x4ntCzeQ6hGGFkUCEKioLxvN9ID0zT-VzqGWGRLSLYZtuWsK1Wws1SafawbTNSIFuH8lMsVZnm4nEDyfRg-IkwdZRTunDf8"/>
+</div>
+<div class="absolute top-4 right-4 flex flex-col gap-2 z-10">
+<button class="w-10 h-10 bg-white shadow-lg rounded-lg flex items-center justify-center text-navy hover:bg-slate-50 border border-slate-200">
+<span class="material-symbols-outlined">layers</span>
+</button>
+<div class="flex flex-col rounded-lg bg-white shadow-lg overflow-hidden border border-slate-200">
+<button class="w-10 h-10 flex items-center justify-center text-navy hover:bg-slate-50 border-b border-slate-100">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-navy hover:bg-slate-50">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+</div>
+<div class="absolute inset-0 pointer-events-none">
+<div class="absolute top-1/3 left-1/4 pointer-events-auto transform hover:scale-110 transition-transform cursor-pointer">
+<div class="bg-navy text-white text-xs font-bold w-10 h-10 rounded-full shadow-xl flex items-center justify-center border-2 border-white">
+                    42
+                </div>
+</div>
+<div class="absolute top-1/4 left-1/2 pointer-events-auto transform hover:-translate-y-1 transition-transform cursor-pointer group z-20">
+<div class="bg-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-[0_0_15px_rgba(245,166,35,0.6)] border-2 border-gold flex items-center gap-1 relative">
+                    R 12.5M
+                    <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-navy border-r-2 border-b-2 border-gold rotate-45"></div>
+</div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 bg-white rounded-lg shadow-xl p-2 hidden group-hover:block transition-all border border-slate-200">
+<img class="w-full h-24 object-cover rounded mb-2" data-alt="Small thumbnail of villa" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtrh7NJKqr-T_9-qkQI4VFQ3b2tfJbfh4PJSswWS7ZG9qqBNYA_m5tONjNTe7mFN8a65yAJC08oqVtBSDeBIb5z5Db3ZXETqt5d67-Ttd4-BmJupDL5GX3Fr0ZlzIMLqjJE2mI8pikXXZVei1H67SxsmW2kBLJs8mIJyBObgEaetey3rZn_bnOO7YbWLi0lsRy_5TZyu4uv7uw9BX3pq3JZqCe3_mL8-5UbHAVum6GsnjAZtjMRgpkJY12NaZXb_oS-MdIXimGBJI"/>
+<p class="text-[11px] font-bold text-navy truncate">Camps Bay Villa</p>
+<p class="text-[10px] text-slate-500">4 Bed • 3.5 Bath</p>
+</div>
+</div>
+<div class="absolute top-1/2 right-1/4 pointer-events-auto transform hover:-translate-y-1 transition-transform cursor-pointer group">
+<div class="bg-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg border border-white hover:bg-navy-light transition-colors relative">
+                    R 4.25M
+                    <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-navy border-r border-b border-white rotate-45 group-hover:bg-navy-light"></div>
+</div>
+</div>
+<div class="absolute bottom-1/3 left-1/3 pointer-events-auto transform hover:-translate-y-1 transition-transform cursor-pointer group">
+<div class="bg-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg border border-white hover:bg-navy-light transition-colors relative">
+                    R 8.9M
+                    <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-navy border-r border-b border-white rotate-45 group-hover:bg-navy-light"></div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+
+</body></html>

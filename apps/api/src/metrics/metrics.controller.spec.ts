@@ -5,9 +5,10 @@ import { MetricsService } from './metrics.service';
 describe('MetricsController', () => {
   let controller: MetricsController;
   let service: MetricsService;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [MetricsController],
       providers: [
         {
@@ -25,6 +26,12 @@ describe('MetricsController', () => {
 
     controller = module.get<MetricsController>(MetricsController);
     service = module.get<MetricsService>(MetricsService);
+  });
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
   });
 
   it('should be defined', () => {

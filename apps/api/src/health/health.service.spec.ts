@@ -8,8 +8,10 @@ describe('HealthService', () => {
   let prisma: PrismaService;
   let redis: RedisService;
 
+  let module: TestingModule;
+
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         HealthService,
         {
@@ -30,6 +32,12 @@ describe('HealthService', () => {
     service = module.get<HealthService>(HealthService);
     prisma = module.get<PrismaService>(PrismaService);
     redis = module.get<RedisService>(RedisService);
+  });
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
   });
 
   it('should be defined', () => {

@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { KycService } from './kyc.service';
 import { PrismaService } from '../database';
 
 describe('KycService', () => {
   let service: KycService;
+  let module: TestingModule;
 
   const mockPrisma = {
     $queryRaw: jest.fn(),
@@ -28,7 +29,7 @@ describe('KycService', () => {
   };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [KycService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
@@ -36,6 +37,12 @@ describe('KycService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
+  });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -136,11 +143,23 @@ describe('KycService', () => {
         status: 'under_review',
         reviewer_id: 'admin-uuid',
       };
-      mockPrisma.$queryRaw.mockResolvedValueOnce([updated]);
+      // first call: getById (state-guard); second call: UPDATE
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseKyc])
+        .mockResolvedValueOnce([updated]);
 
       const result = await service.startReview('kyc-uuid-0001', 'admin-uuid');
-      expect(result.status).toBe('under_review');
-      expect(result.reviewer_id).toBe('admin-uuid');
+      expect(result.record.status).toBe('under_review');
+      expect(result.record.reviewer_id).toBe('admin-uuid');
+      expect(result.previousStatus).toBe('pending');
+    });
+
+    it('throws ConflictException if record is not in pending status', async () => {
+      const underReview = { ...baseKyc, status: 'under_review' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([underReview]);
+      await expect(
+        service.startReview('kyc-uuid-0001', 'admin-uuid'),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('throws NotFoundException if KYC record does not exist', async () => {
@@ -161,14 +180,44 @@ describe('KycService', () => {
         reviewer_id: 'admin-uuid',
         reviewed_at: new Date(),
       };
-      mockPrisma.$queryRaw.mockResolvedValueOnce([approved]);
+      // first call: getById; second call: UPDATE
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseKyc])
+        .mockResolvedValueOnce([approved]);
+
       const result = await service.approve(
         'kyc-uuid-0001',
         'admin-uuid',
         'All good',
       );
-      expect(result.status).toBe('approved');
-      expect(result.reviewer_id).toBe('admin-uuid');
+      expect(result.record.status).toBe('approved');
+      expect(result.record.reviewer_id).toBe('admin-uuid');
+      expect(result.previousStatus).toBe('pending');
+    });
+
+    it('allows approval from under_review status', async () => {
+      const underReview = { ...baseKyc, status: 'under_review' };
+      const approved = {
+        ...underReview,
+        status: 'approved',
+        reviewer_id: 'admin-uuid',
+        reviewed_at: new Date(),
+      };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([underReview])
+        .mockResolvedValueOnce([approved]);
+
+      const result = await service.approve('kyc-uuid-0001', 'admin-uuid');
+      expect(result.record.status).toBe('approved');
+      expect(result.previousStatus).toBe('under_review');
+    });
+
+    it('throws ConflictException when record is already approved', async () => {
+      const alreadyApproved = { ...baseKyc, status: 'approved' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([alreadyApproved]);
+      await expect(
+        service.approve('kyc-uuid-0001', 'admin-uuid'),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('throws NotFoundException when KYC row does not exist', async () => {
@@ -190,14 +239,27 @@ describe('KycService', () => {
         reviewer_notes: 'Document unclear',
         reviewed_at: new Date(),
       };
-      mockPrisma.$queryRaw.mockResolvedValueOnce([rejected]);
+      // first call: getById; second call: UPDATE
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseKyc])
+        .mockResolvedValueOnce([rejected]);
+
       const result = await service.reject(
         'kyc-uuid-0001',
         'admin-uuid',
         'Document unclear',
       );
-      expect(result.status).toBe('rejected');
-      expect(result.reviewer_notes).toBe('Document unclear');
+      expect(result.record.status).toBe('rejected');
+      expect(result.record.reviewer_notes).toBe('Document unclear');
+      expect(result.previousStatus).toBe('pending');
+    });
+
+    it('throws ConflictException when record is already rejected', async () => {
+      const alreadyRejected = { ...baseKyc, status: 'rejected' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([alreadyRejected]);
+      await expect(
+        service.reject('kyc-uuid-0001', 'admin-uuid'),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('throws NotFoundException when KYC row does not exist', async () => {

@@ -12,6 +12,7 @@ import { AuditService } from '../audit.service';
 import { NotificationService } from '../notification.service';
 import { RedisService } from '../../cache';
 import { PrismaService } from '../../database';
+import { OAuthVerificationService } from './oauth-verification.service';
 
 import * as bcrypt from 'bcrypt';
 
@@ -72,7 +73,7 @@ describe('AuthService', () => {
     create: jest.fn(),
     assignRole: jest.fn(),
     getUserRoleNames: jest.fn().mockResolvedValue(['buyer_seller']),
-    getLatestKycStatus: jest.fn().mockResolvedValue('pending'),
+    getLatestKycStatus: jest.fn().mockResolvedValue(null),
     markLastLogin: jest.fn(),
     markEmailVerified: jest.fn(),
     sanitizeUser: jest.fn((u) => ({ id: u.id, email: u.email })),
@@ -92,10 +93,22 @@ describe('AuthService', () => {
     sendSms: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockOAuthVerification = {
+    verify: jest.fn().mockResolvedValue({
+      providerUserId: 'google-sub-123',
+      email: EMAIL,
+      emailVerified: true,
+      firstName: 'Alice',
+      lastName: 'Smith',
+    }),
+  };
+
   const requestCtx = { ip: '127.0.0.1', userAgent: 'jest' };
 
+  let module: TestingModule;
+
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: ConfigService, useValue: mockConfig },
@@ -105,6 +118,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
         { provide: NotificationService, useValue: mockNotification },
+        { provide: OAuthVerificationService, useValue: mockOAuthVerification },
       ],
     }).compile();
 
@@ -112,6 +126,12 @@ describe('AuthService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
+  });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -326,6 +346,19 @@ describe('AuthService', () => {
 
       await expect(
         service.refresh('unknown-token', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when account is suspended', async () => {
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: 'rt-id', user_id: USER_ID, expires_at: futureDate, revoked_at: null },
+      ]);
+      mockPrisma.$executeRaw.mockResolvedValueOnce(1n); // revoke old token
+      mockUsers.findById.mockResolvedValueOnce({ ...baseUser, status: 'suspended' });
+
+      await expect(
+        service.refresh('suspended-user-token', requestCtx),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

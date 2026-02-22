@@ -2,7 +2,7 @@ export type JwtPayload = {
   sub: string;
   email: string;
   roles: string[];
-  kyc_status: string;
+  kyc_status: string | null;
 };
 
 export type AuthTokens = {

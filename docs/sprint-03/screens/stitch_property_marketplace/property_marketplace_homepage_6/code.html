@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Dashboard - Create New Property Listing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .map-placeholder {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased h-screen overflow-hidden">
+<div class="flex flex-col h-full">
+<header class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<div class="bg-primary text-white p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-xl">home_work</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight leading-none">PropMarket <span class="text-xs font-medium text-slate-400 ml-1">Agent Admin</span></h2>
+</div>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+<nav class="flex items-center gap-6">
+<a class="text-primary font-bold text-sm" href="#">Create Listing</a>
+<a class="text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-primary transition-colors" href="#">My Properties</a>
+<a class="text-slate-500 dark:text-slate-400 font-bold text-sm hover:text-primary transition-colors" href="#">Lead Manager</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
+<div class="text-right">
+<p class="text-xs font-bold text-slate-900 dark:text-white leading-none">James Wilson</p>
+<p class="text-[10px] text-slate-400 font-medium">Premier Agent</p>
+</div>
+<img alt="Agent profile" class="size-8 rounded-full border border-slate-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAFE4rr3sBN6CkRYlSe-7taiRlrf6HXcrpjoslgdycAQhq3KOZU1WZihXLz-DirYjnwwyxji_2245KCaCEvEQPPU91xhRS7I2tzM5urXW6arNv3I3J_6900h3Hhq0lpaC2nOYQMs-Ux-KR6rjHIiZeNPhQP9Pm8GUWHprQw__PLhwzSo4NGVZOef2o6SGTksPaUAMB2Ymc800SEJCQoGrvsoakFv3wInELSrVGTbJGoG7AgXfadyA_siJG3FsP1QODtG4oEiMQ1Hg"/>
+</div>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden">
+<div class="w-full lg:w-3/5 flex flex-col overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900">
+<section class="p-8 border-b border-slate-100 dark:border-slate-800">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h1 class="text-2xl font-black text-slate-900 dark:text-white">Listing Media</h1>
+<p class="text-slate-500 text-sm">Upload high-resolution photos and virtual tour videos.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined text-sm">video_camera_back</span>
+                                Add Video
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-sm">add_a_photo</span>
+                                Upload Photos
+                            </button>
+</div>
+</div>
+<div class="grid grid-cols-6 gap-4">
+<div class="col-span-4 row-span-2 relative group aspect-[4/3] rounded-2xl overflow-hidden border-2 border-primary/20 bg-slate-50 dark:bg-slate-800">
+<img alt="Main property view" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvAFVHF5ttmFn4--gQ1dpYq09u1L4Eyadgk1iRZOB0jOMgx3X6kVf4l_Ep2HfBn5bFRSZspJYqoYZH7LBCD0peqvT9SXVZmdK-HsWEYanuabIhVgT-PXvt-_kndSV3sHMU7uA6o1sC149ujkPAqcMQy1PXnn0l59XfzwNMU7gWIGOiF4F1kfxWKa-85c7DTBpo8Y5LCuhL6PJW2ZBZ-AhA8vYe8H0ULHg9P1DoCEo6oQ2TWYLYHdqXHL1FIGKCarIEkPm2R21v20w"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+<button class="size-10 bg-white text-slate-900 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-xl">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="size-10 bg-red-500 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-xl">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="absolute top-4 left-4 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Main Cover</div>
+</div>
+<div class="col-span-2 aspect-square relative group rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800">
+<img alt="Kitchen view" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white">drag_indicator</span>
+</div>
+</div>
+<div class="col-span-2 aspect-square relative group rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800">
+<img alt="Bedroom view" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined text-white">drag_indicator</span>
+</div>
+</div>
+<div class="col-span-2 aspect-square border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-3xl mb-1 group-hover:scale-110 transition-transform">add_circle</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Add More</span>
+</div>
+<div class="col-span-2 aspect-square border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-2xl">image</span>
+</div>
+<div class="col-span-2 aspect-square border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-2xl">image</span>
+</div>
+</div>
+</section>
+<section class="p-8 space-y-10">
+<div>
+<h2 class="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span>
+                            Property Information
+                        </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-xs font-black text-slate-400 uppercase tracking-widest">Listing Title</label>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 font-medium" placeholder="e.g. Modern Luxury Villa with Infinity Pool" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-black text-slate-400 uppercase tracking-widest">Price (USD)</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pl-8 pr-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 font-medium font-mono" placeholder="0.00" type="number"/>
+</div>
+</div>
+<div class="md:col-span-2 space-y-2">
+<label class="text-xs font-black text-slate-400 uppercase tracking-widest">Description</label>
+<textarea class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 font-medium resize-none" placeholder="Describe the property's unique selling points..." rows="4"></textarea>
+</div>
+</div>
+</div>
+<div>
+<h2 class="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">straighten</span>
+                            Specifications
+                        </h2>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2">
+<span class="material-symbols-outlined text-slate-400">bed</span>
+<label class="block text-[10px] font-black text-slate-400 uppercase">Bedrooms</label>
+<input class="w-full bg-transparent border-none p-0 text-lg font-bold text-slate-900 dark:text-white focus:ring-0" type="number" value="3"/>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2">
+<span class="material-symbols-outlined text-slate-400">bathtub</span>
+<label class="block text-[10px] font-black text-slate-400 uppercase">Bathrooms</label>
+<input class="w-full bg-transparent border-none p-0 text-lg font-bold text-slate-900 dark:text-white focus:ring-0" type="number" value="2"/>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2">
+<span class="material-symbols-outlined text-slate-400">directions_car</span>
+<label class="block text-[10px] font-black text-slate-400 uppercase">Parking</label>
+<input class="w-full bg-transparent border-none p-0 text-lg font-bold text-slate-900 dark:text-white focus:ring-0" type="number" value="1"/>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-2">
+<span class="material-symbols-outlined text-slate-400">square_foot</span>
+<label class="block text-[10px] font-black text-slate-400 uppercase">Area (m²)</label>
+<input class="w-full bg-transparent border-none p-0 text-lg font-bold text-slate-900 dark:text-white focus:ring-0" type="number" value="250"/>
+</div>
+</div>
+</div>
+<div class="pb-12">
+<h2 class="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">checklist</span>
+                            Features &amp; Amenities
+                        </h2>
+<div class="flex flex-wrap gap-3">
+<label class="cursor-pointer group">
+<input checked="" class="hidden peer" type="checkbox"/>
+<span class="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">pool</span> Swimming Pool
+                                </span>
+</label>
+<label class="cursor-pointer group">
+<input class="hidden peer" type="checkbox"/>
+<span class="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">garden_cart</span> Garden
+                                </span>
+</label>
+<label class="cursor-pointer group">
+<input checked="" class="hidden peer" type="checkbox"/>
+<span class="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">ac_unit</span> Air Conditioning
+                                </span>
+</label>
+<label class="cursor-pointer group">
+<input checked="" class="hidden peer" type="checkbox"/>
+<span class="px-5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">security</span> 24/7 Security
+                                </span>
+</label>
+<button class="px-5 py-2.5 rounded-full border-2 border-dashed border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-400 hover:text-primary hover:border-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span> Add Custom
+                            </button>
+</div>
+</div>
+</section>
+</div>
+<div class="hidden lg:flex flex-col flex-1 bg-slate-100 dark:bg-slate-950 relative border-l border-slate-200 dark:border-slate-800">
+<div class="absolute top-6 left-6 right-6 z-10 flex flex-col gap-4">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-2xl border-none shadow-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/30" placeholder="Pinpoint address on map..." type="text"/>
+</div>
+<div class="flex gap-2">
+<span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm">Lat: -33.9249</span>
+<span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 dark:border-slate-700 shadow-sm">Long: 18.4241</span>
+</div>
+</div>
+<div class="w-full h-full map-placeholder flex items-center justify-center relative group">
+<div class="absolute inset-0 bg-slate-200/20 pointer-events-none"></div>
+<div class="relative flex flex-col items-center animate-bounce">
+<div class="size-16 bg-primary rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-3xl">home</span>
+</div>
+<div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white -mt-1"></div>
+<div class="bg-white px-4 py-2 rounded-xl shadow-xl mt-2 border border-slate-100 min-w-max">
+<p class="text-xs font-black text-slate-900">Drag to adjust position</p>
+</div>
+</div>
+<div class="absolute bottom-6 right-6 flex flex-col gap-2">
+<button class="size-12 bg-white dark:bg-slate-900 rounded-xl shadow-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<div class="flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+<button class="size-12 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="size-12 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="h-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between z-50">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-2 text-xs font-bold text-emerald-500">
+<span class="size-2 bg-emerald-500 rounded-full"></span>
+                    Autosaved 2m ago
+                </span>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold transition-colors">Discard Draft</button>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-8 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                    Preview Listing
+                </button>
+<button class="bg-primary text-white font-black px-12 py-3 rounded-xl shadow-xl shadow-primary/30 hover:brightness-110 active:scale-95 transition-all">
+                    Publish Property
+                </button>
+</div>
+</footer>
+</div>
+
+</body></html>

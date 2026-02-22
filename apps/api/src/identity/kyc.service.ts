@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database';
 
 type KycRow = {
@@ -15,6 +15,11 @@ type KycRow = {
   reviewed_at: Date | null;
   submitted_at: Date;
   created_at: Date;
+};
+
+type KycUpdateResult = {
+  record: KycRow;
+  previousStatus: string;
 };
 
 @Injectable()
@@ -65,13 +70,14 @@ export class KycService {
     return rows[0] ?? null;
   }
 
-  async listPending(): Promise<KycRow[]> {
+  async listPending(limit = 50, offset = 0): Promise<KycRow[]> {
+    const safeLimit = Math.min(limit, 500);
     return this.prisma.$queryRaw`
       SELECT id, user_id, status, id_document_url, id_document_type, address_proof_url, business_registration_url, selfie_url, reviewer_id, reviewer_notes, reviewed_at, submitted_at, created_at
       FROM identity.kyc_verifications
       WHERE status IN ('pending', 'under_review')
       ORDER BY submitted_at ASC
-      LIMIT 200
+      LIMIT ${safeLimit} OFFSET ${offset}
     `;
   }
 
@@ -90,7 +96,15 @@ export class KycService {
     return rows[0];
   }
 
-  async startReview(id: string, reviewerId: string): Promise<KycRow> {
+  async startReview(id: string, reviewerId: string): Promise<KycUpdateResult> {
+    const existing = await this.getById(id);
+    if (existing.status !== 'pending') {
+      throw new ConflictException(
+        `Cannot start review: record is in '${existing.status}' status, expected 'pending'`,
+      );
+    }
+    const previousStatus = existing.status;
+
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
       SET status = 'under_review',
@@ -104,14 +118,22 @@ export class KycService {
       throw new NotFoundException('KYC verification not found');
     }
 
-    return rows[0];
+    return { record: rows[0], previousStatus };
   }
 
   async approve(
     id: string,
     reviewerId: string,
     reviewerNotes?: string,
-  ): Promise<KycRow> {
+  ): Promise<KycUpdateResult> {
+    const existing = await this.getById(id);
+    if (!['pending', 'under_review'].includes(existing.status)) {
+      throw new ConflictException(
+        `Cannot approve: record is in '${existing.status}' status`,
+      );
+    }
+    const previousStatus = existing.status;
+
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
       SET status = 'approved',
@@ -126,14 +148,22 @@ export class KycService {
       throw new NotFoundException('KYC verification not found');
     }
 
-    return rows[0];
+    return { record: rows[0], previousStatus };
   }
 
   async reject(
     id: string,
     reviewerId: string,
     reviewerNotes?: string,
-  ): Promise<KycRow> {
+  ): Promise<KycUpdateResult> {
+    const existing = await this.getById(id);
+    if (!['pending', 'under_review'].includes(existing.status)) {
+      throw new ConflictException(
+        `Cannot reject: record is in '${existing.status}' status`,
+      );
+    }
+    const previousStatus = existing.status;
+
     const rows = await this.prisma.$queryRaw<KycRow[]>`
       UPDATE identity.kyc_verifications
       SET status = 'rejected',
@@ -148,7 +178,7 @@ export class KycService {
       throw new NotFoundException('KYC verification not found');
     }
 
-    return rows[0];
+    return { record: rows[0], previousStatus };
   }
 
   sanitize(row: KycRow): Record<string, unknown> {

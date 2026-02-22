@@ -11,8 +11,9 @@ export class OAuthLoginDto {
   @MinLength(8)
   providerToken!: string;
 
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @IsOptional()
   @IsString()

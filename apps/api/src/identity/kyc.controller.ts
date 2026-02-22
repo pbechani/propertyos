@@ -4,8 +4,10 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   UploadedFiles,
   UseGuards,
@@ -16,6 +18,8 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from './rbac/jwt-auth.guard';
 import { RolesGuard } from './rbac/roles.guard';
 import { Roles } from './rbac/roles.decorator';
+import { PermissionsGuard } from './rbac/permissions.guard';
+import { Permissions } from './rbac/permissions.decorator';
 import { SubmitKycDto, ReviewKycDto } from './kyc.dto';
 import { KycService } from './kyc.service';
 import { DocumentStorageService } from './document-storage.service';
@@ -43,7 +47,7 @@ type UploadedFileMap = {
 
 @ApiTags('KYC')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @Controller('kyc')
 export class KycController {
   constructor(
@@ -53,6 +57,7 @@ export class KycController {
   ) {}
 
   @Post('submit')
+  @Permissions({ resource: 'kyc', action: 'submit' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -133,6 +138,7 @@ export class KycController {
   }
 
   @Get('status')
+  @Permissions({ resource: 'kyc', action: 'submit' })
   async status(@Req() req: RequestMeta): Promise<Record<string, unknown>> {
     const record = await this.kycService.getLatestByUser(req.user.sub);
     if (!record) {
@@ -147,7 +153,7 @@ export class KycController {
 
 @ApiTags('Admin KYC')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @Roles('admin')
 @Controller('admin/kyc')
 export class AdminKycController {
@@ -159,12 +165,17 @@ export class AdminKycController {
   ) {}
 
   @Get('pending')
-  async pending(): Promise<Record<string, unknown>[]> {
-    const rows = await this.kycService.listPending();
+  @Permissions({ resource: 'kyc', action: 'approve' })
+  async pending(
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ): Promise<Record<string, unknown>[]> {
+    const rows = await this.kycService.listPending(limit, offset);
     return rows.map((row) => this.kycService.sanitize(row));
   }
 
   @Get(':id')
+  @Permissions({ resource: 'kyc', action: 'approve' })
   async getOne(
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<Record<string, unknown>> {
@@ -173,11 +184,13 @@ export class AdminKycController {
   }
 
   @Post(':id/start-review')
+  @Permissions({ resource: 'kyc', action: 'approve' })
   async startReview(
     @Req() req: RequestMeta,
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<Record<string, unknown>> {
-    const updated = await this.kycService.startReview(id, req.user.sub);
+    const { record: updated, previousStatus } =
+      await this.kycService.startReview(id, req.user.sub);
 
     await this.auditService.log({
       eventId: 'kyc.under_review',
@@ -186,7 +199,7 @@ export class AdminKycController {
       action: 'start_review_kyc',
       resourceType: 'kyc_verification',
       resourceId: updated.id,
-      payload: { previous_status: 'pending', new_status: 'under_review' },
+      payload: { previous_status: previousStatus, new_status: 'under_review' },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });
@@ -195,12 +208,13 @@ export class AdminKycController {
   }
 
   @Post(':id/approve')
+  @Permissions({ resource: 'kyc', action: 'approve' })
   async approve(
     @Req() req: RequestMeta,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: ReviewKycDto,
   ): Promise<Record<string, unknown>> {
-    const updated = await this.kycService.approve(
+    const { record: updated, previousStatus } = await this.kycService.approve(
       id,
       req.user.sub,
       body.reviewerNotes,
@@ -225,7 +239,7 @@ export class AdminKycController {
       action: 'approve_kyc',
       resourceType: 'kyc_verification',
       resourceId: updated.id,
-      payload: { previous_status: 'pending', new_status: 'approved' },
+      payload: { previous_status: previousStatus, new_status: 'approved' },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });
@@ -234,12 +248,13 @@ export class AdminKycController {
   }
 
   @Post(':id/reject')
+  @Permissions({ resource: 'kyc', action: 'approve' })
   async reject(
     @Req() req: RequestMeta,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: ReviewKycDto,
   ): Promise<Record<string, unknown>> {
-    const updated = await this.kycService.reject(
+    const { record: updated, previousStatus } = await this.kycService.reject(
       id,
       req.user.sub,
       body.reviewerNotes,
@@ -264,7 +279,7 @@ export class AdminKycController {
       action: 'reject_kyc',
       resourceType: 'kyc_verification',
       resourceId: updated.id,
-      payload: { previous_status: 'pending', new_status: 'rejected' },
+      payload: { previous_status: previousStatus, new_status: 'rejected' },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });

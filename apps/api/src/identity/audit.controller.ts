@@ -3,6 +3,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from './rbac/jwt-auth.guard';
 import { RolesGuard } from './rbac/roles.guard';
 import { Roles } from './rbac/roles.decorator';
+import { PermissionsGuard } from './rbac/permissions.guard';
+import { Permissions } from './rbac/permissions.decorator';
 import { AuditService } from './audit.service';
 
 type RequestUser = {
@@ -11,13 +13,14 @@ type RequestUser = {
 
 @ApiTags('Audit')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @Controller()
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Roles('admin')
   @Get('admin/audit-logs')
+  @Permissions({ resource: 'users', action: 'full' })
   adminLogs(
     @Query('actor_id') actorId?: string,
     @Query('resource_type') resourceType?: string,
@@ -37,6 +40,7 @@ export class AuditController {
   }
 
   @Get('audit-logs/me')
+  @Permissions({ resource: 'users', action: 'self' })
   myLogs(
     @Req() req: { user: RequestUser },
     @Query('limit') limit?: string,

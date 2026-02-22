@@ -1,0 +1,982 @@
+import { useState } from "react";
+import { useParams, Link } from "react-router";
+import {
+  MapPin, Bed, Bath, Car, Maximize, Heart, Share2, Phone, MessageSquare,
+  ChevronLeft, CheckCircle2, MapPinned, Shield, AlertTriangle,
+  Calendar, Clock, FileText, History, Eye, Info, Flag, ChevronRight, X, Video, ZoomIn, ZoomOut
+} from "lucide-react";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+
+export default function PropertyDetailEnhanced() {
+  const { id } = useParams();
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [showFraudReport, setShowFraudReport] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleStep, setScheduleStep] = useState(1); // 1: Select type, 2: Select date/time, 3: Confirmation
+  const [viewingType, setViewingType] = useState("inPerson");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [viewerName, setViewerName] = useState("");
+  const [viewerEmail, setViewerEmail] = useState("");
+  const [viewerPhone, setViewerPhone] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(0);
+  const [carouselOffset, setCarouselOffset] = useState(0);
+
+  const property = {
+    title: "Contemporary Coastal Residence",
+    address: "4.2 Beach Road, Sea Point, Cape Town, 8005",
+    price: "R 12,500,000",
+    beds: 4,
+    baths: 3.5,
+    garage: 2,
+    floorArea: 280,
+    images: [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=400&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?w=400&h=300&fit=crop",
+    ],
+    description: `This exquisite contemporary residence in the heart of Sea Point offers an unparalleled coastal lifestyle. Designed with meticulous attention to detail, the property features expansive open-plan living areas that flow seamlessly onto a large terrace with breathtaking Atlantic Ocean views.
+
+The state-of-the-art kitchen is equipped with integrated high-end appliances and a separate scullery. Each of the four bedrooms is generously sized, with the primary suite boasting a private balcony, walk-in dressing room, and a luxurious en-suite bathroom.
+
+Perfect for entertaining, the home includes a dedicated media room and an automated smart home system controlling lighting, security, and climate across all levels.`,
+    features: [
+      { label: "Air Conditioning", icon: true },
+      { label: "Swimming Pool", icon: true },
+      { label: "Security System", icon: true },
+      { label: "Fiber Internet", icon: true },
+      { label: "Pet Friendly", icon: true },
+      { label: "Gym", icon: true },
+      { label: "Garden", icon: true },
+      { label: "Ocean View", icon: true },
+    ],
+    agent: {
+      id: "agent-001",
+      name: "David Mitchell",
+      title: "Platinum Realty Group",
+      verified: true,
+      trustScore: 98,
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop",
+    },
+    verification: {
+      status: "VERIFIED",
+      verifiedDate: "2024-02-15",
+      blockchainHash: "0x7a8f9e2c1d5b4a3c6e8f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d",
+    },
+    titleDeed: {
+      status: "CLEAR",
+      owner: "John & Mary Smith",
+      registrationNumber: "T12345/2020",
+      lastTransfer: "2020-05-12",
+    },
+    ownershipHistory: [
+      { date: "2020-05-12", owner: "John & Mary Smith", price: "R 10,200,000" },
+      { date: "2015-03-20", owner: "David Thompson", price: "R 7,800,000" },
+      { date: "2010-11-05", owner: "Sarah Williams", price: "R 5,400,000" },
+    ],
+    riskScore: {
+      overall: 92,
+      factors: [
+        { name: "Title Deed Verification", score: 100, status: "pass" },
+        { name: "Ownership History", score: 95, status: "pass" },
+        { name: "Property Valuation", score: 90, status: "pass" },
+        { name: "Neighborhood Safety", score: 85, status: "pass" },
+        { name: "Legal Compliance", score: 100, status: "pass" },
+      ]
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      {/* Back Button */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4">
+        <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Listings</span>
+        </Link>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Image Gallery */}
+            <div className="bg-white rounded-lg overflow-hidden">
+              <div className="relative group">
+                <img
+                  src={property.images[selectedImage]}
+                  alt="Main"
+                  className="w-full h-64 md:h-[500px] object-cover cursor-pointer"
+                  onClick={() => {
+                    setLightboxImage(selectedImage);
+                    setShowLightbox(true);
+                  }}
+                />
+                {/* Zoom Icon */}
+                <div className="absolute bottom-4 right-4 bg-white/90 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <ZoomIn className="w-5 h-5 text-gray-700" />
+                </div>
+                {/* Verification Badge Overlay */}
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-green-500 text-white flex items-center gap-2 px-4 py-2">
+                    <Shield className="w-4 h-4" />
+                    BLOCKCHAIN VERIFIED
+                  </Badge>
+                </div>
+                {/* Actions */}
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50">
+                    <Heart className="w-5 h-5" />
+                  </button>
+                  <button className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50">
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                </div>
+                {/* Image Counter */}
+                <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
+                  {selectedImage + 1} / {property.images.length}
+                </div>
+              </div>
+              
+              {/* Thumbnail Carousel */}
+              <div className="p-4 bg-gray-50 relative">
+                <div className="flex items-center gap-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCarouselOffset(Math.max(0, carouselOffset - 1))}
+                    disabled={carouselOffset === 0}
+                    className={`flex-shrink-0 p-2 rounded-lg transition-all ${
+                      carouselOffset === 0
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+                    }`}
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+
+                  {/* Thumbnails Container */}
+                  <div className="flex-1 overflow-hidden">
+                    <div 
+                      className="flex gap-2 transition-transform duration-300"
+                      style={{ transform: `translateX(-${carouselOffset * (100 / 4)}%)` }}
+                    >
+                      {property.images.map((image, idx) => (
+                        <div
+                          key={idx}
+                          className="flex-shrink-0"
+                          style={{ width: 'calc(25% - 6px)' }}
+                        >
+                          <div className="relative group/thumb">
+                            <img
+                              src={image}
+                              alt={`View ${idx + 1}`}
+                              className={`w-full h-16 md:h-20 object-cover rounded cursor-pointer border-2 transition-all ${
+                                selectedImage === idx 
+                                  ? "border-blue-500 ring-2 ring-blue-300" 
+                                  : "border-transparent hover:border-gray-300"
+                              }`}
+                              onClick={() => setSelectedImage(idx)}
+                            />
+                            {/* Hover overlay with zoom icon */}
+                            <div 
+                              className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center rounded cursor-pointer"
+                              onClick={() => {
+                                setLightboxImage(idx);
+                                setShowLightbox(true);
+                              }}
+                            >
+                              <ZoomIn className="w-5 h-5 text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCarouselOffset(Math.min(property.images.length - 4, carouselOffset + 1))}
+                    disabled={carouselOffset >= property.images.length - 4}
+                    className={`flex-shrink-0 p-2 rounded-lg transition-all ${
+                      carouselOffset >= property.images.length - 4
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+                    }`}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Property Details */}
+            <Card className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <h1 className="text-2xl md:text-3xl font-semibold mb-2">{property.title}</h1>
+                  <p className="text-gray-600 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    {property.address}
+                  </p>
+                </div>
+                <div className="text-2xl md:text-3xl font-bold text-blue-600">{property.price}</div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <Bed className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm text-gray-600">BEDROOMS</div>
+                    <div className="font-semibold">{property.beds}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <Bath className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm text-gray-600">BATHROOMS</div>
+                    <div className="font-semibold">{property.baths}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Car className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm text-gray-600">PARKING</div>
+                    <div className="font-semibold">{property.garage}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-orange-100 rounded-lg">
+                    <Maximize className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs md:text-sm text-gray-600">FLOOR AREA</div>
+                    <div className="font-semibold">{property.floorArea} m²</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Verification & Risk Score */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Title Deed Status */}
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold">Title Deed Status</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Status</span>
+                    <Badge className="bg-green-100 text-green-700">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      {property.titleDeed.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Owner</span>
+                    <span className="font-medium text-sm">{property.titleDeed.owner}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Registration #</span>
+                    <span className="font-medium text-sm">{property.titleDeed.registrationNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Last Transfer</span>
+                    <span className="font-medium text-sm">{property.titleDeed.lastTransfer}</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Risk Score */}
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold">Trust & Risk Score</h3>
+                </div>
+                <div className="text-center mb-4">
+                  <div className="text-5xl font-bold text-green-600 mb-1">{property.riskScore.overall}</div>
+                  <div className="text-sm text-gray-600">Low Risk • Highly Trusted</div>
+                </div>
+                <div className="space-y-2">
+                  {property.riskScore.factors.slice(0, 3).map((factor, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{factor.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full" 
+                            style={{ width: `${factor.score}%` }}
+                          ></div>
+                        </div>
+                        <span className="font-medium w-8">{factor.score}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="outline" className="w-full mt-4 text-xs">
+                  <Info className="w-3 h-3 mr-2" />
+                  View Full Report
+                </Button>
+              </Card>
+            </div>
+
+            {/* Ownership History */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold">Ownership History</h3>
+                <Badge variant="secondary" className="ml-auto">
+                  <Eye className="w-3 h-3 mr-1" />
+                  Blockchain Verified
+                </Badge>
+              </div>
+              <div className="space-y-4">
+                {property.ownershipHistory.map((record, idx) => (
+                  <div key={idx} className="flex items-start gap-4 pb-4 border-b border-gray-200 last:border-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <History className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-1">
+                        <div className="font-medium">{record.owner}</div>
+                        <div className="font-bold text-blue-600">{record.price}</div>
+                      </div>
+                      <div className="text-sm text-gray-600">Transfer Date: {record.date}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Property Description */}
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Property Description</h2>
+              <div className="text-gray-700 whitespace-pre-line leading-relaxed text-sm md:text-base">
+                {property.description}
+              </div>
+            </Card>
+
+            {/* Features & Amenities */}
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Features & Amenities</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {property.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                    <span className="text-sm">{feature.label}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Location */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Location</h2>
+                <span className="text-sm text-blue-500">Sea Point, Cape Town</span>
+              </div>
+              <div className="bg-gray-200 rounded-lg h-64 md:h-80 flex items-center justify-center relative overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&h=300&fit=crop"
+                  alt="Map"
+                  className="w-full h-full object-cover opacity-60"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-blue-500 text-white p-4 rounded-full">
+                    <MapPinned className="w-8 h-8" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Fraud Report Section */}
+            <Card className="p-6 border-2 border-red-100">
+              <div className="flex items-start gap-3">
+                <Flag className="w-5 h-5 text-red-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Report Suspicious Activity</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Help us maintain marketplace integrity. If you notice anything suspicious about this listing, please report it.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                    onClick={() => setShowFraudReport(true)}
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Report Fraud or Issue
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Schedule Viewing Button - Prominent */}
+            <Card className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <Calendar className="w-8 h-8 mb-3" />
+              <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
+              <p className="text-blue-100 text-sm mb-4">Book a time to see this property in person</p>
+              <Button className="w-full bg-white text-blue-600 hover:bg-blue-50" onClick={() => setShowScheduleModal(true)}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Now
+              </Button>
+            </Card>
+
+            {/* Agent Card */}
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <img
+                  src={property.agent.image}
+                  alt={property.agent.name}
+                  className="w-14 h-14 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Link 
+                      to={`/agent-profile/${property.agent.id}`}
+                      className="font-semibold hover:text-blue-600 transition-colors"
+                    >
+                      {property.agent.name}
+                    </Link>
+                    {property.agent.verified && (
+                      <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600">{property.agent.title}</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Shield className="w-3 h-3 text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">Trust Score: {property.agent.trustScore}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="john@example.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="+27 00 000 0000"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600 mb-1 block">Message</label>
+                  <textarea
+                    placeholder="I am interested in this property..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                  Send Inquiry
+                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="flex items-center justify-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Call
+                  </Button>
+                  <Button variant="outline" className="flex items-center justify-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    WhatsApp
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Similar Properties */}
+            <Card className="p-6">
+              <h3 className="font-semibold mb-4">Similar Properties</h3>
+              <div className="space-y-4">
+                {[1, 2].map((item) => (
+                  <div key={item} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
+                    <img 
+                      src={`https://images.unsplash.com/photo-160${item}585154340-be6161a56a0c?w=100&h=80&fit=crop`}
+                      alt="Property"
+                      className="w-20 h-16 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">Modern Apartment</div>
+                      <div className="text-xs text-gray-600 truncate">Sea Point, Cape Town</div>
+                      <div className="font-bold text-blue-600 text-sm mt-1">R 4,200,000</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" className="w-full mt-4">
+                View More
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Fraud Report Modal */}
+      {showFraudReport && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-xl">Report Suspicious Activity</h3>
+              <button onClick={() => setShowFraudReport(false)} className="text-gray-400 hover:text-gray-600">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Issue Type</label>
+                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <option>Fake Listing</option>
+                  <option>Price Manipulation</option>
+                  <option>Misleading Information</option>
+                  <option>Ownership Dispute</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <textarea
+                  rows={4}
+                  placeholder="Please provide details about the issue..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={() => setShowFraudReport(false)} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+                <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                  Submit Report
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Schedule Viewing Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <Card className="max-w-2xl w-full p-6 my-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-6 h-6 text-blue-600" />
+                <h3 className="font-bold text-xl">Schedule a Viewing</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setScheduleStep(1);
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${scheduleStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  1
+                </div>
+                <div className={`w-16 h-1 ${scheduleStep >= 2 ? 'bg-blue-500' : 'bg-gray-200'}`}></div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${scheduleStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  2
+                </div>
+                <div className={`w-16 h-1 ${scheduleStep >= 3 ? 'bg-blue-500' : 'bg-gray-200'}`}></div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${scheduleStep >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  3
+                </div>
+                <div className={`w-16 h-1 ${scheduleStep >= 4 ? 'bg-blue-500' : 'bg-gray-200'}`}></div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${scheduleStep >= 4 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  4
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Step 1: Select Viewing Type */}
+              {scheduleStep === 1 && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Choose Viewing Type</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${viewingType === "inPerson" ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                      onClick={() => setViewingType("inPerson")}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="radio"
+                          name="viewingType"
+                          value="inPerson"
+                          className="w-5 h-5 mt-1"
+                          checked={viewingType === "inPerson"}
+                          onChange={() => setViewingType("inPerson")}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <MapPin className="w-5 h-5 text-blue-600" />
+                            <span className="font-semibold">In-Person Viewing</span>
+                          </div>
+                          <p className="text-sm text-gray-600">Visit the property with the agent and explore every detail in person</p>
+                          <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            <span>Duration: ~45 minutes</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div 
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${viewingType === "virtual" ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                      onClick={() => setViewingType("virtual")}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="radio"
+                          name="viewingType"
+                          value="virtual"
+                          className="w-5 h-5 mt-1"
+                          checked={viewingType === "virtual"}
+                          onChange={() => setViewingType("virtual")}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Video className="w-5 h-5 text-purple-600" />
+                            <span className="font-semibold">Virtual Tour</span>
+                          </div>
+                          <p className="text-sm text-gray-600">Join a live video call with the agent for a virtual walkthrough</p>
+                          <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            <span>Duration: ~30 minutes</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Select Date & Time */}
+              {scheduleStep === 2 && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Select Date & Time</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preferred Date</label>
+                      <input
+                        type="date"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preferred Time</label>
+                      <select
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                      >
+                        <option value="">Select time slot</option>
+                        <option value="09:00">09:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="14:00">02:00 PM</option>
+                        <option value="15:00">03:00 PM</option>
+                        <option value="16:00">04:00 PM</option>
+                        <option value="17:00">05:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-900">
+                        <p className="font-medium mb-1">Available Time Slots</p>
+                        <p className="text-blue-700">The agent typically responds within 2 hours to confirm your booking. You'll receive a confirmation email once approved.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Your Details */}
+              {scheduleStep === 3 && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-4">Your Contact Details</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Full Name *</label>
+                      <input
+                        type="text"
+                        placeholder="John Doe"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={viewerName}
+                        onChange={(e) => setViewerName(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Email Address *</label>
+                        <input
+                          type="email"
+                          placeholder="john@example.com"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={viewerEmail}
+                          onChange={(e) => setViewerEmail(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Phone Number *</label>
+                        <input
+                          type="tel"
+                          placeholder="+27 00 000 0000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={viewerPhone}
+                          onChange={(e) => setViewerPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Special Requests (Optional)</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Any specific areas you'd like to focus on during the viewing?"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        value={specialRequests}
+                        onChange={(e) => setSpecialRequests(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Confirmation */}
+              {scheduleStep === 4 && (
+                <div>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h4 className="text-xl font-bold mb-2">Review Your Booking</h4>
+                    <p className="text-gray-600 text-sm">Please review the details before confirming</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Property Summary */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h5 className="font-semibold mb-2">Property</h5>
+                      <p className="text-sm">{property.title}</p>
+                      <p className="text-sm text-gray-600">{property.address}</p>
+                    </div>
+
+                    {/* Viewing Details */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h5 className="font-semibold mb-3">Viewing Details</h5>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Type:</span>
+                          <span className="text-sm font-medium flex items-center gap-1">
+                            {viewingType === "inPerson" ? (
+                              <><MapPin className="w-4 h-4" /> In-Person Viewing</>
+                            ) : (
+                              <><Video className="w-4 h-4" /> Virtual Tour</>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Date:</span>
+                          <span className="text-sm font-medium">{selectedDate || "Not selected"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Time:</span>
+                          <span className="text-sm font-medium">{selectedTime || "Not selected"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Details */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h5 className="font-semibold mb-3">Your Details</h5>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Name:</span>
+                          <span className="text-sm font-medium">{viewerName || "Not provided"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Email:</span>
+                          <span className="text-sm font-medium">{viewerEmail || "Not provided"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Phone:</span>
+                          <span className="text-sm font-medium">{viewerPhone || "Not provided"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Agent Info */}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={property.agent.image}
+                          alt={property.agent.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="font-semibold">{property.agent.name}</p>
+                          <p className="text-sm text-gray-600">{property.agent.title}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-blue-900 mt-3">
+                        <strong>{property.agent.name}</strong> will contact you within 2 hours to confirm the viewing appointment.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-200">
+                {scheduleStep > 1 && scheduleStep < 4 && (
+                  <Button 
+                    onClick={() => setScheduleStep(scheduleStep - 1)} 
+                    variant="outline" 
+                    className="flex-1"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                )}
+                {scheduleStep < 4 && (
+                  <Button 
+                    onClick={() => setScheduleStep(scheduleStep + 1)} 
+                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    Continue
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+                {scheduleStep === 4 && (
+                  <Button 
+                    onClick={() => {
+                      setShowScheduleModal(false);
+                      setScheduleStep(1);
+                      // Here you would normally send the booking data to the backend
+                    }}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Confirm Booking
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Image Lightbox/Viewer Modal */}
+      {showLightbox && (
+        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center">
+          {/* Close Button */}
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {/* Image Counter */}
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-lg text-sm z-10">
+            {lightboxImage + 1} / {property.images.length}
+          </div>
+
+          {/* Previous Button */}
+          <button
+            onClick={() => setLightboxImage((lightboxImage - 1 + property.images.length) % property.images.length)}
+            className="absolute left-4 md:left-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={() => setLightboxImage((lightboxImage + 1) % property.images.length)}
+            className="absolute right-4 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          {/* Main Image */}
+          <div className="w-full h-full flex items-center justify-center p-4 md:p-16">
+            <img
+              src={property.images[lightboxImage].replace('w=400&h=300', 'w=1600&h=1200')}
+              alt={`Property view ${lightboxImage + 1}`}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+
+          {/* Thumbnail Strip */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex gap-2 overflow-x-auto justify-center">
+                {property.images.map((image, idx) => (
+                  <img
+                    key={idx}
+                    src={image}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className={`w-16 h-12 md:w-20 md:h-16 object-cover rounded cursor-pointer flex-shrink-0 transition-all ${
+                      lightboxImage === idx
+                        ? 'border-2 border-white ring-2 ring-white/50 opacity-100'
+                        : 'border-2 border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    onClick={() => setLightboxImage(idx)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Keyboard hint */}
+          <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 text-white/60 text-xs hidden md:block">
+            Use ← → arrow keys to navigate • ESC to close
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

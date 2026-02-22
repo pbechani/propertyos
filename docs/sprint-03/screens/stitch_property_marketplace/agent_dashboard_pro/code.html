@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Dashboard | PropMarket Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "accent": "#f59e0b",
+                        "success": "#10b981",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .funnel-step-1 { clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%); }
+        .funnel-step-2 { clip-path: polygon(5% 0, 95% 0, 90% 100%, 10% 100%); }
+        .funnel-step-3 { clip-path: polygon(10% 0, 90% 0, 85% 100%, 15% 100%); }
+        .funnel-step-4 { clip-path: polygon(15% 0, 85% 0, 80% 100%, 20% 100%); }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<header class="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md px-6 md:px-12 py-4">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-primary text-white rounded-lg p-2">
+<span class="material-symbols-outlined text-2xl">insights</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight">PropMarket <span class="text-primary">Pro</span></h2>
+</div>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-semibold hover:text-primary transition-colors" href="#">My Listings</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-semibold hover:text-primary transition-colors" href="#">Lead Manager</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-semibold hover:text-primary transition-colors" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 size-2 bg-red-500 rounded-full"></span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
+<div class="flex items-center gap-3 cursor-pointer group">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold leading-none mb-1">Alex Growth</p>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold leading-none">Senior Partner</p>
+</div>
+<img alt="Agent profile" class="size-10 rounded-full ring-2 ring-primary/20 group-hover:ring-primary transition-all" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpRldXHO2s1_WBZP5VA7V6fUonBkibT12S8eEfpitbSW6UNEyQHnzBgWClYn89mCR4e3FC1YmZs9lUldBbHYCwu1JYm2yMHp0GxUXbRWYHyVmhZOiROKX_Ig7FUvwSTPRHWCYVYPaNLqVQ3qe3rCRhHXKoEFR-TjLgeZarvB8FEoofQokbvubneFOMy5vojB8GU72fP1iwJ0hiliKe2Q_nBWZl8EhiHMXCbrllSpxMlEFi4KYUQeWe3KIdnt5-dwejsmUgwiljM84"/>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Good morning, Alex.</h1>
+<p class="text-slate-500 dark:text-slate-400 font-medium">You have <span class="text-primary font-bold">12 priority tasks</span> for today. Let's close some deals!</p>
+</div>
+<div class="flex gap-4">
+<div class="bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+<div class="size-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+<span class="material-symbols-outlined font-bold">trending_up</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-bold uppercase tracking-wider">MoM Growth</p>
+<p class="text-xl font-black text-slate-900 dark:text-white">+24.5%</p>
+</div>
+</div>
+</div>
+</div>
+<section class="mb-12">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-black flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">bolt</span>
+                    Today's Priorities
+                </h3>
+<button class="text-primary text-sm font-bold hover:underline">View Schedule</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border-l-4 border-primary shadow-sm hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-black px-2 py-1 bg-primary/10 text-primary rounded uppercase">Appointment</span>
+<span class="text-slate-400 text-xs">10:30 AM</span>
+</div>
+<h4 class="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-primary transition-colors">Viewing: Sunset Villa</h4>
+<p class="text-sm text-slate-500 mb-4 italic">Lead: Sarah Johnson</p>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg">Check In</button>
+<button class="size-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-sm">directions</span></button>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border-l-4 border-accent shadow-sm hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-black px-2 py-1 bg-accent/10 text-accent rounded uppercase">Follow-up</span>
+<span class="text-slate-400 text-xs">Due Now</span>
+</div>
+<h4 class="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-accent transition-colors">Call Michael Chen</h4>
+<p class="text-sm text-slate-500 mb-4 italic">Offer pending on Downtown Apt</p>
+<div class="flex gap-2">
+<button class="flex-1 bg-accent text-white text-xs font-bold py-2 rounded-lg">Call Now</button>
+<button class="size-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-accent"><span class="material-symbols-outlined text-sm">mail</span></button>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border-l-4 border-success shadow-sm hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-xs font-black px-2 py-1 bg-success/10 text-success rounded uppercase">Negotiation</span>
+<span class="text-slate-400 text-xs">2:00 PM</span>
+</div>
+<h4 class="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-success transition-colors">Contract Signing</h4>
+<p class="text-sm text-slate-500 mb-4 italic">Riverside Estate - $1.4M</p>
+<div class="flex gap-2">
+<button class="flex-1 bg-success text-white text-xs font-bold py-2 rounded-lg">Review Docs</button>
+<button class="size-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-400 hover:text-success"><span class="material-symbols-outlined text-sm">history_edu</span></button>
+</div>
+</div>
+<div class="bg-primary flex flex-col items-center justify-center text-center p-5 rounded-2xl shadow-lg shadow-primary/20 cursor-pointer hover:brightness-110 transition-all">
+<div class="size-12 rounded-full bg-white/20 flex items-center justify-center text-white mb-3">
+<span class="material-symbols-outlined text-2xl">add</span>
+</div>
+<p class="text-white font-black">New Task</p>
+<p class="text-white/70 text-xs mt-1">Add to your workflow</p>
+</div>
+</div>
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+<div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-black text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">filter_alt</span>
+                        Lead Funnel
+                    </h3>
+<select class="text-xs font-bold bg-slate-50 dark:bg-slate-800 border-none rounded-lg py-1 px-3">
+<option>This Month</option>
+<option>Last Quarter</option>
+</select>
+</div>
+<div class="space-y-1">
+<div class="funnel-step-1 h-12 bg-primary/20 flex items-center justify-between px-10 mb-1 hover:bg-primary/30 transition-colors cursor-pointer">
+<span class="text-xs font-bold">New Leads</span>
+<span class="font-black">1,248</span>
+</div>
+<div class="funnel-step-2 h-12 bg-primary/40 flex items-center justify-between px-14 mb-1 hover:bg-primary/50 transition-colors cursor-pointer">
+<span class="text-xs font-bold">Engaged</span>
+<span class="font-black">452</span>
+</div>
+<div class="funnel-step-3 h-12 bg-primary/70 flex items-center justify-between px-16 mb-1 hover:bg-primary/80 transition-colors text-white cursor-pointer">
+<span class="text-xs font-bold">Qualified</span>
+<span class="font-black">89</span>
+</div>
+<div class="funnel-step-4 h-12 bg-primary flex items-center justify-between px-20 text-white hover:brightness-110 transition-all cursor-pointer">
+<span class="text-xs font-bold">Closing</span>
+<span class="font-black">14</span>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800 grid grid-cols-2 gap-4">
+<div class="text-center">
+<p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Conv. Rate</p>
+<p class="text-xl font-black text-primary">7.2%</p>
+</div>
+<div class="text-center border-l border-slate-100 dark:border-slate-800">
+<p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Avg. Value</p>
+<p class="text-xl font-black text-primary">$845k</p>
+</div>
+</div>
+</div>
+<div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative min-h-[400px]">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-black text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">local_fire_department</span>
+                        Listing Hotspots
+                    </h3>
+<div class="flex gap-2">
+<span class="text-xs flex items-center gap-1 font-bold"><span class="size-2 rounded-full bg-red-500"></span> High Activity</span>
+</div>
+</div>
+<div class="absolute inset-x-6 bottom-6 top-20 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden group">
+<img alt="Map Area" class="w-full h-full object-cover opacity-30 grayscale group-hover:scale-105 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvAFVHF5ttmFn4--gQ1dpYq09u1L4Eyadgk1iRZOB0jOMgx3X6kVf4l_Ep2HfBn5bFRSZspJYqoYZH7LBCD0peqvT9SXVZmdK-HsWEYanuabIhVgT-PXvt-_kndSV3sHMU7uA6o1sC149ujkPAqcMQy1PXnn0l59XfzwNMU7gWIGOiF4F1kfxWKa-85c7DTBpo8Y5LCuhL6PJW2ZBZ-AhA8vYe8H0ULHg9P1DoCEo6oQ2TWYLYHdqXHL1FIGKCarIEkPm2R21v20w"/>
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+<div class="absolute top-1/4 left-1/3 size-12 flex items-center justify-center">
+<div class="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+<div class="relative size-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
+<div class="absolute -bottom-6 bg-white dark:bg-slate-900 px-2 py-0.5 rounded shadow text-[10px] font-bold whitespace-nowrap">West Hills (+42%)</div>
+</div>
+<div class="absolute top-1/2 left-2/3 size-12 flex items-center justify-center">
+<div class="absolute inset-0 bg-primary rounded-full animate-ping opacity-20"></div>
+<div class="relative size-4 bg-primary rounded-full border-2 border-white shadow-lg"></div>
+<div class="absolute -bottom-6 bg-white dark:bg-slate-900 px-2 py-0.5 rounded shadow text-[10px] font-bold whitespace-nowrap">Riverside (+18%)</div>
+</div>
+<div class="absolute bottom-1/4 left-1/2 size-12 flex items-center justify-center">
+<div class="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+<div class="relative size-4 bg-red-500 rounded-full border-2 border-white shadow-lg"></div>
+<div class="absolute -bottom-6 bg-white dark:bg-slate-900 px-2 py-0.5 rounded shadow text-[10px] font-bold whitespace-nowrap">Downtown (Peak)</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-8">
+<div>
+<h2 class="text-2xl font-black text-slate-900 dark:text-white">Active Listings</h2>
+<p class="text-sm text-slate-500">Monitor engagement and take action on your current stock</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-sm">filter_list</span> Filter
+                    </button>
+<button class="flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+<span class="material-symbols-outlined text-sm">add</span> New Listing
+                    </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="group bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all">
+<div class="flex flex-col lg:flex-row">
+<div class="lg:w-2/5 relative h-64 lg:h-auto overflow-hidden">
+<img alt="Luxury Villa" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+<span class="text-white text-xs font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">visibility</span> 1,402 views today</span>
+</div>
+</div>
+<div class="lg:w-3/5 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-black text-primary">$1,250,000</h3>
+<span class="flex items-center gap-1 text-success text-xs font-black uppercase"><span class="material-symbols-outlined text-xs">trending_up</span> High Interest</span>
+</div>
+<p class="text-slate-900 dark:text-white font-bold mb-1">88 Sunset Boulevard, West Hills</p>
+<div class="flex gap-4 text-slate-400 mb-6">
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">bed</span> 4</span>
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">bathtub</span> 3</span>
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">square_foot</span> 280m²</span>
+</div>
+<div class="grid grid-cols-3 gap-2 mb-6">
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Leads</p>
+<p class="font-black text-slate-900 dark:text-white">24</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Tours</p>
+<p class="font-black text-slate-900 dark:text-white">12</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Offers</p>
+<p class="font-black text-slate-900 dark:text-white">3</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3 mt-auto">
+<button class="flex-1 bg-primary text-white font-black py-3 rounded-xl hover:brightness-110 shadow-lg shadow-primary/10 transition-all text-sm">Contact Leads</button>
+<button class="px-6 border-2 border-primary text-primary font-black py-3 rounded-xl hover:bg-primary/5 transition-all text-sm">Boost Listing</button>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all">
+<div class="flex flex-col lg:flex-row">
+<div class="lg:w-2/5 relative h-64 lg:h-auto overflow-hidden">
+<img alt="Modern Apartment" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+<span class="text-white text-xs font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">visibility</span> 894 views today</span>
+</div>
+</div>
+<div class="lg:w-3/5 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-black text-primary">$450,000</h3>
+<span class="flex items-center gap-1 text-accent text-xs font-black uppercase"><span class="material-symbols-outlined text-xs">trending_flat</span> Normal Pace</span>
+</div>
+<p class="text-slate-900 dark:text-white font-bold mb-1">204 Sky View, Downtown City</p>
+<div class="flex gap-4 text-slate-400 mb-6">
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">bed</span> 2</span>
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">bathtub</span> 2</span>
+<span class="text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">square_foot</span> 95m²</span>
+</div>
+<div class="grid grid-cols-3 gap-2 mb-6">
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Leads</p>
+<p class="font-black text-slate-900 dark:text-white">8</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Tours</p>
+<p class="font-black text-slate-900 dark:text-white">3</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Offers</p>
+<p class="font-black text-slate-900 dark:text-white">0</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3 mt-auto">
+<button class="flex-1 bg-primary text-white font-black py-3 rounded-xl hover:brightness-110 shadow-lg shadow-primary/10 transition-all text-sm">Contact Leads</button>
+<button class="px-6 border-2 border-primary text-primary font-black py-3 rounded-xl hover:bg-primary/5 transition-all text-sm">Boost Listing</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-slate-900 text-slate-400 py-12 px-6">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 border-b border-slate-800 pb-12">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-primary text-white rounded-lg p-2">
+<span class="material-symbols-outlined text-2xl">insights</span>
+</div>
+<h2 class="text-white text-xl font-extrabold tracking-tight">PropMarket <span class="text-primary">Pro</span></h2>
+</div>
+<div class="flex gap-8 text-sm font-bold">
+<a class="hover:text-primary transition-colors" href="#">Documentation</a>
+<a class="hover:text-primary transition-colors" href="#">Agent Support</a>
+<a class="hover:text-primary transition-colors" href="#">Market Reports</a>
+<a class="hover:text-primary transition-colors" href="#">API Keys</a>
+</div>
+<div class="flex gap-4">
+<a class="size-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="size-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors" href="#"><span class="material-symbols-outlined">share</span></a>
+</div>
+</div>
+<div class="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium">
+<p>© 2024 PropMarket Real Estate Pro Dashboard. Powered by AgentIntelligence™.</p>
+<div class="flex gap-6">
+<a href="#">Security</a>
+<a href="#">Privacy</a>
+<a href="#">Terms</a>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

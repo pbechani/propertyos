@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Property Search Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-3">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl">domain</span>
+<h1 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Property24</h1>
+</div>
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 w-80">
+<span class="material-symbols-outlined text-slate-500 text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-slate-500" placeholder="Search Cape Town..." type="text"/>
+</div>
+</div>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Buy</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Rent</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Developments</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Commercial</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="hidden sm:flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold">
+                    List Property
+                </button>
+<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold">
+                    Login
+                </button>
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+<img class="w-full h-full object-cover" data-alt="User profile avatar smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9cUKB6emvSLkHosIGMkxbj7wBmmQg1HHVZq0INPGw9ZQsKZSXUXXRVo5KDJgUs2tT9q0brkyFDPXzqRBcjeBmlahiD6xeEoN036AoEInMgnyBIlAAKcSGXj-LSdXH4_rnv3gtdpoqfUz4TWzz2eQPQZRBLsbz_y7nKcY-oJQ3rJWVPfimN-kQ6970kHlpT2pL9kkRam-AuemINEXMYXQehSi5iMwT9Q2Eof9hVHGN2bIW0PLUAVwz1nsYcFgZmk3vb-dMwXv01h4"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Filter Bar -->
+<div class="sticky top-[65px] z-40 w-full bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-6 py-2">
+<div class="max-w-[1440px] mx-auto flex flex-wrap items-center gap-3">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-sm font-medium">
+                Price Range <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-sm font-medium">
+                Bedrooms <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-sm font-medium">
+                Property Type <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-sm font-medium">
+                Parking <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-semibold">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                More Filters
+            </button>
+<div class="ml-auto flex items-center gap-2">
+<span class="text-xs text-slate-500 font-medium">Sort by:</span>
+<select class="bg-transparent border-none text-sm font-semibold focus:ring-0 cursor-pointer pr-8 py-1">
+<option>Newest</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Main Content: Split Screen -->
+<main class="flex h-[calc(100vh-125px)] overflow-hidden">
+<!-- Left Column: Search Results List -->
+<section class="w-full lg:w-[45%] xl:w-[40%] overflow-y-auto px-6 py-6 hide-scrollbar bg-slate-50 dark:bg-slate-900/50">
+<div class="mb-6">
+<nav class="flex text-xs text-slate-500 mb-2 gap-1 items-center">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<a class="hover:text-primary" href="#">Western Cape</a>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-slate-900 dark:text-slate-100 font-semibold">Cape Town</span>
+</nav>
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Properties for Sale in Cape Town</h2>
+<p class="text-sm text-slate-500 font-medium mt-1">125 properties found matching your criteria</p>
+</div>
+<button class="flex items-center gap-1 text-primary text-sm font-bold border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10">
+<span class="material-symbols-outlined text-lg">notifications</span>
+                        Save Search
+                    </button>
+</div>
+</div>
+<!-- Property Cards Grid -->
+<div class="flex flex-col gap-6">
+<!-- Listing Card 1 -->
+<article class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 group cursor-pointer hover:shadow-md transition-shadow">
+<div class="flex flex-col md:flex-row h-full">
+<div class="relative w-full md:w-2/5 min-h-[220px]">
+<img class="w-full h-full object-cover" data-alt="Modern luxury villa with pool at sunset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtAD5257ehfpdHbtnHsNoS7sssYNDZwMBWNs2a3pVBVFEOiTIu_VEONhlXoWEMz149dai0Q_ODEUcR9m-hJtWBR-hQREkusLQx8jbhPNSSQyp0sl1_siI96B4JVCMUN2-QOVF2ELNqSoIdQa55fXJgFa3xqkOEacoQYEEDikRuhAIoRlyDILBA1DQFmLa6U8WrK6ipnl8xG8ZcPT6fjSh6Sb1bkdmRPobAXSKoMZvwmTpR2Pp54LNY9jWBdumoIT3AvT6Brhlypic"/>
+<div class="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-slate-900 dark:text-white shadow-sm">
+                                Premium Listing
+                            </div>
+<button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur hover:bg-white text-slate-900 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="flex-1 p-5 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-extrabold text-slate-900 dark:text-white">R 12,500,000</h3>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-slate-400">location_on</span>
+                                    Camps Bay, Cape Town, 8005
+                                </p>
+<div class="flex items-center gap-4 text-slate-700 dark:text-slate-300">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bed</span>
+<span class="text-sm font-bold">4</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bathtub</span>
+<span class="text-sm font-bold">3.5</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">directions_car</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">square_foot</span>
+<span class="text-sm font-bold">340 m²</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Real estate agent headshot portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhuB9K5yx4FUM79Ig96cj0_H64dKeZPxWEMNjBzPL17Qtw3Fmtq4p-BCJWZB3UW_676Pb8ZsTwZtWIZQ0--1o0_UZXa8zbhXWCvZipOKxni1FCLnUm5fR2uNeIvt7rHqEWs0bd_WQdyrC8sQkE1x1ZjzQ0rBjxjZAYsdKS6ZvneXZ3v2nk7sTejnrY0dsHUyeY7CZ3UpLfWBywPMDhTIJwVFkbOeSfk3ZFts_iF3rJSgSOEizQu29EFgD3Qm-MUeK7GC9L-1y6VIQ"/>
+</div>
+<span class="text-xs font-semibold text-slate-500">Listed by Remax</span>
+</div>
+<button class="bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                    View Details
+                                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Listing Card 2 -->
+<article class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 group cursor-pointer hover:shadow-md transition-shadow">
+<div class="flex flex-col md:flex-row h-full">
+<div class="relative w-full md:w-2/5 min-h-[220px]">
+<img class="w-full h-full object-cover" data-alt="Modern upscale apartment interior living room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU7SfkOAZJJWJtROdorPM2EfB7K1wZJca1uTySlWXWj4g93wVDJsoNC4LCvKV_OH26THvfqDnx-o2gFDHTYorM4yFhxi6geBfIIzzlQxXr06PRWX8DMv94zDmFZZUHcYSe6czLQY6KKeTHPUzcOQlmjDsR_vfSnerSwZgRq-4ROqAazj4B2TBb7Hngj-Ig9zllYDwIaOU5rQooENfa0AXBMTik-DsjIbXZiUXlwR8X8bc7qbuwGfpcLA2Ug3WijhMvzsH9nnV-O4w"/>
+<button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur hover:bg-white text-slate-900 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="flex-1 p-5 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-extrabold text-slate-900 dark:text-white">R 4,250,000</h3>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-slate-400">location_on</span>
+                                    Sea Point, Cape Town, 8005
+                                </p>
+<div class="flex items-center gap-4 text-slate-700 dark:text-slate-300">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bed</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bathtub</span>
+<span class="text-sm font-bold">2</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">directions_car</span>
+<span class="text-sm font-bold">1</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">square_foot</span>
+<span class="text-sm font-bold">112 m²</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional female realtor agent portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoBNSvIcEo9cAG_6S1QRdh5O5vkUwotAMMIif5nhXzqi6o22GpmqgkPFQqEuaCKUHtS3GTMuu-fd1zN9UAIkLMDL3ZAkOsWB7d1ZgBhCMndEB9mxmLPPNvnTBt9j5JynrRXCoD0fSqHPaCyW99LFaIjNixnPBDmmCUTz-4-oNC9wvIid15xrI3I41shpcql4yNCTnARNJiZaJtkDsBnAykgd2kAMZFuwIgXNH6UMFrZy29FP87Fc57ZDsV9vOINfj2Os_11F155aQ"/>
+</div>
+<span class="text-xs font-semibold text-slate-500">Listed by Pam Golding</span>
+</div>
+<button class="bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                    View Details
+                                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Listing Card 3 -->
+<article class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 group cursor-pointer hover:shadow-md transition-shadow">
+<div class="flex flex-col md:flex-row h-full">
+<div class="relative w-full md:w-2/5 min-h-[220px]">
+<img class="w-full h-full object-cover" data-alt="Traditional suburban house with white picket fence" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRKo0Fw8SdwIlMEIoTDeFedRrBcz_vz3ciOw5emLI0mkrj4cmeo2JlpCUbekchuVNdzOuS3Uky3sEMbHqezTRH9EAZZvcGArg9xULnCXim4S2WXqGolU4nvc-cGUwquNweIBBB1qo51mUvDLJITmjEDEcRqkWru-ThPB3MEu-1kHjZOhWY_ww9kFGtSDEMd4q3mT4ym1rj5TKdhh1iDrG2ku3xevxpSO-GDFQ3TMYDhOrDNU0uYbL3mrewfWMViYr_dG73T3hQyNY"/>
+<button class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur hover:bg-white text-slate-900 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="flex-1 p-5 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-2xl font-extrabold text-slate-900 dark:text-white">R 8,900,000</h3>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm font-medium mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-slate-400">location_on</span>
+                                    Constantia, Cape Town, 7806
+                                </p>
+<div class="flex items-center gap-4 text-slate-700 dark:text-slate-300">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bed</span>
+<span class="text-sm font-bold">5</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">bathtub</span>
+<span class="text-sm font-bold">4</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">directions_car</span>
+<span class="text-sm font-bold">3</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-slate-400">square_foot</span>
+<span class="text-sm font-bold">520 m²</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden text-center flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400 text-sm">person</span>
+</div>
+<span class="text-xs font-semibold text-slate-500">Private Seller</span>
+</div>
+<button class="bg-primary text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                                    View Details
+                                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Pagination -->
+<div class="flex items-center justify-center gap-2 py-8">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary font-bold text-sm">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary font-bold text-sm">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary font-bold text-sm">12</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Right Column: Interactive Map View -->
+<section class="hidden lg:block lg:flex-1 relative bg-slate-200 dark:bg-slate-900">
+<!-- Simulated Map Background -->
+<div class="absolute inset-0 z-0 bg-slate-300 dark:bg-slate-900" data-location="Cape Town" style="">
+<img class="w-full h-full object-cover opacity-60 mix-blend-multiply dark:mix-blend-overlay" data-alt="Satellite map view of coastal city neighborhood" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaoLJVoPMYAR6nhl5N2a0oejwcTiYe3UQpG_4f9w0cZ5Bg8q41iertt5ZP599fnhJI3md9ZDfuAqITucGxzC5TIEGAP1ZSdPLGOu2_twZdSswbHwIOXpu4V-DR_jAQuOlVEr2lM3mwEuMC-ydlEyH_crrWpBhJBBgzLvePGwKJ7_B7x4ntCzeQ6hGGFkUCEKioLxvN9ID0zT-VzqGWGRLSLYZtuWsK1Wws1SafawbTNSIFuH8lMsVZnm4nEDyfRg-IkwdZRTunDf8"/>
+</div>
+<!-- Map Overlay UI -->
+<div class="absolute inset-0 z-10 p-4 pointer-events-none">
+<!-- Floating Control: Map Style Toggle -->
+<div class="absolute top-4 right-4 flex flex-col gap-2 pointer-events-auto">
+<button class="w-10 h-10 bg-white dark:bg-slate-800 shadow-lg rounded-lg flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined">layers</span>
+</button>
+<button class="w-10 h-10 bg-white dark:bg-slate-800 shadow-lg rounded-lg flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<div class="flex flex-col rounded-lg bg-white dark:bg-slate-800 shadow-lg overflow-hidden mt-2">
+<button class="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-50 border-b border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-50">
+<span class="material-symbols-outlined">remove</span>
+</button>
+</div>
+</div>
+<!-- Price Markers -->
+<div class="pointer-events-auto">
+<!-- Marker 1: Active -->
+<div class="absolute top-1/4 left-1/3 group cursor-pointer">
+<div class="bg-primary text-white text-xs font-bold px-2.5 py-1.5 rounded-full shadow-lg flex items-center gap-1 animate-pulse hover:animate-none scale-110">
+                            R 12.5M
+                        </div>
+<div class="w-0.5 h-3 bg-primary mx-auto"></div>
+<!-- Mini Preview on Hover (Hidden by default) -->
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-2 hidden group-hover:block transition-all border border-slate-200 dark:border-slate-700">
+<img class="w-full h-24 object-cover rounded mb-2" data-alt="Small thumbnail of villa" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtrh7NJKqr-T_9-qkQI4VFQ3b2tfJbfh4PJSswWS7ZG9qqBNYA_m5tONjNTe7mFN8a65yAJC08oqVtBSDeBIb5z5Db3ZXETqt5d67-Ttd4-BmJupDL5GX3Fr0ZlzIMLqjJE2mI8pikXXZVei1H67SxsmW2kBLJs8mIJyBObgEaetey3rZn_bnOO7YbWLi0lsRy_5TZyu4uv7uw9BX3pq3JZqCe3_mL8-5UbHAVum6GsnjAZtjMRgpkJY12NaZXb_oS-MdIXimGBJI"/>
+<p class="text-[10px] font-bold text-slate-900 dark:text-white">Camps Bay Villa</p>
+<p class="text-[9px] text-slate-500">4 Bed • 3.5 Bath</p>
+</div>
+</div>
+<!-- Marker 2 -->
+<div class="absolute top-1/2 left-1/2 group cursor-pointer">
+<div class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold px-2.5 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                            R 4.25M
+                        </div>
+<div class="w-0.5 h-3 bg-slate-400 mx-auto"></div>
+</div>
+<!-- Marker 3 -->
+<div class="absolute bottom-1/3 left-1/4 group cursor-pointer">
+<div class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold px-2.5 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                            R 8.9M
+                        </div>
+<div class="w-0.5 h-3 bg-slate-400 mx-auto"></div>
+</div>
+<!-- Marker 4 -->
+<div class="absolute top-1/3 right-1/4 group cursor-pointer">
+<div class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold px-2.5 py-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-primary hover:text-white hover:border-primary transition-all">
+                            R 5.7M
+                        </div>
+<div class="w-0.5 h-3 bg-slate-400 mx-auto"></div>
+</div>
+</div>
+</div>
+<!-- Map Legend/Overlay -->
+<div class="absolute bottom-6 left-6 z-20 pointer-events-auto">
+<div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-lg p-3 shadow-lg border border-slate-200 dark:border-slate-700 max-w-[200px]">
+<h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Search Area</h4>
+<div class="flex items-center gap-2 mb-2">
+<span class="w-3 h-3 bg-primary rounded-full ring-4 ring-primary/20"></span>
+<span class="text-xs font-bold">Selected Area</span>
+</div>
+<p class="text-[10px] text-slate-500 leading-tight">Prices shown are list prices. Zoom in to see more detail.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Footer Navigation (Visible on small screens) -->
+<div class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-around z-50">
+<button class="flex flex-col items-center gap-0.5 text-primary">
+<span class="material-symbols-outlined">search</span>
+<span class="text-[10px] font-bold">Search</span>
+</button>
+<button class="flex flex-col items-center gap-0.5 text-slate-400">
+<span class="material-symbols-outlined">favorite</span>
+<span class="text-[10px] font-bold">Saved</span>
+</button>
+<button class="flex flex-col items-center gap-0.5 text-slate-400">
+<span class="material-symbols-outlined">map</span>
+<span class="text-[10px] font-bold">Map</span>
+</button>
+<button class="flex flex-col items-center gap-0.5 text-slate-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Account</span>
+</button>
+</div>
+</body></html>

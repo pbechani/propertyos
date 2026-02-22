@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Dashboard - PropMarket Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "background-light": "#f8fafc",
+                        "sidebar-bg": "#0f172a",
+                    },
+                    fontFamily: {
+                        "sans": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body { @apply bg-background-light text-slate-900 antialiased; }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab {
+            @apply border-primary text-primary;
+        }.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-hidden">
+<aside class="w-64 bg-sidebar-bg text-slate-400 flex flex-col shrink-0 hidden lg:flex">
+<div class="p-6 flex items-center gap-3 text-white border-b border-slate-800">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-white text-xl">home_work</span>
+</div>
+<span class="font-extrabold text-lg tracking-tight">PropMarket</span>
+</div>
+<nav class="flex-1 p-4 space-y-1">
+<p class="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Main Menu</p>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20" href="#">
+<span class="material-symbols-outlined text-xl">list_alt</span>
+<span class="text-sm font-semibold">My Properties</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-xl">group</span>
+<span class="text-sm font-semibold">Leads</span>
+<span class="ml-auto bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">12</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-xl">analytics</span>
+<span class="text-sm font-semibold">Performance</span>
+</a>
+<p class="px-3 py-2 mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-500">Account</p>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-xl">settings</span>
+<span class="text-sm font-semibold">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined text-xl">help</span>
+<span class="text-sm font-semibold">Help Center</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<div class="flex items-center gap-3 p-2 bg-slate-800/50 rounded-xl">
+<div class="size-9 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
+<img alt="Agent Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiMr5wPaoVMKBIhEsLWJ2s-roj86AGgjdHAKvtYmC47NqGG45jQ_7BZs2GKFvCXwDoRPnHPN9WAahUk5gHtRvcuOFEq1VL8wAMJiBilIcsU1Zs2O8fgZAFwjbq2xr_HuZ6vfj_KfaKy_8-JtHk8M2QbGmTLkIMNU8g2oLXdTEWo3meUhTdbdPb7dhB3WoRie5SBaS9IH9OyS1ve1uBgBo0Wrxh_j78JQXuRBqLyg4U3zLHXA3ByyzkpuVEmq7Ntu0_7qIwYl39hOA"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-white truncate">Marcus Sterling</p>
+<p class="text-[10px] text-slate-500 truncate">Senior Agent</p>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-lg">more_vert</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-h-screen relative overflow-hidden">
+<header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-100 border-none rounded-lg py-2 pl-10 text-sm focus:ring-2 focus:ring-primary/20" placeholder="Search properties by ID, address or owner..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white"></span>
+</button>
+<button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:brightness-110">
+<span class="material-symbols-outlined text-lg">add</span>
+                Add Property
+            </button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Property Management</h1>
+<p class="text-sm text-slate-500 font-medium">Manage your active listings and add new inventory.</p>
+</div>
+<div class="flex gap-4">
+<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-[160px]">
+<div class="size-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+<span class="material-symbols-outlined">sell</span>
+</div>
+<div>
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Active</p>
+<p class="text-xl font-extrabold">24</p>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 min-w-[160px]">
+<div class="size-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<div>
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Views</p>
+<p class="text-xl font-extrabold">1.4k</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<button class="bg-slate-100 text-slate-900 text-xs font-bold px-3 py-2 rounded-lg border border-slate-200">All Statuses</button>
+<button class="text-slate-500 text-xs font-bold px-3 py-2 rounded-lg hover:bg-slate-50">Active</button>
+<button class="text-slate-500 text-xs font-bold px-3 py-2 rounded-lg hover:bg-slate-50">Draft</button>
+<button class="text-slate-500 text-xs font-bold px-3 py-2 rounded-lg hover:bg-slate-50">Sold</button>
+</div>
+<div class="flex items-center gap-2">
+<select class="text-xs font-bold border-slate-200 rounded-lg py-2 focus:ring-primary/20">
+<option>Sort by: Newest</option>
+<option>Price: High to Low</option>
+<option>Price: Low to High</option>
+</select>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg border border-slate-200">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 border-b border-slate-200">
+<tr>
+<th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Property</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Details</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Price</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-wider">Status</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-14 rounded-lg overflow-hidden shrink-0">
+<img alt="Prop" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvAFVHF5ttmFn4--gQ1dpYq09u1L4Eyadgk1iRZOB0jOMgx3X6kVf4l_Ep2HfBn5bFRSZspJYqoYZH7LBCD0peqvT9SXVZmdK-HsWEYanuabIhVgT-PXvt-_kndSV3sHMU7uA6o1sC149ujkPAqcMQy1PXnn0l59XfzwNMU7gWIGOiF4F1kfxWKa-85c7DTBpo8Y5LCuhL6PJW2ZBZ-AhA8vYe8H0ULHg9P1DoCEo6oQ2TWYLYHdqXHL1FIGKCarIEkPm2R21v20w"/>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-900">Modern Sunset Villa</p>
+<p class="text-xs text-slate-500">88 Sunset Blvd, West Hills</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3 text-slate-500">
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">bed</span><span class="text-xs font-bold">4</span></div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">bathtub</span><span class="text-xs font-bold">3</span></div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">square_foot</span><span class="text-xs font-bold">280m²</span></div>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-slate-900 text-sm">$1,250,000</td>
+<td class="px-6 py-4">
+<span class="bg-green-100 text-green-700 text-[10px] font-black uppercase px-2 py-1 rounded-full">Active</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">edit</span></button>
+<button class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">delete</span></button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-14 rounded-lg overflow-hidden shrink-0">
+<img alt="Prop" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-900">Downtown Sky Loft</p>
+<p class="text-xs text-slate-500">204 Sky View, Downtown</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3 text-slate-500">
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">bed</span><span class="text-xs font-bold">2</span></div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">bathtub</span><span class="text-xs font-bold">2</span></div>
+<div class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">square_foot</span><span class="text-xs font-bold">95m²</span></div>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-slate-900 text-sm">$450,000</td>
+<td class="px-6 py-4">
+<span class="bg-blue-100 text-blue-700 text-[10px] font-black uppercase px-2 py-1 rounded-full">New Listing</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">edit</span></button>
+<button class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><span class="material-symbols-outlined text-lg">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-bold">
+<p>Showing 1 to 10 of 24 properties</p>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-slate-200 rounded-lg opacity-50 cursor-not-allowed">Previous</button>
+<button class="px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50">Next</button>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+<div class="bg-white w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
+<div class="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+<div>
+<h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Create New Listing</h2>
+<p class="text-xs text-slate-500 font-medium">Add a new property to the PropMarket inventory</p>
+</div>
+<button class="size-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="px-8 bg-slate-50/50 border-b border-slate-100 shrink-0">
+<div class="flex gap-8 overflow-x-auto no-scrollbar">
+<button class="py-4 border-b-2 active-tab text-sm font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">info</span> Basic Info
+                    </button>
+<button class="py-4 border-b-2 border-transparent text-slate-500 text-sm font-bold flex items-center gap-2 hover:text-slate-700">
+<span class="material-symbols-outlined text-lg">image</span> Media &amp; Gallery
+                    </button>
+<button class="py-4 border-b-2 border-transparent text-slate-500 text-sm font-bold flex items-center gap-2 hover:text-slate-700">
+<span class="material-symbols-outlined text-lg">map</span> Location &amp; Map
+                    </button>
+<button class="py-4 border-b-2 border-transparent text-slate-500 text-sm font-bold flex items-center gap-2 hover:text-slate-700">
+<span class="material-symbols-outlined text-lg">feature_search</span> Amenities
+                    </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+<div class="space-y-6">
+<h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Property Details</h3>
+<div class="grid grid-cols-1 gap-4">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Listing Title</label>
+<input class="w-full border-slate-200 rounded-xl py-3 focus:ring-primary/20 focus:border-primary" placeholder="e.g. Modern Villa with Sea View" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Property Type</label>
+<select class="w-full border-slate-200 rounded-xl py-3 focus:ring-primary/20 focus:border-primary">
+<option>House</option>
+<option>Apartment</option>
+<option>Penthouse</option>
+<option>Land</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Listing Price ($)</label>
+<input class="w-full border-slate-200 rounded-xl py-3 focus:ring-primary/20 focus:border-primary" placeholder="850,000" type="number"/>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Description</label>
+<textarea class="w-full border-slate-200 rounded-xl py-3 focus:ring-primary/20 focus:border-primary" placeholder="Describe the property's unique selling points..." rows="4"></textarea>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Map &amp; Location</h3>
+<div class="relative rounded-2xl overflow-hidden border border-slate-200 h-64 bg-slate-100 group">
+<img alt="Map UI" class="w-full h-full object-cover opacity-60 grayscale-[50%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaN53MMzuCC1r2EZMQWxvwwzrf5O5RBQzi_4-sGNkqYYtfvTJ_PCdFWVDefe-avvd-8yjGTnyQufjXfd_r5_tUh0BEULka-jq4ojldcXMNToQRyRvAQY6-1t3J60GIibFNotbKmqctEzEi2OayxiSBt0-CkG8QthNOXcwLeFno5TOqPUxk0o_AnQ1BHqWUsm3dn02C3iTCLa-lZ7JPG3eYJYLc6cOzESjbz2O11NjO3V3gjMuwoLHALiMshU-6kNWfbQGCRd_2qlc"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl flex flex-col items-center gap-2 border border-white">
+<span class="material-symbols-outlined text-red-500 text-4xl animate-bounce">location_on</span>
+<p class="text-[10px] font-bold text-slate-600 uppercase">Drag to pin location</p>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 right-4 bg-white/95 border border-slate-200 p-3 rounded-xl flex items-center gap-3 shadow-lg">
+<span class="material-symbols-outlined text-slate-400">my_location</span>
+<input class="flex-1 bg-transparent border-none p-0 text-sm focus:ring-0" placeholder="Start typing address..." type="text"/>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Latitude</label>
+<input class="w-full bg-slate-50 border-slate-200 rounded-xl py-3 text-slate-500 text-sm" readonly="" type="text" value="-33.9249"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Longitude</label>
+<input class="w-full bg-slate-50 border-slate-200 rounded-xl py-3 text-slate-500 text-sm" readonly="" type="text" value="18.4241"/>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-6 border-t border-slate-100 pt-8">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Media &amp; Assets</h3>
+<p class="text-xs text-slate-500 font-bold">Max file size: 50MB</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+<div class="md:col-span-2 border-2 border-dashed border-primary/30 bg-primary/5 rounded-2xl flex flex-col items-center justify-center py-10 hover:bg-primary/10 transition-all cursor-pointer group">
+<div class="size-12 rounded-full bg-primary/20 text-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">upload_file</span>
+</div>
+<p class="text-sm font-extrabold text-primary">Drop photos or videos</p>
+<p class="text-[10px] text-slate-400 font-bold uppercase mt-1">or click to browse</p>
+</div>
+<div class="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+<img alt="Preview" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<button class="size-8 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-white hover:text-red-500 transition-all"><span class="material-symbols-outlined text-lg">delete</span></button>
+<button class="size-8 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-white hover:text-primary transition-all"><span class="material-symbols-outlined text-lg">open_in_full</span></button>
+</div>
+<div class="absolute top-2 left-2 bg-primary text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full">Main</div>
+</div>
+<div class="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+<img alt="Preview" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjVBqA8cw7-F0O53eMKknOpf5IYcn2_nF2k0_jS5v7aBxTEf_s3ldUA9jIUMxLcUn0ykjutHrPj2TmPec6SGLx5YDXfTZW7eb5FnPBJDYOxuqtWS_AcS8leUUuFVbC5ZVx7NPT38kakwED3I2cGNq3KBnZdKtSS4_TiOMW6tt5v6DPQfmgqJT1peHtJPmtC2A4-jhVxYtrv4KyjKcJfoBUH6ZKxai3oGE3N0ibSFp7cQJS4LH1diWpeqU6qQpxZ5eClbjz-EDWbQA"/>
+<div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<button class="size-8 bg-white/20 backdrop-blur-md rounded-lg text-white hover:bg-white hover:text-red-500 transition-all"><span class="material-symbols-outlined text-lg">delete</span></button>
+</div>
+</div>
+<div class="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-sm border-dashed flex flex-col items-center justify-center text-slate-300">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<div class="relative group aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-sm border-dashed flex flex-col items-center justify-center text-slate-300">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+</div>
+</div>
+</div>
+<div class="px-8 py-5 border-t border-slate-100 flex items-center justify-end gap-4 bg-slate-50 shrink-0">
+<button class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors">Save as Draft</button>
+<button class="px-8 py-2.5 bg-primary text-white rounded-xl text-sm font-extrabold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">Publish Listing</button>
+</div>
+</div>
+</div>
+</main>
+
+</body></html>

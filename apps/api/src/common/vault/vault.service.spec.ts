@@ -4,6 +4,7 @@ import { VaultService } from './vault.service';
 
 describe('VaultService', () => {
   let service: VaultService;
+  let module: TestingModule;
 
   const createMockConfigService = (overrides: Record<string, any> = {}) => ({
     get: jest.fn((key: string, defaultValue?: any) => {
@@ -18,7 +19,7 @@ describe('VaultService', () => {
   });
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         VaultService,
         {
@@ -29,6 +30,12 @@ describe('VaultService', () => {
     }).compile();
 
     service = module.get<VaultService>(VaultService);
+  });
+
+  afterAll(async () => {
+    if (module) {
+      await module.close();
+    }
   });
 
   it('should be defined', () => {
@@ -49,9 +56,10 @@ describe('VaultService', () => {
 
   describe('with enabled Vault', () => {
     let enabledService: VaultService;
+    let enabledModule: TestingModule;
 
     beforeEach(async () => {
-      const module: TestingModule = await Test.createTestingModule({
+      enabledModule = await Test.createTestingModule({
         providers: [
           VaultService,
           {
@@ -61,7 +69,13 @@ describe('VaultService', () => {
         ],
       }).compile();
 
-      enabledService = module.get<VaultService>(VaultService);
+      enabledService = enabledModule.get<VaultService>(VaultService);
+    });
+
+    afterAll(async () => {
+      if (enabledModule) {
+        await enabledModule.close();
+      }
     });
 
     it('should be defined when enabled', () => {

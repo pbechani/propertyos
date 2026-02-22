@@ -1,0 +1,348 @@
+<html class="light" lang="en"><head></head><body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">```html
+
+
+
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FirstHome Portal - Your Guided Buyer Journey</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "secondary": "#10b981",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .step-active {
+            @apply border-primary text-primary bg-primary/5;
+        }
+    </style>
+
+
+<div class="relative flex min-h-screen flex-col group/design-root overflow-x-hidden">
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-6 md:px-20 py-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-primary text-white rounded-xl p-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">route</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-extrabold leading-tight tracking-tight">FirstHome</h2>
+</div>
+<nav class="hidden md:flex flex-1 justify-center">
+<div class="flex items-center gap-10">
+<a class="text-slate-700 dark:text-slate-300 text-sm font-bold hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg">explore</span> My Journey
+                </a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-bold hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg">favorite</span> Favorites
+                </a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-bold hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg">calendar_month</span> Viewings
+                </a>
+</div>
+</nav>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex flex-col items-end">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Buyer Level</span>
+<span class="text-sm font-bold text-primary">Explorer</span>
+</div>
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+<span class="material-symbols-outlined text-slate-500">person</span>
+</div>
+</div>
+</header>
+<section class="relative pt-12 pb-20 px-6 bg-gradient-to-b from-white to-background-light dark:from-slate-900 dark:to-background-dark">
+<div class="max-w-5xl mx-auto text-center space-y-12">
+<div class="space-y-4">
+<span class="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-black uppercase tracking-widest">First-Time Buyer Portal</span>
+<h1 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-[1.1]">Your journey to <span class="text-primary">home ownership</span>, made simple.</h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto">We'll guide you through every step of finding and buying your very first home.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-4 p-4 rounded-xl border-2 border-primary bg-primary/5">
+<div class="size-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl">1</div>
+<div class="text-left">
+<p class="text-xs font-black uppercase tracking-widest text-primary">Active Step</p>
+<p class="text-slate-900 dark:text-white font-bold">Explore Options</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl border-2 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors opacity-50">
+<div class="size-12 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center font-bold text-xl">2</div>
+<div class="text-left">
+<p class="text-xs font-black uppercase tracking-widest text-slate-400">Upcoming</p>
+<p class="text-slate-900 dark:text-white font-bold">Shortlist Homes</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl border-2 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors opacity-50">
+<div class="size-12 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center font-bold text-xl">3</div>
+<div class="text-left">
+<p class="text-xs font-black uppercase tracking-widest text-slate-400">Final Step</p>
+<p class="text-slate-900 dark:text-white font-bold">Book Viewings</p>
+</div>
+</div>
+</div>
+<div class="max-w-3xl mx-auto relative">
+<div class="flex flex-col md:flex-row gap-2 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border-none bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-primary/20 outline-none text-slate-800 dark:text-white font-medium" placeholder="Where would you like to live?" type="text"/>
+</div>
+<button class="bg-primary text-white font-bold px-8 py-4 rounded-xl hover:brightness-110 shadow-lg shadow-primary/30 transition-all">
+                        Find My Home
+                    </button>
+</div>
+</div>
+</div>
+</section>
+<main class="max-w-7xl mx-auto px-6 py-12 w-full">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+<div class="space-y-1">
+<h2 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Homes perfect for you</h2>
+<p class="text-slate-500 dark:text-slate-400 font-medium">Based on common first-time buyer preferences</p>
+</div>
+<div class="flex items-center gap-4">
+<select class="rounded-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold px-6 py-2">
+<option>Sort: Recommended</option>
+<option>Price: Low to High</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img alt="Starter Home" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute top-4 left-4 bg-secondary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">New for You</div>
+<button class="absolute top-4 right-4 size-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 transition-all shadow-md">
+<span class="material-symbols-outlined font-variation-settings-fill">favorite</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-2xl font-black text-slate-900 dark:text-white leading-none">$425,000</h3>
+<span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500">Pre-Approved?</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6 flex items-center gap-1">
+                        88 Sunset Boulevard, West Hills
+                    </p>
+<div class="flex items-center gap-6 mb-8 text-slate-600 dark:text-slate-300">
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bed</span><span class="text-sm font-bold">2</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bathtub</span><span class="text-sm font-bold">1</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">square_foot</span><span class="text-sm font-bold">85m²</span></div>
+</div>
+<div class="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800">
+<button class="w-full bg-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-primary/10">
+                            Next Step: Shortlist
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img alt="Cozy Apartment" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+<div class="absolute top-4 left-4 bg-primary text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Great Value</div>
+<button class="absolute top-4 right-4 size-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full flex items-center justify-center text-red-500 transition-all shadow-md">
+<span class="material-symbols-outlined font-variation-settings-fill" style="font-variation-settings: 'FILL' 1">favorite</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-2xl font-black text-slate-900 dark:text-white leading-none">$310,000</h3>
+<span class="px-2 py-1 rounded bg-secondary/10 text-[10px] font-bold text-secondary">Shortlisted</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6 flex items-center gap-1">
+                        204 Sky View, Downtown City
+                    </p>
+<div class="flex items-center gap-6 mb-8 text-slate-600 dark:text-slate-300">
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bed</span><span class="text-sm font-bold">1</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bathtub</span><span class="text-sm font-bold">1</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">square_foot</span><span class="text-sm font-bold">60m²</span></div>
+</div>
+<div class="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800">
+<button class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                            Next Step: Book Viewing
+                            <span class="material-symbols-outlined text-lg">calendar_month</span>
+</button>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all flex flex-col">
+<div class="relative h-64 overflow-hidden">
+<img alt="Family Starter" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjVBqA8cw7-F0O53eMKknOpf5IYcn2_nF2k0_jS5v7aBxTEf_s3ldUA9jIUMxLcUn0ykjutHrPj2TmPec6SGLx5YDXfTZW7eb5FnPBJDYOxuqtWS_AcS8leUUuFVbC5ZVx7NPT38kakwED3I2cGNq3KBnZdKtSS4_TiOMW6tt5v6DPQfmgqJT1peHtJPmtC2A4-jhVxYtrv4KyjKcJfoBUH6ZKxai3oGE3N0ibSFp7cQJS4LH1diWpeqU6qQpxZ5eClbjz-EDWbQA"/>
+<div class="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Just Listed</div>
+<button class="absolute top-4 right-4 size-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 transition-all shadow-md">
+<span class="material-symbols-outlined font-variation-settings-fill">favorite</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-2xl font-black text-slate-900 dark:text-white leading-none">$550,000</h3>
+<span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500">Entry Level</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6 flex items-center gap-1">
+                        45 Green Oaks, Riverside Suburb
+                    </p>
+<div class="flex items-center gap-6 mb-8 text-slate-600 dark:text-slate-300">
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bed</span><span class="text-sm font-bold">3</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">bathtub</span><span class="text-sm font-bold">2</span></div>
+<div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-slate-400 text-xl">square_foot</span><span class="text-sm font-bold">120m²</span></div>
+</div>
+<div class="mt-auto pt-6 border-t border-slate-50 dark:border-slate-800">
+<button class="w-full bg-primary text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-primary/10">
+                            Next Step: Shortlist
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<section class="bg-white dark:bg-slate-900 border-y border-slate-100 dark:border-slate-800 py-20 px-6">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+<div class="flex-1 space-y-8">
+<div class="space-y-4">
+<h2 class="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">Need help with the basics?</h2>
+<p class="text-slate-600 dark:text-slate-400 text-lg">Our "Home Buying 101" guide is designed to remove the stress and confusion for first-time buyers.</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="flex gap-4">
+<div class="size-12 rounded-2xl bg-primary/10 text-primary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Mortgage Prep</h4>
+<p class="text-sm text-slate-500">Understand your budget.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="size-12 rounded-2xl bg-secondary/10 text-secondary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Legal Steps</h4>
+<p class="text-sm text-slate-500">The paperwork simplified.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="size-12 rounded-2xl bg-orange-100 text-orange-600 flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Viewing Tips</h4>
+<p class="text-sm text-slate-500">What to look for on-site.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="size-12 rounded-2xl bg-purple-100 text-purple-600 flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">handshake</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Making Offers</h4>
+<p class="text-sm text-slate-500">How to win your first home.</p>
+</div>
+</div>
+</div>
+<button class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black px-10 py-4 rounded-2xl hover:opacity-90 transition-all flex items-center gap-2">
+                    Read the Full Guide <span class="material-symbols-outlined">menu_book</span>
+</button>
+</div>
+<div class="flex-1 relative">
+<div class="absolute -inset-10 bg-primary/10 blur-3xl rounded-full"></div>
+<div class="relative bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-700">
+<img alt="Friendly Guidance" class="rounded-[1.5rem]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiMr5wPaoVMKBIhEsLWJ2s-roj86AGgjdHAKvtYmC47NqGG45jQ_7BZs2GKFvCXwDoRPnHPN9WAahUk5gHtRvcuOFEq1VL8wAMJiBilIcsU1Zs2O8fgZAFwjbq2xr_HuZ6vfj_KfaKy_8-JtHk8M2QbGmTLkIMNU8g2oLXdTEWo3meUhTdbdPb7dhB3WoRie5SBaS9IH9OyS1ve1uBgBo0Wrxh_j78JQXuRBqLyg4U3zLHXA3ByyzkpuVEmq7Ntu0_7qIwYl39hOA"/>
+<div class="absolute -bottom-6 -right-6 bg-white dark:bg-slate-700 p-4 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-600 flex items-center gap-3">
+<div class="size-10 rounded-full bg-secondary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div>
+<p class="text-[10px] font-black uppercase text-slate-400">Agent On Standby</p>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Ask anything</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="max-w-4xl mx-auto px-6 py-24 text-center">
+<div class="bg-primary rounded-[3rem] p-12 text-white shadow-2xl shadow-primary/30 space-y-8">
+<h2 class="text-3xl font-black">Ready to take the first step?</h2>
+<p class="text-primary-50 font-medium text-lg max-w-lg mx-auto">Tell us a bit about your dream home and we'll pre-fill your inquiry forms for faster viewing bookings.</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<button class="bg-white text-primary font-black px-10 py-5 rounded-2xl hover:scale-105 transition-all">Start My Profile</button>
+<button class="bg-primary-600/50 backdrop-blur-sm border-2 border-white/20 text-white font-black px-10 py-5 rounded-2xl hover:bg-white/10 transition-all">View My Shortlist</button>
+</div>
+</div>
+</section>
+<footer class="bg-slate-900 text-slate-400 py-20 px-6">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
+<div class="space-y-6">
+<div class="flex items-center gap-3 text-white">
+<span class="material-symbols-outlined text-2xl text-primary">route</span>
+<h2 class="text-xl font-extrabold tracking-tight">FirstHome</h2>
+</div>
+<p class="text-sm leading-relaxed">The friendly property portal for first-time buyers. We guide you through the journey, one step at a time.</p>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Quick Start</h3>
+<ul class="space-y-4 text-sm">
+<li><a class="hover:text-primary transition-colors" href="#">Step 1: Explore</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Step 2: Shortlist</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Step 3: Book Viewings</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Buyer Resources</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Support</h3>
+<ul class="space-y-4 text-sm">
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact an Expert</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Mortgage Calculator</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Guide</a></li>
+</ul>
+</div>
+<div class="space-y-6">
+<h3 class="text-white font-bold text-lg">Weekly Advice</h3>
+<div class="flex flex-col gap-3">
+<input class="bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="Enter your email" type="email"/>
+<button class="bg-primary text-white font-bold py-3 rounded-xl hover:brightness-110 transition-all">Join 12k Buyers</button>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium uppercase tracking-widest">
+<p>© 2024 FirstHome Buyer Portal.</p>
+<div class="flex gap-8">
+<a class="hover:text-white" href="#">Terms</a>
+<a class="hover:text-white" href="#">Privacy</a>
+<a class="hover:text-white" href="#">Cookies</a>
+</div>
+</div>
+</footer>
+</div>
+
+```</body></html>

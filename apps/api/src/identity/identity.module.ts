@@ -5,9 +5,11 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { JwtStrategy } from './auth/jwt.strategy';
+import { OAuthVerificationService } from './auth/oauth-verification.service';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { RolesGuard } from './rbac/roles.guard';
+import { PermissionsGuard } from './rbac/permissions.guard';
 import { KycController, AdminKycController } from './kyc.controller';
 import { KycService } from './kyc.service';
 import { DocumentStorageService } from './document-storage.service';
@@ -40,9 +42,11 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
   ],
   providers: [
     AuthService,
+    OAuthVerificationService,
     UsersService,
     JwtStrategy,
     RolesGuard,
+    PermissionsGuard,
     KycService,
     DocumentStorageService,
     NotificationService,

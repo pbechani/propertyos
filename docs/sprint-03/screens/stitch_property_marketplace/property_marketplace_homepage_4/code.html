@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Dashboard - List New Property | PropMarket</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d8ff2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">body {
+    font-family: "Manrope", sans-serif
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.step-active {
+    @apply text-primary border-primary;
+    }
+.step-inactive {
+    @apply text-slate-400 border-slate-200 dark: border-slate-700;
+    }
+.map-placeholder {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBlGf0TJL7tP7r91QJyUp-eNZznE5pLzHWVZr23zpx5NEFf2YbhxYfeWlrv-qkIsI6TThAljDsZYYTwaLrtUiYvVXQSTipMFOcRql_lqss_4BzzVx7-Eyj5aTnDFocbuqEqBOcIDqwXcJ4jx21uYhPZ9WN4U9460Etn23CF7BoLWeKGZEFeNO_kyOanZA1VuT1Xkc62qTs1-4VbjOS_JTsjGdl0PgOXRiaQyZSM4KVeIIE4QrNAnnexInKNWocNymFQEiGqyXwgslE);
+    background-size: cover;
+    background-position: center
+    }</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen flex-col">
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md px-6 md:px-20 py-4">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-primary text-white rounded-lg p-2">
+<span class="material-symbols-outlined text-2xl">home_work</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-slate-900 dark:text-white text-xl font-extrabold leading-tight tracking-tight">PropMarket</h2>
+<span class="text-[10px] uppercase tracking-wider font-bold text-primary">Agent Portal</span>
+</div>
+</div>
+<nav class="hidden md:flex flex-1 justify-center">
+<div class="flex items-center gap-10">
+<a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="#">Manage Listings</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">Inquiries</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">Analytics</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors" href="#">Profile</a>
+</div>
+</nav>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end mr-2">
+<span class="text-sm font-bold">Alex Thompson</span>
+<span class="text-xs text-slate-500">Elite Realty Group</span>
+</div>
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-primary/20 overflow-hidden">
+<img alt="Agent profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmlGnBmxyE-MsTa0VpAHL5FZu-CMZ-XoYC0yT6QtPCiVdi3K8ktN9i-7tsxbjQkP2gnxbvmtYPojE9F58cWf_Xkta7S1KYJnoi8n5C6awf7S5GxiMDWgmizS1Wl_7GoROT3hugUSSQxd2RV8yl1A0HS-plUrqxRfnKbup3mMYyW_WX-pMwEIzVxp73soVgJkMxKPBCAto24FMVGYCTpeIGtkpf0lFg7lfNPxxsZ5oOHjCKsBCLeVFZAyMpb9HsqyL-Fp26TcU_qmg"/>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
+<div class="mb-12">
+<h1 class="text-3xl font-black text-slate-900 dark:text-white mb-2">Create New Property Listing</h1>
+<p class="text-slate-500 dark:text-slate-400">Fill in the details below to showcase your property to millions of buyers.</p>
+</div>
+<div class="mb-12">
+<div class="flex items-center justify-between relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-200 dark:bg-slate-800 -z-10"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-2/3 h-0.5 bg-primary -z-10 transition-all duration-500"></div>
+<div class="flex flex-col items-center gap-3">
+<div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+<span class="text-xs font-bold text-primary">Overview</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+<span class="text-xs font-bold text-primary">Media Gallery</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="size-10 rounded-full bg-white dark:bg-slate-900 border-2 border-primary text-primary flex items-center justify-center font-bold">
+                        3
+                    </div>
+<span class="text-xs font-bold text-primary">Location &amp; Features</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<div class="size-10 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-400 flex items-center justify-center font-bold">
+                        4
+                    </div>
+<span class="text-xs font-bold text-slate-400 dark:text-slate-500">Pricing &amp; Publish</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 md:p-12">
+<div class="space-y-10">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<div class="space-y-6">
+<div class="space-y-2">
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Property Location</h3>
+<p class="text-sm text-slate-500">Drag the pin to the exact location of the property.</p>
+</div>
+<div class="relative w-full aspect-square rounded-2xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700 map-placeholder">
+<div class="absolute inset-0 bg-slate-900/10"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+<span class="material-symbols-outlined text-primary text-5xl drop-shadow-xl" style="font-variation-settings: 'FILL' 1">location_on</span>
+</div>
+<div class="absolute top-4 right-4 flex flex-col gap-2">
+<button class="size-10 bg-white dark:bg-slate-800 rounded-lg shadow-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+<button class="size-10 bg-white dark:bg-slate-800 rounded-lg shadow-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-lg">remove</span>
+</button>
+</div>
+<div class="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur px-4 py-2 rounded-lg text-xs font-bold shadow-lg">
+                                Lat: -33.9249, Long: 18.4241
+                            </div>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Street Address</label>
+<input class="w-full px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white transition-all" type="text" value="88 Sunset Boulevard"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Suburb</label>
+<input class="w-full px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white transition-all" type="text" value="West Hills"/>
+</div>
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">City</label>
+<input class="w-full px-5 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white transition-all" type="text" value="Cape Town"/>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-8">
+<div class="space-y-2">
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Property Features</h3>
+<p class="text-sm text-slate-500">Specify the key characteristics of the property.</p>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Bedrooms</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">bed</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white" type="number" value="4"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Bathrooms</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">bathtub</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white" type="number" value="3"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Parking</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">directions_car</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white" type="number" value="2"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Erf Size (m²)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">square_foot</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white" type="number" value="450"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300">Additional Amenities</label>
+<div class="grid grid-cols-2 gap-3">
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input checked="" class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">Swimming Pool</span>
+</label>
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input checked="" class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">Pet Friendly</span>
+</label>
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">Solar Power</span>
+</label>
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input checked="" class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">Fiber Ready</span>
+</label>
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">Staff Quarters</span>
+</label>
+<label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:border-primary transition-colors">
+<input class="rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<span class="text-sm font-medium">24h Security</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-slate-100 dark:border-slate-800 pt-10">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Media Preview</h3>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">edit</span> Edit Media
+                        </button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+<div class="aspect-square rounded-xl overflow-hidden border-2 border-primary relative group">
+<img alt="Property thumbnail" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div class="absolute inset-0 bg-primary/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="bg-white text-primary text-[10px] font-black px-2 py-1 rounded">COVER</span>
+</div>
+</div>
+<div class="aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+<img alt="Property thumbnail" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvAFVHF5ttmFn4--gQ1dpYq09u1L4Eyadgk1iRZOB0jOMgx3X6kVf4l_Ep2HfBn5bFRSZspJYqoYZH7LBCD0peqvT9SXVZmdK-HsWEYanuabIhVgT-PXvt-_kndSV3sHMU7uA6o1sC149ujkPAqcMQy1PXnn0l59XfzwNMU7gWIGOiF4F1kfxWKa-85c7DTBpo8Y5LCuhL6PJW2ZBZ-AhA8vYe8H0ULHg9P1DoCEo6oQ2TWYLYHdqXHL1FIGKCarIEkPm2R21v20w"/>
+</div>
+<div class="aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+<img alt="Property thumbnail" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCikPSxJ9MRujB-YaRoz1cCTMw89Tue1ErcSJsjBGcNLMozS3NQdrob7lr3zXbq7sJ1KEia8wojItiadozxGsqvqgEa6IZEzfyuQPRXkcfadpa87_6zQSq-pHG-cdwHjucGhqibMYOD5u-G3fpulOYRZIQcfd-TVYuNYDL14vIJMBh6RhZ9ftcw7_A95BJy6f2cCsF52pUzN7qtcDBITseVFoQ4bPttLBeAhWljbkiGJcfoexfuNCOr2luGgbb27gUi0W8EXDRpKE"/>
+</div>
+<div class="aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-100 dark:bg-slate-800 relative">
+<span class="material-symbols-outlined text-slate-400">play_circle</span>
+<span class="absolute bottom-2 right-2 text-[10px] font-bold text-slate-500 uppercase">Video</span>
+</div>
+<div class="aspect-square rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group">
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary">add_a_photo</span>
+<span class="text-[10px] font-bold text-slate-400 group-hover:text-primary">Add More</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-16 flex items-center justify-between pt-8 border-t border-slate-100 dark:border-slate-800">
+<button class="flex items-center gap-2 px-8 py-4 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined">arrow_back</span>
+                    Previous Step
+                </button>
+<div class="flex items-center gap-4">
+<button class="hidden md:block px-8 py-4 rounded-xl font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all">
+                        Save as Draft
+                    </button>
+<button class="flex items-center gap-2 px-10 py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:brightness-110 hover:translate-y-[-2px] transition-all">
+                        Continue to Pricing
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<div class="hidden fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex justify-end">
+<div class="w-full max-w-md bg-white dark:bg-slate-900 h-full p-10 flex flex-col shadow-2xl">
+<div class="mb-12 flex items-center justify-between">
+<span class="material-symbols-outlined text-3xl text-primary">task_alt</span>
+<button class="size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 space-y-6">
+<h2 class="text-3xl font-black">Ready to Publish!</h2>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed">Your property details are complete. Take one last look at your listing preview before it goes live to the marketplace.</p>
+<div class="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+<div class="flex gap-4 items-center">
+<img alt="Preview" class="size-20 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0MhhGfAaBUdYNAfamwSxddUzDKG8HRMDND0fi7R81_vOYSin2n7-zT3sGQ_Vt6EEvJPNyLfgAGmyOMOM1Bj2eyXLUcO4TrsGjz6tbwjl-5C1vxqFRNDDTGy9cwz6yIKLXG-s4j_FayUZmWWUAb5z7eh0cbg66BUrPF_h-LImQ81U0DtU9lx-ZIc0sG3FkAE6BwD-RnzZ7Jq9qyUwX-EdzWDPENJ-qxQJpC_znmc8Y_XNcdyu9VtS5xPagBNka8qUUwqR26bCxuuM"/>
+<div>
+<h4 class="font-bold">Luxury Villa, West Hills</h4>
+<p class="text-sm text-primary font-bold">$1,250,000</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<button class="w-full py-5 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/20">PUBLISH LISTING</button>
+<button class="w-full py-5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-2xl">VIEW PREVIEW</button>
+</div>
+</div>
+</div>
+<footer class="bg-slate-900 text-slate-300 py-10 px-6 border-t border-slate-800 mt-20">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex items-center gap-3 text-white">
+<span class="material-symbols-outlined text-2xl text-primary">home_work</span>
+<h2 class="text-xl font-extrabold">PropMarket</h2>
+</div>
+<div class="flex gap-8 text-sm font-medium">
+<a class="hover:text-primary" href="#">Help Center</a>
+<a class="hover:text-primary" href="#">Agent Terms</a>
+<a class="hover:text-primary" href="#">Support</a>
+</div>
+<p class="text-xs text-slate-500">© 2024 PropMarket Real Estate for Agents. All rights reserved.</p>
+</div>
+</footer>
+</div>
+
+</body></html>

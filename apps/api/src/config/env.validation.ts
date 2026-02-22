@@ -46,6 +46,8 @@ export const envValidationSchema = Joi.object({
   GOOGLE_OAUTH_CLIENT_ID: Joi.string().optional(),
   APPLE_OAUTH_CLIENT_ID: Joi.string().optional(),
   FACEBOOK_OAUTH_CLIENT_ID: Joi.string().optional(),
+  FACEBOOK_APP_ID: Joi.string().optional(),
+  FACEBOOK_APP_SECRET: Joi.string().optional(),
 
   // Notifications
   SENDGRID_API_KEY: Joi.string().optional(),

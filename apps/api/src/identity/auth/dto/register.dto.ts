@@ -5,7 +5,10 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { IdentityRole, IDENTITY_ROLES } from '../../identity.constants';
+import {
+  IdentityRole,
+  SELF_REGISTRATION_ROLES,
+} from '../../identity.constants';
 
 export class RegisterDto {
   @IsEmail()
@@ -38,6 +41,7 @@ export class RegisterDto {
       return true;
     }
 
-    return (IDENTITY_ROLES as readonly string[]).includes(this.role);
+    // admin cannot be self-assigned at registration — must be granted by an existing admin
+    return (SELF_REGISTRATION_ROLES as readonly string[]).includes(this.role);
   }
 }

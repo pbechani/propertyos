@@ -3,7 +3,10 @@
 **Sprint:** 02 — Identity, Auth, RBAC & KYC  
 **Audit Date:** 2026-02-21  
 **Auditor:** GitHub Copilot  
-**Verdict: PASS** — All core deliverables complete and all identified issues have been resolved.
+**Verdict: PASS** — All core deliverables complete and all identified issues have been resolved across three audit passes.
+
+> **Round 3 audit completed** — See [AUDIT-REPORT-ROUND3.md](./AUDIT-REPORT-ROUND3.md) for the full third-pass findings and fixes (4 issues resolved: 1 high, 1 medium, 2 low).  
+> **Round 2 audit completed** — See [AUDIT-REPORT-ROUND2.md](./AUDIT-REPORT-ROUND2.md) for the full second-pass findings and fixes (11 issues resolved: 1 critical, 3 high, 4 medium, 3 low).
 
 ---
 
@@ -20,13 +23,55 @@
 | Rate-limit on login | ✅ | 5 attempts / 15 min / IP |
 | bcrypt rounds | ✅ | Default 12, configurable |
 | PII masking in logs | ✅ | Email/phone masked in NotificationService |
-| Unit tests for Sprint 02 code | ✅ | 72 tests across AuthService, UsersService, KycService, RolesGuard |
+| Admin self-registration blocked | ✅ | `SELF_REGISTRATION_ROLES` excludes `admin` |
+| Suspended/deleted login blocked | ✅ | Status check in login, oauthLogin, forgotPassword |
+| KYC state-machine guards | ✅ | Conflict on invalid transitions |
+| Audit `previous_status` accuracy | ✅ | Real previous status from DB record |
+| Unit tests for Sprint 02 code | ✅ | 79 tests across AuthService, UsersService, KycService, RolesGuard |
 | Build | ✅ | `nest build` clean |
-| Test suite | ✅ | 147/147 passing |
+| Test suite | ✅ | 152/152 passing |
 
 ---
 
-## Resolved Issues from Initial Audit
+## Resolved Issues — Round 3 Audit
+
+### High
+- **H1 — `refresh()` missing user status check:** FIXED. Added `user.status !== 'active'` guard in `refresh()` after fetching the user; throws `UnauthorizedException` for suspended/deleted accounts. New test added to `auth.service.spec.ts`.
+
+### Medium
+- **M1 — `getLatestKycStatus` returned `'pending'` for users with no KYC:** FIXED. Method now returns `null` when no KYC record exists. `JwtPayload.kyc_status` type widened to `string | null`. Tests and mocks updated.
+
+### Low
+- **L1 — `logout` made unnecessary `getUserRoleNames` DB call:** FIXED. `logout()` accepts optional `actorRole` param; controller passes role from JWT payload, eliminating the per-logout DB read.
+- **L2 — `updateMe` audit log recorded all body keys including `undefined` fields:** FIXED. Payload now uses `Object.entries(body).filter(([, v]) => v !== undefined).map(([k]) => k)`.
+
+---
+
+## Resolved Issues — Round 2 Audit
+
+### Critical
+- **C1 — Admin self-registration:** FIXED. Added `SELF_REGISTRATION_ROLES` constant (excludes `admin`). `RegisterDto.isValidRole()` now validates against restricted set.
+
+### High
+- **H1 — Suspended/deleted users could log in:** FIXED. `login()` throws `UnauthorizedException` if `user.status !== 'active'` after password validation.
+- **H2 — Same gap in `oauthLogin()` / `forgotPassword()`:** FIXED. `oauthLogin()` throws `UnauthorizedException`; `forgotPassword()` silently returns to avoid leaking account status.
+- **H3 — No KYC state-machine guards:** FIXED. `startReview`, `approve`, `reject` all check valid current status and throw `ConflictException` on invalid transitions.
+- **H4 — Audit `previous_status` hardcoded to `'pending'`:** FIXED. All three methods fetch the record first and return `{ record, previousStatus }`. Controller uses real value in audit log.
+
+### Medium
+- **M1 — `listPending()` unpaginated:** FIXED. Added `limit`/`offset` params (capped at 500). `GET /admin/kyc/pending` now accepts `?limit` and `?offset`.
+- **M2 — Duplicate `users:self` permission entry:** FIXED. Removed duplicate from `IDENTITY_PERMISSIONS` constant.
+- **M3 — Double `getUserRoleNames()` per auth action:** FIXED. `issueTokens()` accepts optional `prefetchedRoles`. `login`, `refresh`, `oauthLogin` pre-fetch once and pass to both `issueTokens()` and the audit log.
+- **M4 — Admin `GET /users/:id` not audited:** FIXED. Added `user.accessed` audit entry.
+
+### Low
+- **L1 — `resolveExpiryDate()` silent fallback:** FIXED. Logs `Logger.warn()` on unrecognised suffix.
+- **L2 — Hardcoded JWT fallback secret:** FIXED. `JwtStrategy` throws on missing `JWT_SECRET` in `production`/`staging`; warns in `development`.
+- **L3 — No-op `updateMe` DB write:** FIXED. Early return when body has no non-`undefined` fields.
+
+---
+
+## Resolved Issues — Round 1 Audit
 
 ### High Priority
 - **H1 — No unit tests for Sprint 02 identity code:** FIXED. 72 tests added across four new spec files.

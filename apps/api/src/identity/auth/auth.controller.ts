@@ -11,9 +11,12 @@ import {
 } from './dto/password.dto';
 import { OAuthLoginDto } from './dto/oauth.dto';
 import { JwtAuthGuard } from '../rbac/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { Permissions } from '../rbac/permissions.decorator';
 
 type RequestUser = {
   sub: string;
+  roles?: string[];
 };
 
 type RequestMeta = {
@@ -47,16 +50,19 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
   @Post('logout')
   async logout(
     @Req() req: RequestMeta,
     @Body() body: LogoutDto,
   ): Promise<{ success: boolean }> {
-    await this.authService.logout(body.refreshToken, req.user!.sub, {
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] ?? null,
-    });
+    await this.authService.logout(
+      body.refreshToken,
+      req.user!.sub,
+      { ip: req.ip, userAgent: req.headers['user-agent'] ?? null },
+      req.user!.roles?.[0] ?? null,
+    );
     return { success: true };
   }
 

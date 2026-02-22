@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -19,9 +20,11 @@ import { NotificationService } from '../notification.service';
 import { DEFAULT_ROLE } from '../identity.constants';
 import { OAuthLoginDto } from './dto/oauth.dto';
 import { AuditService } from '../audit.service';
+import { OAuthVerificationService } from './oauth-verification.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly accessTokenExpiry: string;
   private readonly refreshTokenExpiry: string;
   private readonly bcryptRounds: number;
@@ -37,6 +40,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     private readonly auditService: AuditService,
+    private readonly oauthVerificationService: OAuthVerificationService,
   ) {
     this.accessTokenExpiry =
       this.configService.get<string>('JWT_EXPIRY') ?? '15m';
@@ -135,15 +139,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.status !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
     await this.redisService.del(this.getFailedLoginKey(requestContext.ip));
     await this.usersService.markLastLogin(user.id);
 
-    const tokens = await this.issueTokens(user.id, user.email);
+    const roles = await this.usersService.getUserRoleNames(user.id);
+    const tokens = await this.issueTokens(user.id, user.email, roles);
 
     await this.auditService.log({
       eventId: 'user.login',
       actorId: user.id,
-      actorRole: (await this.usersService.getUserRoleNames(user.id))[0] ?? null,
+      actorRole: roles[0] ?? null,
       action: 'login',
       resourceType: 'user',
       resourceId: user.id,
@@ -193,12 +202,17 @@ export class AuthService {
     `;
 
     const user = await this.usersService.findById(tokenRow.user_id);
-    const tokens = await this.issueTokens(user.id, user.email);
+    if (user.status !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    const roles = await this.usersService.getUserRoleNames(user.id);
+    const tokens = await this.issueTokens(user.id, user.email, roles);
 
     await this.auditService.log({
       eventId: 'user.refresh',
       actorId: user.id,
-      actorRole: (await this.usersService.getUserRoleNames(user.id))[0] ?? null,
+      actorRole: roles[0] ?? null,
       action: 'refresh_token',
       resourceType: 'refresh_token',
       resourceId: tokenRow.id,
@@ -214,6 +228,7 @@ export class AuthService {
     refreshToken: string,
     actorId: string,
     requestContext: { ip: string; userAgent?: string | null },
+    actorRole?: string | null,
   ): Promise<void> {
     const refreshHash = this.hashToken(refreshToken);
 
@@ -238,10 +253,15 @@ export class AuthService {
       );
     }
 
+    const resolvedRole =
+      actorRole ??
+      (await this.usersService.getUserRoleNames(actorId))[0] ??
+      null;
+
     await this.auditService.log({
       eventId: 'user.logout',
       actorId,
-      actorRole: (await this.usersService.getUserRoleNames(actorId))[0] ?? null,
+      actorRole: resolvedRole,
       action: 'logout',
       resourceType: 'user',
       resourceId: actorId,
@@ -276,7 +296,8 @@ export class AuthService {
     requestContext: { ip: string; userAgent?: string | null },
   ): Promise<void> {
     const user = await this.usersService.findByEmail(email);
-    if (!user) {
+    if (!user || user.status !== 'active') {
+      // silently return — do not reveal whether account exists or is suspended
       return;
     }
 
@@ -385,30 +406,57 @@ export class AuthService {
       throw new UnauthorizedException('OAuth token is required');
     }
 
-    let user = await this.usersService.findByEmail(dto.email);
+    const verifiedIdentity = await this.oauthVerificationService.verify(
+      provider,
+      dto.providerToken,
+    );
+
+    if (
+      dto.email &&
+      verifiedIdentity.email &&
+      dto.email.toLowerCase() !== verifiedIdentity.email.toLowerCase()
+    ) {
+      throw new UnauthorizedException('OAuth identity mismatch');
+    }
+
+    const trustedEmail = verifiedIdentity.email ?? dto.email ?? null;
+    if (!trustedEmail) {
+      throw new UnauthorizedException(
+        'OAuth provider did not return an email address',
+      );
+    }
+
+    let user = await this.usersService.findByEmail(trustedEmail);
 
     if (!user) {
       const created = await this.usersService.create({
-        email: dto.email,
+        email: trustedEmail,
         passwordHash: null,
-        firstName: dto.firstName ?? provider,
-        lastName: dto.lastName ?? 'user',
+        firstName: verifiedIdentity.firstName ?? dto.firstName ?? provider,
+        lastName: verifiedIdentity.lastName ?? dto.lastName ?? 'user',
       });
       await this.usersService.assignRole(created.id, DEFAULT_ROLE, created.id);
-      await this.usersService.markEmailVerified(created.id);
-      user = await this.usersService.findByEmail(dto.email);
+      if (verifiedIdentity.emailVerified) {
+        await this.usersService.markEmailVerified(created.id);
+      }
+      user = await this.usersService.findByEmail(trustedEmail);
     }
 
     if (!user) {
       throw new UnauthorizedException('Unable to process OAuth login');
     }
 
-    const tokens = await this.issueTokens(user.id, user.email);
+    if (user.status !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    const roles = await this.usersService.getUserRoleNames(user.id);
+    const tokens = await this.issueTokens(user.id, user.email, roles);
 
     await this.auditService.log({
       eventId: `user.oauth.${provider}`,
       actorId: user.id,
-      actorRole: (await this.usersService.getUserRoleNames(user.id))[0] ?? null,
+      actorRole: roles[0] ?? null,
       action: 'oauth_login',
       resourceType: 'user',
       resourceId: user.id,
@@ -426,8 +474,10 @@ export class AuthService {
   private async issueTokens(
     userId: string,
     email: string,
+    prefetchedRoles?: string[],
   ): Promise<AuthTokens> {
-    const roles = await this.usersService.getUserRoleNames(userId);
+    const roles =
+      prefetchedRoles ?? (await this.usersService.getUserRoleNames(userId));
     const kycStatus = await this.usersService.getLatestKycStatus(userId);
 
     const payload: JwtPayload = {
@@ -496,6 +546,10 @@ export class AuthService {
       return new Date(now + Number(expiry.replace('s', '')) * 1000);
     }
 
+    this.logger.warn(
+      `Unrecognised expiry suffix in '${expiry}'; defaulting to 7 days. ` +
+        `Check JWT_EXPIRY / REFRESH_TOKEN_EXPIRY configuration.`,
+    );
     return new Date(now + 7 * 24 * 60 * 60 * 1000);
   }
 
