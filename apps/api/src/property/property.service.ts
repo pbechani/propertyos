@@ -314,7 +314,9 @@ export class PropertyService {
     const limit = dto.limit ?? DEFAULT_PAGE_LIMIT;
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = ["p.status = 'active'"];
+    const conditions: string[] = [
+      "p.status IN ('active', 'under_offer', 'sold')",
+    ];
     const values: unknown[] = [];
     let idx = 1;
 
