@@ -12,9 +12,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken } from "@/lib/auth-session";
-import { propertiesApi } from "@/lib/api-client";
+import { propertiesApi, type PropertyListing } from "@/lib/api-client";
 
 const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop";
+const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
+
+type SimilarProperty = {
+  id: string;
+  image: string;
+  title: string;
+  location: string;
+  price: string;
+};
 
 function formatMoney(price: string, currency: string): string {
   const value = Number(price);
@@ -30,6 +39,75 @@ function toFeatureLabel(feature: string): string {
   return feature
     .replace(/_/g, " ")
     .replace(/\b\w/g, (part) => part.toUpperCase());
+}
+
+function mapSimilarProperty(listing: PropertyListing): SimilarProperty {
+  const city = listing.location?.city ?? "";
+  const region = listing.location?.region ?? "";
+  const location = [city, region].filter(Boolean).join(", ") || "Location unavailable";
+  const primaryImage = listing.media?.find((media) => media.is_primary)?.url;
+
+  return {
+    id: listing.id,
+    image: primaryImage || DEFAULT_PROPERTY_IMAGE,
+    title: listing.title,
+    location,
+    price: formatMoney(listing.price, listing.currency),
+  };
+}
+
+type PropertyDetailState = {
+  title: string;
+  address: string;
+  price: string;
+  beds: number;
+  baths: number;
+  garage: number;
+  floorArea: number;
+  images: string[];
+  description: string;
+  features: Array<{ label: string; icon: boolean }>;
+  agent: {
+    id: string;
+    name: string;
+    title: string;
+    verified: boolean;
+    trustScore: number;
+    image: string;
+  };
+  verificationStatus: string;
+  propertyType: string;
+  listingStatus: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function getEmptyPropertyDetail(): PropertyDetailState {
+  return {
+    title: "",
+    address: "Address unavailable",
+    price: formatMoney("0", "USD"),
+    beds: 0,
+    baths: 0,
+    garage: 0,
+    floorArea: 0,
+    images: [DEFAULT_PROPERTY_IMAGE],
+    description: "",
+    features: [],
+    agent: {
+      id: "",
+      name: "Agent information unavailable",
+      title: "",
+      verified: false,
+      trustScore: 0,
+      image: DEFAULT_AGENT_IMAGE,
+    },
+    verificationStatus: "UNVERIFIED",
+    propertyType: "",
+    listingStatus: "",
+    createdAt: "",
+    updatedAt: "",
+  };
 }
 
 export default function PropertyDetailEnhanced() {
@@ -71,6 +149,7 @@ export default function PropertyDetailEnhanced() {
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleSuccess, setScheduleSuccess] = useState("");
   const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
+  const [similarProperties, setSimilarProperties] = useState<SimilarProperty[]>([]);
 
   const handleAddToFavourites = () => {
     const token = getAccessToken();
@@ -219,73 +298,7 @@ export default function PropertyDetailEnhanced() {
     }
   };
 
-  const defaultProperty = {
-    title: "Contemporary Coastal Residence",
-    address: "4.2 Beach Road, Sea Point, Cape Town, 8005",
-    price: "R 12,500,000",
-    beds: 4,
-    baths: 3.5,
-    garage: 2,
-    floorArea: 280,
-    images: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop",
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=400&h=300&fit=crop",
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400&h=300&fit=crop",
-      "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?w=400&h=300&fit=crop",
-    ],
-    description: `This exquisite contemporary residence in the heart of Sea Point offers an unparalleled coastal lifestyle. Designed with meticulous attention to detail, the property features expansive open-plan living areas that flow seamlessly onto a large terrace with breathtaking Atlantic Ocean views.
-
-The state-of-the-art kitchen is equipped with integrated high-end appliances and a separate scullery. Each of the four bedrooms is generously sized, with the primary suite boasting a private balcony, walk-in dressing room, and a luxurious en-suite bathroom.
-
-Perfect for entertaining, the home includes a dedicated media room and an automated smart home system controlling lighting, security, and climate across all levels.`,
-    features: [
-      { label: "Air Conditioning", icon: true },
-      { label: "Swimming Pool", icon: true },
-      { label: "Security System", icon: true },
-      { label: "Fiber Internet", icon: true },
-      { label: "Pet Friendly", icon: true },
-      { label: "Gym", icon: true },
-      { label: "Garden", icon: true },
-      { label: "Ocean View", icon: true },
-    ],
-    agent: {
-      id: "agent-001",
-      name: "David Mitchell",
-      title: "Platinum Realty Group",
-      verified: true,
-      trustScore: 98,
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop",
-    },
-    verification: {
-      status: "VERIFIED",
-      verifiedDate: "2024-02-15",
-      blockchainHash: "0x7a8f9e2c1d5b4a3c6e8f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d",
-    },
-    titleDeed: {
-      status: "CLEAR",
-      owner: "John & Mary Smith",
-      registrationNumber: "T12345/2020",
-      lastTransfer: "2020-05-12",
-    },
-    ownershipHistory: [
-      { date: "2020-05-12", owner: "John & Mary Smith", price: "R 10,200,000" },
-      { date: "2015-03-20", owner: "David Thompson", price: "R 7,800,000" },
-      { date: "2010-11-05", owner: "Sarah Williams", price: "R 5,400,000" },
-    ],
-    riskScore: {
-      overall: 92,
-      factors: [
-        { name: "Title Deed Verification", score: 100, status: "pass" },
-        { name: "Ownership History", score: 95, status: "pass" },
-        { name: "Property Valuation", score: 90, status: "pass" },
-        { name: "Neighborhood Safety", score: 85, status: "pass" },
-        { name: "Legal Compliance", score: 100, status: "pass" },
-      ]
-    }
-  };
-
-  const [property, setProperty] = useState(defaultProperty);
+  const [property, setProperty] = useState<PropertyDetailState>(getEmptyPropertyDetail);
 
   useEffect(() => {
     if (!propertyId) {
@@ -299,7 +312,19 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
       try {
         const listing = await propertiesApi.getById(propertyId);
 
-        let mappedAgent = defaultProperty.agent;
+        let relatedListings: PropertyListing[] = [];
+        try {
+          const relatedResponse = await propertiesApi.search({
+            type: listing.property_type,
+            sort: 'newest',
+            limit: 12,
+          });
+          relatedListings = relatedResponse.data;
+        } catch {
+          relatedListings = [];
+        }
+
+        let mappedAgent = getEmptyPropertyDetail().agent;
         if (listing.agent_id) {
           try {
             const profile = await propertiesApi.getAgentProfile(listing.agent_id);
@@ -321,7 +346,7 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             };
           } catch {
             mappedAgent = {
-              ...defaultProperty.agent,
+              ...getEmptyPropertyDetail().agent,
               id: listing.agent_id,
             };
           }
@@ -340,7 +365,6 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
           : [];
 
         setProperty((prev) => ({
-          ...prev,
           title: listing.title,
           address,
           price: formatMoney(listing.price, listing.currency),
@@ -348,19 +372,28 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
           baths: listing.bathrooms ?? 0,
           garage: listing.parking_spaces ?? 0,
           floorArea: listing.area_sqm ? Number(listing.area_sqm) : 0,
-          images: images.length > 0 ? images : prev.images,
-          description: listing.description || prev.description,
-          features: mappedFeatures.length > 0 ? mappedFeatures : prev.features,
+          images: images.length > 0 ? images : [DEFAULT_PROPERTY_IMAGE],
+          description: listing.description || "",
+          features: mappedFeatures,
           agent: mappedAgent,
-          verification: {
-            ...prev.verification,
-            status: listing.verification_status.toUpperCase(),
-          },
+          verificationStatus: listing.verification_status.toUpperCase(),
+          propertyType: listing.property_type,
+          listingStatus: listing.status,
+          createdAt: listing.created_at,
+          updatedAt: listing.updated_at,
         }));
+        const similar = relatedListings
+          .filter((item) => item.id !== listing.id)
+          .filter((item) => item.status === 'active')
+          .slice(0, 2)
+          .map(mapSimilarProperty);
+
+        setSimilarProperties(similar);
         setSelectedImage(0);
         setCarouselOffset(0);
       } catch {
         setPropertyError("Unable to load property from database right now.");
+        setSimilarProperties([]);
       } finally {
         setIsLoadingProperty(false);
       }
@@ -413,9 +446,9 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 </div>
                 {/* Verification Badge Overlay */}
                 <div className="absolute top-4 left-4">
-                  <Badge className="bg-green-500 text-white flex items-center gap-2 px-4 py-2">
+                  <Badge className={`${property.verificationStatus === 'VERIFIED' ? 'bg-green-500' : 'bg-yellow-600'} text-white flex items-center gap-2 px-4 py-2`}>
                     <Shield className="w-4 h-4" />
-                    BLOCKCHAIN VERIFIED
+                    {property.verificationStatus}
                   </Badge>
                 </div>
                 {/* Actions */}
@@ -562,124 +595,90 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
               </div>
             </Card>
 
-            {/* Verification & Risk Score */}
+            {/* Listing Verification & Metadata */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Title Deed Status */}
+              {/* Verification Status */}
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold">Title Deed Status</h3>
+                  <Shield className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold">Listing Verification</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Status</span>
-                    <Badge className="bg-green-100 text-green-700">
+                    <Badge className={`${property.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {property.titleDeed.status}
+                      {property.verificationStatus || 'UNKNOWN'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Owner</span>
-                    <span className="font-medium text-sm">{property.titleDeed.owner}</span>
+                    <span className="text-sm text-gray-600">Property Type</span>
+                    <span className="font-medium text-sm capitalize">{property.propertyType || 'N/A'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Registration #</span>
-                    <span className="font-medium text-sm">{property.titleDeed.registrationNumber}</span>
+                    <span className="text-sm text-gray-600">Listing Status</span>
+                    <span className="font-medium text-sm capitalize">{property.listingStatus || 'N/A'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Last Transfer</span>
-                    <span className="font-medium text-sm">{property.titleDeed.lastTransfer}</span>
+                    <span className="text-sm text-gray-600">Last Updated</span>
+                    <span className="font-medium text-sm">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               </Card>
 
-              {/* Risk Score */}
+              {/* Listing Timeline */}
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold">Trust & Risk Score</h3>
-                </div>
-                <div className="text-center mb-4">
-                  <div className="text-5xl font-bold text-green-600 mb-1">{property.riskScore.overall}</div>
-                  <div className="text-sm text-gray-600">Low Risk • Highly Trusted</div>
+                  <History className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold">Listing Timeline</h3>
                 </div>
                 <div className="space-y-2">
-                  {property.riskScore.factors.slice(0, 3).map((factor, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">{factor.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${factor.score}%` }}
-                          ></div>
-                        </div>
-                        <span className="font-medium w-8">{factor.score}</span>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Created</span>
+                    <span className="font-medium">{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Last Updated</span>
+                    <span className="font-medium">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Verification</span>
+                    <span className="font-medium">{property.verificationStatus || 'UNKNOWN'}</span>
+                  </div>
                 </div>
-                <Button variant="outline" className="w-full mt-4 text-xs">
-                  <Info className="w-3 h-3 mr-2" />
-                  View Full Report
-                </Button>
               </Card>
             </div>
-
-            {/* Ownership History */}
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <History className="w-5 h-5 text-blue-600" />
-                <h3 className="font-semibold">Ownership History</h3>
-                <Badge variant="secondary" className="ml-auto">
-                  <Eye className="w-3 h-3 mr-1" />
-                  Blockchain Verified
-                </Badge>
-              </div>
-              <div className="space-y-4">
-                {property.ownershipHistory.map((record, idx) => (
-                  <div key={idx} className="flex items-start gap-4 pb-4 border-b border-gray-200 last:border-0">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <History className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-1">
-                        <div className="font-medium">{record.owner}</div>
-                        <div className="font-bold text-blue-600">{record.price}</div>
-                      </div>
-                      <div className="text-sm text-gray-600">Transfer Date: {record.date}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
 
             {/* Property Description */}
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Property Description</h2>
               <div className="text-gray-700 whitespace-pre-line leading-relaxed text-sm md:text-base">
-                {property.description}
+                {property.description || "No description available for this listing."}
               </div>
             </Card>
 
             {/* Features & Amenities */}
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Features & Amenities</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {property.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                    <span className="text-sm">{feature.label}</span>
-                  </div>
-                ))}
-              </div>
+              {property.features.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {property.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm">{feature.label}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">No feature data available.</div>
+              )}
             </Card>
 
             {/* Location */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Location</h2>
-                <span className="text-sm text-blue-500">Sea Point, Cape Town</span>
+                <span className="text-sm text-blue-500">{property.address}</span>
               </div>
               <div className="bg-gray-200 rounded-lg h-64 md:h-80 flex items-center justify-center relative overflow-hidden">
                 <img
@@ -829,20 +828,29 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             <Card className="p-6">
               <h3 className="font-semibold mb-4">Similar Properties</h3>
               <div className="space-y-4">
-                {[1, 2].map((item) => (
-                  <div key={item} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
+                {similarProperties.map((item) => (
+                  <div key={`${item.title}-${item.location}`} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
                     <img 
-                      src={`https://images.unsplash.com/photo-160${item}585154340-be6161a56a0c?w=100&h=80&fit=crop`}
-                      alt="Property"
+                      src={item.image}
+                      alt={item.title}
                       className="w-20 h-16 object-cover rounded"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = DEFAULT_PROPERTY_IMAGE;
+                      }}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">Modern Apartment</div>
-                      <div className="text-xs text-gray-600 truncate">Sea Point, Cape Town</div>
-                      <div className="font-bold text-blue-600 text-sm mt-1">R 4,200,000</div>
+                      <Link to={`/app/property/${item.id}`} className="font-medium text-sm truncate block hover:text-blue-600 transition-colors">
+                        {item.title}
+                      </Link>
+                      <div className="text-xs text-gray-600 truncate">{item.location}</div>
+                      <div className="font-bold text-blue-600 text-sm mt-1">{item.price}</div>
                     </div>
                   </div>
                 ))}
+                {similarProperties.length === 0 && (
+                  <div className="text-sm text-gray-600">No similar properties available right now.</div>
+                )}
               </div>
               <Button variant="outline" className="w-full mt-4">
                 View More
