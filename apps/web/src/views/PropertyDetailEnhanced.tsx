@@ -181,6 +181,11 @@ export default function PropertyDetailEnhanced() {
       return;
     }
 
+    if (isSoldListing) {
+      setInquiryError("This property is sold. Inquiries are disabled.");
+      return;
+    }
+
     const token = getActionToken();
     if (!token) {
       return;
@@ -256,6 +261,11 @@ export default function PropertyDetailEnhanced() {
       return;
     }
 
+    if (isSoldListing) {
+      setScheduleError("This property is sold. Viewing requests are disabled.");
+      return;
+    }
+
     if (!selectedDate || !selectedTime || !viewerName.trim() || !viewerEmail.trim() || !viewerPhone.trim()) {
       setScheduleError("Please complete date, time and contact details before confirming.");
       return;
@@ -299,6 +309,7 @@ export default function PropertyDetailEnhanced() {
   };
 
   const [property, setProperty] = useState<PropertyDetailState>(getEmptyPropertyDetail);
+  const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
 
   useEffect(() => {
     if (!propertyId) {
@@ -722,10 +733,22 @@ export default function PropertyDetailEnhanced() {
             <Card className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
               <Calendar className="w-8 h-8 mb-3" />
               <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
-              <p className="text-blue-100 text-sm mb-4">Book a time to see this property in person</p>
-              <Button className="w-full bg-white text-blue-600 hover:bg-blue-50" onClick={() => setShowScheduleModal(true)}>
+              <p className="text-blue-100 text-sm mb-4">
+                {isSoldListing
+                  ? "Viewing is unavailable because this property is sold"
+                  : "Book a time to see this property in person"}
+              </p>
+              <Button
+                className="w-full bg-white text-blue-600 hover:bg-blue-50"
+                onClick={() => {
+                  if (!isSoldListing) {
+                    setShowScheduleModal(true);
+                  }
+                }}
+                disabled={isSoldListing}
+              >
                 <Calendar className="w-4 h-4 mr-2" />
-                Schedule Now
+                {isSoldListing ? "Unavailable" : "Schedule Now"}
               </Button>
             </Card>
 
@@ -765,6 +788,7 @@ export default function PropertyDetailEnhanced() {
                     placeholder="John Doe"
                     value={inquiryName}
                     onChange={(event) => setInquiryName(event.target.value)}
+                    disabled={isSoldListing}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -775,6 +799,7 @@ export default function PropertyDetailEnhanced() {
                     placeholder="john@example.com"
                     value={inquiryEmail}
                     onChange={(event) => setInquiryEmail(event.target.value)}
+                    disabled={isSoldListing}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -785,6 +810,7 @@ export default function PropertyDetailEnhanced() {
                     placeholder="+27 00 000 0000"
                     value={inquiryPhone}
                     onChange={(event) => setInquiryPhone(event.target.value)}
+                    disabled={isSoldListing}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -795,9 +821,15 @@ export default function PropertyDetailEnhanced() {
                     rows={3}
                     value={inquiryMessage}
                     onChange={(event) => setInquiryMessage(event.target.value)}
+                    disabled={isSoldListing}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
+                {isSoldListing && (
+                  <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    This property is sold. New inquiries are disabled.
+                  </div>
+                )}
                 {inquiryError && (
                   <div className="text-sm text-red-600">{inquiryError}</div>
                 )}
@@ -807,16 +839,24 @@ export default function PropertyDetailEnhanced() {
                 <Button
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                   onClick={handleSubmitInquiry}
-                  disabled={isSubmittingInquiry}
+                  disabled={isSubmittingInquiry || isSoldListing}
                 >
-                  {isSubmittingInquiry ? "Sending..." : "Send Inquiry"}
+                  {isSubmittingInquiry ? "Sending..." : isSoldListing ? "Unavailable" : "Send Inquiry"}
                 </Button>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex items-center justify-center gap-2"
+                    disabled={isSoldListing}
+                  >
                     <Phone className="w-4 h-4" />
                     Call
                   </Button>
-                  <Button variant="outline" className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex items-center justify-center gap-2"
+                    disabled={isSoldListing}
+                  >
                     <MessageSquare className="w-4 h-4" />
                     WhatsApp
                   </Button>

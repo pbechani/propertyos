@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Listings/client request resilience + sold listing action guard** (2026-02-23)
+  - `apps/web/src/views/PropertyDetailEnhanced.tsx`
+    - Blocked inquiries and viewing requests when `listingStatus` is `sold`.
+    - Disabled schedule/inquiry/contact CTA controls for sold properties and added user-facing unavailable messaging.
+  - `apps/web/src/views/Listings.tsx`
+    - Hardened listing fetch/mapping flow:
+      - fallback retry without sort only on validation-like errors (`400`/`422`), not on `429`
+      - per-record mapping guard so malformed listings do not fail the entire page
+      - safer currency formatting fallback for invalid currency codes
+  - `apps/web/src/lib/api-client.ts`
+    - Added in-flight GET request deduplication for identical concurrent requests.
+    - Added short-lived GET response cache (default 15s, `/properties*` 20s).
+    - Added 429 cooldown handling (3s) with cached-response fallback where available.
+  - Result: reduced duplicate API traffic during fast back/forward navigation, fewer `429 Too Many Requests` cascades, and more stable listing/property UX.
+
 - **Listings first-load filter defaults update** (2026-02-23)
   - Updated `apps/web/src/views/Listings.tsx` to start with no selected filters:
     - `verifiedOnly` default is now `false`

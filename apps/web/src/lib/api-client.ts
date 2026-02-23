@@ -19,6 +19,20 @@ type RequestOptions = RequestInit & {
   authToken?: string | null;
 };
 
+const inFlightGetRequests = new Map<string, Promise<unknown>>();
+const getResponseCache = new Map<string, { data: unknown; expiresAt: number }>();
+const getRateLimitCooldowns = new Map<string, number>();
+const DEFAULT_GET_CACHE_TTL_MS = 15_000;
+const RATE_LIMIT_COOLDOWN_MS = 3_000;
+
+function getCacheTtlMs(path: string): number {
+  if (path.startsWith('/properties')) {
+    return 20_000;
+  }
+
+  return DEFAULT_GET_CACHE_TTL_MS;
+}
+
 async function parseApiError(response: Response): Promise<string> {
   const fallback = `Request failed (${response.status})`;
 
@@ -43,23 +57,85 @@ async function parseApiError(response: Response): Promise<string> {
 async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { authToken, headers, ...rest } = options;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers: {
-      ...(headers ?? {}),
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    },
+  const method = (rest.method ?? 'GET').toUpperCase();
+  const requestUrl = `${API_BASE_URL}${path}`;
+  const dedupeKey =
+    method === 'GET' ? `${requestUrl}::${authToken ?? ''}` : null;
+  const now = Date.now();
+
+  if (dedupeKey) {
+    const cooldownUntil = getRateLimitCooldowns.get(dedupeKey) ?? 0;
+    if (cooldownUntil > now) {
+      const cached = getResponseCache.get(dedupeKey);
+      if (cached) {
+        return cached.data as T;
+      }
+
+      throw new ApiError(
+        `Too many requests. Please try again in ${Math.ceil((cooldownUntil - now) / 1000)}s.`,
+        429,
+      );
+    }
+
+    const cached = getResponseCache.get(dedupeKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+  }
+
+  if (dedupeKey && inFlightGetRequests.has(dedupeKey)) {
+    return inFlightGetRequests.get(dedupeKey) as Promise<T>;
+  }
+
+  const executeRequest = async (): Promise<T> => {
+    const response = await fetch(requestUrl, {
+      ...rest,
+      headers: {
+        ...(headers ?? {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 429 && dedupeKey) {
+        getRateLimitCooldowns.set(dedupeKey, Date.now() + RATE_LIMIT_COOLDOWN_MS);
+
+        const cached = getResponseCache.get(dedupeKey);
+        if (cached) {
+          return cached.data as T;
+        }
+      }
+
+      throw new ApiError(await parseApiError(response), response.status);
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const data = (await response.json()) as T;
+
+    if (dedupeKey) {
+      getResponseCache.set(dedupeKey, {
+        data,
+        expiresAt: Date.now() + getCacheTtlMs(path),
+      });
+      getRateLimitCooldowns.delete(dedupeKey);
+    }
+
+    return data;
+  };
+
+  if (!dedupeKey) {
+    return executeRequest();
+  }
+
+  const inFlight = executeRequest().finally(() => {
+    inFlightGetRequests.delete(dedupeKey);
   });
 
-  if (!response.ok) {
-    throw new ApiError(await parseApiError(response), response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  inFlightGetRequests.set(dedupeKey, inFlight);
+  return inFlight as Promise<T>;
 }
 
 export type AuthTokens = {

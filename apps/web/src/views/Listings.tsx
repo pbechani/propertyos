@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { getAccessToken } from "@/lib/auth-session";
-import { propertiesApi, type PropertyListing } from "@/lib/api-client";
+import { ApiError, propertiesApi, type PropertyListing } from "@/lib/api-client";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const getDefaultFilters = () => ({
@@ -76,11 +76,21 @@ type ListingCard = {
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
 
 function formatPrice(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const safeCurrency = /^[A-Z]{3}$/.test(currency || "") ? currency : "ZAR";
+
+  try {
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: safeCurrency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat("en-ZA", {
+      style: "currency",
+      currency: "ZAR",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
 }
 
 function mapPropertyToListingCard(property: PropertyListing): ListingCard {
@@ -251,12 +261,43 @@ export default function Listings() {
       setPropertiesError("");
 
       try {
-        const response = await propertiesApi.search({
-          sort: "newest",
-          limit: 100,
-        });
+        let response;
 
-        setProperties(response.data.map(mapPropertyToListingCard));
+        try {
+          response = await propertiesApi.search({
+            sort: "newest",
+            limit: 100,
+          });
+        } catch (error) {
+          if (
+            error instanceof ApiError
+            && error.status !== 400
+            && error.status !== 422
+          ) {
+            throw error;
+          }
+
+          response = await propertiesApi.search({
+            limit: 100,
+          });
+        }
+
+        const rawListings = Array.isArray(response.data) ? response.data : [];
+        const mappedListings = rawListings
+          .map((listing) => {
+            try {
+              return mapPropertyToListingCard(listing);
+            } catch {
+              return null;
+            }
+          })
+          .filter((listing): listing is ListingCard => listing !== null);
+
+        setProperties(mappedListings);
+
+        if (rawListings.length > 0 && mappedListings.length === 0) {
+          setPropertiesError("Unable to render listings due to unexpected listing data.");
+        }
       } catch {
         setProperties([]);
         setPropertiesError("Unable to load listings from database right now.");
