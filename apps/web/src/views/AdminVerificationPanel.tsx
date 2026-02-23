@@ -37,6 +37,7 @@ import {
   KycRecord,
   AuditLogEntry,
   AuthUser,
+  KycDocumentType,
   ApiError,
 } from "@/lib/api-client";
 import { getAccessToken } from "@/lib/auth-session";
@@ -115,6 +116,30 @@ export default function AdminVerificationPanel() {
 
   const selectedRecord = kycRecords.find((r) => r.id === selectedKycId);
   const selectedUser = selectedRecord ? userMap[selectedRecord.userId] : null;
+  const submittedDocuments = selectedRecord
+    ? [
+        {
+          key: "id_document" as KycDocumentType,
+          title: selectedRecord.idDocumentType ?? "ID Document",
+          available: Boolean(selectedRecord.idDocumentUrl),
+        },
+        {
+          key: "address_proof" as KycDocumentType,
+          title: "Address Proof",
+          available: Boolean(selectedRecord.addressProofUrl),
+        },
+        {
+          key: "business_registration" as KycDocumentType,
+          title: "Business Registration",
+          available: Boolean(selectedRecord.businessRegistrationUrl),
+        },
+        {
+          key: "selfie" as KycDocumentType,
+          title: "Selfie",
+          available: Boolean(selectedRecord.selfieUrl),
+        },
+      ].filter((doc) => doc.available)
+    : [];
 
   const loadQueue = async () => {
     const token = getAccessToken();
@@ -200,6 +225,24 @@ export default function AdminVerificationPanel() {
       setActionError(err instanceof ApiError ? err.message : "Action failed. Please try again.");
     } finally {
       setActionInProgress(null);
+    }
+  };
+
+  const openKycDocument = async (documentType: KycDocumentType) => {
+    if (!selectedRecord) return;
+    const token = getAccessToken();
+    if (!token) return;
+
+    setActionError("");
+    try {
+      const result = await adminKycApi.getDocumentDownloadUrl(
+        token,
+        selectedRecord.id,
+        documentType,
+      );
+      window.open(result.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Unable to open document.");
     }
   };
 
@@ -374,7 +417,7 @@ export default function AdminVerificationPanel() {
                           onClick={() => handleSelectRecord(record.id)}
                         >
                           <div className="flex items-center gap-3 md:gap-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold shrink-0">
                               {initials}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -386,7 +429,7 @@ export default function AdminVerificationPanel() {
                               <p className="text-xs text-gray-500">{formatRelativeTime(record.submittedAt)}</p>
                             </div>
                             <StatusChip status={record.status as "pending"} size="sm" />
-                            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
                           </div>
                         </div>
                       );
@@ -438,45 +481,39 @@ export default function AdminVerificationPanel() {
                   <div className="p-4 md:p-6">
                     <h3 className="font-semibold mb-4">Submitted Documents</h3>
                     <div className="space-y-4">
-                      {selectedRecord.idDocumentUrl ? (
-                        <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between p-4 bg-gray-50">
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-5 h-5 text-blue-600" />
-                              <div>
-                                <div className="font-medium text-gray-900">
-                                  {selectedRecord.idDocumentType ?? "ID Document"}
+                      {submittedDocuments.length > 0 ? (
+                        submittedDocuments.map((doc) => (
+                          <div
+                            key={doc.key}
+                            className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-center justify-between p-4 bg-gray-50">
+                              <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                                <div>
+                                  <div className="font-medium text-gray-900">{doc.title}</div>
+                                  <div className="text-xs text-gray-500">Uploaded document</div>
                                 </div>
-                                <div className="text-xs text-gray-500">Uploaded document</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => void openKycDocument(doc.key)}
+                                >
+                                  <ZoomIn className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => void openKycDocument(doc.key)}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(selectedRecord.idDocumentUrl!, "_blank")}
-                              >
-                                <ZoomIn className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(selectedRecord.idDocumentUrl!, "_blank")}
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
                           </div>
-                          <div className="bg-gray-100 p-8 flex items-center justify-center min-h-[200px]">
-                            <div className="text-center">
-                              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-3" />
-                              <p className="text-sm text-gray-600">Document Preview</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Click zoom to view full size
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        ))
                       ) : (
                         <p className="text-sm text-gray-500">No documents uploaded.</p>
                       )}
@@ -527,7 +564,7 @@ export default function AdminVerificationPanel() {
                     {/* Action Error */}
                     {actionError && (
                       <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <AlertCircle className="w-4 h-4 shrink-0" />
                         {actionError}
                       </div>
                     )}
@@ -631,7 +668,10 @@ export default function AdminVerificationPanel() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Severity Level
                   </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                  <select
+                    title="Severity Level"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
                     <option>Low - Minor concern</option>
                     <option>Medium - Requires attention</option>
                     <option>High - Urgent review needed</option>
@@ -643,7 +683,10 @@ export default function AdminVerificationPanel() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Report Category
                   </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                  <select
+                    title="Report Category"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
                     <option>Fake Documents</option>
                     <option>Identity Theft</option>
                     <option>Impersonation</option>

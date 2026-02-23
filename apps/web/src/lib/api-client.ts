@@ -262,6 +262,17 @@ export type KycRecord = {
   };
 };
 
+export type KycDocumentType =
+  | 'id_document'
+  | 'address_proof'
+  | 'business_registration'
+  | 'selfie';
+
+export type KycDownloadUrlResponse = {
+  downloadUrl: string;
+  expiresInSeconds: number;
+};
+
 export const adminKycApi = {
   listPending: (authToken: string, limit = 20, offset = 0) =>
     apiRequest<KycRecord[]>(`/admin/kyc/pending?limit=${limit}&offset=${offset}`, {
@@ -296,6 +307,19 @@ export const adminKycApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reviewerNotes }),
     }),
+
+  getDocumentDownloadUrl: (
+    authToken: string,
+    id: string,
+    documentType: KycDocumentType,
+  ) =>
+    apiRequest<KycDownloadUrlResponse>(
+      `/kyc/${id}/documents/${documentType}/download-url`,
+      {
+        method: 'GET',
+        authToken,
+      },
+    ),
 };
 
 // ─── Audit Logs ───────────────────────────────────────────────────────────────

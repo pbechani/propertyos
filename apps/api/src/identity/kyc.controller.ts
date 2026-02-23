@@ -23,6 +23,7 @@ import { Permissions } from './rbac/permissions.decorator';
 import { SubmitKycDto, ReviewKycDto } from './kyc.dto';
 import { KycService } from './kyc.service';
 import { DocumentStorageService } from './document-storage.service';
+import { DocumentAccessService } from './document-access.service';
 import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { UsersService } from './users.service';
@@ -53,6 +54,7 @@ export class KycController {
   constructor(
     private readonly kycService: KycService,
     private readonly storageService: DocumentStorageService,
+    private readonly documentAccessService: DocumentAccessService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -148,6 +150,22 @@ export class KycController {
     }
 
     return this.kycService.sanitize(record);
+  }
+
+  @Get(':id/documents/:documentType/download-url')
+  async getDocumentDownloadUrl(
+    @Req() req: RequestMeta,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('documentType') documentType: string,
+  ): Promise<{ downloadUrl: string; expiresInSeconds: number }> {
+    return this.documentAccessService.issueKycDocumentDownloadUrl({
+      kycId: id,
+      documentType,
+      actorId: req.user.sub,
+      actorRoles: req.user.roles,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
   }
 }
 

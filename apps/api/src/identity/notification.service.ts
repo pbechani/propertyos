@@ -1,21 +1,95 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SendGridEmailProvider } from './notifications/email.sendgrid.provider';
+import { TwilioSmsProvider } from './notifications/sms.twilio.provider';
+import { EmailProvider, SmsProvider } from './notifications/types';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
+  private readonly strictMode: boolean;
+  private readonly emailProvider: EmailProvider | null;
+  private readonly smsProvider: SmsProvider | null;
+
+  constructor(private readonly configService: ConfigService) {
+    const strictModeValue =
+      this.configService.get<string | boolean>('NOTIFICATIONS_STRICT_MODE') ??
+      false;
+    this.strictMode =
+      strictModeValue === true || strictModeValue === 'true' || strictModeValue === '1';
+    this.emailProvider = this.resolveEmailProvider();
+    this.smsProvider = this.resolveSmsProvider();
+  }
 
   async sendEmail(to: string, subject: string, body: string): Promise<void> {
     const maskedRecipient = this.maskRecipient(to);
-    this.logger.log(
-      `Email notification queued: ${subject} -> ${maskedRecipient}`,
-    );
-    this.logger.debug(`Email payload length: ${body.length}`);
+
+    if (!this.emailProvider) {
+      this.logger.log(
+        `Email notification queued: ${subject} -> ${maskedRecipient}`,
+      );
+      this.logger.debug(`Email payload length: ${body.length}`);
+      return;
+    }
+
+    try {
+      await this.emailProvider.send({ to, subject, body });
+      this.logger.log(`Email notification sent -> ${maskedRecipient}`);
+      this.logger.debug(`Email payload length: ${body.length}`);
+    } catch (error) {
+      this.logger.error(
+        `Email notification failed for recipient ${maskedRecipient}`,
+      );
+      if (this.strictMode) {
+        throw error;
+      }
+    }
   }
 
   async sendSms(to: string, message: string): Promise<void> {
     const maskedRecipient = this.maskRecipient(to);
-    this.logger.log(`SMS notification queued -> ${maskedRecipient}`);
-    this.logger.debug(`SMS payload length: ${message.length}`);
+
+    if (!this.smsProvider) {
+      this.logger.log(`SMS notification queued -> ${maskedRecipient}`);
+      this.logger.debug(`SMS payload length: ${message.length}`);
+      return;
+    }
+
+    try {
+      await this.smsProvider.send({ to, body: message });
+      this.logger.log(`SMS notification sent -> ${maskedRecipient}`);
+      this.logger.debug(`SMS payload length: ${message.length}`);
+    } catch (error) {
+      this.logger.error(
+        `SMS notification failed for recipient ${maskedRecipient}`,
+      );
+      if (this.strictMode) {
+        throw error;
+      }
+    }
+  }
+
+  private resolveEmailProvider(): EmailProvider | null {
+    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
+    const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL');
+
+    if (!apiKey || !fromEmail) {
+      return null;
+    }
+
+    return new SendGridEmailProvider(apiKey, fromEmail);
+  }
+
+  private resolveSmsProvider(): SmsProvider | null {
+    const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
+    const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    const fromNumber = this.configService.get<string>('TWILIO_FROM_NUMBER');
+
+    if (!accountSid || !authToken || !fromNumber) {
+      return null;
+    }
+
+    return new TwilioSmsProvider(accountSid, authToken, fromNumber);
   }
 
   private maskRecipient(value: string): string {

@@ -14,6 +14,7 @@ import { KycController, AdminKycController } from './kyc.controller';
 import { KycService } from './kyc.service';
 import { DocumentStorageService } from './document-storage.service';
 import { NotificationService } from './notification.service';
+import { DocumentAccessService } from './document-access.service';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
 import { IdentityBootstrapService } from './identity.bootstrap.service';
@@ -49,6 +50,7 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
     PermissionsGuard,
     KycService,
     DocumentStorageService,
+    DocumentAccessService,
     NotificationService,
     AuditService,
     IdentityBootstrapService,

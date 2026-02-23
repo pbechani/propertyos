@@ -25,6 +25,7 @@ export const envValidationSchema = Joi.object({
   S3_REGION: Joi.string().optional(),
   S3_ACCESS_KEY: Joi.string().optional(),
   S3_SECRET_KEY: Joi.string().optional(),
+  SIGNED_URL_EXPIRY_SECONDS: Joi.number().integer().min(60).default(3600),
 
   // Secrets
   // Required in staging/production; optional in development/test where Vault may supply them
@@ -55,6 +56,7 @@ export const envValidationSchema = Joi.object({
   TWILIO_ACCOUNT_SID: Joi.string().optional(),
   TWILIO_AUTH_TOKEN: Joi.string().optional(),
   TWILIO_FROM_NUMBER: Joi.string().optional(),
+  NOTIFICATIONS_STRICT_MODE: Joi.boolean().default(false),
   ENCRYPTION_KEY: Joi.string()
     .min(32)
     .when('NODE_ENV', {

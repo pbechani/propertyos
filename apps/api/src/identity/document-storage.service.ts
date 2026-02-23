@@ -33,6 +33,20 @@ export class DocumentStorageService {
     };
   }
 
+  generateDownloadUrl(params: {
+    storagePath: string;
+    expiresInSeconds?: number;
+  }): { signedUrl: string } {
+    if (!params.storagePath || !params.storagePath.startsWith('kyc/')) {
+      throw new BadRequestException('Invalid KYC document storage path');
+    }
+
+    const expiresInSeconds = params.expiresInSeconds ?? 3600;
+    return {
+      signedUrl: `https://storage.pribec.local/${params.storagePath}?expiresIn=${expiresInSeconds}`,
+    };
+  }
+
   private validateFile(file: Express.Multer.File): void {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
