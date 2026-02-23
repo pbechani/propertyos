@@ -63,6 +63,7 @@ type ListingCard = {
   garage: number;
   sqm: number;
   propertyType: string;
+  status: 'draft' | 'active' | 'under_offer' | 'sold' | 'withdrawn';
   features: string[];
   verified: boolean;
   fraudFlagged: boolean;
@@ -109,6 +110,7 @@ function mapPropertyToListingCard(property: PropertyListing): ListingCard {
     garage: property.parking_spaces ?? 0,
     sqm: property.area_sqm ? Number(property.area_sqm) : 0,
     propertyType: propertyTypeMap[property.property_type] ?? "house",
+    status: property.status,
     features,
     verified: property.verification_status === "verified",
     fraudFlagged: property.verification_status === "flagged",
@@ -117,6 +119,21 @@ function mapPropertyToListingCard(property: PropertyListing): ListingCard {
     image: primaryImage || DEFAULT_PROPERTY_IMAGE,
     createdAt: property.created_at,
   };
+}
+
+function getListingStatusBadge(status: ListingCard['status']) {
+  switch (status) {
+    case 'active':
+      return { label: 'ON SHOW', className: 'bg-blue-600 text-white' };
+    case 'under_offer':
+      return { label: 'OFFER SUBMITTED', className: 'bg-amber-600 text-white' };
+    case 'sold':
+      return { label: 'SOLD', className: 'bg-emerald-600 text-white' };
+    case 'withdrawn':
+      return { label: 'WITHDRAWN', className: 'bg-gray-600 text-white' };
+    default:
+      return { label: 'DRAFT', className: 'bg-gray-500 text-white' };
+  }
 }
 
 export default function Listings() {
@@ -1082,6 +1099,15 @@ export default function Listings() {
                 to={`/app/property/${property.id}`}
                 className="group"
               >
+                {(() => {
+                  const statusBadge = getListingStatusBadge(property.status);
+                  const verificationBadge = property.fraudFlagged
+                    ? { label: 'FLAGGED', className: 'bg-red-600 text-white' }
+                    : property.verified
+                      ? { label: 'VERIFIED', className: 'bg-green-500 text-white' }
+                      : { label: 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
+
+                  return (
                 <Card className={`overflow-hidden hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-col md:flex-row" : ""}`}>
                   <div className={`relative ${viewMode === "list" ? "md:w-80 flex-shrink-0" : ""}`}>
                     <img
@@ -1089,16 +1115,13 @@ export default function Listings() {
                       alt={property.title}
                       className={`w-full object-cover ${viewMode === "list" ? "h-48 md:h-full" : "h-48 md:h-64"}`}
                     />
-                    {property.fraudFlagged ? (
-                      <Badge className="absolute top-3 left-3 bg-red-600">
-                        ⚠️ FLAGGED
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      <Badge className={verificationBadge.className}>
+                        {verificationBadge.label === 'VERIFIED' && <Shield className="w-3 h-3 mr-1" />}
+                        {verificationBadge.label}
                       </Badge>
-                    ) : property.verified ? (
-                      <Badge className="absolute top-3 left-3 bg-green-500">
-                        <Shield className="w-3 h-3 mr-1" />
-                        VERIFIED
-                      </Badge>
-                    ) : null}
+                      <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+                    </div>
                     <button
                       className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50"
                       aria-label="Save property"
@@ -1142,6 +1165,8 @@ export default function Listings() {
                     </div>
                   </div>
                 </Card>
+                  );
+                })()}
               </Link>
             ))}
             </div>
