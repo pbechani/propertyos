@@ -38,3 +38,22 @@ export const ALLOWED_MEDIA_MIME_TYPES = new Set([
   'video/quicktime',
   'video/webm',
 ]);
+
+export function resolvePropertyActorRole(
+  roles: string[] | undefined,
+  fallback: string,
+): string {
+  if (!roles || roles.length === 0) {
+    return fallback;
+  }
+
+  if (roles.includes('admin')) {
+    return 'admin';
+  }
+
+  if (roles.includes('agent')) {
+    return 'agent';
+  }
+
+  return roles[0] ?? fallback;
+}

@@ -17,6 +17,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { InquiryService } from './inquiry.service';
 import { SavedPropertiesService } from './saved-properties.service';
 import { CreateInquiryDto, RespondInquiryDto } from './property.dto';
+import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
   user: { sub: string; email: string; roles: string[] };
@@ -68,7 +69,7 @@ export class BuyerController {
     @Body() dto: CreateInquiryDto,
     @Request() req: AuthRequest,
   ) {
-    const role = req.user.roles?.[0] ?? 'buyer_seller';
+    const role = resolvePropertyActorRole(req.user.roles, 'buyer_seller');
     return this.inquiryService.create(
       id,
       req.user.sub,
@@ -92,7 +93,7 @@ export class BuyerController {
     @Query('offset') offset?: string,
     @Request() req?: AuthRequest,
   ) {
-    const agentRole = req!.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req!.user.roles, 'agent');
     return this.inquiryService.findByProperty(id, req!.user.sub, agentRole, {
       limit: limit ? parseInt(limit, 10) : undefined,
       offset: offset ? parseInt(offset, 10) : undefined,
@@ -119,7 +120,7 @@ export class InquiryResponseController {
     @Body() dto: RespondInquiryDto,
     @Request() req: AuthRequest,
   ) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     return this.inquiryService.respond(
       id,
       req.user.sub,

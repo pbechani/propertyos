@@ -23,6 +23,7 @@ import {
   UpdatePropertyDto,
   SearchPropertiesDto,
 } from './property.dto';
+import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
   user: { sub: string; email: string; roles: string[] };
@@ -42,7 +43,7 @@ export class PropertyController {
   @Roles('agent', 'admin')
   @Post()
   async create(@Body() dto: CreatePropertyDto, @Request() req: AuthRequest) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     return this.propertyService.create(
       req.user.sub,
       agentRole,
@@ -82,7 +83,7 @@ export class PropertyController {
     @Body() dto: UpdatePropertyDto,
     @Request() req: AuthRequest,
   ) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     return this.propertyService.update(
       id,
       req.user.sub,
@@ -104,7 +105,7 @@ export class PropertyController {
     @Param('id', ParseUUIDPipe) id: string,
     @Request() req: AuthRequest,
   ) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     await this.propertyService.delete(
       id,
       req.user.sub,
@@ -128,7 +129,7 @@ export class PropertyController {
     @UploadedFile() file: Express.Multer.File,
     @Request() req: AuthRequest,
   ) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     return this.propertyService.addMedia(
       id,
       req.user.sub,
@@ -151,7 +152,7 @@ export class PropertyController {
     @Param('mediaId', ParseUUIDPipe) mediaId: string,
     @Request() req: AuthRequest,
   ) {
-    const agentRole = req.user.roles?.[0] ?? 'agent';
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
     await this.propertyService.deleteMedia(
       id,
       mediaId,
