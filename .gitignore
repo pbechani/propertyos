@@ -67,3 +67,5 @@ infrastructure/terraform/.terraform.lock.hcl
 .cache/
 tmp/
 temp/
+
+sample_ui/
