@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Listings layout alignment with property detail shell** (2026-02-23)
+  - `apps/web/src/views/Listings.tsx`
+    - Aligned Listings page frame to the same shell pattern used by property detail (`bg-gray-50 min-h-screen` + centered `max-w-7xl` content wrapper).
+    - Updated grid view to render a single card per row (`grid-cols-1`) for consistent vertical scanning.
+
+- **Listings AI voice search implementation + microphone diagnostics** (2026-02-23)
+  - `apps/web/src/views/Listings.tsx`
+    - Replaced simulated voice-search timeout behavior with real browser speech recognition (`SpeechRecognition` + `webkitSpeechRecognition` fallback).
+    - Wired recognized transcript into existing AI parsing flow so `Apply AI Search` updates active listing filters (location, property type, beds/baths, features, price bounds, verified-only).
+    - Added explicit voice-status guidance for unsupported browsers, insecure origins (non-HTTPS/non-localhost), blocked microphone permissions, no-speech events, and missing microphone devices.
+    - Added a reusable `Start Listening` action within the modal and ensured recognition is stopped on cancel/close/apply/unmount.
+
 - **Listings/client request resilience + sold listing action guard** (2026-02-23)
   - `apps/web/src/views/PropertyDetailEnhanced.tsx`
     - Blocked inquiries and viewing requests when `listingStatus` is `sold`.
