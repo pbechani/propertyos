@@ -1,8 +1,8 @@
 # Sprint 02 — Completion Summary
 
 **Sprint:** 02 — Identity, Auth, RBAC & KYC  
-**Completed:** 2026-02-21  
-**Final Audit Grade:** PASS — 152/152 tests passing, all issues resolved across 3 audit rounds  
+**Completed:** 2026-02-22  
+**Final Audit Grade:** PASS — Sprint 02 + Sprint 02.1 hardening complete  
 **Next Sprint:** Sprint 03 — Property Marketplace ✅ APPROVED TO START
 
 ---
@@ -21,8 +21,8 @@ Sprint 02 built the complete identity and trust layer for the platform. All 11 d
 | Role assignment workflow | ✅ | Admin endpoints with audit logs |
 | KYC document upload & review workflow | ✅ | Full state machine with admin start-review/approve/reject |
 | Admin verification dashboard APIs | ✅ | Paginated pending list |
-| Notification service (email + SMS abstraction) | ✅ | PII-masked stub; provider wiring deferred (D3) |
-| Document storage service | ✅ | Upload validation done; S3 real URLs deferred (D2) |
+| Notification service (email + SMS abstraction) | ✅ | SendGrid/Twilio adapters with env-gated fallback + strict mode |
+| Document storage service | ✅ | Upload validation + signed download URLs with owner/admin access control |
 | Append-only audit log infrastructure | ✅ | DB trigger + application layer, immutable |
 
 ---
@@ -127,6 +127,7 @@ Sprint 02 tables reference only within `identity.*`. **No cross-schema FK refere
 |--------|------|------|-------|
 | POST | `/kyc/submit` | JWT | 409 if active submission exists |
 | GET | `/kyc/status` | JWT | — |
+| GET | `/kyc/:id/documents/:documentType/download-url` | JWT | Owner or admin only; audited |
 | GET | `/admin/kyc/pending` | Admin | Paginated (`?limit&offset`) |
 | GET | `/admin/kyc/:id` | Admin | — |
 | POST | `/admin/kyc/:id/start-review` | Admin | `pending → under_review` |
@@ -149,8 +150,9 @@ Sprint 02 tables reference only within `identity.*`. **No cross-schema FK refere
 | `UsersService` | `identity/users.service.ts` | User CRUD, role management, KYC status; `getLatestKycStatus()` returns `null` for no KYC |
 | `KycService` | `identity/kyc.service.ts` | KYC state machine; all transitions return `{ record, previousStatus }` |
 | `AuditService` | `identity/audit.service.ts` | Writes to `identity.audit_logs`; used by all controllers |
-| `NotificationService` | `identity/notification.service.ts` | PII-masked log stub; ready for provider wiring |
-| `DocumentStorageService` | `identity/document-storage.service.ts` | Upload validation; returns stub URLs until S3 wired |
+| `NotificationService` | `identity/notification.service.ts` | SendGrid/Twilio provider orchestration with strict/non-strict behavior |
+| `DocumentStorageService` | `identity/document-storage.service.ts` | Upload validation + signed download URL generation helper |
+| `DocumentAccessService` | `identity/document-access.service.ts` | Owner/admin authorization + audited KYC document URL issuance |
 | `IdentityBootstrapService` | `identity/identity.bootstrap.service.ts` | Seeds roles + permissions on startup (`ON CONFLICT DO NOTHING`) |
 | `JwtStrategy` | `identity/auth/jwt.strategy.ts` | Validates JWT; throws on startup if `JWT_SECRET` missing in prod/staging |
 | `JwtAuthGuard` | `identity/rbac/jwt-auth.guard.ts` | Requires valid JWT |
@@ -248,8 +250,7 @@ These were explicitly deferred and are not blockers for Sprint 03 but **must be 
 | # | Item | Risk | When |
 |---|------|------|------|
 | D1 | OAuth provider token verification (verify token against Google/Apple/Facebook before trusting `dto.email`) | High — any caller can impersonate an email | Before staging |
-| D2 | S3 real signed URLs in `DocumentStorageService` (`storage.pribec.local` is a stub) | High — no real file storage | Before real user onboarding |
-| D3 | Notification provider integration (SendGrid / Twilio) | Medium — emails/SMS not sent | Before staging |
+| D2 | Replace stub URL construction with true S3/MinIO presigned URL generation | Medium — current signed URLs are deterministic stubs | Before staging |
 
 ---
 

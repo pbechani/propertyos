@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sprint 02.1 — Identity Hardening Completion** (2026-02-22)
+  - Added provider-based notification adapters in API:
+    - `apps/api/src/identity/notifications/email.sendgrid.provider.ts`
+    - `apps/api/src/identity/notifications/sms.twilio.provider.ts`
+    - `apps/api/src/identity/notifications/types.ts`
+  - `NotificationService` now supports env-gated provider delivery with fallback and strict mode (`NOTIFICATIONS_STRICT_MODE`)
+  - Added signed KYC document download URL flow with access control:
+    - New service: `apps/api/src/identity/document-access.service.ts`
+    - New endpoint: `GET /api/v1/kyc/:id/documents/:documentType/download-url`
+    - Authorization: owner or admin only
+    - Audit event: `kyc.document_download_url_issued`
+  - Added tests for hardening work:
+    - `apps/api/src/identity/notification.service.spec.ts`
+    - `apps/api/src/identity/document-access.service.spec.ts`
+    - `apps/api/src/identity/document-storage.service.spec.ts`
+  - Added web client support for secure KYC document retrieval:
+    - `adminKycApi.getDocumentDownloadUrl()` in `apps/web/src/lib/api-client.ts`
+    - `AdminVerificationPanel` now opens backend-issued secure URLs for all available KYC documents
+
 - **Phase UI-2 — Sprint 02 Screen Wiring to Backend** (2026-02-22)
   - Wired all 8 Sprint 02 identity/auth screens to the live NestJS API at `localhost:3001/api/v1`
   - Extended `apps/web/src/lib/api-client.ts` with:
@@ -66,6 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - E2E infrastructure tests (`infrastructure.e2e-spec.ts`)
 
 ### Fixed
+- **AdminVerificationPanel accessibility/style diagnostics**
+  - Added accessible names to severity/category selects
+  - Replaced `flex-shrink-0` with `shrink-0` where flagged
 - **[High] CSS typography inconsistency across all screens** — `apps/web/src/app/globals.css` was missing the base typography layer present in `sample_ui/src/styles/theme.css`. Added `h1`–`h4`, `label`, `button`, `input` font-size/weight/line-height defaults plus `@keyframes wave` / `.animate-wave` inside `@layer base`. All Tailwind utility classes continue to override these defaults per-component.
 - **[Critical] Admin self-registration** — `RegisterDto` now validates role against `SELF_REGISTRATION_ROLES` (excludes `admin`)
 - **[High] Suspended/deleted users could obtain tokens** — `login()` checks `user.status === 'active'` after password validation
