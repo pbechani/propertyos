@@ -9,15 +9,35 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { authApi, ApiError } from "@/lib/api-client";
 import { saveAuthSession } from "@/lib/auth-session";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginEnhanced() {
   const navigate = useNavigate();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const nextPathParam = searchParams.get('next');
+  const hasSafeNextPath = Boolean(nextPathParam && nextPathParam.startsWith('/') && !nextPathParam.startsWith('//'));
+  const nextPath = hasSafeNextPath ? nextPathParam : null;
+
+  const handleCancel = () => {
+    if (nextPath) {
+      navigate(nextPath);
+      return;
+    }
+
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    navigate('/');
+  };
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,7 +47,7 @@ export default function LoginEnhanced() {
     try {
       const response = await authApi.login({ email, password });
       saveAuthSession(response);
-      navigate("/app");
+      navigate(nextPath ?? "/app");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -40,7 +60,8 @@ export default function LoginEnhanced() {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    navigate(`/oauth-connect?provider=${provider}`);
+    const nextQuery = nextPath ? `&next=${encodeURIComponent(nextPath)}` : '';
+    navigate(`/oauth-connect?provider=${provider}${nextQuery}`);
   };
 
   return (
@@ -138,6 +159,16 @@ export default function LoginEnhanced() {
             >
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              className="w-full py-3"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
           </form>
 
           <div className="mt-6">
@@ -182,7 +213,10 @@ export default function LoginEnhanced() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
-              <Link to="/register" className="text-black font-semibold hover:underline">
+              <Link
+                to={nextPath ? `/register?next=${encodeURIComponent(nextPath)}` : "/register"}
+                className="text-black font-semibold hover:underline"
+              >
                 Sign Up
               </Link>
             </p>

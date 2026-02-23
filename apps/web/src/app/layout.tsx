@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import HomeNavbar from '@/components/HomeNavbar';
 
 export const metadata: Metadata = {
   title: 'PRIBEC - Real Estate & Construction Trust Platform',
@@ -33,7 +34,10 @@ export default function RootLayout({
             }
           })();`}
         </Script>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <HomeNavbar />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -3,8 +3,13 @@
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "./ui/button";
+import { cn } from "./ui/utils";
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  className?: string;
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps = {}) {
   const { toggleTheme } = useTheme();
 
   return (
@@ -12,7 +17,7 @@ export function ThemeToggle() {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className="relative border-gray-300 dark:border-gray-700"
+      className={cn("relative border-gray-300 dark:border-gray-700", className)}
       aria-label="Toggle theme"
     >
       <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

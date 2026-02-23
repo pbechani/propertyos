@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { Home, Clock, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,11 @@ import { clearAuthSession } from "@/lib/auth-session";
 
 export default function SessionExpired() {
   const navigate = useNavigate();
+  const [expiredAt, setExpiredAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    setExpiredAt(new Date().toLocaleTimeString());
+  }, []);
 
   // Clear any stale session data when the user lands on this page.
   useEffect(() => {
@@ -62,7 +67,7 @@ export default function SessionExpired() {
             </div>
 
             <div className="mt-6 space-y-2 text-sm text-gray-600">
-              <p>Session expired at: {new Date().toLocaleTimeString()}</p>
+              <p>Session expired at: {expiredAt ?? "—"}</p>
               <p className="text-xs">
                 If you were in the middle of something, don't worry - your progress has been saved
                 automatically.

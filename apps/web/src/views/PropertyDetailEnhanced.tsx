@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from "react";
-import { Link } from "@/lib/router-compat";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "@/lib/router-compat";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   MapPin, Bed, Bath, Car, Maximize, Heart, Share2, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, MapPinned, Shield, AlertTriangle,
@@ -10,8 +11,33 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getAccessToken } from "@/lib/auth-session";
+import { propertiesApi } from "@/lib/api-client";
+
+const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop";
+
+function formatMoney(price: string, currency: string): string {
+  const value = Number(price);
+  const safeValue = Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: currency || "ZAR",
+    maximumFractionDigits: 0,
+  }).format(safeValue);
+}
+
+function toFeatureLabel(feature: string): string {
+  return feature
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (part) => part.toUpperCase());
+}
 
 export default function PropertyDetailEnhanced() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const propertyId = typeof id === "string" ? id : "";
   const [selectedImage, setSelectedImage] = useState(0);
   const [showFraudReport, setShowFraudReport] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -26,8 +52,174 @@ export default function PropertyDetailEnhanced() {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
   const [carouselOffset, setCarouselOffset] = useState(0);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(false);
+  const [propertyError, setPropertyError] = useState("");
+  const [inquiryName, setInquiryName] = useState("");
+  const [inquiryEmail, setInquiryEmail] = useState("");
+  const [inquiryPhone, setInquiryPhone] = useState("");
+  const [inquiryMessage, setInquiryMessage] = useState("");
+  const [inquiryError, setInquiryError] = useState("");
+  const [inquirySuccess, setInquirySuccess] = useState("");
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
+  const [fraudReportType, setFraudReportType] = useState<
+    'double_sale' | 'fake_title' | 'non_existent' | 'misrepresentation' | 'other'
+  >('misrepresentation');
+  const [fraudDescription, setFraudDescription] = useState("");
+  const [fraudError, setFraudError] = useState("");
+  const [fraudSuccess, setFraudSuccess] = useState("");
+  const [isSubmittingFraud, setIsSubmittingFraud] = useState(false);
+  const [scheduleError, setScheduleError] = useState("");
+  const [scheduleSuccess, setScheduleSuccess] = useState("");
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
 
-  const property = {
+  const handleAddToFavourites = () => {
+    const token = getAccessToken();
+    if (!token) {
+      const query = searchParams.toString();
+      const currentPath = `${pathname}${query ? `?${query}` : ''}`;
+      navigate(`/login?next=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
+    // TODO: Persist saved property when favorites backend endpoint is available.
+  };
+
+  const getActionToken = () => {
+    const token = getAccessToken();
+    if (!token) {
+      const query = searchParams.toString();
+      const currentPath = `${pathname}${query ? `?${query}` : ''}`;
+      navigate(`/login?next=${encodeURIComponent(currentPath)}`);
+      return null;
+    }
+
+    return token;
+  };
+
+  const handleSubmitInquiry = async () => {
+    if (!propertyId) {
+      setInquiryError("Unable to identify this listing.");
+      return;
+    }
+
+    const token = getActionToken();
+    if (!token) {
+      return;
+    }
+
+    const payloadMessage = [
+      inquiryMessage.trim() || "General inquiry",
+      inquiryName.trim() ? `Name: ${inquiryName.trim()}` : "",
+      inquiryEmail.trim() ? `Email: ${inquiryEmail.trim()}` : "",
+      inquiryPhone.trim() ? `Phone: ${inquiryPhone.trim()}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    setIsSubmittingInquiry(true);
+    setInquiryError("");
+    setInquirySuccess("");
+
+    try {
+      await propertiesApi.createInquiry(token, propertyId, {
+        inquiryType: 'question',
+        message: payloadMessage,
+      });
+      setInquirySuccess("Inquiry sent successfully.");
+      setInquiryMessage("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send inquiry right now.";
+      setInquiryError(message);
+    } finally {
+      setIsSubmittingInquiry(false);
+    }
+  };
+
+  const handleSubmitFraudReport = async () => {
+    if (!propertyId) {
+      setFraudError("Unable to identify this listing.");
+      return;
+    }
+
+    if (!fraudDescription.trim()) {
+      setFraudError("Please provide a description.");
+      return;
+    }
+
+    const token = getActionToken();
+    if (!token) {
+      return;
+    }
+
+    setIsSubmittingFraud(true);
+    setFraudError("");
+    setFraudSuccess("");
+
+    try {
+      await propertiesApi.submitFraudReport(token, propertyId, {
+        reportType: fraudReportType,
+        description: fraudDescription.trim(),
+      });
+      setFraudSuccess("Fraud report submitted successfully.");
+      setFraudDescription("");
+      setTimeout(() => setShowFraudReport(false), 1200);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit fraud report right now.";
+      setFraudError(message);
+    } finally {
+      setIsSubmittingFraud(false);
+    }
+  };
+
+  const handleConfirmViewing = async () => {
+    if (!propertyId) {
+      setScheduleError("Unable to identify this listing.");
+      return;
+    }
+
+    if (!selectedDate || !selectedTime || !viewerName.trim() || !viewerEmail.trim() || !viewerPhone.trim()) {
+      setScheduleError("Please complete date, time and contact details before confirming.");
+      return;
+    }
+
+    const token = getActionToken();
+    if (!token) {
+      return;
+    }
+
+    setIsSubmittingSchedule(true);
+    setScheduleError("");
+    setScheduleSuccess("");
+
+    try {
+      await propertiesApi.createInquiry(token, propertyId, {
+        inquiryType: 'viewing',
+        preferredDate: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
+        message: [
+          `Viewing Type: ${viewingType === 'inPerson' ? 'In-Person' : 'Virtual'}`,
+          `Name: ${viewerName}`,
+          `Email: ${viewerEmail}`,
+          `Phone: ${viewerPhone}`,
+          specialRequests.trim() ? `Special Requests: ${specialRequests.trim()}` : '',
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      });
+
+      setScheduleSuccess("Viewing request submitted successfully.");
+      setTimeout(() => {
+        setShowScheduleModal(false);
+        setScheduleStep(1);
+      }, 1200);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit viewing request right now.";
+      setScheduleError(message);
+    } finally {
+      setIsSubmittingSchedule(false);
+    }
+  };
+
+  const defaultProperty = {
     title: "Contemporary Coastal Residence",
     address: "4.2 Beach Road, Sea Point, Cape Town, 8005",
     price: "R 12,500,000",
@@ -93,6 +285,90 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
     }
   };
 
+  const [property, setProperty] = useState(defaultProperty);
+
+  useEffect(() => {
+    if (!propertyId) {
+      return;
+    }
+
+    const loadProperty = async () => {
+      setIsLoadingProperty(true);
+      setPropertyError("");
+
+      try {
+        const listing = await propertiesApi.getById(propertyId);
+
+        let mappedAgent = defaultProperty.agent;
+        if (listing.agent_id) {
+          try {
+            const profile = await propertiesApi.getAgentProfile(listing.agent_id);
+            const trustScore =
+              profile.totalListings > 0
+                ? Math.min(
+                    100,
+                    Math.round((profile.verifiedListings / profile.totalListings) * 100),
+                  )
+                : 0;
+
+            mappedAgent = {
+              id: profile.id,
+              name: `${profile.firstName} ${profile.lastName}`.trim(),
+              title: profile.primaryCity,
+              verified: profile.status === "active",
+              trustScore,
+              image: profile.avatarUrl || DEFAULT_AGENT_IMAGE,
+            };
+          } catch {
+            mappedAgent = {
+              ...defaultProperty.agent,
+              id: listing.agent_id,
+            };
+          }
+        }
+
+        const city = listing.location?.city ?? "";
+        const region = listing.location?.region ?? "";
+        const country = listing.location?.country ?? "";
+        const address = [city, region, country].filter(Boolean).join(", ") || "Address unavailable";
+        const images =
+          listing.media?.map((media) => media.url).filter(Boolean) ?? [];
+        const mappedFeatures = Array.isArray(listing.features)
+          ? listing.features
+              .filter((feature): feature is string => typeof feature === "string")
+              .map((feature) => ({ label: toFeatureLabel(feature), icon: true }))
+          : [];
+
+        setProperty((prev) => ({
+          ...prev,
+          title: listing.title,
+          address,
+          price: formatMoney(listing.price, listing.currency),
+          beds: listing.bedrooms ?? 0,
+          baths: listing.bathrooms ?? 0,
+          garage: listing.parking_spaces ?? 0,
+          floorArea: listing.area_sqm ? Number(listing.area_sqm) : 0,
+          images: images.length > 0 ? images : prev.images,
+          description: listing.description || prev.description,
+          features: mappedFeatures.length > 0 ? mappedFeatures : prev.features,
+          agent: mappedAgent,
+          verification: {
+            ...prev.verification,
+            status: listing.verification_status.toUpperCase(),
+          },
+        }));
+        setSelectedImage(0);
+        setCarouselOffset(0);
+      } catch {
+        setPropertyError("Unable to load property from database right now.");
+      } finally {
+        setIsLoadingProperty(false);
+      }
+    };
+
+    void loadProperty();
+  }, [propertyId]);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
@@ -104,6 +380,18 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
       </div>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
+        {isLoadingProperty && (
+          <Card className="mb-6 p-4 text-sm text-blue-700 bg-blue-50 border-blue-200">
+            Loading property details from database...
+          </Card>
+        )}
+
+        {!isLoadingProperty && propertyError && (
+          <Card className="mb-6 p-4 text-sm text-red-700 bg-red-50 border-red-200">
+            {propertyError}
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -132,7 +420,12 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 </div>
                 {/* Actions */}
                 <div className="absolute top-4 right-4 flex gap-2">
-                  <button className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50">
+                  <button
+                    className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
+                    onClick={handleAddToFavourites}
+                    aria-label="Add property to favourites"
+                    title="Add property to favourites"
+                  >
                     <Heart className="w-5 h-5" />
                   </button>
                   <button className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50">
@@ -448,7 +741,7 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Link 
-                      to={`/agent-profile/${property.agent.id}`}
+                      to={`/agent-profile/${property.agent.id}?back=${encodeURIComponent(pathname || '/app/listings')}`}
                       className="font-semibold hover:text-blue-600 transition-colors"
                     >
                       {property.agent.name}
@@ -471,6 +764,8 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   <input
                     type="text"
                     placeholder="John Doe"
+                    value={inquiryName}
+                    onChange={(event) => setInquiryName(event.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -479,6 +774,8 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   <input
                     type="email"
                     placeholder="john@example.com"
+                    value={inquiryEmail}
+                    onChange={(event) => setInquiryEmail(event.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -487,6 +784,8 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   <input
                     type="tel"
                     placeholder="+27 00 000 0000"
+                    value={inquiryPhone}
+                    onChange={(event) => setInquiryPhone(event.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -495,11 +794,23 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   <textarea
                     placeholder="I am interested in this property..."
                     rows={3}
+                    value={inquiryMessage}
+                    onChange={(event) => setInquiryMessage(event.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                  Send Inquiry
+                {inquiryError && (
+                  <div className="text-sm text-red-600">{inquiryError}</div>
+                )}
+                {inquirySuccess && (
+                  <div className="text-sm text-green-600">{inquirySuccess}</div>
+                )}
+                <Button
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                  onClick={handleSubmitInquiry}
+                  disabled={isSubmittingInquiry}
+                >
+                  {isSubmittingInquiry ? "Sending..." : "Send Inquiry"}
                 </Button>
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" className="flex items-center justify-center gap-2">
@@ -555,12 +866,16 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Issue Type</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                  <option>Fake Listing</option>
-                  <option>Price Manipulation</option>
-                  <option>Misleading Information</option>
-                  <option>Ownership Dispute</option>
-                  <option>Other</option>
+                <select
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  value={fraudReportType}
+                  onChange={(event) => setFraudReportType(event.target.value as typeof fraudReportType)}
+                >
+                  <option value="non_existent">Fake Listing</option>
+                  <option value="misrepresentation">Price Manipulation / Misleading Information</option>
+                  <option value="fake_title">Ownership or Title Issue</option>
+                  <option value="double_sale">Double Sale</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
               <div>
@@ -568,15 +883,23 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 <textarea
                   rows={4}
                   placeholder="Please provide details about the issue..."
+                  value={fraudDescription}
+                  onChange={(event) => setFraudDescription(event.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"
                 />
               </div>
+              {fraudError && <div className="text-sm text-red-600">{fraudError}</div>}
+              {fraudSuccess && <div className="text-sm text-green-600">{fraudSuccess}</div>}
               <div className="flex gap-3">
                 <Button onClick={() => setShowFraudReport(false)} variant="outline" className="flex-1">
                   Cancel
                 </Button>
-                <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white">
-                  Submit Report
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleSubmitFraudReport}
+                  disabled={isSubmittingFraud}
+                >
+                  {isSubmittingFraud ? "Submitting..." : "Submit Report"}
                 </Button>
               </div>
             </div>
@@ -626,6 +949,8 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             </div>
 
             <div className="space-y-4">
+              {scheduleError && <div className="text-sm text-red-600">{scheduleError}</div>}
+              {scheduleSuccess && <div className="text-sm text-green-600">{scheduleSuccess}</div>}
               {/* Step 1: Select Viewing Type */}
               {scheduleStep === 1 && (
                 <div>
@@ -893,15 +1218,12 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 )}
                 {scheduleStep === 4 && (
                   <Button 
-                    onClick={() => {
-                      setShowScheduleModal(false);
-                      setScheduleStep(1);
-                      // Here you would normally send the booking data to the backend
-                    }}
+                    onClick={handleConfirmViewing}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                    disabled={isSubmittingSchedule}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Confirm Booking
+                    {isSubmittingSchedule ? "Submitting..." : "Confirm Booking"}
                   </Button>
                 )}
               </div>

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { authApi, ApiError } from "@/lib/api-client";
 import { saveAuthSession } from "@/lib/auth-session";
+import { useSearchParams } from "next/navigation";
 
 export default function Register() {
   const navigate = useNavigate();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,6 +25,10 @@ export default function Register() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const nextPathParam = searchParams.get('next');
+  const hasSafeNextPath = Boolean(nextPathParam && nextPathParam.startsWith('/') && !nextPathParam.startsWith('//'));
+  const nextPath = hasSafeNextPath ? nextPathParam : null;
 
   const handleNext = async () => {
     setError("");
@@ -64,7 +70,11 @@ export default function Register() {
       }
 
       saveAuthSession(response);
-      navigate(`/email-verification?email=${encodeURIComponent(formData.email)}`);
+      if (nextPath) {
+        navigate(nextPath);
+      } else {
+        navigate(`/email-verification?email=${encodeURIComponent(formData.email)}`);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -456,7 +466,10 @@ export default function Register() {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Already have an account?{" "}
-              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+              <Link
+                to={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
+                className="text-blue-600 font-semibold hover:underline"
+              >
                 Sign In
               </Link>
             </p>

@@ -60,6 +60,44 @@ export type PropertyWithLocation = PropertyRecord & {
   }[];
 };
 
+export type FeaturedAgent = {
+  id: string;
+  fullName: string;
+  location: string;
+  tier: 'gold' | 'silver' | 'bronze';
+  deals: number;
+};
+
+export type AgentProfileListing = {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  currency: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: string | null;
+  status: string;
+  verification_status: string;
+  created_at: Date;
+  media_url: string | null;
+};
+
+export type AgentProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: string;
+  totalListings: number;
+  activeListings: number;
+  verifiedListings: number;
+  primaryCity: string;
+  listings: AgentProfileListing[];
+};
+
 @Injectable()
 export class PropertyService {
   constructor(
@@ -265,6 +303,7 @@ export class PropertyService {
   async search(
     dto: SearchPropertiesDto,
   ): Promise<{ data: PropertyWithLocation[]; total: number; page: number; limit: number }> {
+    const agentId = dto.agentId ?? dto.agent_id;
     const minPrice = dto.minPrice ?? dto.min_price;
     const maxPrice = dto.maxPrice ?? dto.max_price;
     const radiusKm = dto.radiusKm ?? dto.radius_km ?? DEFAULT_RADIUS_KM;
@@ -282,6 +321,11 @@ export class PropertyService {
     if (dto.type) {
       conditions.push(`p.property_type = $${idx++}`);
       values.push(dto.type);
+    }
+
+    if (agentId) {
+      conditions.push(`p.agent_id = $${idx++}::uuid`);
+      values.push(agentId);
     }
 
     if (minPrice !== undefined) {
@@ -437,6 +481,173 @@ export class PropertyService {
       byStatus,
       newInquiries7d: parseInt(inquiryRows[0]?.count ?? '0', 10),
       verificationSummary,
+    };
+  }
+
+  async getFeaturedAgents(limit = 8): Promise<FeaturedAgent[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        city: string | null;
+        active_listings: string;
+        verified_listings: string;
+      }[]
+    >(
+      `
+      SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        MAX(loc.city) AS city,
+        COUNT(*)::text AS active_listings,
+        COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings
+      FROM property.properties p
+      JOIN identity.users u ON u.id = p.agent_id
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE p.status = 'active' AND p.agent_id IS NOT NULL
+      GROUP BY u.id, u.first_name, u.last_name
+      ORDER BY COUNT(*) FILTER (WHERE p.verification_status = 'verified') DESC, COUNT(*) DESC
+      LIMIT $1
+      `,
+      limit,
+    );
+
+    return rows.map((row) => {
+      const verifiedListings = parseInt(row.verified_listings, 10) || 0;
+      const activeListings = parseInt(row.active_listings, 10) || 0;
+      const tier: FeaturedAgent['tier'] =
+        verifiedListings >= 10 ? 'gold' : verifiedListings >= 5 ? 'silver' : 'bronze';
+
+      return {
+        id: row.id,
+        fullName: `${row.first_name} ${row.last_name}`.trim(),
+        location: row.city ?? 'Location unavailable',
+        tier,
+        deals: activeListings,
+      };
+    });
+  }
+
+  async getAgentProfile(agentId: string): Promise<AgentProfile> {
+    const profileRows = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone: string | null;
+        avatar_url: string | null;
+        status: string;
+        total_listings: string;
+        active_listings: string;
+        verified_listings: string;
+        primary_city: string | null;
+      }[]
+    >(
+      `
+      SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.phone,
+        u.avatar_url,
+        u.status,
+        COUNT(p.id)::text AS total_listings,
+        COUNT(*) FILTER (WHERE p.status = 'active')::text AS active_listings,
+        COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings,
+        MAX(loc.city) AS primary_city
+      FROM identity.users u
+      LEFT JOIN property.properties p ON p.agent_id = u.id
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE u.id = $1::uuid
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status
+      LIMIT 1
+      `,
+      agentId,
+    );
+
+    if (!profileRows[0]) {
+      throw new NotFoundException('Agent not found');
+    }
+
+    const listings = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        title: string;
+        city: string | null;
+        region: string | null;
+        price: string;
+        currency: string;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        area_sqm: string | null;
+        status: string;
+        verification_status: string;
+        created_at: Date;
+        media_url: string | null;
+      }[]
+    >(
+      `
+      SELECT
+        p.id,
+        p.title,
+        loc.city,
+        loc.region,
+        p.price::text,
+        p.currency,
+        p.bedrooms,
+        p.bathrooms,
+        p.area_sqm::text,
+        p.status,
+        p.verification_status,
+        p.created_at,
+        (
+          SELECT pm.url
+          FROM property.property_media pm
+          WHERE pm.property_id = p.id
+          ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.created_at ASC
+          LIMIT 1
+        ) AS media_url
+      FROM property.properties p
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE p.agent_id = $1::uuid
+      ORDER BY p.created_at DESC
+      LIMIT 12
+      `,
+      agentId,
+    );
+
+    const profile = profileRows[0];
+
+    return {
+      id: profile.id,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      email: profile.email,
+      phone: profile.phone,
+      avatarUrl: profile.avatar_url,
+      status: profile.status,
+      totalListings: parseInt(profile.total_listings, 10) || 0,
+      activeListings: parseInt(profile.active_listings, 10) || 0,
+      verifiedListings: parseInt(profile.verified_listings, 10) || 0,
+      primaryCity: profile.primary_city ?? 'Location unavailable',
+      listings: listings.map((listing) => ({
+        id: listing.id,
+        title: listing.title,
+        location: [listing.city, listing.region].filter(Boolean).join(', ') || 'Location unavailable',
+        price: listing.price,
+        currency: listing.currency,
+        bedrooms: listing.bedrooms,
+        bathrooms: listing.bathrooms,
+        area_sqm: listing.area_sqm,
+        status: listing.status,
+        verification_status: listing.verification_status,
+        created_at: listing.created_at,
+        media_url: listing.media_url,
+      })),
     };
   }
 

@@ -354,6 +354,18 @@ describe('PropertyService', () => {
       const countCall = mockPrisma.$queryRawUnsafe.mock.calls[0];
       expect(countCall[1]).toBe(200000);
     });
+
+    it('filters by agent_id when provided', async () => {
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([baseProperty]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      await service.search({ agent_id: agentId });
+
+      const countCall = mockPrisma.$queryRawUnsafe.mock.calls[0];
+      expect(countCall[1]).toBe(agentId);
+    });
   });
 
   // ─── addMedia ─────────────────────────────────────────────────────────────
@@ -415,6 +427,105 @@ describe('PropertyService', () => {
       expect(result.byStatus.active).toBe(5);
       expect(result.newInquiries7d).toBe(3);
       expect(result.verificationSummary.verified).toBe(3);
+    });
+  });
+
+  // ─── getFeaturedAgents ───────────────────────────────────────────────────
+
+  describe('getFeaturedAgents', () => {
+    it('returns aggregated featured agents with derived tiers', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([
+        {
+          id: 'agent-1',
+          first_name: 'Alex',
+          last_name: 'Moyo',
+          city: 'Cape Town',
+          active_listings: '12',
+          verified_listings: '10',
+        },
+        {
+          id: 'agent-2',
+          first_name: 'Sam',
+          last_name: 'Ndlovu',
+          city: null,
+          active_listings: '3',
+          verified_listings: '2',
+        },
+      ]);
+
+      const result = await service.getFeaturedAgents(4);
+
+      expect(result).toEqual([
+        {
+          id: 'agent-1',
+          fullName: 'Alex Moyo',
+          location: 'Cape Town',
+          tier: 'gold',
+          deals: 12,
+        },
+        {
+          id: 'agent-2',
+          fullName: 'Sam Ndlovu',
+          location: 'Location unavailable',
+          tier: 'bronze',
+          deals: 3,
+        },
+      ]);
+    });
+  });
+
+  // ─── getAgentProfile ─────────────────────────────────────────────────────
+
+  describe('getAgentProfile', () => {
+    it('returns agent profile with listings', async () => {
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([
+          {
+            id: agentId,
+            first_name: 'Alex',
+            last_name: 'Moyo',
+            email: 'alex@example.com',
+            phone: '+27110000000',
+            avatar_url: null,
+            status: 'active',
+            total_listings: '3',
+            active_listings: '2',
+            verified_listings: '1',
+            primary_city: 'Cape Town',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: propertyId,
+            title: 'Beautiful 3BR Home',
+            city: 'Cape Town',
+            region: 'Western Cape',
+            price: '250000.00',
+            currency: 'USD',
+            bedrooms: 3,
+            bathrooms: 2,
+            area_sqm: '145.00',
+            status: 'active',
+            verification_status: 'verified',
+            created_at: new Date('2026-02-21'),
+            media_url: null,
+          },
+        ]);
+
+      const result = await service.getAgentProfile(agentId);
+
+      expect(result.id).toBe(agentId);
+      expect(result.totalListings).toBe(3);
+      expect(result.listings).toHaveLength(1);
+      expect(result.listings[0].location).toContain('Cape Town');
+    });
+
+    it('throws NotFoundException when agent does not exist', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([]);
+
+      await expect(service.getAgentProfile(agentId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

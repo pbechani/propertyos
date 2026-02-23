@@ -392,11 +392,14 @@ export type PropertyListing = {
   description?: string | null;
   property_type: 'land' | 'residential' | 'commercial' | 'off_plan';
   status: PropertyStatus;
+  agent_id?: string | null;
   price: string;
   currency: string;
   bedrooms?: number | null;
   bathrooms?: number | null;
+  parking_spaces?: number | null;
   area_sqm?: string | null;
+  features?: string[] | null;
   verification_status: PropertyVerificationStatus;
   created_at: string;
   updated_at: string;
@@ -423,7 +426,37 @@ export type PropertySearchResponse = {
   limit: number;
 };
 
+export type AgentProfileResponse = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: string;
+  totalListings: number;
+  activeListings: number;
+  verifiedListings: number;
+  primaryCity: string;
+  listings: Array<{
+    id: string;
+    title: string;
+    location: string;
+    price: string;
+    currency: string;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    area_sqm: string | null;
+    status: string;
+    verification_status: PropertyVerificationStatus;
+    created_at: string;
+    media_url: string | null;
+  }>;
+};
+
 export type PropertySearchParams = {
+  agentId?: string;
+  agent_id?: string;
   type?: 'land' | 'residential' | 'commercial' | 'off_plan';
   min_price?: number;
   max_price?: number;
@@ -481,6 +514,11 @@ export const propertiesApi = {
 
   getById: (id: string) =>
     apiRequest<PropertyListing>(`/properties/${id}`, {
+      method: 'GET',
+    }),
+
+  getAgentProfile: (id: string) =>
+    apiRequest<AgentProfileResponse>(`/properties/agents/${id}/profile`, {
       method: 'GET',
     }),
 

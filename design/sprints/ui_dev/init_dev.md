@@ -141,10 +141,13 @@ export { default } from '@/views/LoginEnhanced';
 | `/risk-analytics` | `RiskAnalyticsDashboard` |
 | `/ai-design-studio` | `AIDesignStudio` |
 | `/admin` | `AdminDashboard` |
-| `/agent-profile` | `AgentProfile` |
+| `/agent-profile/[id]` | `AgentProfile` |
 | `/auth-flow` | `AuthenticationFlow` |
 | `/fraud-report` | `Safety` (fraud report UI) |
 | `/theme-docs` | `ThemeDocumentation` |
+
+Notes:
+- Agent profile supports an optional return parameter: `/agent-profile/[id]?back=/app/property/[id]`.
 
 ---
 

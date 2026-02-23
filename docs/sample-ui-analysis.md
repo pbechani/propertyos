@@ -40,6 +40,12 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `PropertyComparison.tsx` | `/compare` | Sprint 3 — comparison |
 | `PropertyLifecycleDashboard.tsx` | `/property-lifecycle` | Sprint 3/4 — lifecycle view |
 
+Navigation note:
+- Selecting a property from `Listings.tsx` (grid cards or map markers) routes to `/app/property/:id`, which renders `PropertyDetailEnhanced.tsx`.
+- Property detail links from comparison and agent views are also standardized to `/app/property/:id`.
+- Agent profile links opened from `PropertyDetailEnhanced.tsx` include a return path (`?back=`), so the back action returns users to the originating property detail screen.
+- Typical agent profile flow from property detail: `/agent-profile/:id?back=/app/property/:id`.
+
 ### Sales Progression (14 Stages)
 | Page File | Route | Maps To |
 |-----------|-------|---------|
@@ -91,7 +97,7 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `AdminDashboard.tsx` | `/admin` | Cross-sprint — admin panel |
 | `AdminVerificationPanel.tsx` | `/admin/verification` | Sprint 2/9 |
 | `AgentDashboardEnhanced.tsx` | `/app/agent` | Sprint 3/4 — agent portal |
-| `AgentProfile.tsx` | `/agent-profile` | Sprint 7 |
+| `AgentProfile.tsx` | `/agent-profile/:id` | Sprint 7 |
 
 ---
 

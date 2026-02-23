@@ -16,7 +16,9 @@ export function PropertyActions({ propertyId }: PropertyActionsProps) {
   const withAuth = (): string | null => {
     const token = getAccessToken();
     if (!token) {
-      setError('Please log in to perform this action.');
+      setError('Please log in to perform this action. Redirecting to login...');
+      const nextPath = `${window.location.pathname}${window.location.search}`;
+      window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
       return null;
     }
     return token;

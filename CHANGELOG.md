@@ -8,6 +8,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Listings first-load filter defaults update** (2026-02-23)
+  - Updated `apps/web/src/views/Listings.tsx` to start with no selected filters:
+    - `verifiedOnly` default is now `false`
+    - property type defaults are all unselected
+    - location defaults are all unselected
+    - bedroom/bathroom minimum defaults are now `0`
+  - Versioned the listings session-storage key so stale previously-selected filters do not auto-apply on first load after deploy.
+  - Result: listings page initially displays backend data without requiring users to reset filters.
+
+- **Listings location filter UX update** (2026-02-23)
+  - Updated `apps/web/src/views/Listings.tsx` to remove predefined location toggles.
+  - Added assisted location typing using a text input with suggestions (`datalist`) and keyboard support (`Enter`/`,` to add).
+  - Added multi-location selection via removable chips in the filters panel.
+  - Updated filtering logic to match listings against one or more typed locations.
+  - Versioned listings session-storage key to `pribec.listings.view_state.v3` to avoid incompatibility with previously persisted location filter shape.
+
+- **Web UX routing + shell consistency update** (2026-02-23)
+  - Added reusable authenticated app sidebar component:
+    - `apps/web/src/components/AppSidebar.tsx`
+  - Updated app shell behavior in `apps/web/src/components/Layout.tsx`:
+    - Left sidebar now renders only when the user is logged in
+    - Property detail route (`/app/property/:id`) now uses minimal header (search/create-listing toolbar removed)
+    - Listings-style sidebar behavior is reused across app screens when authenticated
+  - Standardized property detail navigation across views to `/app/property/:id`:
+    - `apps/web/src/views/Listings.tsx`
+    - `apps/web/src/views/PropertyComparison.tsx`
+    - `apps/web/src/views/AgentDashboardEnhanced.tsx`
+    - `apps/web/src/views/AgentProfile.tsx`
+  - Added return-path navigation from property detail → agent profile:
+    - `PropertyDetailEnhanced` now links to `/agent-profile/:id?back=/app/property/:id`
+    - `AgentProfile` back button now returns to `back` path when present, otherwise falls back to `/app/listings`
+  - Improved listings filter sidebar responsiveness:
+    - `apps/web/src/views/Listings.tsx` now prevents horizontal overflow when filters are open
+    - Filter controls no longer require left/right scrolling on smaller viewports
+    - Sidebar overlay uses full-screen fixed positioning on mobile for consistent control visibility
+  - Fixed listings filter application logic:
+    - `Apply Filters` now applies selected filter criteria to listing results
+    - Results count and applied filter badges now reflect the active applied filters
+    - `Reset All` now resets both pending and applied filter state
+    - Bedroom/Bathroom `+/-` steppers now reliably update values on click/tap
+  - Improved listings view accessibility labels:
+    - Added `aria-label`/`title` to icon-only controls in `apps/web/src/views/Listings.tsx` (filter close, voice modal close, view toggles, save/bookmark)
+  - Added authentication guard for listing favorites action:
+    - Clicking the listing save/favorite control while logged out now redirects to `/login`
+    - Logged-in flow remains ready for favorites persistence integration
+    - Property detail favorite action now follows the same rule and redirects to `/login?next=<current-path>` when logged out
+  - Added return-to-origin authentication flow:
+    - Login/Register now honor `?next=<path>` and return users to their previous screen after successful auth
+    - Login/Register links preserve the `next` target between screens
+    - Listings saves and restores local view/filter state via `sessionStorage`, so users return with the same listings screen state
+    - Login screen now includes `Cancel`, which returns users to `next` when present, otherwise browser back/home fallback
+  - Updated relevant documentation for routing and flow behavior:
+    - `docs/sample-ui-analysis.md`
+    - `docs/archtecture/routing-map.md`
+    - `docs/archtecture/02_Buyer_IA.md`
+    - `design/sprints/ui_dev/init_dev.md`
+    - `apps/web/src/views/BuyerFlowDocumentation.tsx`
+  - Manual verification checklist:
+    - Logged-out user does not see left sidebar on `/app/*` screens
+    - Logged-in user sees reusable left sidebar on `/app/*` screens
+    - `/app/property/:id` shows minimal header (no search/create-listing toolbar)
+    - Clicking a listing card or map pin opens `/app/property/:id`
+    - Opening agent profile from property detail appends `?back=/app/property/:id`
+    - Back action on agent profile returns to originating property detail page
+    - Direct agent-profile visits without `back` still return to `/app/listings`
+
 - **Sprint 02.1 — Identity Hardening Completion** (2026-02-22)
   - Added provider-based notification adapters in API:
     - `apps/api/src/identity/notifications/email.sendgrid.provider.ts`
@@ -85,6 +151,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - E2E infrastructure tests (`infrastructure.e2e-spec.ts`)
 
 ### Fixed
+- **[Critical] React hydration mismatch on initial page load** (2026-02-23)
+  - `apps/web/src/contexts/ThemeContext.tsx` — `useState(getInitialTheme)` was used as a lazy initializer, causing `localStorage`/`window.matchMedia` to be read synchronously during the client's first render while the server always returns `"light"`. Fixed by initializing state to `"light"` on both server and client and syncing to the real user preference in a dedicated `useEffect` after mount. The existing inline `<Script>` in `layout.tsx` continues to stamp the correct class on `<html>` before React hydrates, so there is no FOUC.
+  - `apps/web/src/views/Listings.tsx` — `Math.random()` was called directly inside JSX for the voice-search waveform visualization, producing a different value on every render (server ≠ client). Replaced with a stable array of fixed heights computed via `useMemo` with no dependencies.
+  - `apps/web/src/views/SessionExpired.tsx` — `new Date().toLocaleTimeString()` was rendered inline; the timestamp captured at SSR time differed from the one captured at client hydration. Moved to a `useState` / `useEffect` pattern — renders `"—"` until mounted.
+  - `apps/web/src/views/LogisticsDeliveryMarketplace.tsx` — same `new Date().toLocaleString()` inline render pattern. Applied the same `useState` / `useEffect` fix with a `"—"` placeholder until mount.
+
 - **AdminVerificationPanel accessibility/style diagnostics**
   - Added accessible names to severity/category selects
   - Replaced `flex-shrink-0` with `shrink-0` where flagged

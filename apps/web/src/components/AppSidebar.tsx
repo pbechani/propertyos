@@ -1,0 +1,186 @@
+'use client';
+
+import Link from 'next/link';
+import { Home, Building2, Shield, BarChart3, User, Settings, Menu, X } from 'lucide-react';
+
+interface AppSidebarProps {
+  pathname: string;
+  isAuthenticated: boolean;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (value: boolean | ((prev: boolean) => boolean)) => void;
+  showMobileMenu: boolean;
+  setShowMobileMenu: (value: boolean) => void;
+}
+
+const navigation = [
+  { name: 'Dashboard', href: '/app', icon: Home },
+  { name: 'Agent Dashboard', href: '/app/agent', icon: User },
+  { name: 'Listings', href: '/app/listings', icon: Building2 },
+  { name: 'Safety', href: '/app/safety', icon: Shield },
+  { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+];
+
+const quickLinks = [
+  { name: 'Buyer View', href: '/buyer-workspace' },
+  { name: 'Conveyancer View', href: '/conveyancer' },
+  { name: 'Property Workspace', href: '/workspace/1' },
+  { name: 'Escrow & Financial', href: '/escrow' },
+  { name: 'Construction', href: '/construction' },
+  { name: 'Marketplace', href: '/contractor-supplier-marketplace' },
+  { name: 'BOQ Workspace', href: '/boq-workspace' },
+  { name: 'Inspection & Verification', href: '/inspection-verification' },
+  { name: 'Logistics & Delivery', href: '/logistics-delivery-marketplace' },
+  { name: 'Risk & Analytics', href: '/risk-analytics' },
+  { name: 'AI Design Studio', href: '/ai-design-studio' },
+  { name: 'Property Lifecycle', href: '/property-lifecycle' },
+  { name: 'Compare Properties', href: '/compare' },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === '/app') return pathname === '/app';
+  return pathname.startsWith(href);
+}
+
+export function AppSidebar({
+  pathname,
+  isAuthenticated,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
+  showMobileMenu,
+  setShowMobileMenu,
+}: AppSidebarProps) {
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <>
+      <aside className={`hidden lg:flex bg-card border-r border-border flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`p-2 border-b border-border flex ${isSidebarCollapsed ? 'justify-center' : 'justify-start'}`}>
+          <button
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="inline-flex p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2" aria-label="Main navigation">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+              className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
+                isActive(pathname, item.href)
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-muted-foreground hover:bg-accent'
+              }`}
+              title={item.name}
+            >
+              <item.icon className="w-5 h-5" />
+              {!isSidebarCollapsed && <span className="font-medium">{item.name}</span>}
+            </Link>
+          ))}
+        </nav>
+
+        {!isSidebarCollapsed && (
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-sm">Marcus Sterling</div>
+                <div className="text-xs text-muted-foreground">Senior Agent</div>
+              </div>
+              <button
+                aria-label="Open settings"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mt-2">
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {showMobileMenu && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileMenu(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card flex flex-col">
+            <div className="p-6 border-b border-border flex justify-end">
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                aria-label="Close navigation menu"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <nav className="flex-1 p-4 space-y-2" aria-label="Mobile main navigation">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setShowMobileMenu(false)}
+                  aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive(pathname, item.href)
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-muted-foreground hover:bg-accent'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t border-border">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Marcus Sterling</div>
+                  <div className="text-xs text-muted-foreground">Senior Agent</div>
+                </div>
+                <button
+                  aria-label="Open settings"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mt-2">
+                {quickLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}

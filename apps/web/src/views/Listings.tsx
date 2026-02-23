@@ -1,19 +1,149 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MapPin, Filter, Grid3x3, List, Bookmark, Shield, Search, Map, X, Mic, MicOff, Sparkles, Volume2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "@/lib/router-compat";
+import { Link, useNavigate } from "@/lib/router-compat";
+import { getAccessToken } from "@/lib/auth-session";
+import { propertiesApi, type PropertyListing } from "@/lib/api-client";
+import { usePathname, useSearchParams } from "next/navigation";
+
+const getDefaultFilters = () => ({
+  verifiedOnly: false,
+  propertyTypes: {
+    house: false,
+    apartment: false,
+    land: false,
+    commercial: false,
+  },
+  locations: [] as string[],
+  minPrice: "",
+  maxPrice: "",
+  minBedrooms: 0,
+  minBathrooms: 0,
+  features: {
+    pool: false,
+    garden: false,
+    petFriendly: false,
+    security: false,
+  },
+});
+
+type ListingsFilters = ReturnType<typeof getDefaultFilters>;
+
+type ListingsViewState = {
+  viewMode: "grid" | "list" | "map";
+  showDesktopFilters: boolean;
+  sortBy: "relevance" | "price-low-high" | "price-high-low" | "newest";
+  pendingFilters: ListingsFilters;
+  appliedFilters: ListingsFilters;
+};
+
+const LISTINGS_VIEW_STATE_KEY = 'pribec.listings.view_state.v3';
+
+const LOCATION_SUGGESTIONS = [
+  'Cape Town',
+  'Johannesburg',
+  'Durban',
+  'Gaborone',
+  'Francistown',
+  'Harare',
+  'Lusaka',
+];
+
+type ListingCard = {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  beds: number;
+  baths: number;
+  garage: number;
+  sqm: number;
+  propertyType: string;
+  features: string[];
+  verified: boolean;
+  fraudFlagged: boolean;
+  agent: string;
+  agentCompany: string;
+  image: string;
+  createdAt: string;
+};
+
+const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
+
+function formatPrice(amount: number, currency: string): string {
+  return new Intl.NumberFormat("en-ZA", {
+    style: "currency",
+    currency: currency || "ZAR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function mapPropertyToListingCard(property: PropertyListing): ListingCard {
+  const numericPrice = Number(property.price);
+  const city = property.location?.city ?? "";
+  const region = property.location?.region ?? "";
+  const location = [city, region].filter(Boolean).join(", ") || "Location unavailable";
+  const primaryImage = property.media?.find((media) => media.is_primary)?.url;
+  const features = Array.isArray(property.features)
+    ? property.features.filter((feature): feature is string => typeof feature === "string")
+    : [];
+
+  const propertyTypeMap: Record<PropertyListing['property_type'], string> = {
+    residential: "house",
+    off_plan: "apartment",
+    land: "land",
+    commercial: "commercial",
+  };
+
+  return {
+    id: property.id,
+    title: property.title,
+    location,
+    price: Number.isFinite(numericPrice) ? formatPrice(numericPrice, property.currency) : formatPrice(0, property.currency),
+    beds: property.bedrooms ?? 0,
+    baths: property.bathrooms ?? 0,
+    garage: property.parking_spaces ?? 0,
+    sqm: property.area_sqm ? Number(property.area_sqm) : 0,
+    propertyType: propertyTypeMap[property.property_type] ?? "house",
+    features,
+    verified: property.verification_status === "verified",
+    fraudFlagged: property.verification_status === "flagged",
+    agent: "Verified Agent",
+    agentCompany: "PRIBEC Agent Network",
+    image: primaryImage || DEFAULT_PROPERTY_IMAGE,
+    createdAt: property.created_at,
+  };
+}
 
 export default function Listings() {
+  const navigate = useNavigate();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const [showDesktopFilters, setShowDesktopFilters] = useState(true);
+  const [sortBy, setSortBy] = useState<"relevance" | "price-low-high" | "price-high-low" | "newest">("relevance");
   const [isListening, setIsListening] = useState(false);
   const [voiceSearchText, setVoiceSearchText] = useState("");
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [locationInput, setLocationInput] = useState("");
+  const [pendingFilters, setPendingFilters] = useState(getDefaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState(getDefaultFilters);
+  const [properties, setProperties] = useState<ListingCard[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [propertiesError, setPropertiesError] = useState("");
+
+  // Pre-computed stable heights for the voice-search waveform visualisation.
+  // Using useMemo (no deps) so the values are identical on server and client.
+  const waveHeights = useMemo(
+    () => [32, 44, 20, 40, 28, 52, 36, 24, 48, 32, 44, 28],
+    []
+  );
 
   const handleVoiceSearch = () => {
     setShowVoiceModal(true);
@@ -43,107 +173,240 @@ export default function Listings() {
     // Apply the search filters based on voice input
   };
 
-  const properties = [
-    {
-      id: 1,
-      title: "88 Sunset Boulevard",
-      location: "Camps Bay, Cape Town",
-      price: "R 12,500,000",
-      beds: 4,
-      baths: 3.5,
-      garage: 2,
-      sqm: 340,
-      verified: true,
-      stage: "Stage 3 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "Sarah Jenkins",
-      agentCompany: "PRIBEC Premier Agent",
-      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=500&h=400&fit=crop",
-    },
-    {
-      id: 2,
-      title: "204 Sky View",
-      location: "Sea Point, Cape Town",
-      price: "R 4,250,000",
-      beds: 2,
-      baths: 2,
-      garage: 1,
-      sqm: 112,
-      verified: true,
-      stage: "Stage 1 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "Michelle V.",
-      agentCompany: "Pam Golding Properties",
-      image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500&h=400&fit=crop",
-    },
-    {
-      id: 3,
-      title: "45 Green Oaks",
-      location: "Riverside Suburb",
-      price: "R 8,750,000",
-      beds: 3,
-      baths: 2,
-      garage: 2,
-      sqm: 240,
-      verified: true,
-      stage: "Stage 2 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "David Chen",
-      agentCompany: "Platinum Realty",
-      image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=500&h=400&fit=crop",
-    },
-    {
-      id: 4,
-      title: "15 Ocean Drive",
-      location: "Clifton, Cape Town",
-      price: "R 18,900,000",
-      beds: 5,
-      baths: 4,
-      garage: 3,
-      sqm: 450,
-      verified: true,
-      stage: "Stage 4 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "Lisa Anderson",
-      agentCompany: "Luxury Estates",
-      image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500&h=400&fit=crop",
-    },
-    {
-      id: 5,
-      title: "22 Mountain View",
-      location: "Constantia, Cape Town",
-      price: "R 6,500,000",
-      beds: 4,
-      baths: 3,
-      garage: 2,
-      sqm: 320,
-      verified: true,
-      stage: "Stage 1 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "John Smith",
-      agentCompany: "Prime Properties",
-      image: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=500&h=400&fit=crop",
-    },
-    {
-      id: 6,
-      title: "88 Harbor Road",
-      location: "V&A Waterfront, Cape Town",
-      price: "R 11,200,000",
-      beds: 3,
-      baths: 2.5,
-      garage: 2,
-      sqm: 280,
-      verified: true,
-      stage: "Stage 2 of 14",
-      status: "TRANSACTION PIPELINE",
-      agent: "Emma Wilson",
-      agentCompany: "Waterfront Realty",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500&h=400&fit=crop",
-    },
-  ];
+  const handleApplyFilters = () => {
+    setAppliedFilters(pendingFilters);
+    setShowFilters(false);
+  };
+
+  const handleResetFilters = () => {
+    const defaults = getDefaultFilters();
+    setLocationInput("");
+    setPendingFilters(defaults);
+    setAppliedFilters(defaults);
+  };
+
+  const addPendingLocation = () => {
+    const normalized = locationInput.trim();
+    if (!normalized) {
+      return;
+    }
+
+    setPendingFilters((prev) => {
+      const exists = prev.locations.some(
+        (location) => location.toLowerCase() === normalized.toLowerCase(),
+      );
+
+      if (exists) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        locations: [...prev.locations, normalized],
+      };
+    });
+
+    setLocationInput("");
+  };
+
+  const removePendingLocation = (locationToRemove: string) => {
+    setPendingFilters((prev) => ({
+      ...prev,
+      locations: prev.locations.filter((location) => location !== locationToRemove),
+    }));
+  };
+
+  const handleAddToFavourites = () => {
+    const token = getAccessToken();
+    if (!token) {
+      const query = searchParams.toString();
+      const currentPath = `${pathname}${query ? `?${query}` : ''}`;
+      navigate(`/login?next=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
+    // TODO: Persist saved property when favorites backend endpoint is available.
+  };
+
+  useEffect(() => {
+    const loadProperties = async () => {
+      setIsLoadingProperties(true);
+      setPropertiesError("");
+
+      try {
+        const response = await propertiesApi.search({
+          sort: "newest",
+          limit: 100,
+        });
+
+        setProperties(response.data.map(mapPropertyToListingCard));
+      } catch {
+        setProperties([]);
+        setPropertiesError("Unable to load listings from database right now.");
+      } finally {
+        setIsLoadingProperties(false);
+      }
+    };
+
+    void loadProperties();
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(LISTINGS_VIEW_STATE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const restored = JSON.parse(raw) as Partial<ListingsViewState>;
+      if (restored.viewMode) setViewMode(restored.viewMode);
+      if (typeof restored.showDesktopFilters === 'boolean') setShowDesktopFilters(restored.showDesktopFilters);
+      if (restored.sortBy) setSortBy(restored.sortBy);
+      if (restored.pendingFilters) setPendingFilters(restored.pendingFilters as ListingsFilters);
+      if (restored.appliedFilters) setAppliedFilters(restored.appliedFilters as ListingsFilters);
+    } catch {
+      // Ignore malformed persisted state.
+    }
+  }, []);
+
+  useEffect(() => {
+    const state: ListingsViewState = {
+      viewMode,
+      showDesktopFilters,
+      sortBy,
+      pendingFilters,
+      appliedFilters,
+    };
+
+    window.sessionStorage.setItem(LISTINGS_VIEW_STATE_KEY, JSON.stringify(state));
+  }, [viewMode, showDesktopFilters, sortBy, pendingFilters, appliedFilters]);
+
+  const parsePrice = (price: string) =>
+    Number(price.replace(/[^\d]/g, ''));
+
+  const parsePriceInput = (value: string) => {
+    const normalized = Number(value.replace(/[^\d]/g, ''));
+    if (!Number.isFinite(normalized) || normalized <= 0) {
+      return null;
+    }
+    return normalized;
+  };
+
+  const filteredProperties = useMemo(() => {
+    const minPrice = parsePriceInput(appliedFilters.minPrice);
+    const maxPrice = parsePriceInput(appliedFilters.maxPrice);
+
+    const selectedPropertyTypes = Object.entries(appliedFilters.propertyTypes)
+      .filter(([, selected]) => selected)
+      .map(([type]) => type);
+
+    const selectedLocations = appliedFilters.locations
+      .map((location) => location.trim().toLowerCase())
+      .filter(Boolean);
+
+    const selectedFeatures = Object.entries(appliedFilters.features)
+      .filter(([, selected]) => selected)
+      .map(([feature]) => feature);
+
+    return properties.filter((property) => {
+      const propertyPrice = parsePrice(property.price);
+      const locationLower = property.location.toLowerCase();
+
+      if (appliedFilters.verifiedOnly && !property.verified) {
+        return false;
+      }
+
+      if (selectedPropertyTypes.length > 0 && !selectedPropertyTypes.includes(property.propertyType)) {
+        return false;
+      }
+
+      if (selectedLocations.length > 0) {
+        const matchesLocation = selectedLocations.some((location) =>
+          locationLower.includes(location),
+        );
+
+        if (!matchesLocation) {
+          return false;
+        }
+      }
+
+      if (minPrice !== null && propertyPrice < minPrice) {
+        return false;
+      }
+
+      if (maxPrice !== null && propertyPrice > maxPrice) {
+        return false;
+      }
+
+      if (property.beds < appliedFilters.minBedrooms) {
+        return false;
+      }
+
+      if (property.baths < appliedFilters.minBathrooms) {
+        return false;
+      }
+
+      if (selectedFeatures.length > 0 && !selectedFeatures.every((feature) => property.features.includes(feature))) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [appliedFilters, properties]);
+
+  const sortedProperties = useMemo(() => {
+    if (sortBy === 'relevance') {
+      return filteredProperties;
+    }
+
+    const list = [...filteredProperties];
+
+    if (sortBy === 'price-low-high') {
+      return list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+    }
+
+    if (sortBy === 'price-high-low') {
+      return list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+    }
+
+    return list.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [sortBy, filteredProperties]);
+
+  const fraudFlaggedCount = useMemo(
+    () => properties.filter((property) => property.fraudFlagged).length,
+    [properties],
+  );
+
+  const activeFilterBadges = useMemo(() => {
+    const badges: string[] = [];
+
+    if (appliedFilters.propertyTypes.house) badges.push('House');
+    if (appliedFilters.propertyTypes.apartment) badges.push('Apartment');
+    if (appliedFilters.propertyTypes.land) badges.push('Land');
+    if (appliedFilters.propertyTypes.commercial) badges.push('Commercial');
+
+    appliedFilters.locations.forEach((location) => badges.push(location));
+
+    if (appliedFilters.verifiedOnly) badges.push('Verified Only');
+
+    const minPrice = parsePriceInput(appliedFilters.minPrice);
+    const maxPrice = parsePriceInput(appliedFilters.maxPrice);
+    if (minPrice !== null || maxPrice !== null) {
+      const minLabel = minPrice !== null ? `R ${(minPrice / 1_000_000).toFixed(0)}M` : 'Any';
+      const maxLabel = maxPrice !== null ? `R ${(maxPrice / 1_000_000).toFixed(0)}M` : 'Any';
+      badges.push(`${minLabel} - ${maxLabel}`);
+    }
+
+    if (appliedFilters.minBedrooms > 0) badges.push(`${appliedFilters.minBedrooms}+ Beds`);
+    if (appliedFilters.minBathrooms > 0) badges.push(`${appliedFilters.minBathrooms}+ Baths`);
+
+    return badges;
+  }, [appliedFilters]);
 
   return (
-    <div className="h-full flex flex-col lg:flex-row">
+    <div className="h-full flex flex-col lg:flex-row overflow-x-hidden">
       {/* Mobile Filter Button */}
       <div className="lg:hidden bg-white border-b border-gray-200 p-4">
         <Button 
@@ -158,23 +421,26 @@ export default function Listings() {
 
       {/* Filters Sidebar */}
       <div className={`
-        ${showFilters ? 'block' : 'hidden'} lg:block
-        w-full lg:w-80 
+        ${showFilters ? 'block' : 'hidden'}
+        ${showDesktopFilters ? 'lg:block' : 'lg:hidden'}
+        w-full lg:w-80 shrink-0 max-w-full
         bg-white border-r border-gray-200 
         p-4 md:p-6 
-        overflow-auto
-        ${showFilters ? 'absolute inset-0 z-50 lg:relative' : ''}
+        overflow-y-auto overflow-x-hidden
+        ${showFilters ? 'fixed inset-0 z-50 lg:relative' : ''}
       `}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between gap-2 mb-6">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Filter className="w-5 h-5" />
             Filters
           </h2>
           <div className="flex items-center gap-2">
-            <button className="text-blue-500 text-sm hover:underline">Reset All</button>
+            <button className="text-blue-500 text-sm hover:underline" onClick={handleResetFilters}>Reset All</button>
             <button 
               onClick={() => setShowFilters(false)}
               className="lg:hidden p-2 hover:bg-gray-100 rounded"
+              aria-label="Close filters"
+              title="Close filters"
             >
               <X className="w-5 h-5" />
             </button>
@@ -188,7 +454,17 @@ export default function Listings() {
               <Shield className="w-4 h-4 text-green-600" />
               <span className="font-medium">Verified Only</span>
             </div>
-            <input type="checkbox" className="toggle" defaultChecked />
+            <input
+              type="checkbox"
+              className="toggle"
+              checked={pendingFilters.verifiedOnly}
+              onChange={(event) =>
+                setPendingFilters((prev) => ({
+                  ...prev,
+                  verifiedOnly: event.target.checked,
+                }))
+              }
+            />
           </label>
         </div>
 
@@ -197,19 +473,55 @@ export default function Listings() {
           <h3 className="font-medium mb-3">PROPERTY TYPE</h3>
           <div className="space-y-2">
             <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked />
+              <input
+                type="checkbox"
+                checked={pendingFilters.propertyTypes.house}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    propertyTypes: { ...prev.propertyTypes, house: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">House</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.propertyTypes.apartment}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    propertyTypes: { ...prev.propertyTypes, apartment: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Apartment</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.propertyTypes.land}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    propertyTypes: { ...prev.propertyTypes, land: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Land</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.propertyTypes.commercial}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    propertyTypes: { ...prev.propertyTypes, commercial: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Commercial</span>
             </label>
           </div>
@@ -218,40 +530,82 @@ export default function Listings() {
         {/* Location */}
         <div className="mb-6 pb-6 border-b border-gray-200">
           <h3 className="font-medium mb-3">LOCATION</h3>
-          <input
-            type="text"
-            placeholder="Search location..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
-          <div className="mt-3 space-y-2">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked />
-              <span className="text-sm">Cape Town</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" />
-              <span className="text-sm">Johannesburg</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" />
-              <span className="text-sm">Durban</span>
-            </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              list="location-suggestions"
+              placeholder="Type location and press Enter"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              value={locationInput}
+              onChange={(event) => setLocationInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ',') {
+                  event.preventDefault();
+                  addPendingLocation();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              onClick={addPendingLocation}
+            >
+              Add
+            </button>
+          </div>
+          <datalist id="location-suggestions">
+            {LOCATION_SUGGESTIONS.map((location) => (
+              <option key={location} value={location} />
+            ))}
+          </datalist>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {pendingFilters.locations.length > 0 ? (
+              pendingFilters.locations.map((location) => (
+                <Badge key={location} variant="secondary" className="gap-1">
+                  {location}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${location}`}
+                    onClick={() => removePendingLocation(location)}
+                    className="ml-1 text-gray-500 hover:text-gray-800"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-gray-500">No locations selected</span>
+            )}
           </div>
         </div>
 
         {/* Price Range */}
         <div className="mb-6 pb-6 border-b border-gray-200">
           <h3 className="font-medium mb-3">PRICE RANGE</h3>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <input
               type="text"
               placeholder="R 1,000,000"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              value={pendingFilters.minPrice}
+              onChange={(event) =>
+                setPendingFilters((prev) => ({
+                  ...prev,
+                  minPrice: event.target.value,
+                }))
+              }
             />
             <input
               type="text"
               placeholder="R 25,000,000"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              value={pendingFilters.maxPrice}
+              onChange={(event) =>
+                setPendingFilters((prev) => ({
+                  ...prev,
+                  maxPrice: event.target.value,
+                }))
+              }
             />
           </div>
         </div>
@@ -263,11 +617,33 @@ export default function Listings() {
             <div className="flex items-center justify-between">
               <span className="text-sm">Bedrooms</span>
               <div className="flex items-center gap-2">
-                <button className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center">
+                <button
+                  type="button"
+                  className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPendingFilters((prev) => ({
+                      ...prev,
+                      minBedrooms: Math.max(0, prev.minBedrooms - 1),
+                    }));
+                  }}
+                >
                   -
                 </button>
-                <span className="w-12 text-center">3+</span>
-                <button className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center">
+                <span className="w-12 text-center">{pendingFilters.minBedrooms}+</span>
+                <button
+                  type="button"
+                  className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPendingFilters((prev) => ({
+                      ...prev,
+                      minBedrooms: prev.minBedrooms + 1,
+                    }));
+                  }}
+                >
                   +
                 </button>
               </div>
@@ -275,11 +651,33 @@ export default function Listings() {
             <div className="flex items-center justify-between">
               <span className="text-sm">Bathrooms</span>
               <div className="flex items-center gap-2">
-                <button className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center">
+                <button
+                  type="button"
+                  className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPendingFilters((prev) => ({
+                      ...prev,
+                      minBathrooms: Math.max(0, prev.minBathrooms - 1),
+                    }));
+                  }}
+                >
                   -
                 </button>
-                <span className="w-12 text-center">2+</span>
-                <button className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center">
+                <span className="w-12 text-center">{pendingFilters.minBathrooms}+</span>
+                <button
+                  type="button"
+                  className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPendingFilters((prev) => ({
+                      ...prev,
+                      minBathrooms: prev.minBathrooms + 1,
+                    }));
+                  }}
+                >
                   +
                 </button>
               </div>
@@ -292,25 +690,61 @@ export default function Listings() {
           <h3 className="font-medium mb-3">FEATURES</h3>
           <div className="space-y-2">
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.features.pool}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    features: { ...prev.features, pool: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Pool</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.features.garden}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    features: { ...prev.features, garden: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Garden</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.features.petFriendly}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    features: { ...prev.features, petFriendly: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Pet Friendly</span>
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" />
+              <input
+                type="checkbox"
+                checked={pendingFilters.features.security}
+                onChange={(event) =>
+                  setPendingFilters((prev) => ({
+                    ...prev,
+                    features: { ...prev.features, security: event.target.checked },
+                  }))
+                }
+              />
               <span className="text-sm">Security</span>
             </label>
           </div>
         </div>
 
-        <Button className="w-full bg-blue-500 hover:bg-blue-600">
+        <Button className="w-full bg-blue-500 hover:bg-blue-600" onClick={handleApplyFilters}>
           <Search className="w-4 h-4 mr-2" />
           Apply Filters
         </Button>
@@ -349,6 +783,8 @@ export default function Listings() {
                 <button
                   onClick={() => setShowVoiceModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close AI voice search"
+                  title="Close AI voice search"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -377,7 +813,7 @@ export default function Listings() {
                             key={i}
                             className="w-1 bg-gradient-to-t from-purple-600 to-blue-600 rounded-full animate-wave"
                             style={{
-                              height: `${Math.random() * 40 + 20}px`,
+                              height: `${waveHeights[i]}px`,
                               animationDelay: `${i * 0.1}s`
                             }}
                           ></div>
@@ -486,7 +922,7 @@ export default function Listings() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Results Header */}
         <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -494,22 +930,41 @@ export default function Listings() {
               <h2 className="text-lg md:text-xl font-semibold mb-1">
                 <span className="text-green-600 flex items-center gap-2">
                   <Shield className="w-5 h-5" />
-                  142 Verified Properties Found
+                  {sortedProperties.length} {appliedFilters.verifiedOnly ? 'Verified ' : ''}Propert{sortedProperties.length === 1 ? 'y' : 'ies'} Found
                 </span>
               </h2>
               <div className="flex items-center gap-2 text-xs md:text-sm flex-wrap">
                 <span className="text-gray-600">APPLIED:</span>
-                <Badge variant="secondary">Cape Town</Badge>
-                <Badge variant="secondary">Verified Only</Badge>
-                <Badge variant="secondary" className="hidden sm:inline-flex">R 5M - R 20M</Badge>
+                {activeFilterBadges.length > 0 ? (
+                  activeFilterBadges.map((badge) => (
+                    <Badge key={badge} variant="secondary">{badge}</Badge>
+                  ))
+                ) : (
+                  <Badge variant="secondary">No Filters</Badge>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto">
-              <select className="flex-1 sm:flex-none px-3 md:px-4 py-2 border border-gray-300 rounded-lg text-xs md:text-sm">
-                <option>Sort by: Relevance</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Newest First</option>
+              <Button
+                variant="outline"
+                className="hidden lg:inline-flex"
+                onClick={() => setShowDesktopFilters((prev) => !prev)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showDesktopFilters ? 'Hide Filters' : 'Show Filters'}
+              </Button>
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  setSortBy(event.target.value as "relevance" | "price-low-high" | "price-high-low" | "newest")
+                }
+                className="flex-1 sm:flex-none px-3 md:px-4 py-2 border border-gray-300 rounded-lg text-xs md:text-sm"
+                aria-label="Sort properties"
+              >
+                <option value="relevance">Sort by: Relevance</option>
+                <option value="price-low-high">Price: Low to High</option>
+                <option value="price-high-low">Price: High to Low</option>
+                <option value="newest">Newest First</option>
               </select>
               <div className="flex gap-1 border border-gray-300 rounded-lg p-1">
                 <button
@@ -517,6 +972,8 @@ export default function Listings() {
                   className={`p-2 rounded ${
                     viewMode === "grid" ? "bg-gray-100" : "hover:bg-gray-50"
                   }`}
+                  aria-label="Grid view"
+                  title="Grid view"
                 >
                   <Grid3x3 className="w-4 h-4" />
                 </button>
@@ -525,6 +982,8 @@ export default function Listings() {
                   className={`p-2 rounded ${
                     viewMode === "list" ? "bg-gray-100" : "hover:bg-gray-50"
                   }`}
+                  aria-label="List view"
+                  title="List view"
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -533,6 +992,7 @@ export default function Listings() {
                   className={`p-2 rounded ${
                     viewMode === "map" ? "bg-gray-100" : "hover:bg-gray-50"
                   }`}
+                  aria-label="Map view"
                   title="Map View"
                 >
                   <Map className="w-4 h-4" />
@@ -543,20 +1003,34 @@ export default function Listings() {
         </div>
 
         {/* Alert Banner */}
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-4 md:mx-6 my-4 md:my-6">
-          <div className="flex items-start gap-3">
-            <div className="text-yellow-600">⚠️</div>
-            <div>
-              <h3 className="font-semibold text-yellow-800 mb-1 text-sm md:text-base">
-                Fraud Alert: Unverified Listings Detected
-              </h3>
-              <p className="text-xs md:text-sm text-yellow-700">
-                We have hidden 3 listings that did not pass our initial blockchain verification check.
-                Always ensure the green verified shield is present before proceeding.
-              </p>
+        {fraudFlaggedCount > 0 && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-4 md:mx-6 my-4 md:my-6">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-600">⚠️</div>
+              <div>
+                <h3 className="font-semibold text-yellow-800 mb-1 text-sm md:text-base">
+                  Fraud Alert: {fraudFlaggedCount} Listing{fraudFlaggedCount === 1 ? '' : 's'} Flagged
+                </h3>
+                <p className="text-xs md:text-sm text-yellow-700">
+                  We identified {fraudFlaggedCount} listing{fraudFlaggedCount === 1 ? '' : 's'} as potentially fraudulent.
+                  Always ensure the green verified shield is present before proceeding.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {isLoadingProperties && (
+          <div className="mx-4 md:mx-6 mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            Loading listings from database...
+          </div>
+        )}
+
+        {!isLoadingProperties && propertiesError && (
+          <div className="mx-4 md:mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {propertiesError}
+          </div>
+        )}
 
         {/* Map View */}
         {viewMode === "map" && (
@@ -568,18 +1042,22 @@ export default function Listings() {
                 className="w-full h-full object-cover opacity-70"
               />
               {/* Property pins on map */}
-              {properties.slice(0, 4).map((property, idx) => (
-                <div 
+              {sortedProperties.slice(0, 4).map((property, idx) => (
+                <Link
                   key={property.id}
-                  className="absolute bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors"
-                  style={{
-                    top: `${30 + idx * 15}%`,
-                    left: `${25 + idx * 20}%`
-                  }}
-                  title={property.title}
+                  to={`/app/property/${property.id}`}
                 >
-                  <div className="font-bold text-sm whitespace-nowrap">{property.price}</div>
-                </div>
+                  <div
+                    className="absolute bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                    style={{
+                      top: `${30 + idx * 15}%`,
+                      left: `${25 + idx * 20}%`
+                    }}
+                    title={property.title}
+                  >
+                    <div className="font-bold text-sm whitespace-nowrap">{property.price}</div>
+                  </div>
+                </Link>
               ))}
               <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm hidden md:block">
                 <div className="text-sm font-semibold mb-2">Map View</div>
@@ -592,11 +1070,16 @@ export default function Listings() {
         {/* Properties Grid */}
         {viewMode !== "map" && (
           <div className="flex-1 overflow-auto p-4 md:p-6">
+            {!isLoadingProperties && sortedProperties.length === 0 && !propertiesError && (
+              <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-600">
+                No properties found in the database for the selected filters.
+              </div>
+            )}
             <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6" : "flex flex-col gap-4 md:gap-6"}>
-            {properties.map((property) => (
+            {sortedProperties.map((property) => (
               <Link
                 key={property.id}
-                to={`/property/${property.id}`}
+                to={`/app/property/${property.id}`}
                 className="group"
               >
                 <Card className={`overflow-hidden hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-col md:flex-row" : ""}`}>
@@ -606,21 +1089,28 @@ export default function Listings() {
                       alt={property.title}
                       className={`w-full object-cover ${viewMode === "list" ? "h-48 md:h-full" : "h-48 md:h-64"}`}
                     />
-                    {property.verified && (
+                    {property.fraudFlagged ? (
+                      <Badge className="absolute top-3 left-3 bg-red-600">
+                        ⚠️ FLAGGED
+                      </Badge>
+                    ) : property.verified ? (
                       <Badge className="absolute top-3 left-3 bg-green-500">
                         <Shield className="w-3 h-3 mr-1" />
                         VERIFIED
                       </Badge>
-                    )}
-                    <button className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50">
+                    ) : null}
+                    <button
+                      className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50"
+                      aria-label="Save property"
+                      title="Save property"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        handleAddToFavourites();
+                      }}
+                    >
                       <Bookmark className="w-4 h-4" />
                     </button>
-                    <div className="absolute bottom-3 left-3">
-                      <Badge variant="secondary" className="bg-blue-900/80 text-white text-xs">
-                        {property.status}
-                      </Badge>
-                      <div className="text-xs text-white mt-1">{property.stage}</div>
-                    </div>
                   </div>
                   <div className="p-4 md:p-5 flex-1">
                     <div className="flex items-start justify-between mb-3 gap-2">

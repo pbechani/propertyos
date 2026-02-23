@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsNumber,
   IsIn,
+  IsUUID,
   IsArray,
   Min,
   Max,
@@ -239,6 +240,14 @@ export class UpdatePropertyDto {
 // ────────────────────────────────────────────────────────────
 
 export class SearchPropertiesDto {
+  @IsOptional()
+  @IsUUID()
+  agentId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  agent_id?: string;
+
   @IsOptional()
   @IsIn(PROPERTY_TYPES)
   type?: PropertyType;

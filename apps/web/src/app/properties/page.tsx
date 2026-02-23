@@ -2,95 +2,6 @@ import Link from 'next/link';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
 
-const FALLBACK_LISTINGS: PropertyCardData[] = [
-  {
-    id: '1',
-    title: '4-Bed Executive Home, Sandton',
-    price: 4800000,
-    currency: 'ZAR',
-    location: 'Sandton, Johannesburg',
-    bedrooms: 4,
-    bathrooms: 3,
-    sqm: 280,
-    propertyType: 'Residential',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 3,
-    agentName: 'Sarah Mokoena',
-    agentTier: 'gold',
-  },
-  {
-    id: '2',
-    title: 'Prime Commercial Land, Accra',
-    price: 620000,
-    currency: 'USD',
-    location: 'East Legon, Accra',
-    sqm: 1200,
-    propertyType: 'Land',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 1,
-    agentName: 'Kwame Asante',
-    agentTier: 'gold',
-  },
-  {
-    id: '3',
-    title: 'Off-Plan Luxury Apartment',
-    price: 2100000,
-    currency: 'ZAR',
-    location: 'Umhlanga, Durban',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 180,
-    propertyType: 'Off-Plan',
-    verified: true,
-    pipelineStage: 5,
-    agentName: 'Thabo Dlamini',
-    agentTier: 'silver',
-  },
-  {
-    id: '4',
-    title: '3-Bed Family Home',
-    price: 1750000,
-    currency: 'ZAR',
-    location: 'Midrand, Gauteng',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 210,
-    propertyType: 'Residential',
-    verified: true,
-    pipelineStage: 2,
-    agentName: 'Linda Sithole',
-    agentTier: 'silver',
-  },
-  {
-    id: '5',
-    title: 'Commercial Office Block',
-    price: 8500000,
-    currency: 'ZAR',
-    location: 'Rosebank, Johannesburg',
-    sqm: 950,
-    propertyType: 'Commercial',
-    verified: true,
-    escrowReady: true,
-    agentName: 'Bongani Ndlovu',
-    agentTier: 'gold',
-  },
-  {
-    id: '6',
-    title: 'Agricultural Land, Limpopo',
-    price: 980000,
-    currency: 'ZAR',
-    location: 'Tzaneen, Limpopo',
-    sqm: 50000,
-    propertyType: 'Agricultural',
-    verified: false,
-    fraudAlert: true,
-    agentName: 'Sipho Mahlangu',
-    agentTier: 'bronze',
-  },
-];
-
 const TRUST_FEATURES = [
   {
     icon: '🛡',
@@ -114,12 +25,13 @@ const TRUST_FEATURES = [
   },
 ];
 
-const AGENTS = [
-  { name: 'Sarah Mokoena', location: 'Johannesburg', tier: 'gold', deals: 142, rating: 4.9 },
-  { name: 'Kwame Asante', location: 'Accra, Ghana', tier: 'gold', deals: 98, rating: 4.8 },
-  { name: 'Fatima Al-Hassan', location: 'Lagos, Nigeria', tier: 'gold', deals: 76, rating: 4.9 },
-  { name: 'Thabo Dlamini', location: 'Durban', tier: 'silver', deals: 54, rating: 4.7 },
-];
+type FeaturedAgent = {
+  id: string;
+  fullName: string;
+  location: string;
+  tier: 'gold' | 'silver' | 'bronze';
+  deals: number;
+};
 
 const TIER_COLORS: Record<string, string> = {
   gold: 'bg-[#F5A623] text-[#0A1628]',
@@ -168,13 +80,13 @@ async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
     });
 
     if (!response.ok) {
-      return FALLBACK_LISTINGS;
+      return [];
     }
 
     const payload = (await response.json()) as ApiSearchResponse;
 
     if (!payload.data || payload.data.length === 0) {
-      return FALLBACK_LISTINGS;
+      return [];
     }
 
     return payload.data.map((item) => {
@@ -200,12 +112,31 @@ async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
       };
     });
   } catch {
-    return FALLBACK_LISTINGS;
+    return [];
+  }
+}
+
+async function fetchFeaturedAgents(): Promise<FeaturedAgent[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/properties/agents/featured?limit=4`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return (await response.json()) as FeaturedAgent[];
+  } catch {
+    return [];
   }
 }
 
 export default async function PropertyMarketplace() {
-  const featuredListings = await fetchFeaturedListings();
+  const [featuredListings, featuredAgents] = await Promise.all([
+    fetchFeaturedListings(),
+    fetchFeaturedAgents(),
+  ]);
 
   return (
     <div className="min-h-screen bg-white font-manrope">
@@ -360,6 +291,11 @@ export default async function PropertyMarketplace() {
               <PropertyCard key={listing.id} property={listing} />
             ))}
           </div>
+          {featuredListings.length === 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+              No featured listings available from the database yet.
+            </div>
+          )}
           <div className="mt-10 text-center">
             <Link
               href="/properties/search"
@@ -387,21 +323,19 @@ export default async function PropertyMarketplace() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {AGENTS.map((agent) => (
-              <div key={agent.name} className="bg-[#0F2040] border border-white/10 rounded-2xl p-5 hover:border-[#F5A623]/40 transition-colors">
+            {featuredAgents.map((agent) => (
+              <div key={agent.id} className="bg-[#0F2040] border border-white/10 rounded-2xl p-5 hover:border-[#F5A623]/40 transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-[#F5A623] flex items-center justify-center text-[#0A1628] text-lg font-bold">
-                    {agent.name.charAt(0)}
+                    {agent.fullName.charAt(0)}
                   </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${TIER_COLORS[agent.tier]}`}>
                     {agent.tier.charAt(0).toUpperCase() + agent.tier.slice(1)}
                   </span>
                 </div>
-                <h3 className="text-white font-bold">{agent.name}</h3>
+                <h3 className="text-white font-bold">{agent.fullName}</h3>
                 <p className="text-white/50 text-xs mt-0.5">{agent.location}</p>
                 <div className="flex items-center gap-3 mt-3 text-xs text-white/60">
-                  <span>⭐ {agent.rating}</span>
-                  <span>|</span>
                   <span>{agent.deals} deals</span>
                 </div>
                 <Link
@@ -413,6 +347,11 @@ export default async function PropertyMarketplace() {
               </div>
             ))}
           </div>
+          {featuredAgents.length === 0 && (
+            <div className="rounded-xl border border-white/15 bg-[#0F2040] p-6 text-center text-sm text-white/70">
+              No featured agents available from the database yet.
+            </div>
+          )}
         </div>
       </section>
 

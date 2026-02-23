@@ -101,6 +101,60 @@ Open:
 curl "http://localhost:3001/api/v1/properties?city=Harare&page=1&limit=10"
 ```
 
+## Listings first-load behavior (updated)
+
+- On first load, the listings screen now starts with no selected filters.
+- This allows backend data to render immediately without requiring manual reset.
+- Filters still persist per-session in browser storage after user interaction.
+
+## Listings location filtering (updated)
+
+- The Location section no longer uses predefined location checkboxes.
+- Users now type locations with assisted suggestions and press `Enter` (or `,`) to add each location.
+- Multiple locations are supported and shown as removable chips.
+- Listings are matched when property location text contains any selected location chip.
+
+## Seed local demo listings (optional)
+
+If your local database is empty, run the commands below from repo root to create a demo agent and three active listings:
+
+```bash
+curl -s -X POST http://localhost:3001/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"agent.demo.20260223@example.com","password":"TempPass123!","firstName":"Demo","lastName":"Agent","role":"agent"}'
+
+TOKEN=$(curl -s -X POST http://localhost:3001/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"agent.demo.20260223@example.com","password":"TempPass123!"}' \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write(j?.tokens?.accessToken||'');});")
+
+curl -s -X POST http://localhost:3001/api/v1/properties -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"title":"Modern 3-Bed Home in Gaborone","description":"Move-in ready family home with secure yard.","propertyType":"residential","price":185000,"currency":"USD","bedrooms":3,"bathrooms":2,"parkingSpaces":2,"areaSqm":210,"features":["Garden","Solar Water Heater","Fibre Internet"],"location":{"city":"Gaborone","region":"South-East","country":"BW","latitude":-24.6545,"longitude":25.9086}}'
+curl -s -X POST http://localhost:3001/api/v1/properties -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"title":"Serviced Plot Near Airport Junction","description":"Prime land parcel ideal for mixed-use development.","propertyType":"land","price":92000,"currency":"USD","areaSqm":1200,"features":["Road Access","Water Connection","Fenced"],"location":{"city":"Gaborone","region":"South-East","country":"BW","latitude":-24.6280,"longitude":25.9230}}'
+curl -s -X POST http://localhost:3001/api/v1/properties -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"title":"Commercial Office Space - Francistown","description":"Flexible office units suitable for SMEs.","propertyType":"commercial","price":310000,"currency":"USD","bathrooms":4,"parkingSpaces":8,"areaSqm":640,"features":["Backup Power","CCTV","Reception"],"location":{"city":"Francistown","region":"North-East","country":"BW","latitude":-21.1702,"longitude":27.5070}}'
+
+curl -s -X PATCH http://localhost:3001/api/v1/properties/ba61e499-5153-461a-bf49-709632e84930 -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"status":"active"}'
+curl -s -X PATCH http://localhost:3001/api/v1/properties/a5d6c9e8-5b05-43e2-9a59-ecfd7205da77 -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"status":"active"}'
+curl -s -X PATCH http://localhost:3001/api/v1/properties/98256dfb-ed63-4e06-9f31-c13d94e91fb0 -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"status":"active"}'
+```
+
+Verify:
+
+```bash
+curl -s "http://localhost:3001/api/v1/properties?sort=newest&limit=100"
+```
+
+> Note: public property search currently returns only `active` listings; newly created listings default to `draft`.
+
+## UX Verification Checklist (Routing + Shell)
+
+- Logged-out user does not see left sidebar on `/app/*` screens
+- Logged-in user sees reusable left sidebar on `/app/*` screens
+- `/app/property/:id` shows minimal header (no search/create-listing toolbar)
+- Clicking a listing card or map pin opens `/app/property/:id`
+- Opening agent profile from property detail appends `?back=/app/property/:id`
+- Back action on agent profile returns to originating property detail page
+- Direct agent-profile visits without `back` still return to `/app/listings`
+
 ## Stop services
 
 - Stop app dev servers: `Ctrl + C` in each terminal

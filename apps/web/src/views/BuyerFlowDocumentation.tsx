@@ -57,6 +57,7 @@ export default function BuyerFlowDocumentation() {
         { name: "Search Properties", route: "/app/listings", screen: "Listings", status: "✓" },
         { name: "Filter + Map View", route: "/app/listings", screen: "Listings (with filters)", status: "✓" },
         { name: "View Property Detail", route: "/app/property/1", screen: "PropertyDetailEnhanced", status: "✓" },
+        { name: "View Agent Profile", route: "/agent-profile/agent-001?back=/app/property/1", screen: "AgentProfile", status: "✓" },
         { name: "Property Comparison", route: "/compare", screen: "PropertyComparison", status: "✓" },
       ],
       features: [

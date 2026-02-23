@@ -197,7 +197,7 @@ export default function PropertyComparison() {
                 </div>
 
                 <Button className="w-full" asChild>
-                  <Link to={`/property/${property.id}`}>View Full Details</Link>
+                  <Link to={`/app/property/${property.id}`}>View Full Details</Link>
                 </Button>
               </div>
             </Card>
@@ -234,7 +234,7 @@ export default function PropertyComparison() {
                         </p>
                         <div className="text-2xl font-bold text-blue-600">{property.priceFormatted}</div>
                         <Button className="w-full" size="sm" asChild>
-                          <Link to={`/property/${property.id}`}>View Details</Link>
+                          <Link to={`/app/property/${property.id}`}>View Details</Link>
                         </Button>
                       </div>
                     </th>

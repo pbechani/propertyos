@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Truck,
   Package,
@@ -219,6 +219,11 @@ export default function LogisticsDeliveryMarketplace() {
   const [signatureDrawn, setSignatureDrawn] = useState(false);
   const [itemCondition, setItemCondition] = useState<"excellent" | "good" | "damaged" | "">("");
   const [, setShowOperatorDetails] = useState<string | null>(null);
+  const [deliveryTime, setDeliveryTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDeliveryTime(new Date().toLocaleString());
+  }, []);
 
   // Calculate statistics
   const totalBookings = 1247;
@@ -1302,7 +1307,7 @@ export default function LogisticsDeliveryMarketplace() {
                       <Separator />
                       <div>
                         <div className="text-gray-600 mb-1">Delivery Time</div>
-                        <div className="font-medium">{new Date().toLocaleString()}</div>
+                        <div className="font-medium">{deliveryTime ?? "—"}</div>
                       </div>
                     </div>
                   </Card>

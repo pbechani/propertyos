@@ -29,6 +29,15 @@ Base: /app/buyer
 /certificates └── /lifecycle ├── /maintenance ├── /warranty ├── /rental
 └── /roi
 
+Current implemented marketplace routes (web app):
+
+- `/app/listings` → Listings page
+- `/app/property/:propertyId` → Property detail (`PropertyDetailEnhanced`)
+- `/agent-profile/:agentId` → Agent profile (`AgentProfile`)
+- Navigation flow: selecting a property from listings (cards and map pins) opens `/app/property/:propertyId`
+- Comparison and agent listing actions also navigate to `/app/property/:propertyId`
+- Agent profile can receive a `back` query path to return users to the originating property detail screen (e.g. `/agent-profile/:agentId?back=/app/property/:propertyId`)
+
 ------------------------------------------------------------------------
 
 ## 4. Contractor Routes

@@ -145,47 +145,6 @@ export default function PublicHome() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-black text-white sticky top-0 z-50 border-b border-gray-800">
-        <div className="container mx-auto px-4 md:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <HomeIcon className="w-6 h-6 text-black" />
-              </div>
-              <span className="font-bold text-xl">
-                PropertyOS
-              </span>
-            </Link>
-            <div className="flex items-center gap-3 md:gap-6">
-              <Link
-                to="/app/listings"
-                className="hidden md:inline-flex text-gray-300 hover:text-white font-medium transition-colors"
-              >
-                Property Listings
-              </Link>
-              <Link
-                to="/contractor-supplier-marketplace"
-                className="hidden md:inline-flex text-gray-300 hover:text-white font-medium transition-colors"
-              >
-                Service Providers
-              </Link>
-              <Link
-                to="/safety"
-                className="hidden md:inline-flex text-gray-300 hover:text-white font-medium transition-colors"
-              >
-                Safety Center
-              </Link>
-              <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-gray-800">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative bg-black text-white py-20 md:py-32 overflow-hidden">
         <div className="absolute inset-0 opacity-10">

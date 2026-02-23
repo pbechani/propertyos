@@ -94,6 +94,7 @@ A financial-grade digital infrastructure for property buying, construction manag
 | [design/design.md](design/design.md) | Comprehensive architecture analysis |
 | [design/design-phase.md](design/design-phase.md) | 18-phase implementation plan |
 | [design/sprints/](design/sprints/) | Sprint-by-sprint specifications |
+| [docs/sprint-03-run-guide.md](docs/sprint-03-run-guide.md) | Local run instructions + UX verification checklist |
 
 ---
 

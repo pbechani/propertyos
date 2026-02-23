@@ -30,8 +30,15 @@ function getInitialTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Initialise with the correct value synchronously — no FOUC
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  // Always start with "light" on both server and client to prevent hydration
+  // mismatch. The inline script in layout.tsx already applies the correct class
+  // to <html> before React hydrates, so there is no FOUC.
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    // Sync React state with the real preference after mount (client-only)
+    setTheme(getInitialTheme());
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;

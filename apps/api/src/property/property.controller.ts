@@ -63,6 +63,27 @@ export class PropertyController {
   }
 
   /**
+   * GET /api/v1/properties/agents/featured
+   * Public list of featured agents based on active listings.
+   */
+  @Get('agents/featured')
+  async featuredAgents(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Number(limit) : 8;
+    return this.propertyService.getFeaturedAgents(
+      Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 8,
+    );
+  }
+
+  /**
+   * GET /api/v1/properties/agents/:id/profile
+   * Public agent profile details and listings.
+   */
+  @Get('agents/:id/profile')
+  async agentProfile(@Param('id', ParseUUIDPipe) id: string) {
+    return this.propertyService.getAgentProfile(id);
+  }
+
+  /**
    * GET /api/v1/properties/:id
    * Public property detail.
    */
