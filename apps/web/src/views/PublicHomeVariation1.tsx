@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
   Home, Shield, CheckCircle, TrendingUp, Users, 
-  ArrowRight, Star, MapPin, DollarSign, Key,
-  Award, Lock, Eye, Zap, Search, Filter, Bell
+  ArrowRight, Star, DollarSign,
+  Award, Zap, Search
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
-import { unsplash_tool } from "../tools";
 
 export default function PublicHomeVariation1() {
   const features = [

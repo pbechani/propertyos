@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
-  FileText, Clock, CheckCircle2, AlertCircle, Building, Users,
-  TrendingUp, Search, Filter, Eye, ChevronRight, ExternalLink
+  FileText, Clock, CheckCircle2, AlertCircle, Building,
+  Search, Filter, Eye, ExternalLink
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -195,7 +195,7 @@ export default function ConveyancerView() {
                 ].map((filter) => (
                   <button
                     key={filter.id}
-                    onClick={() => setSelectedFilter(filter.id as any)}
+                    onClick={() => setSelectedFilter(filter.id as "all" | "active" | "pending" | "blocked")}
                     className={`
                       px-3 py-1.5 rounded text-sm font-medium transition-colors
                       ${selectedFilter === filter.id 

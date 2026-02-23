@@ -158,7 +158,7 @@ export default function Analytics() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {leadSourceData.map((entry, index) => (
+                  {leadSourceData.map((_, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={index === 0 ? "#3b82f6" : "#e5e7eb"}

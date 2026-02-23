@@ -5,7 +5,6 @@ import {
   Shield,
   Star,
   Award,
-  TrendingUp,
   MapPin,
   Calendar,
   DollarSign,
@@ -18,8 +17,6 @@ import {
   Eye,
   ThumbsUp,
   Briefcase,
-  Users,
-  Target,
   ChevronRight,
   Search,
   Filter,
@@ -28,8 +25,6 @@ import {
   Truck,
   Building2,
   Phone,
-  Mail,
-  ExternalLink,
   Download,
   MessageSquare,
 } from "lucide-react";
@@ -45,7 +40,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 
 // Mock data for contractors
@@ -389,11 +383,14 @@ const myOrders = [
 export default function ContractorSupplierMarketplace() {
   const [activeTab, setActiveTab] = useState("contractors");
   const [selectedContractor, setSelectedContractor] = useState<typeof contractors[0] | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<
+    ((typeof suppliers)[number]["products"][number] & {
+      supplier: (typeof suppliers)[number];
+    }) | null
+  >(null);
   const [showRFQForm, setShowRFQForm] = useState(false);
   const [showQuoteComparison, setShowQuoteComparison] = useState<typeof myRFQs[0] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const getRiskScoreBadge = (score: number) => {
     if (score >= 90) return { label: "Excellent", color: "bg-green-100 text-green-800" };
@@ -1314,7 +1311,7 @@ export default function ContractorSupplierMarketplace() {
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold">Action</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
+                      {showQuoteComparison.quotes.map((_, index) => (
                         <td key={index} className="py-3 px-4">
                           <div className="flex flex-col gap-2">
                             <Button className="bg-green-600 text-white hover:bg-green-700">

@@ -5,7 +5,6 @@ import { Link, useNavigate } from "@/lib/router-compat";
 import { Home, Mail, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { authApi, ApiError } from "@/lib/api-client";
 
 export default function ForgotPassword() {

@@ -7,34 +7,25 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Upload,
   Camera,
   MapPin,
   Shield,
-  FileText,
   Download,
   Lock,
   User,
-  Building,
   Clipboard,
-  Image as ImageIcon,
   ChevronRight,
   ChevronDown,
-  Info,
-  AlertCircle as AlertCircleIcon,
   Check,
   X,
   ExternalLink,
   Eye,
-  Zap,
   TrendingUp,
   Award,
   BadgeCheck,
   FileCheck,
   MapPinned,
   Locate,
-  History,
-  Filter,
   Search,
   Plus,
   Edit,
@@ -61,17 +52,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -313,14 +296,13 @@ export default function InspectionVerificationModule() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [showInspectorPortal, setShowInspectorPortal] = useState(false);
-  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(mockChecklistItems);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedInspector, setSelectedInspector] = useState("");
   const [selectedStage, setSelectedStage] = useState("");
   const [inspectionNotes, setInspectionNotes] = useState("");
   const [overallResult, setOverallResult] = useState<"pass" | "fail" | "conditional" | "">("");
-  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [, setShowPhotoUpload] = useState(false);
   const [expandedLogEntry, setExpandedLogEntry] = useState<string | null>(null);
 
   // Calculate statistics

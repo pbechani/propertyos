@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from "react";
-import { Link } from "@/lib/router-compat";
 import {
-  Home, Clock, CheckCircle2, Circle, FileText, Upload, MessageSquare,
-  Phone, Calendar, DollarSign, AlertCircle, ChevronRight, Info, Shield
+  Clock, CheckCircle2, Circle, FileText, Upload, MessageSquare,
+  Phone, Calendar, AlertCircle, Info, Shield
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -98,7 +97,6 @@ export default function BuyerSimpleView() {
     },
   ];
 
-  const currentStage = stages.find(s => s.status === "in-progress")?.id || 7;
   const completedStages = stages.filter(s => s.status === "completed").length;
   const progressPercentage = (completedStages / stages.length) * 100;
 

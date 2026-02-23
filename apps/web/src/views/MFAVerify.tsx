@@ -5,7 +5,6 @@ import { Link, useNavigate } from "@/lib/router-compat";
 import { Home, Shield, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default function MFAVerify() {
   const navigate = useNavigate();
@@ -61,7 +60,8 @@ export default function MFAVerify() {
   // The login endpoint in the current API returns tokens without requiring a TOTP
   // step.  This screen is a placeholder; MFA enforcement will be added in a future
   // sprint.  For now, treat a 6-digit submission as a passthrough.
-  const handleVerify = (_codeString: string) => {
+  const handleVerify = (codeString: string) => {
+    void codeString;
     setIsVerifying(true);
     setError("");
     navigate("/app");
@@ -99,7 +99,7 @@ export default function MFAVerify() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800">{error}</div>
               </div>
             </div>
@@ -110,8 +110,11 @@ export default function MFAVerify() {
               {code.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
+                  title={`MFA digit ${index + 1}`}
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}

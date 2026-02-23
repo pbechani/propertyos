@@ -9,7 +9,6 @@ import {
   CheckCircle,
   AlertCircle,
   Camera,
-  Building,
   MapPin,
   Briefcase,
 } from "lucide-react";

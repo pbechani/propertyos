@@ -38,6 +38,7 @@ type LinkProps = Omit<NextLinkProps, 'href'> & {
 };
 
 export function Link({ to, children, state: _state, ...rest }: LinkProps) {
+  void _state;
   return (
     <NextLink href={to} {...rest}>
       {children}

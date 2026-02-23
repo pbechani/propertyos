@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Calendar as CalendarIcon,
-  Clock,
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -13,42 +12,23 @@ import {
   Shield,
   Wrench,
   Home,
-  FileText,
   Download,
   Plus,
   ChevronRight,
   Settings,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Users,
-  MapPin,
-  Phone,
-  Mail,
   Edit,
-  Trash2,
   Eye,
-  Filter,
-  Search,
   RefreshCw,
-  Archive,
-  Star,
   Package,
   Zap,
   Droplet,
   Wind,
-  Flame,
-  Lightbulb,
   WashingMachine,
-  Wifi,
-  ArrowUpRight,
-  ArrowDownRight,
   Target,
   Award,
-  TrendingDown as Decrease,
   CircleDollarSign,
   Wallet,
   Receipt,
-  CreditCard,
   Building2,
 } from "lucide-react";
 import {
@@ -56,7 +36,6 @@ import {
   Area,
   BarChart,
   Bar,
-  LineChart,
   Line,
   PieChart,
   Pie,
@@ -74,11 +53,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -86,22 +61,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 
 // Type definitions
 interface Warranty {
@@ -349,7 +308,6 @@ const expenseBreakdown = [
 
 export default function PropertyLifecycleDashboard() {
   const [selectedProperty, setSelectedProperty] = useState("Downtown Apartment");
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
   const calculateROI = () => {
@@ -1292,7 +1250,7 @@ export default function PropertyLifecycleDashboard() {
                   <XAxis dataKey="year" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value / 1000}k`} />
                   <Tooltip
-                    formatter={(value: any) => [`$${value.toLocaleString()}`, ""]}
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
                     contentStyle={{
                       borderRadius: "8px",
                       border: "none",

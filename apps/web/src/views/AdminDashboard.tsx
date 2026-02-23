@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleBadge } from "@/components/ui/role-badge";
-import { VerificationBadge } from "@/components/ui/verification-badge";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 

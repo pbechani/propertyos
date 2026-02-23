@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
   ChevronLeft, Check, X, Shield, MapPin, Bed, Bath, Car, Maximize,
-  TrendingUp, AlertTriangle, CheckCircle2, Calendar, DollarSign
+  TrendingUp, CheckCircle2, Calendar, DollarSign
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

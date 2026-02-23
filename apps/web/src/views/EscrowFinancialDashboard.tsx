@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from "react";
-import { Link } from "@/lib/router-compat";
 import {
-  DollarSign, Lock, Shield, TrendingUp, TrendingDown, Download,
+  DollarSign, Lock, Shield, TrendingUp, Download,
   Eye, CheckCircle2, Clock, AlertCircle, ArrowUpRight, ArrowDownLeft,
-  FileText, Search, Filter, MoreVertical, User, Building, Calendar,
-  ChevronDown, ChevronRight, X, Check, Info
+  FileText, Building, Calendar,
+  X, Circle
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -332,7 +331,7 @@ export default function EscrowFinancialDashboard() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setSelectedTab(tab.id as any)}
+                onClick={() => setSelectedTab(tab.id as "overview" | "transactions" | "releases" | "commissions" | "audit")}
                 className={`
                   flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm whitespace-nowrap
                   transition-colors
@@ -452,9 +451,10 @@ export default function EscrowFinancialDashboard() {
                       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <select 
+                      title="Filter transaction status"
                       className="px-4 py-2 border border-gray-300 rounded-lg"
                       value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as any)}
+                      onChange={(e) => setFilterStatus(e.target.value as "all" | TransactionStatus)}
                     >
                       <option value="all">All Status</option>
                       <option value="completed">Completed</option>
@@ -511,7 +511,7 @@ export default function EscrowFinancialDashboard() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center whitespace-nowrap">
-                            <Badge className={`${getStatusColor(txn.status)} flex items-center justify-center gap-1 inline-flex`}>
+                            <Badge className={`${getStatusColor(txn.status)} inline-flex items-center justify-center gap-1`}>
                               {getStatusIcon(txn.status)}
                               {txn.status.toUpperCase()}
                             </Badge>
@@ -785,6 +785,8 @@ export default function EscrowFinancialDashboard() {
                 </div>
                 <button 
                   onClick={() => setShowReleaseModal(false)} 
+                  title="Close release approval modal"
+                  aria-label="Close release approval modal"
                   className="text-white hover:bg-white/20 p-2 rounded-lg"
                 >
                   <X className="w-6 h-6" />

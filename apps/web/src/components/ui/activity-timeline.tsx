@@ -1,5 +1,5 @@
 'use client';
-import { CheckCircle, Clock, XCircle, AlertCircle, FileText, User } from "lucide-react";
+import { CheckCircle, Clock, XCircle, AlertCircle, User } from "lucide-react";
 
 interface TimelineItem {
   id: string;

@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
   Home, Shield, CheckCircle, ArrowRight, Star, 
-  TrendingUp, Lock, Eye, Award, Users, Zap,
-  Building2, MapPin, DollarSign, Clock
+  TrendingUp, Lock, Eye, Award, Users,
+  MapPin
 } from "lucide-react";
-import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 
 export default function PublicHomeVariation2() {
   const benefits = [

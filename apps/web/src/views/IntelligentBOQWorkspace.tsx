@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Copy,
-  RotateCcw,
   History,
   FileText,
   ArrowUpDown,
@@ -17,7 +16,6 @@ import {
   AlertCircle,
   CheckCircle,
   Search,
-  Filter,
   RefreshCw,
   Lightbulb,
   DollarSign,
@@ -25,8 +23,6 @@ import {
   Target,
   BarChart3,
   ChevronDown,
-  X,
-  Edit2,
   Check,
   ExternalLink,
   Info,
@@ -37,12 +33,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -291,13 +285,11 @@ export default function IntelligentBOQWorkspace() {
   const [boqItems, setBoqItems] = useState<BOQItem[]>(initialBOQItems);
   const [selectedItem, setSelectedItem] = useState<BOQItem | null>(null);
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [showCompareVersions, setShowCompareVersions] = useState(false);
+  const [, setShowCompareVersions] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSupplierComparison, setShowSupplierComparison] = useState<any>(null);
-  const [showMaterialSwap, setShowMaterialSwap] = useState<any>(null);
+  const [, setShowSupplierComparison] = useState<(typeof supplierAlternatives)[number] | null>(null);
+  const [showMaterialSwap, setShowMaterialSwap] = useState<(typeof materialSwaps)[number] | null>(null);
   const [projectBudget] = useState(45000.00);
 
   // Calculate totals
@@ -327,7 +319,7 @@ export default function IntelligentBOQWorkspace() {
       .reduce((sum, item) => sum + item.total, 0),
   }));
 
-  const handleCellEdit = (id: string, field: string, value: any) => {
+  const handleCellEdit = (id: string, field: string, value: string | number) => {
     setBoqItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === id) {
@@ -902,7 +894,9 @@ export default function IntelligentBOQWorkspace() {
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      setShowSupplierComparison(supplierAlternatives.find((alt) => alt.itemId === selectedItem.id))
+                      setShowSupplierComparison(
+                        supplierAlternatives.find((alt) => alt.itemId === selectedItem.id) ?? null
+                      )
                     }
                   >
                     <ExternalLink className="w-4 h-4" />

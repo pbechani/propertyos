@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
-  Bell, Calendar, Phone, FileText, TrendingUp, MapPin, Eye,
-  MessageSquare, Plus, X, Upload, ChevronLeft, ChevronRight,
-  Home, DollarSign, Users, BarChart3
+  TrendingUp, Eye,
+  MessageSquare, Plus, X, Upload,
+  Home, DollarSign, Users
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,

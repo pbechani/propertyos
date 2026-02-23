@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { 
-  Building2, 
   Calendar, 
   CheckCircle2, 
   CircleDashed, 
@@ -15,11 +14,8 @@ import {
   LayoutDashboard, 
   MapPin, 
   MoreHorizontal, 
-  Paperclip, 
   Plus, 
   ShieldCheck, 
-  Signal, 
-  Smartphone, 
   Upload, 
   Wifi, 
   WifiOff
@@ -31,11 +27,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area 
+  ResponsiveContainer
 } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -113,7 +105,7 @@ const escrowPayments = [
 ];
 
 export default function ConstructionProjectDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "milestones" | "field-app">("overview");
+  const [activeTab] = useState<"overview" | "milestones" | "field-app">("overview");
   const [isOffline, setIsOffline] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<typeof milestones[0] | null>(null);
 
@@ -239,7 +231,7 @@ export default function ConstructionProjectDashboard() {
                   <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
                   
                   <div className="space-y-8">
-                    {milestones.slice(0, 3).map((milestone, index) => (
+                    {milestones.slice(0, 3).map((milestone) => (
                       <div key={milestone.id} className="relative flex items-start gap-6">
                         <div className={`z-10 w-12 h-12 rounded-full border-4 border-white flex items-center justify-center shadow-sm ${
                           milestone.status === "completed" ? "bg-green-500 text-white" :
@@ -560,7 +552,16 @@ export default function ConstructionProjectDashboard() {
   );
 }
 
-function Card({ title, value, sub, icon: Icon, color, bg }: any) {
+interface MetricCardProps {
+  title: string;
+  value: string;
+  sub: string;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+  bg: string;
+}
+
+function Card({ title, value, sub, icon: Icon, color, bg }: MetricCardProps) {
   return (
     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
       <div>

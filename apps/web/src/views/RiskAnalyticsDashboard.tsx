@@ -6,42 +6,23 @@ import {
   TrendingUp,
   TrendingDown,
   Shield,
-  DollarSign,
   Clock,
   Users,
   Building2,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   Activity,
   Eye,
   Bell,
-  Filter,
   Download,
-  Calendar,
-  Target,
   Zap,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Flame,
-  Info,
-  ChevronRight,
   MapPin,
-  FileText,
-  Lock,
-  Unlock,
   RefreshCw,
 } from "lucide-react";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   LineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -64,14 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Type definitions
 interface RiskScore {
@@ -243,18 +216,11 @@ const riskTrendData = [
 export default function RiskAnalyticsDashboard() {
   const [activeView, setActiveView] = useState<"overview" | "admin">("overview");
   const [timeRange, setTimeRange] = useState("30d");
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   const getRiskColor = (score: number) => {
     if (score >= 80) return "text-green-600";
     if (score >= 60) return "text-yellow-600";
     return "text-red-600";
-  };
-
-  const getRiskBgColor = (score: number) => {
-    if (score >= 80) return "bg-green-600";
-    if (score >= 60) return "bg-yellow-600";
-    return "bg-red-600";
   };
 
   const getRiskLabel = (score: number) => {
@@ -371,7 +337,7 @@ export default function RiskAnalyticsDashboard() {
 
       {/* Main Content */}
       <div className="p-6">
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "overview" | "admin")}>
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Risk Overview</TabsTrigger>
             <TabsTrigger value="admin">Admin Analytics</TabsTrigger>
@@ -552,7 +518,7 @@ export default function RiskAnalyticsDashboard() {
                     <XAxis dataKey="month" axisLine={false} tickLine={false} />
                     <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value / 1000}k`} />
                     <Tooltip
-                      formatter={(value: any) => [`$${value.toLocaleString()}`, ""]}
+                      formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
                       contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                     />
                     <Legend />

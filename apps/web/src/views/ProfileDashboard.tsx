@@ -10,8 +10,6 @@ import {
   Camera,
   Mail,
   Phone,
-  MapPin,
-  Briefcase,
   Award,
   TrendingUp,
   Lock,

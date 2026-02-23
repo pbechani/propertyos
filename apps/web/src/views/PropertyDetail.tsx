@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, Link } from "@/lib/router-compat";
+import { Link } from "@/lib/router-compat";
 import {
   MapPin,
   Bed,
@@ -17,11 +17,8 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export default function PropertyDetail() {
-  const { id } = useParams();
-
   const property = {
     title: "Contemporary Coastal Residence",
     address: "4.2 Beach Road, Sea Point, Cape Town, 8005",

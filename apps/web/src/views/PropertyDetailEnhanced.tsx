@@ -1,18 +1,17 @@
 'use client';
 
 import { useState } from "react";
-import { useParams, Link } from "@/lib/router-compat";
+import { Link } from "@/lib/router-compat";
 import {
   MapPin, Bed, Bath, Car, Maximize, Heart, Share2, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, MapPinned, Shield, AlertTriangle,
-  Calendar, Clock, FileText, History, Eye, Info, Flag, ChevronRight, X, Video, ZoomIn, ZoomOut
+  Calendar, Clock, FileText, History, Eye, Info, Flag, ChevronRight, X, Video, ZoomIn
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function PropertyDetailEnhanced() {
-  const { id } = useParams();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showFraudReport, setShowFraudReport] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);

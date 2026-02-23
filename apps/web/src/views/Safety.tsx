@@ -11,11 +11,7 @@ import {
   Hammer,
   Building2,
   Camera,
-  DollarSign,
-  Users,
   MapPin,
-  Star,
-  TrendingUp,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,7 +185,6 @@ export default function Safety() {
   ];
 
   const stats = activeTab === "property" ? propertyStats : contractorStats;
-  const recentReports = activeTab === "property" ? recentPropertyReports : recentContractorReports;
   const fraudTrends = activeTab === "property" ? propertyFraudTrends : contractorFraudTrends;
   const cases = activeTab === "property" ? verificationCases : contractorVerificationCases;
 

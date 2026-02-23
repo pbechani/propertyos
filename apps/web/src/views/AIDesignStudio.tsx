@@ -15,12 +15,7 @@ import {
   Download,
   Sparkles,
   Zap,
-  Eye,
-  EyeOff,
   Square,
-  Circle,
-  Move,
-  Trash2,
   Undo,
   Redo,
   ZoomIn,
@@ -33,46 +28,21 @@ import {
   RotateCw,
   Lightbulb,
   Shield,
-  TrendingUp,
   TrendingDown,
-  Info,
   Plus,
-  Minus,
-  Settings,
-  Palette,
   Save,
-  Share2,
-  MessageSquare,
-  Lock,
-  Unlock,
   Target,
   Award,
-  BookOpen,
   Scale,
-  ClipboardCheck,
-  Hammer,
-  PaintBucket,
-  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
@@ -246,11 +216,10 @@ export default function AIDesignStudio() {
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
   const [selectedTool, setSelectedTool] = useState<string>("select");
   const [showGrid, setShowGrid] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [totalBudget, setTotalBudget] = useState(300000);
+  const [zoomLevel] = useState(100);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [floorPlanElements, setFloorPlanElements] = useState<FloorPlanElement[]>([
+  const [floorPlanElements] = useState<FloorPlanElement[]>([
     {
       id: "room1",
       type: "room",

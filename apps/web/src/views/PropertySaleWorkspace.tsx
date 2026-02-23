@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
-  ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertCircle, Circle,
+  ChevronLeft, Clock, CheckCircle2, AlertCircle, Circle,
   FileText, Users, DollarSign, AlertTriangle, MessageSquare, Calendar,
-  Download, Upload, Eye, MoreVertical, Shield, Building, Check, X, Phone, Mail, Plus
+  Download, Upload, Eye, MoreVertical, Shield, X, Phone, Plus
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,6 @@ export default function PropertySaleWorkspace() {
     }
   };
 
-  const currentStage = stages.find(s => s.status === "in-progress")?.id || 7;
   const completedStages = stages.filter(s => s.status === "completed").length;
   const progressPercentage = (completedStages / stages.length) * 100;
 
@@ -237,7 +236,11 @@ export default function PropertySaleWorkspace() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setSelectedTab(tab.id as any)}
+              onClick={() =>
+                setSelectedTab(
+                  tab.id as "timeline" | "documents" | "parties" | "escrow" | "issues" | "communication"
+                )
+              }
               className={`
                 flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm whitespace-nowrap
                 transition-colors

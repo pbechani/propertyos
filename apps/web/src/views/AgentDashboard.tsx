@@ -1,17 +1,13 @@
 'use client';
 
-import { useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
-  Bell,
   Calendar,
   Clock,
   Phone,
   FileText,
   TrendingUp,
   MapPin,
-  Eye,
-  MessageSquare,
   Plus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -20,8 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 
 export default function AgentDashboard() {
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
   const priorities = [
     {
       type: "APPOINTMENT",

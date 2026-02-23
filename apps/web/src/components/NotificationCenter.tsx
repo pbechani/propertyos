@@ -1,9 +1,8 @@
 'use client';
 
-import { X, Bell, CheckCircle, AlertTriangle, Info, MessageSquare, Calendar, Home } from "lucide-react";
+import { X, Bell, CheckCircle, AlertTriangle, Info, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
 
 interface NotificationCenterProps {
   onClose: () => void;

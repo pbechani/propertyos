@@ -6,7 +6,6 @@ import {
   Package,
   MapPin,
   Clock,
-  DollarSign,
   Star,
   ChevronRight,
   CheckCircle,
@@ -15,7 +14,6 @@ import {
   Phone,
   MessageSquare,
   Camera,
-  FileText,
   Shield,
   Lock,
   AlertCircle,
@@ -24,18 +22,12 @@ import {
   Calendar,
   Route as RouteIcon,
   Plus,
-  Minus,
   Check,
-  X,
-  Download,
-  Eye,
   PenTool,
   MapPinned,
   Locate,
-  Zap,
   Award,
   BadgeCheck,
-  ArrowRight,
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,15 +54,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Slider } from "@/components/ui/slider";
 
 // Type definitions
 interface TruckType {
@@ -95,20 +79,6 @@ interface Operator {
   availability: string;
   insuranceCoverage: string;
   specialties: string[];
-}
-
-interface Booking {
-  id: string;
-  truckType: string;
-  operator: string;
-  origin: string;
-  destination: string;
-  status: "pending" | "confirmed" | "in-transit" | "delivered" | "cancelled";
-  pickupDate: string;
-  estimatedDelivery: string;
-  cost: number;
-  escrowStatus: "pending" | "locked" | "released";
-  trackingNumber: string;
 }
 
 interface DeliveryTracking {
@@ -245,10 +215,10 @@ export default function LogisticsDeliveryMarketplace() {
   const [destination, setDestination] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [deliveryPhotos, setDeliveryPhotos] = useState<string[]>([]);
+  const [deliveryPhotos] = useState<string[]>([]);
   const [signatureDrawn, setSignatureDrawn] = useState(false);
   const [itemCondition, setItemCondition] = useState<"excellent" | "good" | "damaged" | "">("");
-  const [showOperatorDetails, setShowOperatorDetails] = useState<string | null>(null);
+  const [, setShowOperatorDetails] = useState<string | null>(null);
 
   // Calculate statistics
   const totalBookings = 1247;
@@ -363,7 +333,7 @@ export default function LogisticsDeliveryMarketplace() {
 
       {/* Main Content */}
       <div className="p-6">
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "booking" | "tracking" | "delivery")}>
           <TabsList className="mb-6">
             <TabsTrigger value="booking">New Booking</TabsTrigger>
             <TabsTrigger value="tracking">Live Tracking</TabsTrigger>

@@ -1,6 +1,5 @@
 'use client';
 
-import { Link } from "@/lib/router-compat";
 import {
   Home,
   Heart,
@@ -10,8 +9,6 @@ import {
   Settings,
   Search,
   Filter,
-  Bookmark,
-  Clock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

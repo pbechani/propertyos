@@ -4,14 +4,9 @@ import { Link } from "@/lib/router-compat";
 import { 
   Home, 
   UserPlus, 
-  Shield, 
   CheckCircle, 
   Search,
-  Eye,
-  Heart,
-  Calendar,
   FileText,
-  DollarSign,
   Hammer,
   Package,
   Truck,
@@ -19,7 +14,6 @@ import {
   Star,
   ArrowRight,
   CheckSquare,
-  AlertCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

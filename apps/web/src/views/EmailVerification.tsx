@@ -19,10 +19,12 @@ export default function EmailVerification() {
   const token = searchParams.get("token") ?? "";
 
   useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
+    if (resendCooldown <= 0) {
+      return undefined;
     }
+
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCooldown]);
 
   const handleResend = () => {
@@ -150,7 +152,7 @@ export default function EmailVerification() {
 
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
                   <div className="text-sm text-yellow-800">
                     <div className="font-semibold mb-1">Important</div>
                     <div>

@@ -4,7 +4,6 @@ import { Link } from "@/lib/router-compat";
 import { Sun, Moon, Monitor, Palette, Eye, Settings, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ThemeToggle, ThemeToggleWithLabel, ThemeToggleDropdown } from "@/components/ThemeToggle";
 import { useTheme } from "@/contexts/ThemeContext";
 
