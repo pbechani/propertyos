@@ -1,6 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Navbar from '@/components/property/Navbar';
 import PipelineTracker, { PURCHASE_STAGES } from '@/components/property/PipelineTracker';
+import { PropertyActions } from '@/components/property/PropertyActions';
 
 const PROPERTY = {
   id: '1',
@@ -50,14 +52,158 @@ function formatPrice(price: number, currency = 'ZAR') {
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
 }
 
-export default function PropertyDetail() {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+
+type ApiPropertyDetail = {
+  id: string;
+  title: string;
+  description?: string | null;
+  property_type: string;
+  price: string;
+  currency: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: string | null;
+  verification_status: string;
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+  } | null;
+};
+
+async function fetchPropertyById(id: string): Promise<ApiPropertyDetail | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as ApiPropertyDetail;
+  } catch {
+    return null;
+  }
+}
+
+function mapApiPropertyToDisplayProperty(
+  property: ApiPropertyDetail | null,
+): typeof PROPERTY {
+  if (!property) {
+    return PROPERTY;
+  }
+
+  const city = property.location?.city ?? '';
+  const region = property.location?.region ?? '';
+  const country = property.location?.country ?? '';
+  const location = [city, region, country].filter(Boolean).join(', ');
+  const areaSqm = property.area_sqm ? Number(property.area_sqm) : null;
+  const price = Number(property.price);
+  const pricePerSqm = areaSqm && areaSqm > 0 ? Math.round(price / areaSqm) : PROPERTY.pricePerSqm;
+
+  return {
+    ...PROPERTY,
+    id: property.id,
+    title: property.title,
+    price,
+    currency: property.currency,
+    pricePerSqm,
+    location: location || PROPERTY.location,
+    bedrooms: property.bedrooms ?? PROPERTY.bedrooms,
+    bathrooms: property.bathrooms ?? PROPERTY.bathrooms,
+    sqm: areaSqm ?? PROPERTY.sqm,
+    propertyType: property.property_type
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (match) => match.toUpperCase()),
+    verified: property.verification_status === 'verified',
+    description: property.description || PROPERTY.description,
+  };
+}
+
+type PropertyPageProps = {
+  params: {
+    id: string;
+  };
+};
+
+function getListingSeoDescription(description: string): string {
+  const normalized = description.replace(/\s+/g, ' ').trim();
+  return normalized.slice(0, 160);
+}
+
+function getListingCity(location: string): string {
+  const parts = location.split(',').map((part) => part.trim());
+  return parts[1] ?? parts[0] ?? 'Unknown City';
+}
+
+export async function generateMetadata({ params }: PropertyPageProps): Promise<Metadata> {
+  const city = getListingCity(PROPERTY.location);
+  const propertyType = PROPERTY.propertyType.toLowerCase();
+  const title = `${PROPERTY.bedrooms}BR ${propertyType} in ${city} | PRIBEC`;
+  const description = getListingSeoDescription(PROPERTY.description);
+  const canonicalPath = `/properties/${params.id}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalPath,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: canonicalPath,
+      siteName: 'PRIBEC',
+    },
+  };
+}
+
+export default async function PropertyDetail({ params }: PropertyPageProps) {
+  const liveProperty = await fetchPropertyById(params.id);
+  const PROPERTY = mapApiPropertyToDisplayProperty(liveProperty);
   const deposit = PROPERTY.price * 0.1;
   const transferDuty = PROPERTY.price * 0.05;
   const legalFees = 45000;
   const total = PROPERTY.price + transferDuty + legalFees;
+  const listingUrl = `https://www.pribec.com/properties/${params.id}`;
+  const listingDescription = getListingSeoDescription(PROPERTY.description);
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    name: PROPERTY.title,
+    description: listingDescription,
+    url: listingUrl,
+    datePosted: new Date().toISOString(),
+    offers: {
+      '@type': 'Offer',
+      price: PROPERTY.price,
+      priceCurrency: PROPERTY.currency,
+      availability: 'https://schema.org/InStock',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: getListingCity(PROPERTY.location),
+      addressCountry: 'ZA',
+      streetAddress: PROPERTY.location,
+    },
+    numberOfRooms: PROPERTY.bedrooms,
+    floorSize: {
+      '@type': 'QuantitativeValue',
+      value: PROPERTY.sqm,
+      unitCode: 'MTK',
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-manrope">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Navbar />
 
       {/* ── BREADCRUMB ── */}
@@ -364,9 +510,7 @@ export default function PropertyDetail() {
 
               {/* Report */}
               <div className="text-center">
-                <button className="text-xs text-[#EF4444] hover:underline transition-colors">
-                  ⚠ Report This Listing
-                </button>
+                <PropertyActions propertyId={PROPERTY.id} />
               </div>
             </div>
           </div>

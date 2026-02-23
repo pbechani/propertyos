@@ -370,3 +370,186 @@ export const auditApi = {
     });
   },
 };
+
+// ─── Property Marketplace (Sprint 03) ───────────────────────────────────────
+
+export type PropertyVerificationStatus =
+  | 'unverified'
+  | 'pending'
+  | 'verified'
+  | 'flagged';
+
+export type PropertyStatus =
+  | 'draft'
+  | 'active'
+  | 'under_offer'
+  | 'sold'
+  | 'withdrawn';
+
+export type PropertyListing = {
+  id: string;
+  title: string;
+  description?: string | null;
+  property_type: 'land' | 'residential' | 'commercial' | 'off_plan';
+  status: PropertyStatus;
+  price: string;
+  currency: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: string | null;
+  verification_status: PropertyVerificationStatus;
+  created_at: string;
+  updated_at: string;
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country: string;
+    latitude?: string | null;
+    longitude?: string | null;
+  } | null;
+  media?: Array<{
+    id: string;
+    media_type: 'image' | 'video' | string;
+    url: string;
+    thumbnail_url?: string | null;
+    is_primary: boolean;
+  }>;
+};
+
+export type PropertySearchResponse = {
+  data: PropertyListing[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+export type PropertySearchParams = {
+  type?: 'land' | 'residential' | 'commercial' | 'off_plan';
+  min_price?: number;
+  max_price?: number;
+  currency?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  city?: string;
+  lat?: number;
+  lng?: number;
+  radius_km?: number;
+  verification_status?: PropertyVerificationStatus;
+  features?: string;
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'relevance';
+  page?: number;
+  limit?: number;
+};
+
+export type CreateInquiryPayload = {
+  inquiryType: 'viewing' | 'offer' | 'question';
+  message?: string;
+  preferredDate?: string;
+};
+
+export type CreateFraudReportPayload = {
+  reportType:
+    | 'double_sale'
+    | 'fake_title'
+    | 'non_existent'
+    | 'misrepresentation'
+    | 'other';
+  description: string;
+  evidenceUrls?: string[];
+};
+
+function buildQueryString(params: Record<string, unknown>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    query.set(key, String(value));
+  }
+  const serialized = query.toString();
+  return serialized ? `?${serialized}` : '';
+}
+
+export const propertiesApi = {
+  search: (params: PropertySearchParams = {}) =>
+    apiRequest<PropertySearchResponse>(
+      `/properties${buildQueryString(params)}`,
+      {
+        method: 'GET',
+      },
+    ),
+
+  getById: (id: string) =>
+    apiRequest<PropertyListing>(`/properties/${id}`, {
+      method: 'GET',
+    }),
+
+  create: (authToken: string, payload: Record<string, unknown>) =>
+    apiRequest<PropertyListing>('/properties', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  update: (authToken: string, id: string, payload: Record<string, unknown>) =>
+    apiRequest<PropertyListing>(`/properties/${id}`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  remove: (authToken: string, id: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  save: (authToken: string, id: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}/save`, {
+      method: 'POST',
+      authToken,
+    }),
+
+  unsave: (authToken: string, id: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}/save`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  createInquiry: (
+    authToken: string,
+    id: string,
+    payload: CreateInquiryPayload,
+  ) =>
+    apiRequest<unknown>(`/properties/${id}/inquiries`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  submitVerificationRequest: (
+    authToken: string,
+    id: string,
+    payload: FormData,
+  ) =>
+    apiRequest<unknown>(`/properties/${id}/verification-request`, {
+      method: 'POST',
+      authToken,
+      body: payload,
+    }),
+
+  submitFraudReport: (
+    authToken: string,
+    id: string,
+    payload: CreateFraudReportPayload,
+  ) =>
+    apiRequest<unknown>(`/properties/${id}/fraud-reports`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+};

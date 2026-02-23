@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
 
-const MOCK_LISTINGS: PropertyCardData[] = [
+const FALLBACK_LISTINGS: PropertyCardData[] = [
   {
     id: '1',
     title: '4-Bed Executive Home, Sandton',
@@ -127,7 +127,86 @@ const TIER_COLORS: Record<string, string> = {
   bronze: 'bg-amber-700 text-white',
 };
 
-export default function PropertyMarketplace() {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+
+type ApiPropertyListing = {
+  id: string;
+  title: string;
+  price: string;
+  currency: string;
+  property_type: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: string | null;
+  verification_status: string;
+  location?: {
+    city?: string | null;
+    region?: string | null;
+  } | null;
+  media?: Array<{
+    url: string;
+    is_primary: boolean;
+  }>;
+};
+
+type ApiSearchResponse = {
+  data: ApiPropertyListing[];
+};
+
+async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
+  try {
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '6',
+      sort: 'newest',
+      verification_status: 'verified',
+    });
+
+    const response = await fetch(`${API_BASE_URL}/properties?${params.toString()}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return FALLBACK_LISTINGS;
+    }
+
+    const payload = (await response.json()) as ApiSearchResponse;
+
+    if (!payload.data || payload.data.length === 0) {
+      return FALLBACK_LISTINGS;
+    }
+
+    return payload.data.map((item) => {
+      const city = item.location?.city ?? '';
+      const region = item.location?.region ?? '';
+      const location = [city, region].filter(Boolean).join(', ') || 'Location unavailable';
+      const imageUrl = item.media?.find((media) => media.is_primary)?.url;
+      const parsedPrice = Number(item.price);
+
+      return {
+        id: item.id,
+        title: item.title,
+        price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+        currency: item.currency,
+        location,
+        bedrooms: item.bedrooms ?? undefined,
+        bathrooms: item.bathrooms ?? undefined,
+        sqm: item.area_sqm ? Number(item.area_sqm) : undefined,
+        propertyType: item.property_type.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()),
+        verified: item.verification_status === 'verified',
+        fraudAlert: item.verification_status === 'flagged',
+        imageUrl,
+      };
+    });
+  } catch {
+    return FALLBACK_LISTINGS;
+  }
+}
+
+export default async function PropertyMarketplace() {
+  const featuredListings = await fetchFeaturedListings();
+
   return (
     <div className="min-h-screen bg-white font-manrope">
       <Navbar />
@@ -277,7 +356,7 @@ export default function PropertyMarketplace() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_LISTINGS.map((listing) => (
+            {featuredListings.map((listing) => (
               <PropertyCard key={listing.id} property={listing} />
             ))}
           </div>
