@@ -104,11 +104,13 @@ export default function AgentProfile() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4">
-        <Link to={backTo} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ChevronLeft className="w-4 h-4" />
-          <span>{backLabel}</span>
-        </Link>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <Link to={backTo} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <ChevronLeft className="w-4 h-4" />
+            <span>{backLabel}</span>
+          </Link>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -130,7 +132,7 @@ export default function AgentProfile() {
         <Card className="p-6 md:p-8 mb-6">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Agent Image */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <img
                 src={agentProfile.avatarUrl || DEFAULT_AGENT_IMAGE}
                 alt={profileName}
@@ -168,7 +170,7 @@ export default function AgentProfile() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="flex flex-col gap-2 md:min-w-[200px]">
+                <div className="flex flex-col gap-2 md:min-w-50">
                   <Button className="bg-blue-500 hover:bg-blue-600 text-white">
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Contact Agent
@@ -383,7 +385,7 @@ export default function AgentProfile() {
             </Card>
 
             {/* Trust Badge */}
-            <Card className="p-6 bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
+            <Card className="p-6 bg-linear-to-br from-green-50 to-blue-50 border-green-200">
               <div className="text-center">
                 <Shield className="w-16 h-16 text-green-600 mx-auto mb-3" />
                 <h3 className="font-bold text-lg mb-2">Verified Agent</h3>

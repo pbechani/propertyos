@@ -81,7 +81,7 @@
   - Real-time material swapping with instant cost updates
   - Price comparison across supplier marketplace
 
-#### Module 3: Contractor Marketplace
+#### Module 3: Service Provider Marketplace
 - Verified profiles with certifications
 - Portfolio uploads and past project showcase
 - Project bidding system
@@ -133,7 +133,7 @@
 **Property Buyer:**
 > "As a property buyer, I want to track my purchase through all 14 stages with full visibility into required documents and current status."
 
-**Contractor:**
+**Service Provider:**
 > "As a contractor, I want to receive milestone payments automatically when my work is approved so I don't have to chase clients for payment."
 
 **Agent:**

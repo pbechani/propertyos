@@ -59,7 +59,13 @@ export default function ResetPassword() {
       }, 2000);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status === 400 || err.status === 401) {
+          setError("Your reset link is invalid or has expired. Please request a new one.");
+        } else if (err.status >= 500) {
+          setError("Server error while resetting password. Please try again shortly.");
+        } else {
+          setError("Unable to reset password right now.");
+        }
       } else {
         setError("Unable to reset password right now.");
       }

@@ -10,7 +10,11 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps = {}) {
-  const { toggleTheme } = useTheme();
+  const { toggleTheme, isThemeLocked } = useTheme();
+
+  if (isThemeLocked) {
+    return null;
+  }
 
   return (
     <Button
@@ -20,15 +24,19 @@ export function ThemeToggle({ className }: ThemeToggleProps = {}) {
       className={cn("relative border-gray-300 dark:border-gray-700", className)}
       aria-label="Toggle theme"
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <Sun suppressHydrationWarning className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon suppressHydrationWarning className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   );
 }
 
 export function ThemeToggleWithLabel() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isThemeLocked } = useTheme();
+
+  if (isThemeLocked) {
+    return null;
+  }
 
   return (
     <Button
@@ -38,12 +46,12 @@ export function ThemeToggleWithLabel() {
     >
       {theme === "light" ? (
         <>
-          <Moon className="h-4 w-4 mr-2" />
+          <Moon suppressHydrationWarning className="h-4 w-4 mr-2" />
           Dark Mode
         </>
       ) : (
         <>
-          <Sun className="h-4 w-4 mr-2" />
+          <Sun suppressHydrationWarning className="h-4 w-4 mr-2" />
           Light Mode
         </>
       )}
@@ -52,7 +60,11 @@ export function ThemeToggleWithLabel() {
 }
 
 export function ThemeToggleDropdown() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isThemeLocked } = useTheme();
+
+  if (isThemeLocked) {
+    return null;
+  }
 
   return (
     <div className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -64,7 +76,7 @@ export function ThemeToggleDropdown() {
             : "hover:bg-gray-200 dark:hover:bg-gray-700"
         }`}
       >
-        <Sun className="h-4 w-4" />
+        <Sun suppressHydrationWarning className="h-4 w-4" />
         <span className="text-sm font-medium">Light</span>
       </button>
       <button
@@ -75,7 +87,7 @@ export function ThemeToggleDropdown() {
             : "hover:bg-gray-200 dark:hover:bg-gray-700"
         }`}
       >
-        <Moon className="h-4 w-4" />
+        <Moon suppressHydrationWarning className="h-4 w-4" />
         <span className="text-sm font-medium">Dark</span>
       </button>
     </div>

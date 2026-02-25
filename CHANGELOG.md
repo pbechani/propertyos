@@ -7,7 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Service provider routing + marketplace rename alignment** (2026-02-25)
+  - Standardized marketplace naming from "Contractor Marketplace" to "Service Provider Marketplace" across app routes and documentation.
+  - Replaced legacy route references with `/service-providers` in navigation/docs where applicable.
+  - Added new Next.js route entrypoint:
+    - `apps/web/src/app/service-providers/page.tsx`
+
+- **Authenticated shell + account flow consistency updates** (2026-02-25)
+  - Added reusable authenticated shell wrapper:
+    - `apps/web/src/components/AuthenticatedShell.tsx`
+    - Ensures authenticated pages render with app layout while auth-exempt routes stay minimal.
+  - Added route support for account recovery/setup follow-up screens:
+    - `/change-password`
+    - `/role-setup`
+  - Added keyboard-submit behavior and clearer auth error states on login/register/password recovery screens.
+
+- **Web UX consistency + quality remediation sweep** (2026-02-24)
+  - Standardized authenticated navigation shell behavior across app routes:
+    - persistent reusable left sidebar for logged-in app experiences
+    - top navigation hidden for authenticated app pages where sidebar is primary
+    - sidebar branding updated to show app logo/name
+  - Sidebar user identity/actions are now session-backed:
+    - removed hardcoded profile name
+    - display logged-in user name/avatar (with initials fallback)
+    - added profile + logout dropdown actions on avatar/name trigger
+  - Enforced consistent theme behavior:
+    - locked web app to light theme for consistent cross-route appearance
+    - hid theme toggle controls when theme lock is active
+    - added scoped normalization for legacy hardcoded utility colors under authenticated shell
+  - Completed broad diagnostics remediation in `apps/web/src`:
+    - accessibility fixes for icon-only buttons/links and select/form control naming
+    - replacement of deprecated utility aliases (e.g. `flex-shrink-0` → `shrink-0`, `bg-gradient-to-*` → `bg-linear-to-*`)
+    - removal of inline style violations by replacing with `Progress` patterns and reusable CSS helpers
+    - result: `get_errors` for `apps/web/src` now returns no errors
+
+- **Browser tab branding + icon update** (2026-02-24)
+  - `apps/web/src/app/layout.tsx`
+    - updated root metadata title from PRIBEC label to `PropertyOS`
+    - added explicit `icons` metadata (`icon`, `shortcut`, `apple`) pointing to app icon
+  - `apps/web/src/app/icon.svg`
+    - added Next.js app icon asset used for browser tab/favicon rendering
+
 ### Added
+- **Web account/client API extensions** (2026-02-25)
+  - `apps/web/src/lib/api-client.ts`
+    - Added `usersApi.uploadAvatar(authToken, file)` for profile avatar upload.
+    - Added `authExtApi.changePassword(authToken, payload)` for authenticated password change.
+    - Extended auth/KYC response typings to include newly surfaced optional fields.
+
+- **Web route smoke test command** (2026-02-24)
+  - `scripts/smoke-web-routes.sh`
+    - checks key web routes against `BASE_URL` (default `http://localhost:3000`)
+    - supports custom route arguments
+    - fails fast on any `4xx/5xx` status
+  - `package.json`
+    - added script: `smoke:web` → `bash scripts/smoke-web-routes.sh`
+
+### Added
+- **Sprint-03 agent dashboard metrics wiring** (2026-02-23)
+  - `apps/api/src/property/property.service.ts`
+    - Extended `GET /api/v1/agent/dashboard` response with:
+      - `listingViewsLast7d`
+      - `listingViewsPrevious7d`
+      - `listingViewsTrendPct`
+      - `inquiryResponseRatePct`
+    - Metrics are computed from real property inquiry/audit data.
+  - `apps/api/src/property/property.controller.ts`
+    - Property detail reads now include request context for view-event logging (`property.viewed`) used by listing view trends.
+  - `apps/web/src/lib/api-client.ts`
+    - Added `AgentDashboardResponse` and `propertiesApi.getAgentDashboard(authToken)`.
+  - `apps/web/src/views/AgentDashboardEnhanced.tsx`
+    - Replaced static conversion placeholders with live listing-views trend and inquiry response-rate metrics.
+
 - **Listings layout alignment with property detail shell** (2026-02-23)
   - `apps/web/src/views/Listings.tsx`
     - Aligned Listings page frame to the same shell pattern used by property detail (`bg-gray-50 min-h-screen` + centered `max-w-7xl` content wrapper).
@@ -178,6 +250,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - E2E infrastructure tests (`infrastructure.e2e-spec.ts`)
 
 ### Fixed
+- **[Build] shared `useSearchParams()` prerender failures on web routes** (2026-02-23)
+  - Added page-level `Suspense` wrappers for client views using `useSearchParams`:
+    - `apps/web/src/app/app/listings/page.tsx`
+    - `apps/web/src/app/login/page.tsx`
+    - `apps/web/src/app/email-verification/page.tsx`
+    - `apps/web/src/app/oauth-connect/page.tsx`
+    - `apps/web/src/app/register/page.tsx`
+    - `apps/web/src/app/service-providers/page.tsx`
+    - `apps/web/src/app/properties/search/page.tsx`
+  - Result: `npm run build --workspace=apps/web` completes successfully.
+
 - **[Critical] React hydration mismatch on initial page load** (2026-02-23)
   - `apps/web/src/contexts/ThemeContext.tsx` — `useState(getInitialTheme)` was used as a lazy initializer, causing `localStorage`/`window.matchMedia` to be read synchronously during the client's first render while the server always returns `"light"`. Fixed by initializing state to `"light"` on both server and client and syncing to the real user preference in a dedicated `useEffect` after mount. The existing inline `<Script>` in `layout.tsx` continues to stamp the correct class on `<html>` before React hydrates, so there is no FOUC.
   - `apps/web/src/views/Listings.tsx` — `Math.random()` was called directly inside JSX for the voice-search waveform visualization, producing a different value on every render (server ≠ client). Replaced with a stable array of fixed heights computed via `useMemo` with no dependencies.

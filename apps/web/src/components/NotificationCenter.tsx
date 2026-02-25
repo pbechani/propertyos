@@ -124,6 +124,8 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close notifications"
+              title="Close notifications"
             >
               <X className="w-5 h-5" />
             </button>
@@ -147,7 +149,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                   } hover:shadow-md`}
                 >
                   <div className="flex gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses}`}>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClasses}`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -165,7 +167,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                       )}
                     </div>
                     {!notification.read && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-2"></div>
                     )}
                   </div>
                 </div>

@@ -135,7 +135,7 @@ approval for large releases
 
 ------------------------------------------------------------------------
 
-## EPIC 6: Contractor Marketplace
+## EPIC 6: Service Provider Marketplace
 
 **Goal:** Structured contractor hiring & rating system.
 
@@ -380,7 +380,7 @@ monitoring - Performance tracking
 
 ### Phase 3 (Marketplace Expansion)
 
-8.  Contractor Marketplace
+8.  Service Provider Marketplace
 9.  Supplier Marketplace
 10. **Logistics & Transport Marketplace** (EPIC 7B - NEW)
 11. **AI Engine Growth (EPIC 15 - Ongoing):**

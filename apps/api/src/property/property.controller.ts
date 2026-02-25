@@ -9,11 +9,11 @@ import {
   Post,
   Query,
   Request,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
@@ -27,6 +27,12 @@ import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
   user: { sub: string; email: string; roles: string[] };
+  ip: string;
+  headers: { 'user-agent'?: string };
+};
+
+type PublicRequest = {
+  user?: { sub: string; email: string; roles: string[] };
   ip: string;
   headers: { 'user-agent'?: string };
 };
@@ -88,8 +94,17 @@ export class PropertyController {
    * Public property detail.
    */
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.propertyService.findById(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: PublicRequest) {
+    const actorRole = req.user?.roles
+      ? resolvePropertyActorRole(req.user.roles, 'public')
+      : 'public';
+
+    return this.propertyService.findById(id, {
+      actorId: req.user?.sub,
+      actorRole,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   /**
@@ -144,21 +159,35 @@ export class PropertyController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('agent', 'admin')
   @Post(':id/media')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'file', maxCount: 1 },
+      { name: 'files', maxCount: 20 },
+    ]),
+  )
   async addMedia(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    uploaded: { file?: Express.Multer.File[]; files?: Express.Multer.File[] },
     @Request() req: AuthRequest,
   ) {
     const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
-    return this.propertyService.addMedia(
+
+    const files = [
+      ...(uploaded.file ?? []),
+      ...(uploaded.files ?? []),
+    ];
+
+    const result = await this.propertyService.addMediaBatch(
       id,
       req.user.sub,
       agentRole,
-      file,
+      files,
       req.ip,
       req.headers['user-agent'],
     );
+
+    return result.length === 1 ? result[0] : { items: result };
   }
 
   /**

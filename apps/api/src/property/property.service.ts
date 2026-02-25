@@ -159,7 +159,15 @@ export class PropertyService {
     return created;
   }
 
-  async findById(id: string): Promise<PropertyWithLocation> {
+  async findById(
+    id: string,
+    viewContext?: {
+      actorId?: string;
+      actorRole?: string;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+  ): Promise<PropertyWithLocation> {
     const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
       SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
     `;
@@ -171,6 +179,20 @@ export class PropertyService {
     const property = properties[0];
     const location = await this.getLocation(id);
     const media = await this.getMedia(id);
+
+    try {
+      await this.audit.log({
+        actorId: viewContext?.actorId,
+        actorRole: viewContext?.actorRole ?? 'public',
+        action: 'property.viewed',
+        resourceType: 'property',
+        resourceId: id,
+        ipAddress: viewContext?.ipAddress,
+        userAgent: viewContext?.userAgent,
+      });
+    } catch {
+      // View tracking should not block property reads.
+    }
 
     return { ...property, location: location ?? null, media };
   }
@@ -442,8 +464,12 @@ export class PropertyService {
     byStatus: Record<string, number>;
     newInquiries7d: number;
     verificationSummary: Record<string, number>;
+    listingViewsLast7d: number;
+    listingViewsPrevious7d: number;
+    listingViewsTrendPct: number;
+    inquiryResponseRatePct: number;
   }> {
-    const [listingRows, inquiryRows, verRows] = await Promise.all([
+    const [listingRows, inquiryRows, verRows, viewRows, responseRows] = await Promise.all([
       this.prisma.$queryRaw<{ status: string; count: string }[]>`
         SELECT status, COUNT(*)::text as count
         FROM property.properties
@@ -463,6 +489,29 @@ export class PropertyService {
         WHERE agent_id = ${agentId}::uuid
         GROUP BY verification_status
       `,
+      this.prisma.$queryRaw<[{ current_views: string; previous_views: string }]>`
+        SELECT
+          COUNT(*) FILTER (WHERE al.created_at >= NOW() - INTERVAL '7 days')::text AS current_views,
+          COUNT(*) FILTER (
+            WHERE al.created_at < NOW() - INTERVAL '7 days'
+              AND al.created_at >= NOW() - INTERVAL '14 days'
+          )::text AS previous_views
+        FROM property.audit_logs al
+        JOIN property.properties p ON p.id = al.resource_id
+        WHERE al.action = 'property.viewed'
+          AND al.resource_type = 'property'
+          AND p.agent_id = ${agentId}::uuid
+      `,
+      this.prisma.$queryRaw<[{ total_inquiries: string; responded_inquiries: string }]>`
+        SELECT
+          COUNT(*)::text AS total_inquiries,
+          COUNT(*) FILTER (
+            WHERE i.status IN ('responded', 'closed') OR i.responded_at IS NOT NULL
+          )::text AS responded_inquiries
+        FROM property.inquiries i
+        JOIN property.properties p ON p.id = i.property_id
+        WHERE p.agent_id = ${agentId}::uuid
+      `,
     ]);
 
     const byStatus: Record<string, number> = {};
@@ -478,11 +527,31 @@ export class PropertyService {
       verificationSummary[row.verification_status] = parseInt(row.count, 10);
     }
 
+    const currentViews = parseInt(viewRows[0]?.current_views ?? '0', 10);
+    const previousViews = parseInt(viewRows[0]?.previous_views ?? '0', 10);
+    const listingViewsTrendPct =
+      previousViews > 0
+        ? Math.round(((currentViews - previousViews) / previousViews) * 100)
+        : currentViews > 0
+          ? 100
+          : 0;
+
+    const totalInquiries = parseInt(responseRows[0]?.total_inquiries ?? '0', 10);
+    const respondedInquiries = parseInt(responseRows[0]?.responded_inquiries ?? '0', 10);
+    const inquiryResponseRatePct =
+      totalInquiries > 0
+        ? Math.round((respondedInquiries / totalInquiries) * 100)
+        : 0;
+
     return {
       totalListings,
       byStatus,
       newInquiries7d: parseInt(inquiryRows[0]?.count ?? '0', 10),
       verificationSummary,
+      listingViewsLast7d: currentViews,
+      listingViewsPrevious7d: previousViews,
+      listingViewsTrendPct,
+      inquiryResponseRatePct,
     };
   }
 
@@ -665,45 +734,84 @@ export class PropertyService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<{ id: string; url: string; mediaType: string }> {
+    const items = await this.addMediaBatch(
+      propertyId,
+      agentId,
+      agentRole,
+      [file],
+      ipAddress,
+      userAgent,
+    );
+
+    return items[0];
+  }
+
+  async addMediaBatch(
+    propertyId: string,
+    agentId: string,
+    agentRole: string,
+    files: Express.Multer.File[],
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Array<{ id: string; url: string; mediaType: string }>> {
+    if (!files.length) {
+      throw new BadRequestException('At least one media file is required');
+    }
+
     await this.assertAgentOwns(propertyId, agentId, agentRole);
 
-    // Check media count limit
-    const count = await this.prisma.$queryRaw<[{ count: string }]>`
+    const countRows = await this.prisma.$queryRaw<[{ count: string }]>`
       SELECT COUNT(*)::text as count FROM property.property_media
       WHERE property_id = ${propertyId}::uuid
     `;
-    if (parseInt(count[0].count, 10) >= MAX_MEDIA_PER_PROPERTY) {
+
+    const existingCount = parseInt(countRows[0].count, 10);
+    if (existingCount + files.length > MAX_MEDIA_PER_PROPERTY) {
       throw new BadRequestException(
         `Maximum ${MAX_MEDIA_PER_PROPERTY} media files per property`,
       );
     }
 
-    const { signedUrl, mediaType } = await this.mediaStorage.uploadPropertyMedia({
-      propertyId,
-      agentId,
-      file,
-    });
+    const uploadedItems: Array<{ id: string; url: string; mediaType: string }> = [];
+    const uploadedTypes: string[] = [];
 
-    const isFirst = parseInt(count[0].count, 10) === 0;
+    for (let index = 0; index < files.length; index += 1) {
+      const sourceFile = files[index];
+      const { signedUrl, mediaType } = await this.mediaStorage.uploadPropertyMedia({
+        propertyId,
+        agentId,
+        file: sourceFile,
+      });
 
-    const result = await this.prisma.$queryRaw<{ id: string; url: string; media_type: string }[]>`
-      INSERT INTO property.property_media (property_id, media_type, url, is_primary)
-      VALUES (${propertyId}::uuid, ${mediaType}, ${signedUrl}, ${isFirst})
-      RETURNING id, url, media_type
-    `;
+      const isPrimary = existingCount === 0 && index === 0;
+      const result = await this.prisma.$queryRaw<
+        { id: string; url: string; media_type: string }[]
+      >`
+        INSERT INTO property.property_media (property_id, media_type, url, is_primary)
+        VALUES (${propertyId}::uuid, ${mediaType}, ${signedUrl}, ${isPrimary})
+        RETURNING id, url, media_type
+      `;
+
+      uploadedItems.push({
+        id: result[0].id,
+        url: result[0].url,
+        mediaType,
+      });
+      uploadedTypes.push(mediaType);
+    }
 
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
-      action: 'property.media.added',
+      action: uploadedItems.length === 1 ? 'property.media.added' : 'property.media.added_batch',
       resourceType: 'property',
       resourceId: propertyId,
-      payload: { mediaType },
+      payload: { count: uploadedItems.length, mediaTypes: uploadedTypes },
       ipAddress,
       userAgent,
     });
 
-    return { id: result[0].id, url: result[0].url, mediaType };
+    return uploadedItems;
   }
 
   async deleteMedia(

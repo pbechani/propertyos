@@ -101,6 +101,24 @@ Open:
 curl "http://localhost:3001/api/v1/properties?city=Harare&page=1&limit=10"
 ```
 
+## Agent dashboard metrics API (updated)
+
+`GET /api/v1/agent/dashboard` now includes Sprint-03 analytics fields:
+
+- `listingViewsLast7d`
+- `listingViewsPrevious7d`
+- `listingViewsTrendPct`
+- `inquiryResponseRatePct`
+
+Quick verify (requires agent auth token):
+
+```bash
+curl -s http://localhost:3001/api/v1/agent/dashboard \
+  -H "Authorization: Bearer <AGENT_TOKEN>"
+```
+
+Expected: response includes the four fields above in addition to existing `totalListings`, `byStatus`, `newInquiries7d`, and `verificationSummary`.
+
 ## Listings first-load behavior (updated)
 
 - On first load, the listings screen now starts with no selected filters.

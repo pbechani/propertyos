@@ -423,6 +423,69 @@ describe('AuthService', () => {
     });
   });
 
+  // ─── changePassword ──────────────────────────────────────────────────────
+
+  describe('changePassword', () => {
+    it('updates hash, revokes sessions, and logs audit when current password is valid', async () => {
+      const currentHash = bcrypt.hashSync(PASSWORD, 1);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([
+          {
+            id: USER_ID,
+            email: EMAIL,
+            status: 'active',
+            password_hash: currentHash,
+          },
+        ])
+        .mockResolvedValueOnce([]); // revokeAllSessions token lookup
+      mockPrisma.$executeRaw.mockResolvedValue(1n);
+      mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
+
+      await service.changePassword(
+        USER_ID,
+        PASSWORD,
+        'NewP@ssword1',
+        requestCtx,
+      );
+
+      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'user.password_changed' }),
+      );
+    });
+
+    it('throws UnauthorizedException when current password is wrong', async () => {
+      const currentHash = bcrypt.hashSync(PASSWORD, 1);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          email: EMAIL,
+          status: 'active',
+          password_hash: currentHash,
+        },
+      ]);
+
+      await expect(
+        service.changePassword(USER_ID, 'WrongP@ssword1', 'NewP@ssword1', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws BadRequestException when account has no local password', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          email: EMAIL,
+          status: 'active',
+          password_hash: null,
+        },
+      ]);
+
+      await expect(
+        service.changePassword(USER_ID, PASSWORD, 'NewP@ssword1', requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   // ─── verifyEmail ──────────────────────────────────────────────────────────
 
   describe('verifyEmail', () => {

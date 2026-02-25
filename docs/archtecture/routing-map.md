@@ -33,14 +33,20 @@ Current implemented marketplace routes (web app):
 
 - `/app/listings` → Listings page
 - `/app/property/:propertyId` → Property detail (`PropertyDetailEnhanced`)
+- `/service-providers` → Service provider marketplace (`ServiceProviderMarketplace`)
 - `/agent-profile/:agentId` → Agent profile (`AgentProfile`)
 - Navigation flow: selecting a property from listings (cards and map pins) opens `/app/property/:propertyId`
 - Comparison and agent listing actions also navigate to `/app/property/:propertyId`
 - Agent profile can receive a `back` query path to return users to the originating property detail screen (e.g. `/agent-profile/:agentId?back=/app/property/:propertyId`)
 
+Current implemented account routes (web app):
+
+- `/change-password` → Authenticated password change
+- `/role-setup` → Post-registration role setup flow
+
 ------------------------------------------------------------------------
 
-## 4. Contractor Routes
+## 4. Service Provider Routes
 
 Base: /app/contractor
 

@@ -47,16 +47,16 @@ export default function AgentDashboard() {
   ];
 
   const leadFunnel = [
-    { stage: "New Leads", count: 1248, width: "100%", color: "bg-blue-100 text-blue-900" },
-    { stage: "Engaged", count: 452, width: "80%", color: "bg-blue-200 text-blue-900" },
-    { stage: "Qualified", count: 89, width: "60%", color: "bg-blue-400 text-white" },
-    { stage: "Closing", count: 14, width: "40%", color: "bg-blue-600 text-white" },
+    { stage: "New Leads", count: 1248, widthClass: "w-full", color: "bg-blue-100 text-blue-900" },
+    { stage: "Engaged", count: 452, widthClass: "w-4/5", color: "bg-blue-200 text-blue-900" },
+    { stage: "Qualified", count: 89, widthClass: "w-3/5", color: "bg-blue-400 text-white" },
+    { stage: "Closing", count: 14, widthClass: "w-2/5", color: "bg-blue-600 text-white" },
   ];
 
   const hotspots = [
-    { name: "West Hills", position: { top: "45%", left: "42%" }, views: 1242 },
-    { name: "Downtown", position: { top: "60%", left: "75%" }, views: 892 },
-    { name: "Riverside", position: { top: "65%", left: "58%" }, views: 1580 },
+    { name: "West Hills", positionClass: "top-[45%] left-[42%]", views: 1242 },
+    { name: "Downtown", positionClass: "top-[60%] left-[75%]", views: 892 },
+    { name: "Riverside", positionClass: "top-[65%] left-[58%]", views: 1580 },
   ];
 
   const activeListings = [
@@ -198,8 +198,7 @@ export default function AgentDashboard() {
             {leadFunnel.map((stage, idx) => (
               <div key={idx}>
                 <div
-                  className={`relative py-4 px-5 rounded-lg ${stage.color} font-semibold transition-all`}
-                  style={{ width: stage.width }}
+                  className={`relative py-4 px-5 rounded-lg ${stage.color} ${stage.widthClass} font-semibold transition-all`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm">{stage.stage}</span>
@@ -242,8 +241,7 @@ export default function AgentDashboard() {
             {hotspots.map((spot, idx) => (
               <div
                 key={idx}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                style={{ top: spot.position.top, left: spot.position.left }}
+                className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${spot.positionClass}`}
               >
                 <div className="relative">
                   <div

@@ -298,7 +298,7 @@
 
 **Deliverables:** Full construction project management with escrow-linked payments
 **Dependencies:** Phase 4 (escrow), Phase 1 (mobile infrastructure)
-**Critical for:** Contractor marketplace (Phase 6)
+**Critical for:** Service Provider Marketplace (Phase 6)
 
 ---
 

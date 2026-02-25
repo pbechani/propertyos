@@ -1,37 +1,29 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   Shield,
   Star,
   Award,
   MapPin,
-  Calendar,
-  DollarSign,
-  Package,
   CheckCircle,
   AlertCircle,
   Clock,
-  FileText,
   Send,
-  Eye,
-  ThumbsUp,
   Briefcase,
   ChevronRight,
   Search,
   Filter,
   X,
-  Check,
-  Truck,
   Building2,
   Phone,
-  Download,
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
+import { getAccessToken } from "@/lib/auth-session";
 
 // Mock data for contractors
 const contractors = [
@@ -136,6 +129,66 @@ const contractors = [
       budgetAdherence: 95,
       clientSatisfaction: 94,
       safetyRecord: 98,
+    },
+  },
+  {
+    id: 4,
+    name: "Skyline Structural Works",
+    specialty: "Structural Engineering",
+    location: "Leeds, UK",
+    rating: 4.8,
+    reviews: 76,
+    completedProjects: 132,
+    riskScore: 91,
+    certifications: ["ICE", "CIOB", "CSCS", "ISO 45001"],
+    skills: ["Structural Reinforcement", "Foundation Analysis", "Steel Works", "Site Supervision"],
+    avatar: "structural engineer site",
+    responseTime: "2-3 hours",
+    insuranceCoverage: "£8M",
+    yearsExperience: 11,
+    verified: true,
+    portfolio: [
+      { id: 1, title: "Mixed-Use Tower Reinforcement", image: "construction steel framework" },
+      { id: 2, title: "Bridge Deck Rehabilitation", image: "bridge structural engineering" },
+    ],
+    recentReviews: [
+      { author: "Nadia Patel", rating: 5, text: "Reliable structural guidance and execution", date: "2 weeks ago" },
+    ],
+    performanceMetrics: {
+      onTimeCompletion: 94,
+      budgetAdherence: 93,
+      clientSatisfaction: 95,
+      safetyRecord: 99,
+    },
+  },
+  {
+    id: 5,
+    name: "Prime Interiors Co",
+    specialty: "Interior Fit-Out",
+    location: "Bristol, UK",
+    rating: 4.7,
+    reviews: 112,
+    completedProjects: 164,
+    riskScore: 89,
+    certifications: ["FIS", "CHAS", "CSCS", "ISO 9001"],
+    skills: ["Office Fit-Out", "Residential Interiors", "Ceilings & Partitions", "Joinery"],
+    avatar: "interior contractor",
+    responseTime: "4-6 hours",
+    insuranceCoverage: "£6M",
+    yearsExperience: 9,
+    verified: true,
+    portfolio: [
+      { id: 1, title: "Corporate Office Fit-Out", image: "office fit out" },
+      { id: 2, title: "Boutique Apartment Interiors", image: "apartment interior design" },
+    ],
+    recentReviews: [
+      { author: "Lewis Grant", rating: 5, text: "Great detailing and handover quality", date: "1 month ago" },
+    ],
+    performanceMetrics: {
+      onTimeCompletion: 92,
+      budgetAdherence: 94,
+      clientSatisfaction: 96,
+      safetyRecord: 97,
     },
   },
 ];
@@ -281,107 +334,89 @@ const suppliers = [
       priceCompetitiveness: 90,
     },
   },
-];
-
-// Mock RFQ data
-const myRFQs = [
   {
-    id: 1,
-    title: "Office Renovation - Electrical Work",
-    status: "quotes_received",
-    created: "2026-02-15",
-    budget: "£15,000 - £20,000",
-    deadline: "2026-03-01",
-    quotesReceived: 3,
-    quotes: [
+    id: 4,
+    name: "Civic Site Equipment",
+    category: "Site Equipment",
+    location: "Midlands Hub",
+    rating: 4.6,
+    reviews: 141,
+    verified: true,
+    products: [
       {
-        contractorId: 2,
-        contractorName: "Premier Electrical Solutions",
-        totalCost: 18500,
-        laborCost: 12000,
-        materialCost: 6000,
-        otherCosts: 500,
-        timeline: "3 weeks",
-        warranty: "5 years",
-        startDate: "2026-03-10",
-        notes: "Includes all materials, testing, and certification",
+        id: 401,
+        name: "Scaffold Tower Set",
+        price: 799.0,
+        unit: "set",
+        stock: "In Stock",
+        stockLevel: 34,
+        minOrder: 1,
+        image: "construction scaffolding",
+        delivery: "2-3 Days",
       },
       {
-        contractorId: 4,
-        contractorName: "Spark Electrical Services",
-        totalCost: 19200,
-        laborCost: 13000,
-        materialCost: 5800,
-        otherCosts: 400,
-        timeline: "4 weeks",
-        warranty: "3 years",
-        startDate: "2026-03-15",
-        notes: "Premium materials, phased approach",
+        id: 402,
+        name: "Portable Site Generator",
+        price: 1199.0,
+        unit: "unit",
+        stock: "Low Stock",
+        stockLevel: 9,
+        minOrder: 1,
+        image: "site power generator",
+        delivery: "Next Day",
+      },
+    ],
+    performanceMetrics: {
+      deliveryOnTime: 94,
+      productQuality: 95,
+      customerService: 93,
+      priceCompetitiveness: 91,
+    },
+  },
+  {
+    id: 5,
+    name: "Guardian Safety Supply",
+    category: "Safety & PPE",
+    location: "London, UK",
+    rating: 4.8,
+    reviews: 207,
+    verified: true,
+    products: [
+      {
+        id: 501,
+        name: "Safety Helmet Pack",
+        price: 54.99,
+        unit: "pack of 10",
+        stock: "In Stock",
+        stockLevel: 120,
+        minOrder: 2,
+        image: "construction safety helmets",
+        delivery: "Same Day",
       },
       {
-        contractorId: 5,
-        contractorName: "City Power Solutions",
-        totalCost: 17800,
-        laborCost: 11500,
-        materialCost: 5900,
-        otherCosts: 400,
-        timeline: "3.5 weeks",
-        warranty: "4 years",
-        startDate: "2026-03-12",
-        notes: "Competitive pricing, experienced team",
+        id: 502,
+        name: "High-Vis Vest Bundle",
+        price: 39.99,
+        unit: "pack of 10",
+        stock: "In Stock",
+        stockLevel: 180,
+        minOrder: 2,
+        image: "high visibility safety vests",
+        delivery: "Next Day",
       },
     ],
-  },
-  {
-    id: 2,
-    title: "Warehouse HVAC Installation",
-    status: "open",
-    created: "2026-02-18",
-    budget: "£50,000 - £70,000",
-    deadline: "2026-03-15",
-    quotesReceived: 1,
-    quotes: [],
-  },
-];
-
-// Mock orders data
-const myOrders = [
-  {
-    id: "ORD-2401",
-    supplier: "BuildMart Supplies",
-    date: "2026-02-20",
-    total: 2847.50,
-    status: "in_transit",
-    items: 12,
-    deliveryDate: "2026-02-23",
-    timeline: [
-      { stage: "Order Placed", completed: true, date: "2026-02-20 09:15" },
-      { stage: "Processing", completed: true, date: "2026-02-20 14:30" },
-      { stage: "Dispatched", completed: true, date: "2026-02-21 08:00" },
-      { stage: "In Transit", completed: false, current: true },
-      { stage: "Delivered", completed: false },
-    ],
-  },
-  {
-    id: "ORD-2398",
-    supplier: "ElectroPro Components",
-    date: "2026-02-18",
-    total: 1234.00,
-    status: "delivered",
-    items: 8,
-    deliveryDate: "2026-02-19",
-    timeline: [
-      { stage: "Order Placed", completed: true, date: "2026-02-18 11:20" },
-      { stage: "Processing", completed: true, date: "2026-02-18 15:45" },
-      { stage: "Dispatched", completed: true, date: "2026-02-18 16:30" },
-      { stage: "In Transit", completed: true, date: "2026-02-19 07:00" },
-      { stage: "Delivered", completed: true, date: "2026-02-19 10:15" },
-    ],
+    performanceMetrics: {
+      deliveryOnTime: 98,
+      productQuality: 97,
+      customerService: 96,
+      priceCompetitiveness: 93,
+    },
   },
 ];
 
-export default function ContractorSupplierMarketplace() {
-  const [activeTab, setActiveTab] = useState("contractors");
+export default function ServiceProviderMarketplace() {
+  const searchParams = useSearchParams();
+  const [selectedProviderType, setSelectedProviderType] = useState("all");
   const [selectedContractor, setSelectedContractor] = useState<typeof contractors[0] | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<
     ((typeof suppliers)[number]["products"][number] & {
@@ -389,8 +424,69 @@ export default function ContractorSupplierMarketplace() {
     }) | null
   >(null);
   const [showRFQForm, setShowRFQForm] = useState(false);
-  const [showQuoteComparison, setShowQuoteComparison] = useState<typeof myRFQs[0] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleRequestQuote = () => {
+    const token = getAccessToken();
+    if (token) {
+      setShowRFQForm(true);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("rfq", "1");
+      const nextPath = `${currentUrl.pathname}${currentUrl.search}`;
+      window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
+  };
+
+  const handleAddToCart = (productId?: number) => {
+    const token = getAccessToken();
+    if (token) {
+      toast.success("Item added to cart.");
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("cart", "1");
+      if (productId) {
+        currentUrl.searchParams.set("productId", String(productId));
+      }
+      const nextPath = `${currentUrl.pathname}${currentUrl.search}`;
+      window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
+  };
+
+  useEffect(() => {
+    const shouldOpenRFQ = searchParams.get("rfq") === "1";
+    const shouldAddToCart = searchParams.get("cart") === "1";
+
+    if (!shouldOpenRFQ && !shouldAddToCart) {
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token || typeof window === "undefined") {
+      return;
+    }
+
+    if (shouldOpenRFQ) {
+      setShowRFQForm(true);
+    }
+
+    if (shouldAddToCart) {
+      toast.success("Item added to cart.");
+    }
+
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete("rfq");
+    currentUrl.searchParams.delete("cart");
+    currentUrl.searchParams.delete("productId");
+    const updatedPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+    window.history.replaceState({}, "", updatedPath);
+  }, [searchParams]);
 
   const getRiskScoreBadge = (score: number) => {
     if (score >= 90) return { label: "Excellent", color: "bg-green-100 text-green-800" };
@@ -405,52 +501,79 @@ export default function ContractorSupplierMarketplace() {
     return { color: "bg-red-100 text-red-800", icon: X };
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "quotes_received":
-        return { label: "Quotes Received", color: "bg-blue-100 text-blue-800" };
-      case "open":
-        return { label: "Open", color: "bg-green-100 text-green-800" };
-      case "accepted":
-        return { label: "Accepted", color: "bg-purple-100 text-purple-800" };
-      case "in_progress":
-        return { label: "In Progress", color: "bg-yellow-100 text-yellow-800" };
-      default:
-        return { label: status, color: "bg-gray-100 text-gray-800" };
-    }
+  const contractorTypes = Array.from(new Set(contractors.map((contractor) => contractor.specialty))).sort();
+  const supplierTypes = Array.from(new Set(suppliers.map((supplier) => supplier.category))).sort();
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const matchesContractorSearch = (contractor: (typeof contractors)[number]) => {
+    if (!normalizedSearch) return true;
+    return [
+      contractor.name,
+      contractor.specialty,
+      contractor.location,
+      contractor.skills.join(" "),
+      contractor.certifications.join(" "),
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedSearch);
   };
 
-  const getOrderStatusBadge = (status: string) => {
-    switch (status) {
-      case "delivered":
-        return { label: "Delivered", color: "bg-green-100 text-green-800", icon: CheckCircle };
-      case "in_transit":
-        return { label: "In Transit", color: "bg-blue-100 text-blue-800", icon: Truck };
-      case "processing":
-        return { label: "Processing", color: "bg-yellow-100 text-yellow-800", icon: Clock };
-      default:
-        return { label: status, color: "bg-gray-100 text-gray-800", icon: Package };
-    }
+  const matchesSupplierSearch = (supplier: (typeof suppliers)[number]) => {
+    if (!normalizedSearch) return true;
+    const productText = supplier.products.map((product) => product.name).join(" ");
+    return [supplier.name, supplier.category, supplier.location, productText]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedSearch);
   };
+
+  const selectedContractorType = selectedProviderType.startsWith("contractor:")
+    ? selectedProviderType.replace("contractor:", "")
+    : null;
+  const selectedSupplierType = selectedProviderType.startsWith("supplier:")
+    ? selectedProviderType.replace("supplier:", "")
+    : null;
+
+  const filteredContractors = contractors
+    .filter((contractor) => (selectedContractorType ? contractor.specialty === selectedContractorType : true))
+    .filter(matchesContractorSearch);
+
+  const filteredSuppliers = suppliers
+    .filter((supplier) => (selectedSupplierType ? supplier.category === selectedSupplierType : true))
+    .filter(matchesSupplierSearch);
+
+  const showContractorCategory =
+    selectedProviderType === "all" ||
+    selectedProviderType === "contractors" ||
+    selectedProviderType.startsWith("contractor:");
+  const showSupplierCategory =
+    selectedProviderType === "all" ||
+    selectedProviderType === "suppliers" ||
+    selectedProviderType.startsWith("supplier:");
+
+  const displayedContractors = filteredContractors.slice(0, 5);
+  const displayedSuppliers = filteredSuppliers.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-black mb-2">Contractor & Supplier Marketplace</h1>
-              <p className="text-gray-600">
-                Connect with verified contractors and suppliers for your construction projects
+              <h1 className="text-3xl font-bold text-foreground mb-2">Service Provider Marketplace</h1>
+              <p className="text-muted-foreground">
+                Connect with verified service providers for your real estate projects
               </p>
             </div>
             <div className="flex gap-3">
-              <Button onClick={() => setShowRFQForm(true)} className="bg-black text-white hover:bg-gray-800">
+              <Button onClick={handleRequestQuote} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Send className="w-4 h-4 mr-2" />
                 Request Quote
               </Button>
-              <Button variant="outline" className="border-gray-300">
+              <Button variant="outline" className="border-border">
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
               </Button>
@@ -459,63 +582,74 @@ export default function ContractorSupplierMarketplace() {
 
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Search contractors, suppliers, or products..."
+              placeholder="Search service providers, categories, or products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 border-gray-300"
+              className="pl-12 h-12 border-input bg-input-background"
             />
+          </div>
+
+          <div className="mt-4 max-w-sm">
+            <Label className="text-sm text-muted-foreground mb-2 block">Service Provider Type</Label>
+            <Select value={selectedProviderType} onValueChange={setSelectedProviderType}>
+              <SelectTrigger className="border-input bg-input-background">
+                <SelectValue placeholder="Select service provider type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Service Providers</SelectItem>
+                <SelectItem value="contractors">Contractors</SelectItem>
+                {contractorTypes.map((contractorType) => (
+                  <SelectItem key={`contractor-${contractorType}`} value={`contractor:${contractorType}`}>
+                    {contractorType}
+                  </SelectItem>
+                ))}
+                <SelectItem value="suppliers">Suppliers</SelectItem>
+                {supplierTypes.map((supplierType) => (
+                  <SelectItem key={`supplier-${supplierType}`} value={`supplier:${supplierType}`}>
+                    {supplierType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="contractors">Contractors</TabsTrigger>
-            <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-            <TabsTrigger value="rfqs">
-              My RFQs
-              {myRFQs.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {myRFQs.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="orders">
-              Orders
-              {myOrders.filter((o) => o.status === "in_transit").length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {myOrders.filter((o) => o.status === "in_transit").length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-10">
+          {showContractorCategory && (
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-foreground">{selectedContractorType ?? "Contractors"}</h2>
+                <Badge variant="secondary">Showing {displayedContractors.length} of {filteredContractors.length}</Badge>
+              </div>
 
-          {/* Contractors Tab */}
-          <TabsContent value="contractors" className="space-y-6">
+              {displayedContractors.length === 0 ? (
+                <Card className="p-8 border-border text-center text-muted-foreground">No contractor providers match your search.</Card>
+              ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {contractors.map((contractor) => {
+                  {displayedContractors.map((contractor) => {
                 const riskBadge = getRiskScoreBadge(contractor.riskScore);
                 return (
                   <Card
                     key={contractor.id}
-                    className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-gray-200"
+                    className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-border bg-card"
                     onClick={() => setSelectedContractor(contractor)}
                   >
                     <div className="flex items-start gap-4 mb-4">
-                      <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                        <Building2 className="w-8 h-8 text-gray-400" />
+                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                        <Building2 className="w-8 h-8 text-muted-foreground" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-black">{contractor.name}</h3>
+                          <h3 className="font-semibold text-foreground">{contractor.name}</h3>
                           {contractor.verified && (
-                            <Shield className="w-4 h-4 text-blue-600" />
+                            <Shield className="w-4 h-4 text-primary" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{contractor.specialty}</p>
+                        <p className="text-sm text-muted-foreground">{contractor.specialty}</p>
                       </div>
                     </div>
 
@@ -524,9 +658,9 @@ export default function ContractorSupplierMarketplace() {
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                         <span className="font-semibold">{contractor.rating}</span>
-                        <span className="text-sm text-gray-500">({contractor.reviews})</span>
+                        <span className="text-sm text-muted-foreground">({contractor.reviews})</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Briefcase className="w-4 h-4" />
                         {contractor.completedProjects} projects
                       </div>
@@ -535,20 +669,20 @@ export default function ContractorSupplierMarketplace() {
                     {/* Risk Score */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Risk Score</span>
+                        <span className="text-sm text-muted-foreground">Risk Score</span>
                         <Badge className={riskBadge.color}>{riskBadge.label}</Badge>
                       </div>
                       <Progress value={contractor.riskScore} className="h-2" />
-                      <span className="text-xs text-gray-500 mt-1 block">{contractor.riskScore}/100</span>
+                      <span className="text-xs text-muted-foreground mt-1 block">{contractor.riskScore}/100</span>
                     </div>
 
                     {/* Location & Response Time */}
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="w-4 h-4" />
                         {contractor.location}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         Response: {contractor.responseTime}
                       </div>
@@ -568,7 +702,7 @@ export default function ContractorSupplierMarketplace() {
                       )}
                     </div>
 
-                    <Button variant="outline" className="w-full mt-4 border-gray-300">
+                    <Button variant="outline" className="w-full mt-4 border-border">
                       View Profile
                       <ChevronRight className="w-4 h-4 ml-2" />
                     </Button>
@@ -576,18 +710,28 @@ export default function ContractorSupplierMarketplace() {
                 );
               })}
             </div>
-          </TabsContent>
+              )}
+            </section>
+          )}
 
-          {/* Suppliers Tab */}
-          <TabsContent value="suppliers" className="space-y-8">
-            {suppliers.map((supplier) => (
-              <Card key={supplier.id} className="p-6 border-gray-200">
+          {showSupplierCategory && (
+            <section className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-foreground">{selectedSupplierType ?? "Suppliers"}</h2>
+                <Badge variant="secondary">Showing {displayedSuppliers.length} of {filteredSuppliers.length}</Badge>
+              </div>
+
+              {displayedSuppliers.length === 0 ? (
+                <Card className="p-8 border-border text-center text-muted-foreground">No supplier providers match your search.</Card>
+              ) : (
+                displayedSuppliers.map((supplier) => (
+              <Card key={supplier.id} className="p-6 border-border bg-card">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-xl font-semibold text-black">{supplier.name}</h3>
+                      <h3 className="text-xl font-semibold text-foreground">{supplier.name}</h3>
                       {supplier.verified && (
-                        <Shield className="w-5 h-5 text-blue-600" />
+                        <Shield className="w-5 h-5 text-primary" />
                       )}
                     </div>
                     <div className="flex items-center gap-4">
@@ -595,9 +739,9 @@ export default function ContractorSupplierMarketplace() {
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                         <span className="font-semibold">{supplier.rating}</span>
-                        <span className="text-sm text-gray-500">({supplier.reviews})</span>
+                        <span className="text-sm text-muted-foreground">({supplier.reviews})</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="w-4 h-4" />
                         {supplier.location}
                       </div>
@@ -605,19 +749,19 @@ export default function ContractorSupplierMarketplace() {
                   </div>
 
                   {/* Performance Metrics */}
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="bg-muted rounded-lg p-4 border border-border">
                     <div className="text-sm font-semibold mb-3">Performance</div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs text-gray-600">On-Time Delivery</span>
+                        <span className="text-xs text-muted-foreground">On-Time Delivery</span>
                         <span className="text-xs font-semibold">{supplier.performanceMetrics.deliveryOnTime}%</span>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs text-gray-600">Product Quality</span>
+                        <span className="text-xs text-muted-foreground">Product Quality</span>
                         <span className="text-xs font-semibold">{supplier.performanceMetrics.productQuality}%</span>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs text-gray-600">Customer Service</span>
+                        <span className="text-xs text-muted-foreground">Customer Service</span>
                         <span className="text-xs font-semibold">{supplier.performanceMetrics.customerService}%</span>
                       </div>
                     </div>
@@ -632,21 +776,21 @@ export default function ContractorSupplierMarketplace() {
                     return (
                       <Card
                         key={product.id}
-                        className="p-4 hover:shadow-md transition-shadow cursor-pointer border-gray-200"
+                        className="p-4 hover:shadow-md transition-shadow cursor-pointer border-border bg-card"
                         onClick={() => setSelectedProduct({ ...product, supplier })}
                       >
-                        <div className="aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                        <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
                           <ImageWithFallback
                             src={`https://source.unsplash.com/400x300/?${encodeURIComponent(product.image)}`}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h4 className="font-semibold text-black mb-2">{product.name}</h4>
+                        <h4 className="font-semibold text-foreground mb-2">{product.name}</h4>
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <div className="text-2xl font-bold text-black">£{product.price}</div>
-                            <div className="text-xs text-gray-500">per {product.unit}</div>
+                            <div className="text-2xl font-bold text-foreground">£{product.price}</div>
+                            <div className="text-xs text-muted-foreground">per {product.unit}</div>
                           </div>
                           <Badge className={stockBadge.color}>
                             <StockIcon className="w-3 h-3 mr-1" />
@@ -654,7 +798,7 @@ export default function ContractorSupplierMarketplace() {
                           </Badge>
                         </div>
                         <Separator className="my-3" />
-                        <div className="space-y-2 text-sm text-gray-600">
+                        <div className="space-y-2 text-sm text-muted-foreground">
                           <div className="flex items-center justify-between">
                             <span>Min Order:</span>
                             <span className="font-semibold">{product.minOrder} {product.unit}s</span>
@@ -664,7 +808,14 @@ export default function ContractorSupplierMarketplace() {
                             <span className="font-semibold">{product.delivery}</span>
                           </div>
                         </div>
-                        <Button variant="outline" className="w-full mt-3 border-gray-300">
+                        <Button
+                          variant="outline"
+                          className="w-full mt-3 border-border"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(product.id);
+                          }}
+                        >
                           Add to Cart
                         </Button>
                       </Card>
@@ -672,164 +823,15 @@ export default function ContractorSupplierMarketplace() {
                   })}
                 </div>
               </Card>
-            ))}
-          </TabsContent>
+            ))
+              )}
+            </section>
+          )}
 
-          {/* My RFQs Tab */}
-          <TabsContent value="rfqs" className="space-y-6">
-            <div className="grid gap-6">
-              {myRFQs.map((rfq) => {
-                const statusBadge = getStatusBadge(rfq.status);
-                return (
-                  <Card key={rfq.id} className="p-6 border-gray-200">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-black mb-2">{rfq.title}</h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Created: {rfq.created}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4" />
-                            Budget: {rfq.budget}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Deadline: {rfq.deadline}
-                          </div>
-                        </div>
-                      </div>
-                      <Badge className={statusBadge.color}>{statusBadge.label}</Badge>
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-6">
-                        <div>
-                          <div className="text-2xl font-bold text-black">{rfq.quotesReceived}</div>
-                          <div className="text-sm text-gray-600">Quotes Received</div>
-                        </div>
-                        {rfq.quotesReceived > 0 && (
-                          <div className="text-sm text-gray-600">
-                            Average: £{(rfq.quotes.reduce((sum, q) => sum + q.totalCost, 0) / rfq.quotes.length).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        {rfq.quotesReceived > 0 && (
-                          <Button
-                            onClick={() => setShowQuoteComparison(rfq)}
-                            className="bg-black text-white hover:bg-gray-800"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Compare Quotes
-                          </Button>
-                        )}
-                        <Button variant="outline" className="border-gray-300">
-                          <FileText className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-6">
-            <div className="grid gap-6">
-              {myOrders.map((order) => {
-                const statusBadge = getOrderStatusBadge(order.status);
-                const StatusIcon = statusBadge.icon;
-                return (
-                  <Card key={order.id} className="p-6 border-gray-200">
-                    <div className="flex items-start justify-between mb-6">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-black">{order.id}</h3>
-                          <Badge className={statusBadge.color}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {statusBadge.label}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{order.supplier}</span>
-                          <span>•</span>
-                          <span>{order.items} items</span>
-                          <span>•</span>
-                          <span>Ordered: {order.date}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-black">£{order.total.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">Expected: {order.deliveryDate}</div>
-                      </div>
-                    </div>
-
-                    {/* Order Timeline */}
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        {order.timeline.map((stage, index) => (
-                          <div key={stage.stage} className="flex items-center flex-1">
-                            <div className="flex flex-col items-center flex-1">
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                                  stage.completed
-                                    ? "bg-green-100 text-green-600"
-                                    : stage.current
-                                    ? "bg-blue-100 text-blue-600"
-                                    : "bg-gray-200 text-gray-400"
-                                }`}
-                              >
-                                {stage.completed ? (
-                                  <Check className="w-5 h-5" />
-                                ) : stage.current ? (
-                                  <Clock className="w-5 h-5" />
-                                ) : (
-                                  <div className="w-3 h-3 rounded-full bg-gray-400" />
-                                )}
-                              </div>
-                              <div className="text-xs font-semibold text-center mb-1">{stage.stage}</div>
-                              {stage.date && <div className="text-xs text-gray-500 text-center">{stage.date}</div>}
-                            </div>
-                            {index < order.timeline.length - 1 && (
-                              <div
-                                className={`h-1 flex-1 ${
-                                  stage.completed ? "bg-green-200" : "bg-gray-200"
-                                }`}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-4">
-                      <Button variant="outline" className="border-gray-300">
-                        <FileText className="w-4 h-4 mr-2" />
-                        View Invoice
-                      </Button>
-                      <Button variant="outline" className="border-gray-300">
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                        Contact Supplier
-                      </Button>
-                      {order.status === "delivered" && (
-                        <Button variant="outline" className="border-gray-300">
-                          <Download className="w-4 h-4 mr-2" />
-                          Download Receipt
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-        </Tabs>
+          {!showContractorCategory && !showSupplierCategory && (
+            <Card className="p-8 border-border text-center text-muted-foreground">No service provider type selected.</Card>
+          )}
+        </div>
       </div>
 
       {/* Contractor Profile Modal */}
@@ -991,7 +993,7 @@ export default function ContractorSupplierMarketplace() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <Button className="flex-1 bg-black text-white hover:bg-gray-800">
+                <Button className="flex-1 bg-black text-white hover:bg-gray-800" onClick={handleRequestQuote}>
                   <Send className="w-4 h-4 mr-2" />
                   Request Quote
                 </Button>
@@ -1073,10 +1075,13 @@ export default function ContractorSupplierMarketplace() {
                   />
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button className="bg-black text-white hover:bg-gray-800">
+                  <Button
+                    className="bg-black text-white hover:bg-gray-800"
+                    onClick={() => handleAddToCart(selectedProduct.id)}
+                  >
                     Add to Cart
                   </Button>
-                  <Button variant="outline" className="border-gray-300">
+                  <Button variant="outline" className="border-gray-300" onClick={handleRequestQuote}>
                     <Send className="w-4 h-4 mr-2" />
                     Request Quote
                   </Button>
@@ -1219,169 +1224,6 @@ export default function ContractorSupplierMarketplace() {
         </Dialog>
       )}
 
-      {/* Quote Comparison Modal */}
-      {showQuoteComparison && (
-        <Dialog open={!!showQuoteComparison} onOpenChange={() => setShowQuoteComparison(null)}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{showQuoteComparison.title}</DialogTitle>
-              <DialogDescription>
-                Compare quotes from {showQuoteComparison.quotesReceived} contractors
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              {/* Comparison Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold">Criteria</th>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <th key={index} className="text-left py-3 px-4 font-semibold">
-                          {quote.contractorName}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-3 px-4 font-semibold">Total Cost</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          <div className="text-xl font-bold text-black">£{quote.totalCost.toLocaleString()}</div>
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-3 px-4">Labor Cost</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          £{quote.laborCost.toLocaleString()}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-3 px-4">Material Cost</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          £{quote.materialCost.toLocaleString()}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-3 px-4">Other Costs</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          £{quote.otherCosts.toLocaleString()}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-3 px-4 font-semibold">Timeline</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          <Badge variant="secondary">{quote.timeline}</Badge>
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-3 px-4 font-semibold">Start Date</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          {quote.startDate}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-3 px-4 font-semibold">Warranty</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4">
-                          <Badge variant="outline">{quote.warranty}</Badge>
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <td className="py-3 px-4">Notes</td>
-                      {showQuoteComparison.quotes.map((quote, index) => (
-                        <td key={index} className="py-3 px-4 text-sm text-gray-600">
-                          {quote.notes}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-semibold">Action</td>
-                      {showQuoteComparison.quotes.map((_, index) => (
-                        <td key={index} className="py-3 px-4">
-                          <div className="flex flex-col gap-2">
-                            <Button className="bg-green-600 text-white hover:bg-green-700">
-                              <ThumbsUp className="w-4 h-4 mr-2" />
-                              Accept Quote
-                            </Button>
-                            <Button variant="outline" className="border-gray-300">
-                              <MessageSquare className="w-4 h-4 mr-2" />
-                              Message
-                            </Button>
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Cost Comparison Chart */}
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                <h4 className="font-semibold mb-4">Cost Breakdown Comparison</h4>
-                <div className="space-y-4">
-                  {showQuoteComparison.quotes.map((quote, index) => (
-                    <div key={index}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">{quote.contractorName}</span>
-                        <span className="text-lg font-bold">£{quote.totalCost.toLocaleString()}</span>
-                      </div>
-                      <div className="flex h-8 rounded overflow-hidden">
-                        <div
-                          className="bg-blue-500 flex items-center justify-center text-white text-xs"
-                          style={{ width: `${(quote.laborCost / quote.totalCost) * 100}%` }}
-                        >
-                          Labor
-                        </div>
-                        <div
-                          className="bg-green-500 flex items-center justify-center text-white text-xs"
-                          style={{ width: `${(quote.materialCost / quote.totalCost) * 100}%` }}
-                        >
-                          Materials
-                        </div>
-                        <div
-                          className="bg-yellow-500 flex items-center justify-center text-white text-xs"
-                          style={{ width: `${(quote.otherCosts / quote.totalCost) * 100}%` }}
-                        >
-                          Other
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                    <span className="text-sm">Labor</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-500 rounded"></div>
-                    <span className="text-sm">Materials</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                    <span className="text-sm">Other</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }

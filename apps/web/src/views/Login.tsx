@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, KeyboardEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { Home, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,15 @@ export default function Login() {
     // Mock: write a placeholder token so ProtectedRoute can gate admin pages.
     localStorage.setItem("auth_token", "mock-token");
     navigate("/role-selection");
+  };
+
+  const handleEnterSubmit = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
   };
 
   return (
@@ -95,6 +104,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleEnterSubmit}
                   placeholder="your.email@example.com"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
@@ -112,6 +122,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleEnterSubmit}
                   placeholder="Enter your password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required

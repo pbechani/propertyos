@@ -420,7 +420,7 @@ export default function InspectionVerificationModule() {
           {/* Compliance Banner */}
           <Card className="p-4 bg-blue-50 border-blue-200 mb-4">
             <div className="flex items-start gap-3">
-              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <div className="font-semibold text-blue-900 mb-1">
                   Regulatory Compliance Active
@@ -653,7 +653,7 @@ export default function InspectionVerificationModule() {
                   {inspection.notes && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
                         <div className="text-sm text-gray-700">{inspection.notes}</div>
                       </div>
                     </div>
@@ -711,7 +711,7 @@ export default function InspectionVerificationModule() {
                 </Badge>
               </div>
 
-              <ScrollArea className="h-[600px] pr-4">
+              <ScrollArea className="h-150 pr-4">
                 <div className="space-y-4">
                   {mockProgressLog.map((entry, index) => (
                     <div key={entry.id} className="relative">
@@ -723,7 +723,7 @@ export default function InspectionVerificationModule() {
                       <Card className="p-5 border-gray-200 hover:shadow-md transition-shadow">
                         <div className="flex gap-4">
                           {/* Timeline dot */}
-                          <div className="flex-shrink-0">
+                          <div className="shrink-0">
                             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                               <CheckCircle className="w-5 h-5 text-green-600" />
                             </div>
@@ -1078,7 +1078,7 @@ export default function InspectionVerificationModule() {
             {/* Checklist */}
             <div>
               <h3 className="font-semibold mb-3">Inspection Checklist</h3>
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-100 pr-4">
                 <div className="space-y-3">
                   {checklistItems.map((item) => (
                     <Card key={item.id} className="p-4 border-gray-200">
@@ -1215,7 +1215,7 @@ export default function InspectionVerificationModule() {
             {overallResult === "conditional" || overallResult === "fail" && (
               <Card className="p-4 bg-red-50 border-red-200">
                 <div className="flex items-start gap-3">
-                  <Ban className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <Ban className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-semibold text-red-900 mb-1">
                       Stage Will Be Blocked

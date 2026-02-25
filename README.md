@@ -31,7 +31,7 @@ A financial-grade digital infrastructure for property buying, construction manag
 - Milestone-based escrow releases
 
 ### Marketplaces
-- **Contractor Marketplace** — Verified professionals, bidding, ratings
+- **Service Provider Marketplace** — Verified professionals, bidding, ratings
 - **Supplier Marketplace** — 10,000+ materials, RFQ system, price index
 - **Logistics Marketplace** — On-demand truck operators (Uber for construction)
 
@@ -103,9 +103,19 @@ A financial-grade digital infrastructure for property buying, construction manag
 | Milestone | Timeline | Deliverables |
 |-----------|----------|--------------|
 | **MVP** | ~30 weeks | Auth, Property, Sales, Escrow, Construction |
-| **Marketplace** | ~60 weeks | + Contractor, Supplier, Logistics, Inspections |
+| **Marketplace** | ~60 weeks | + Service Providers, Supplier, Logistics, Inspections |
 | **AI Layer** | ~92 weeks | + Risk Engine, AI Design, Legal Intelligence |
 | **Full Platform** | ~130 weeks | + Lifecycle, Bank/Gov Integrations, Scale |
+
+---
+
+## Current Web Routes (Highlights)
+
+- Listings: `/app/listings`
+- Property detail: `/app/property/:propertyId`
+- Service providers: `/service-providers`
+- Role setup: `/role-setup`
+- Change password: `/change-password`
 
 ---
 
@@ -222,9 +232,68 @@ npm run format
 # Build all apps
 npm run build
 
+# Smoke-check key web routes
+npm run smoke:web
+
 # Clean all build artifacts
 npm run clean
 ```
+
+### Web Route Smoke Check
+
+Use the built-in smoke script to verify key web routes quickly:
+
+```bash
+# Default (http://localhost:3000)
+npm run smoke:web
+
+# Custom base URL
+BASE_URL=http://localhost:3001 npm run smoke:web
+
+# Custom route list
+bash scripts/smoke-web-routes.sh / /app/listings /app/safety /app/analytics
+```
+
+### Agent Dashboard Metrics (Sprint 03)
+
+The agent dashboard endpoint now returns the following analytics fields:
+
+- `listingViewsLast7d`
+- `listingViewsPrevious7d`
+- `listingViewsTrendPct`
+- `inquiryResponseRatePct`
+
+Quick check (replace with a valid agent token):
+
+```bash
+curl -s http://localhost:3001/api/v1/agent/dashboard \
+   -H "Authorization: Bearer <AGENT_TOKEN>"
+```
+
+### AI Voice Search Verification (Listings)
+
+Use this checklist to verify the voice-search flow on `apps/web/src/views/Listings.tsx`.
+
+1. Start web + API:
+   ```bash
+   npm run dev --workspace=apps/api
+   npm run dev --workspace=apps/web
+   ```
+2. Open `http://localhost:3000/app/listings`.
+3. Open Filters → click **AI Voice Search**.
+4. Allow microphone permission when prompted.
+5. Speak a query such as:
+   - `Show me 3 bedroom houses in Cape Town with a pool under 10 million rand`
+6. Confirm expected behavior:
+   - Transcript appears in the modal.
+   - AI suggestion chips appear from parsed intent.
+   - Clicking **Apply AI Search** updates listing results and applied filter badges.
+
+Troubleshooting:
+- If browser support is missing, the modal shows a compatibility message.
+- If origin is not secure, voice capture requires HTTPS (or localhost).
+- If mic permission is blocked, enable microphone access for the site and retry.
+- If no speech is captured, retry with clearer speech / closer microphone.
 
 ### Docker Commands
 

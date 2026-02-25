@@ -363,6 +363,70 @@ export class AuthService {
     });
   }
 
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ): Promise<void> {
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        email: string;
+        status: string;
+        password_hash: string | null;
+      }>
+    >`
+      SELECT id, email, status, password_hash
+      FROM identity.users
+      WHERE id = ${userId}::uuid
+      LIMIT 1
+    `;
+
+    const user = rows[0];
+    if (!user || user.status !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    if (!user.password_hash) {
+      throw new BadRequestException(
+        'Password change is unavailable for this account',
+      );
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!matches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const nextHash = await bcrypt.hash(newPassword, this.bcryptRounds);
+    await this.prisma.$executeRaw`
+      UPDATE identity.users
+      SET password_hash = ${nextHash}, updated_at = NOW()
+      WHERE id = ${userId}::uuid
+    `;
+
+    await this.revokeAllSessions(userId);
+
+    await this.auditService.log({
+      eventId: 'user.password_changed',
+      actorId: userId,
+      actorRole: (await this.usersService.getUserRoleNames(userId))[0] ?? null,
+      action: 'change_password',
+      resourceType: 'user',
+      resourceId: userId,
+      payload: {},
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent ?? null,
+    });
+  }
+
   async verifyEmail(
     token: string,
     requestContext: { ip: string; userAgent?: string | null },

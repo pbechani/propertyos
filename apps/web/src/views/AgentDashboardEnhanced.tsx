@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken, getSessionClaims } from "@/lib/auth-session";
-import { propertiesApi, type PropertyListing } from "@/lib/api-client";
+import { propertiesApi, type AgentDashboardResponse, type PropertyListing } from "@/lib/api-client";
 
 type ListingFormState = {
   title: string;
@@ -101,6 +101,16 @@ export default function AgentDashboardEnhanced() {
   const [createError, setCreateError] = useState("");
   const [isCreatingListing, setIsCreatingListing] = useState(false);
   const [listingForm, setListingForm] = useState<ListingFormState>(INITIAL_FORM_STATE);
+  const [dashboardMetrics, setDashboardMetrics] = useState<AgentDashboardResponse>({
+    totalListings: 0,
+    byStatus: {},
+    newInquiries7d: 0,
+    verificationSummary: {},
+    listingViewsLast7d: 0,
+    listingViewsPrevious7d: 0,
+    listingViewsTrendPct: 0,
+    inquiryResponseRatePct: 0,
+  });
 
   // Analytics Data
   const viewsData = [
@@ -135,12 +145,18 @@ export default function AgentDashboardEnhanced() {
     setListingError("");
 
     try {
-      const response = await propertiesApi.search({
+      const token = getAccessToken();
+      const [response, metrics] = await Promise.all([
+        propertiesApi.search({
         agent_id: agentId,
         sort: "newest",
         limit: 100,
-      });
+        }),
+        token ? propertiesApi.getAgentDashboard(token) : Promise.resolve(dashboardMetrics),
+      ]);
+
       setActiveListings(response.data.map(mapPropertyToDashboardListing));
+      setDashboardMetrics(metrics);
     } catch {
       setActiveListings([]);
       setListingError("Unable to load agent listings from database.");
@@ -282,10 +298,10 @@ export default function AgentDashboardEnhanced() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Total Views</div>
-                    <div className="text-3xl font-bold">{activeListings.reduce((sum, item) => sum + item.views, 0)}</div>
+                    <div className="text-3xl font-bold">{dashboardMetrics.listingViewsLast7d}</div>
                     <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
                       <TrendingUp className="w-3 h-3" />
-                      Tracked across listings
+                      {dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}% vs previous 7 days
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -298,10 +314,10 @@ export default function AgentDashboardEnhanced() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Inquiries</div>
-                    <div className="text-3xl font-bold">{activeListings.reduce((sum, item) => sum + item.inquiries, 0)}</div>
+                    <div className="text-3xl font-bold">{dashboardMetrics.newInquiries7d}</div>
                     <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
                       <TrendingUp className="w-3 h-3" />
-                      Synced from listings
+                      {dashboardMetrics.inquiryResponseRatePct}% response rate
                     </div>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -354,7 +370,7 @@ export default function AgentDashboardEnhanced() {
                   { icon: TrendingUp, text: "Sky View listing reached 500 views", time: "1 day ago", color: "orange" },
                 ].map((activity, idx) => (
                   <div key={idx} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
-                    <div className={`w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center flex-shrink-0`}>
+                    <div className={`w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center shrink-0`}>
                       <activity.icon className={`w-5 h-5 text-${activity.color}-600`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -410,12 +426,12 @@ export default function AgentDashboardEnhanced() {
               <h3 className="font-semibold text-lg mb-4">Conversion Metrics</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">2.8%</div>
-                  <div className="text-sm text-gray-600">View to Inquiry</div>
+                  <div className="text-3xl font-bold text-blue-600 mb-1">{dashboardMetrics.listingViewsTrendPct}%</div>
+                  <div className="text-sm text-gray-600">Views Trend (7d)</div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600 mb-1">18.5%</div>
-                  <div className="text-sm text-gray-600">Inquiry to Viewing</div>
+                  <div className="text-3xl font-bold text-green-600 mb-1">{dashboardMetrics.inquiryResponseRatePct}%</div>
+                  <div className="text-sm text-gray-600">Inquiry Response Rate</div>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-3xl font-bold text-purple-600 mb-1">32.1%</div>
@@ -533,6 +549,8 @@ export default function AgentDashboardEnhanced() {
               <button 
                 onClick={() => setShowAddListing(false)} 
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close add listing dialog"
+                title="Close"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -654,6 +672,8 @@ export default function AgentDashboardEnhanced() {
                       propertyType: event.target.value as ListingFormState['propertyType'],
                     }))
                   }
+                  title="Property Type"
+                  aria-label="Property Type"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="residential">Residential</option>

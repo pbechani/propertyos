@@ -322,13 +322,13 @@ export default function AIDesignStudio() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col">
+    <div className="h-screen bg-linear-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col">
       {/* Header */}
       <div className="border-b border-gray-800 bg-black/50 backdrop-blur-xl">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -352,7 +352,7 @@ export default function AIDesignStudio() {
               </Button>
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                className="bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
                 onClick={() => setShowExportDialog(true)}
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -370,7 +370,7 @@ export default function AIDesignStudio() {
           {/* Chat Header */}
           <div className="p-4 border-b border-gray-800">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -401,10 +401,10 @@ export default function AIDesignStudio() {
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                       message.role === "user"
                         ? "bg-gray-700"
-                        : "bg-gradient-to-br from-blue-500 to-purple-600"
+                        : "bg-linear-to-br from-blue-500 to-purple-600"
                     }`}
                   >
                     {message.role === "user" ? (
@@ -444,7 +444,7 @@ export default function AIDesignStudio() {
               ))}
               {isProcessing && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse">
                     <Bot className="w-4 h-4" />
                   </div>
                   <div className="flex-1 p-3 rounded-lg bg-gray-800/50 border border-gray-700">
@@ -476,6 +476,8 @@ export default function AIDesignStudio() {
                     <TooltipTrigger asChild>
                       <button
                         onClick={handleVoiceInput}
+                        title="Voice input"
+                        aria-label="Voice input"
                         className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${
                           isListening
                             ? "bg-red-500 text-white animate-pulse"
@@ -491,7 +493,7 @@ export default function AIDesignStudio() {
               </div>
               <Button
                 onClick={handleSendMessage}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                className="bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
                 disabled={isProcessing}
               >
                 <Send className="w-4 h-4" />
@@ -633,13 +635,7 @@ export default function AIDesignStudio() {
             {viewMode === "2d" ? (
               <div
                 ref={canvasRef}
-                className="absolute inset-0 m-8"
-                style={{
-                  backgroundImage: showGrid
-                    ? "linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)"
-                    : "none",
-                  backgroundSize: "20px 20px",
-                }}
+                className={`absolute inset-0 m-8 ${showGrid ? "ai-design-grid-overlay" : ""}`}
               >
                 {/* Floor Plan Elements */}
                 <svg className="w-full h-full">
@@ -689,7 +685,7 @@ export default function AIDesignStudio() {
                 {/* AI Suggestion Overlay */}
                 <div className="absolute top-4 left-4 bg-blue-600/20 backdrop-blur-md border border-blue-500/30 rounded-lg p-3 max-w-xs">
                   <div className="flex items-start gap-2">
-                    <Lightbulb className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <Lightbulb className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
                     <div className="text-xs">
                       <div className="font-semibold text-blue-300 mb-1">AI Suggestion</div>
                       <div className="text-gray-300">
@@ -711,10 +707,10 @@ export default function AIDesignStudio() {
                 </div>
               </div>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+              <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-gray-900 via-gray-800 to-gray-900">
                 {/* 3D Preview Placeholder */}
                 <div className="relative w-full h-full max-w-4xl max-h-3xl m-8">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-gray-700">
+                  <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-purple-500/10 rounded-lg border border-gray-700">
                     {/* Simulated 3D render */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative w-96 h-64">
@@ -799,7 +795,7 @@ export default function AIDesignStudio() {
                       ${calculateTotalCost().toLocaleString()}
                     </div>
                   </div>
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <DollarSign className="w-8 h-8 text-white" />
                   </div>
                 </div>
@@ -847,12 +843,10 @@ export default function AIDesignStudio() {
                           )}
                         </div>
                       </div>
-                      <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                          style={{ width: `${item.percentage}%` }}
-                        />
-                      </div>
+                      <Progress
+                        value={item.percentage}
+                        className="h-2 bg-gray-700 ai-design-gradient-progress"
+                      />
                     </div>
                   ))}
                 </div>
@@ -860,7 +854,7 @@ export default function AIDesignStudio() {
 
               <Card className="p-4 bg-blue-600/10 border-blue-500/30">
                 <div className="flex items-start gap-3">
-                  <Target className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <Target className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                   <div className="text-sm">
                     <div className="font-semibold text-blue-300 mb-1">
                       Real-time Cost Updates
@@ -884,7 +878,7 @@ export default function AIDesignStudio() {
                       {getCompliancePercentage()}%
                     </div>
                   </div>
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 bg-linear-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
                     <Shield className="w-8 h-8 text-white" />
                   </div>
                 </div>
@@ -913,7 +907,7 @@ export default function AIDesignStudio() {
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                             item.status === "compliant"
                               ? "bg-green-500/20"
                               : item.status === "warning"
@@ -954,7 +948,7 @@ export default function AIDesignStudio() {
 
               <Card className="p-4 bg-purple-600/10 border-purple-500/30">
                 <div className="flex items-start gap-3">
-                  <Scale className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                  <Scale className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                   <div className="text-sm">
                     <div className="font-semibold text-purple-300 mb-1">
                       Legal Assistant Active
@@ -1019,18 +1013,16 @@ export default function AIDesignStudio() {
                           <span className="text-gray-400">Sustainability</span>
                           <span className="text-green-400">{material.sustainability}%</span>
                         </div>
-                        <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              material.sustainability >= 80
-                                ? "bg-green-500"
-                                : material.sustainability >= 60
-                                ? "bg-yellow-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{ width: `${material.sustainability}%` }}
-                          />
-                        </div>
+                        <Progress
+                          value={material.sustainability}
+                          className={`h-1.5 bg-gray-700 ${
+                            material.sustainability >= 80
+                              ? "ai-design-progress-green"
+                              : material.sustainability >= 60
+                              ? "ai-design-progress-yellow"
+                              : "ai-design-progress-red"
+                          }`}
+                        />
                       </div>
                     </div>
 
@@ -1112,7 +1104,7 @@ export default function AIDesignStudio() {
                 setShowExportDialog(false);
                 alert("Export started! Files will be ready in your downloads.");
               }}
-              className="bg-gradient-to-r from-blue-600 to-purple-600"
+              className="bg-linear-to-r from-blue-600 to-purple-600"
             >
               Export All
             </Button>

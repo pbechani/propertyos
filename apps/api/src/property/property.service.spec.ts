@@ -419,7 +419,9 @@ describe('PropertyService', () => {
           { status: 'draft', count: '2' },
         ])
         .mockResolvedValueOnce([{ count: '3' }])
-        .mockResolvedValueOnce([{ verification_status: 'verified', count: '3' }]);
+        .mockResolvedValueOnce([{ verification_status: 'verified', count: '3' }])
+        .mockResolvedValueOnce([{ current_views: '12', previous_views: '8' }])
+        .mockResolvedValueOnce([{ total_inquiries: '10', responded_inquiries: '7' }]);
 
       const result = await service.getAgentDashboard(agentId);
 
@@ -427,6 +429,10 @@ describe('PropertyService', () => {
       expect(result.byStatus.active).toBe(5);
       expect(result.newInquiries7d).toBe(3);
       expect(result.verificationSummary.verified).toBe(3);
+      expect(result.listingViewsLast7d).toBe(12);
+      expect(result.listingViewsPrevious7d).toBe(8);
+      expect(result.listingViewsTrendPct).toBe(50);
+      expect(result.inquiryResponseRatePct).toBe(70);
     });
   });
 

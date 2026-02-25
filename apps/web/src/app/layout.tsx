@@ -1,13 +1,26 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Manrope } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import HomeNavbar from '@/components/HomeNavbar';
+import { Toaster } from '@/components/ui/sonner';
+import AuthenticatedShell from '@/components/AuthenticatedShell';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'PRIBEC - Real Estate & Construction Trust Platform',
+  title: 'PropertyOS',
   description:
     'Financial-grade platform for real estate transactions and construction management',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -17,18 +30,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className={`${manrope.className} app-theme-scope`} suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">
           {`(function () {
             try {
-              var stored = localStorage.getItem('theme');
-              if (stored === 'dark' || stored === 'light') {
-                document.documentElement.classList.add(stored);
-              } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.add('light');
-              }
+              document.documentElement.classList.remove('dark');
+              document.documentElement.classList.add('light');
+              localStorage.setItem('theme', 'light');
             } catch (e) {
               document.documentElement.classList.add('light');
             }
@@ -36,7 +44,8 @@ export default function RootLayout({
         </Script>
         <ThemeProvider>
           <HomeNavbar />
-          {children}
+          <AuthenticatedShell>{children}</AuthenticatedShell>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

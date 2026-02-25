@@ -44,7 +44,7 @@ BuyerDashboardEnhanced.tsx       PropertyDetail.tsx
 BuyerFlowDocumentation.tsx       PropertyDetailEnhanced.tsx
 BuyerSimpleView.tsx              PropertyLifecycleDashboard.tsx
 ConstructionProjectDashboard.tsx PropertySaleWorkspace.tsx
-ContractorSupplierMarketplace.tsx PublicHome.tsx
+ServiceProviderMarketplace.tsx PublicHome.tsx
 ConveyancerView.tsx              PublicHomeVariation1.tsx
 Dashboard.tsx                    PublicHomeVariation2.tsx
 EmailVerification.tsx            Register.tsx
@@ -118,7 +118,9 @@ export { default } from '@/views/LoginEnhanced';
 | `/mfa-verify` | `MFAVerify` |
 | `/oauth-connect` | `OAuthConnect` |
 | `/session-expired` | `SessionExpired` |
+| `/change-password` | `ChangePassword` |
 | `/role-selection` | `RoleSelection` |
+| `/role-setup` | `RoleSetup` |
 | `/kyc-upload` | `KYCUpload` |
 | `/profile-setup` | `ProfileSetup` |
 | `/profile-dashboard` | `ProfileDashboard` |
@@ -128,13 +130,13 @@ export { default } from '@/views/LoginEnhanced';
 | `/buyer-workspace` | `BuyerSimpleView` |
 | `/buyer-flow` | `BuyerFlowDocumentation` |
 | `/buyer` | `BuyerDashboard` |
-| `/properties` | `Listings` |
+| `/app/listings` | `Listings` |
 | `/property-lifecycle` | `PropertyLifecycleDashboard` |
 | `/workspace/[id]` | `PropertySaleWorkspace` |
 | `/conveyancer` | `ConveyancerView` |
 | `/escrow` | `EscrowFinancialDashboard` |
 | `/construction` | `ConstructionProjectDashboard` |
-| `/contractor-supplier-marketplace` | `ContractorSupplierMarketplace` |
+| `/service-providers` | `ServiceProviderMarketplace` |
 | `/boq-workspace` | `IntelligentBOQWorkspace` |
 | `/inspection-verification` | `InspectionVerificationModule` |
 | `/logistics-delivery-marketplace` | `LogisticsDeliveryMarketplace` |

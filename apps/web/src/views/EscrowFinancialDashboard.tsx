@@ -229,7 +229,7 @@ export default function EscrowFinancialDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Security Badge */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 md:px-8 py-6">
+      <div className="bg-linear-to-r from-gray-900 to-gray-800 text-white px-4 md:px-8 py-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -267,7 +267,7 @@ export default function EscrowFinancialDashboard() {
       <div className="px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Balance */}
-          <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-blue-500 to-blue-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <DollarSign className="w-6 h-6" />
@@ -280,7 +280,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Available Balance */}
-          <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-green-500 to-green-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <TrendingUp className="w-6 h-6" />
@@ -293,7 +293,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Funds Held */}
-          <Card className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-purple-500 to-purple-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <Lock className="w-6 h-6" />
@@ -306,7 +306,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Pending Releases */}
-          <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-orange-500 to-orange-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <ArrowUpRight className="w-6 h-6" />
@@ -361,7 +361,7 @@ export default function EscrowFinancialDashboard() {
                         <div key={txn.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className={`
-                              w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                              w-10 h-10 rounded-full flex items-center justify-center shrink-0
                               ${txn.debitCredit === "credit" ? "bg-green-100" : "bg-red-100"}
                             `}>
                               {txn.debitCredit === "credit" ? (
@@ -396,7 +396,7 @@ export default function EscrowFinancialDashboard() {
                     <h3 className="font-semibold text-lg mb-4">Pending Release Approvals</h3>
                     <div className="space-y-3">
                       {pendingReleases.map((release) => (
-                        <div key={release.id} className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
+                        <div key={release.id} className="p-4 bg-linear-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1 min-w-0">
                               <div className="font-semibold mb-1 truncate">{release.property}</div>
@@ -643,17 +643,17 @@ export default function EscrowFinancialDashboard() {
             {selectedTab === "commissions" && (
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                  <Card className="p-6 bg-linear-to-br from-green-50 to-emerald-50 border-green-200">
                     <div className="text-sm text-gray-600 mb-1">Total Commissions</div>
                     <div className="text-3xl font-bold text-green-600 mb-2">R 523,750</div>
                     <div className="text-xs text-gray-600">2 Transactions</div>
                   </Card>
-                  <Card className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                  <Card className="p-6 bg-linear-to-br from-yellow-50 to-orange-50 border-yellow-200">
                     <div className="text-sm text-gray-600 mb-1">Pending Release</div>
                     <div className="text-3xl font-bold text-yellow-600 mb-2">R 375,000</div>
                     <div className="text-xs text-gray-600">Awaiting Registration</div>
                   </Card>
-                  <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                  <Card className="p-6 bg-linear-to-br from-blue-50 to-indigo-50 border-blue-200">
                     <div className="text-sm text-gray-600 mb-1">Released</div>
                     <div className="text-3xl font-bold text-blue-600 mb-2">R 148,750</div>
                     <div className="text-xs text-gray-600">1 Payment Complete</div>
@@ -722,7 +722,7 @@ export default function EscrowFinancialDashboard() {
                 <div className="space-y-3">
                   {auditLogs.map((log, idx) => (
                     <div key={idx} className="flex items-start gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
                         {log.verified ? (
                           <CheckCircle2 className="w-5 h-5 text-green-600" />
                         ) : (
@@ -777,7 +777,7 @@ export default function EscrowFinancialDashboard() {
       {showReleaseModal && selectedRelease && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white sticky top-0">
+            <div className="p-6 border-b border-gray-200 bg-linear-to-r from-blue-500 to-purple-600 text-white sticky top-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-xl mb-1">Multi-Signature Approval Required</h3>
@@ -796,7 +796,7 @@ export default function EscrowFinancialDashboard() {
             
             <div className="p-6 space-y-6">
               {/* Release Details */}
-              <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
+              <div className="p-4 bg-linear-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Property</div>
@@ -858,7 +858,7 @@ export default function EscrowFinancialDashboard() {
               {/* Security Notice */}
               <div className="p-4 bg-gray-900 text-white rounded-lg">
                 <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <Shield className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-semibold mb-1">Security Notice</div>
                     <div className="text-sm text-gray-300">

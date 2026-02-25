@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto, RefreshTokenDto } from './dto/token.dto';
 import {
+  ChangePasswordDto,
   ForgotPasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
@@ -98,6 +99,27 @@ export class AuthController {
       ip: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });
+    return { success: true };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
+  @Post('change-password')
+  async changePassword(
+    @Req() req: RequestMeta,
+    @Body() body: ChangePasswordDto,
+  ): Promise<{ success: boolean }> {
+    await this.authService.changePassword(
+      req.user!.sub,
+      body.currentPassword,
+      body.newPassword,
+      {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] ?? null,
+      },
+    );
+
     return { success: true };
   }
 

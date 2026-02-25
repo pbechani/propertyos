@@ -3,11 +3,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type Theme = "light" | "dark";
+const LOCKED_THEME: Theme = "light";
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  isThemeLocked: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -30,29 +32,36 @@ function getInitialTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Always start with "light" on both server and client to prevent hydration
-  // mismatch. The inline script in layout.tsx already applies the correct class
-  // to <html> before React hydrates, so there is no FOUC.
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>(LOCKED_THEME);
 
   useEffect(() => {
-    // Sync React state with the real preference after mount (client-only)
-    setTheme(getInitialTheme());
+    setThemeState(LOCKED_THEME);
   }, []);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem("theme", theme);
+    root.classList.add(LOCKED_THEME);
+    localStorage.setItem("theme", LOCKED_THEME);
   }, [theme]);
 
+  const setTheme = (_nextTheme: Theme) => {
+    setThemeState(LOCKED_THEME);
+  };
+
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    setThemeState(LOCKED_THEME);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        toggleTheme,
+        isThemeLocked: true,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

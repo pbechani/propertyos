@@ -5,6 +5,7 @@ import type { AuthResponse, AuthTokens, AuthUser } from './api-client';
 const ACCESS_TOKEN_KEY = 'pribec.access_token';
 const REFRESH_TOKEN_KEY = 'pribec.refresh_token';
 const USER_KEY = 'pribec.user';
+const SESSION_UPDATED_EVENT = 'pribec:session-updated';
 
 type JwtPayload = {
   sub?: string;
@@ -37,6 +38,7 @@ export function saveAuthSession(response: AuthResponse): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, response.tokens.accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
 }
 
 export function clearAuthSession(): void {
@@ -47,6 +49,20 @@ export function clearAuthSession(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+export function updateStoredUser(user: AuthUser): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+export function getSessionUpdatedEventName(): string {
+  return SESSION_UPDATED_EVENT;
 }
 
 export function getAccessToken(): string | null {

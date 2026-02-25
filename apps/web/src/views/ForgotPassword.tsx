@@ -25,7 +25,11 @@ export default function ForgotPassword() {
       setIsSubmitted(true);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status >= 500) {
+          setError("Server error while sending reset instructions. Please try again shortly.");
+        } else {
+          setError("Unable to send reset instructions right now.");
+        }
       } else {
         setError("Unable to send reset instructions right now.");
       }
@@ -111,7 +115,7 @@ export default function ForgotPassword() {
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800">{error}</div>
               </div>
             </div>

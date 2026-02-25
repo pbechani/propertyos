@@ -250,7 +250,7 @@ CREATE INDEX ON marketplace.material_prices (material_category, country, recorde
 
 ## API Endpoints
 
-### Contractor Marketplace
+### Service Provider Marketplace (Contractors)
 ```
 POST  /api/v1/contractors/profile
 GET   /api/v1/contractors?skills=&region=&rating_min=

@@ -40,7 +40,7 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
           // eslint-disable-next-line @next/next/no-img-element
           <img src={property.imageUrl} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#0A1628] to-[#1A3050] flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-[#0A1628] to-[#1A3050] flex items-center justify-center">
             <svg className="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
             </svg>
@@ -101,7 +101,7 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
 
         {/* Location */}
         <p className="text-sm text-gray-500 flex items-center gap-1">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -115,11 +115,13 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
               <span className="text-xs font-semibold text-[#0A1628]">14-Stage Pipeline</span>
               <span className="text-xs text-gray-500">Stage {property.pipelineStage} of 14</span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-1.5">
-              <div
-                className="bg-[#F5A623] h-1.5 rounded-full transition-all duration-500"
-                style={{ width: `${(property.pipelineStage / 14) * 100}%` }}
-              />
+            <div className="grid grid-cols-14 gap-1">
+              {Array.from({ length: 14 }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full ${index < property.pipelineStage ? 'bg-[#F5A623]' : 'bg-gray-100'}`}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -149,7 +151,11 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
           >
             View Details
           </Link>
-          <button className="px-3 py-2.5 border border-gray-200 rounded-lg text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors">
+          <button
+            className="px-3 py-2.5 border border-gray-200 rounded-lg text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"
+            aria-label="Save property"
+            title="Save property"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>

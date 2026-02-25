@@ -17,7 +17,7 @@ export class DocumentStorageService {
     userId: string;
     documentType: string;
     file: Express.Multer.File;
-  }): Promise<{ storagePath: string; signedUrl: string }> {
+  }): Promise<{ storagePath: string; signedUrl: string; publicUrl: string }> {
     this.validateFile(params.file);
     await this.scanForVirus(params.file);
 
@@ -30,6 +30,7 @@ export class DocumentStorageService {
     return {
       storagePath: key,
       signedUrl: `https://storage.pribec.local/${key}?expiresIn=3600`,
+      publicUrl: `https://storage.pribec.local/${key}`,
     };
   }
 
@@ -60,6 +61,10 @@ export class DocumentStorageService {
   }
 
   private async scanForVirus(file: Express.Multer.File): Promise<void> {
+    if (!file.buffer) {
+      return;
+    }
+
     if (file.buffer.length === 0) {
       throw new BadRequestException('Empty file upload is not allowed');
     }

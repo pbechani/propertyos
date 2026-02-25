@@ -125,20 +125,22 @@ export default function PropertyComparison() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 sticky top-0 z-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2">
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back to Listings</span>
-            </Link>
-            <h1 className="text-2xl font-bold">Property Comparison</h1>
-            <p className="text-sm text-gray-600">Compare up to 3 properties side-by-side</p>
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to Listings</span>
+              </Link>
+              <h1 className="text-2xl font-bold">Property Comparison</h1>
+              <p className="text-sm text-gray-600">Compare up to 3 properties side-by-side</p>
+            </div>
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Get Financing Quote
+            </Button>
           </div>
-          <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Get Financing Quote
-          </Button>
         </div>
       </div>
 
@@ -214,7 +216,7 @@ export default function PropertyComparison() {
                     Feature
                   </th>
                   {selectedProperties.map((property) => (
-                    <th key={property.id} className="p-4 text-center min-w-[280px]">
+                    <th key={property.id} className="p-4 text-center min-w-70">
                       <div className="space-y-3">
                         <img
                           src={property.image}

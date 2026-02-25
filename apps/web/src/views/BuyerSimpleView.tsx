@@ -8,6 +8,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export default function BuyerSimpleView() {
   const [expandedTask, setExpandedTask] = useState<number | null>(null);
@@ -125,7 +126,7 @@ export default function BuyerSimpleView() {
             alt={property.address}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 text-white">
             <Badge className="bg-green-500 mb-3">
               <Shield className="w-3 h-3 mr-1" />
@@ -137,17 +138,12 @@ export default function BuyerSimpleView() {
         </div>
 
         <div className="px-4 md:px-8 py-6">
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+          <Card className="p-6 bg-linear-to-br from-blue-50 to-purple-50 border-blue-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Your Purchase Progress</h2>
               <span className="text-2xl font-bold text-blue-600">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="h-3 bg-white rounded-full overflow-hidden mb-2">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
+            <Progress value={progressPercentage} className="h-3 bg-white mb-2" />
             <div className="text-sm text-gray-700">
               {completedStages} of {stages.length} stages completed • Estimated completion: April 30, 2024
             </div>
@@ -357,7 +353,7 @@ export default function BuyerSimpleView() {
             </Card>
 
             {/* Help Center */}
-            <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+            <Card className="p-6 bg-linear-to-br from-blue-50 to-purple-50 border-blue-200">
               <h3 className="font-semibold mb-2">First Time Buyer?</h3>
               <p className="text-sm text-gray-700 mb-4">
                 We're here to guide you through every step of the process.

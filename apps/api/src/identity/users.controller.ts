@@ -1,16 +1,21 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from './rbac/jwt-auth.guard';
 import { RolesGuard } from './rbac/roles.guard';
@@ -20,9 +25,15 @@ import { Permissions } from './rbac/permissions.decorator';
 import { AssignRoleDto, UpdateMeDto, UpdateUserStatusDto } from './users.dto';
 import { AuditService } from './audit.service';
 import { AuthService } from './auth/auth.service';
+import { DocumentStorageService } from './document-storage.service';
 
 type RequestUser = {
   sub: string;
+  roles: string[];
+};
+
+type MeResponse = Record<string, unknown> & {
+  role: string | null;
   roles: string[];
 };
 
@@ -31,19 +42,30 @@ type RequestUser = {
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly auditService: AuditService,
     private readonly authService: AuthService,
+    private readonly documentStorageService: DocumentStorageService,
   ) {}
 
   @Get('me')
   @Permissions({ resource: 'users', action: 'self' })
   async me(
     @Req() req: { user: RequestUser },
-  ): Promise<Record<string, unknown>> {
-    const user = await this.usersService.findById(req.user.sub);
-    return this.usersService.sanitizeUser(user);
+  ): Promise<MeResponse> {
+    const [user, roleNames] = await Promise.all([
+      this.usersService.findById(req.user.sub),
+      this.usersService.getUserRoleNames(req.user.sub),
+    ]);
+
+    return {
+      ...this.usersService.sanitizeUser(user),
+      role: roleNames[0] ?? null,
+      roles: roleNames,
+    };
   }
 
   @Patch('me')
@@ -70,6 +92,49 @@ export class UsersController {
       resourceType: 'user',
       resourceId: req.user.sub,
       payload: { updatedFields: Object.entries(body).filter(([, v]) => v !== undefined).map(([k]) => k) },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
+    return this.usersService.sanitizeUser(updated);
+  }
+
+  @Post('me/avatar')
+  @Permissions({ resource: 'users', action: 'self' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadMeAvatar(
+    @Req()
+    req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<Record<string, unknown>> {
+    this.logger.log(
+      `Avatar upload request accepted for user=${req.user.sub} filePresent=${Boolean(file)} mime=${file?.mimetype ?? '-'} size=${file?.size ?? 0}`,
+    );
+
+    if (!file) {
+      throw new BadRequestException('Avatar file is required');
+    }
+
+    const uploaded = await this.documentStorageService.upload({
+      context: 'avatars',
+      userId: req.user.sub,
+      documentType: 'profile',
+      file,
+    });
+
+    const updated = await this.usersService.updateMe(req.user.sub, {
+      avatarUrl: uploaded.publicUrl,
+    });
+
+    await this.auditService.log({
+      eventId: 'user.avatar_updated',
+      actorId: req.user.sub,
+      actorRole: req.user.roles[0] ?? null,
+      action: 'update_avatar',
+      resourceType: 'user',
+      resourceId: req.user.sub,
+      payload: { avatarPath: uploaded.storagePath },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });

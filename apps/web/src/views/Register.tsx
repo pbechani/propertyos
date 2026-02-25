@@ -77,7 +77,13 @@ export default function Register() {
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status === 400 || err.status === 409) {
+          setError("An account with this email already exists.");
+        } else if (err.status >= 500) {
+          setError("Server error while creating your account. Please try again shortly.");
+        } else {
+          setError("Unable to create account right now. Please try again.");
+        }
       } else {
         setError("Unable to create account right now. Please try again.");
       }
@@ -96,8 +102,15 @@ export default function Register() {
     { number: 3, title: "Security", description: "Protect your account" },
   ];
 
+  const hasPasswordMismatch =
+    formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
+
+  const isCreateAccountDisabled =
+    isSubmitting
+    || (currentStep === 3 && (!formData.agreeToTerms || hasPasswordMismatch));
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Left Side - Branding */}
         <div className="hidden lg:block">
@@ -110,7 +123,7 @@ export default function Register() {
             </span>
           </Link>
 
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-6 bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Join PropertyOS
           </h1>
           <p className="text-xl text-gray-600 mb-8">
@@ -198,7 +211,7 @@ export default function Register() {
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800">{error}</div>
               </div>
             </div>
@@ -405,21 +418,29 @@ export default function Register() {
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
                     placeholder="Re-enter your password"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                      hasPasswordMismatch
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                     required
                   />
                 </div>
+                {hasPasswordMismatch && (
+                  <p className="mt-2 text-xs text-red-600">Passwords do not match.</p>
+                )}
               </div>
 
               <div className="flex items-start gap-2">
                 <input
+                  id="agreeToTerms"
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={(e) => handleChange("agreeToTerms", e.target.checked)}
                   className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   required
                 />
-                <label className="text-sm text-gray-600">
+                <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                   I agree to the{" "}
                   <a href="#" className="text-blue-600 hover:underline font-medium">
                     Terms of Service
@@ -452,7 +473,7 @@ export default function Register() {
             <Button
               type="button"
               onClick={handleNext}
-              disabled={isSubmitting}
+              disabled={isCreateAccountDisabled}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3"
             >
               {isSubmitting

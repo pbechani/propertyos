@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, KeyboardEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { Home, Mail, Lock, Eye, EyeOff, Shield, Chrome, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,13 @@ export default function LoginEnhanced() {
       navigate(nextPath ?? "/app");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status === 400 || err.status === 401) {
+          setError("Invalid email or password.");
+        } else if (err.status >= 500) {
+          setError("Server error while signing in. Please try again shortly.");
+        } else {
+          setError("Unable to sign in right now. Please try again.");
+        }
       } else {
         setError("Unable to sign in right now. Please try again.");
       }
@@ -62,6 +68,20 @@ export default function LoginEnhanced() {
   const handleOAuthLogin = (provider: string) => {
     const nextQuery = nextPath ? `&next=${encodeURIComponent(nextPath)}` : '';
     navigate(`/oauth-connect?provider=${provider}${nextQuery}`);
+  };
+
+  const handleEnterSubmit = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
+
+    event.currentTarget.form?.requestSubmit();
   };
 
   return (
@@ -89,7 +109,7 @@ export default function LoginEnhanced() {
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800">{error}</div>
               </div>
             </div>
@@ -106,6 +126,7 @@ export default function LoginEnhanced() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={handleEnterSubmit}
                   placeholder="your.email@example.com"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                   required
@@ -123,6 +144,7 @@ export default function LoginEnhanced() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={handleEnterSubmit}
                   placeholder="Enter your password"
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                   required

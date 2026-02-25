@@ -14,7 +14,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { authExtApi } from '@/lib/api-client';
-import { clearAuthSession, getAccessToken, getRefreshToken, getStoredUser } from '@/lib/auth-session';
+import {
+  clearAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  getSessionUpdatedEventName,
+  getStoredUser,
+} from '@/lib/auth-session';
 import type { AuthUser } from '@/lib/api-client';
 
 export default function HomeNavbar() {
@@ -25,6 +31,7 @@ export default function HomeNavbar() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
+    const sessionUpdatedEventName = getSessionUpdatedEventName();
     const syncSession = () => {
       setIsAuthenticated(Boolean(getAccessToken()));
       setCurrentUser(getStoredUser());
@@ -32,21 +39,49 @@ export default function HomeNavbar() {
 
     syncSession();
     window.addEventListener('storage', syncSession);
-    return () => window.removeEventListener('storage', syncSession);
+    window.addEventListener(sessionUpdatedEventName, syncSession);
+    return () => {
+      window.removeEventListener('storage', syncSession);
+      window.removeEventListener(sessionUpdatedEventName, syncSession);
+    };
   }, [pathname]);
 
-  const isActive = (href: string) => {
+  const navLinks = [
+    { href: '/app/listings', label: 'Property Hub', compactLabel: 'Property Hub', matchMode: 'exact' as const },
+    { href: '/properties/search', label: 'Rent', compactLabel: 'Rent', matchMode: 'exact' as const },
+    { href: '/service-providers', label: 'Service Providers', compactLabel: 'Providers', matchMode: 'exact' as const },
+    { href: '/construction', label: 'Project Management', compactLabel: 'Projects', matchMode: 'exact' as const },
+    { href: '/properties', label: 'Marketplace', compactLabel: 'Market', matchMode: 'exact' as const },
+  ];
+
+  const isActive = (href: string, matchMode: 'exact' | 'prefix' = 'prefix') => {
     if (href === '/') return pathname === '/';
+    if (matchMode === 'exact') return pathname === href;
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  const navLinks = [
-    { href: '/app/listings', label: 'Property Listings' },
-    { href: '/contractor-supplier-marketplace', label: 'Service Providers' },
-    { href: '/safety', label: 'Safety Center' },
+  const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
+
+  const authExemptRoutes = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/email-verification',
+    '/oauth-connect',
+    '/mfa-setup',
+    '/mfa-verify',
+    '/auth-flow',
+    '/session-expired',
   ];
 
-  const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
+  const isAuthExemptRoute = authExemptRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  if (isAuthenticated && !isAuthExemptRoute) {
+    return null;
+  }
 
   const handleLogout = async () => {
     const accessToken = getAccessToken();
@@ -69,31 +104,35 @@ export default function HomeNavbar() {
   return (
     <nav className="bg-black text-white sticky top-0 z-50 border-b border-gray-800">
       <div className="container mx-auto px-4 md:px-8 py-4">
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <HomeIcon className="w-6 h-6 text-black" />
+                <HomeIcon suppressHydrationWarning className="w-6 h-6 text-black" />
               </div>
               <span className="font-bold text-xl">PropertyOS</span>
             </Link>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-6">
+          <div className="hidden sm:flex items-center justify-center gap-3 md:gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                aria-current={isActive(link.href) ? 'page' : undefined}
-                className={`hidden md:inline-flex font-medium transition-colors ${
-                  isActive(link.href)
+                aria-current={isActive(link.href, link.matchMode) ? 'page' : undefined}
+                className={`font-medium transition-colors ${
+                  isActive(link.href, link.matchMode)
                     ? 'text-white'
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
-                {link.label}
+                <span className="sm:inline md:hidden">{link.compactLabel}</span>
+                <span className="hidden md:inline">{link.label}</span>
               </Link>
             ))}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 md:gap-6">
             <ThemeToggle className="border-white/30 text-white bg-transparent hover:bg-white/10 hover:text-white" />
             {!isAuthenticated ? (
               <Button

@@ -470,7 +470,7 @@ export default function BuyerDashboardEnhanced() {
                     <div key={notification.id}>
                       <div className="flex items-start gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                             notification.type === "purchase"
                               ? "bg-blue-100"
                               : notification.type === "construction"
@@ -716,7 +716,11 @@ export default function BuyerDashboardEnhanced() {
                       alt={property.address}
                       className="w-full h-48 object-cover"
                     />
-                    <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
+                    <button
+                      className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg"
+                      title="Remove from saved properties"
+                      aria-label="Remove from saved properties"
+                    >
                       <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                     </button>
                     {property.verified && (
@@ -840,7 +844,7 @@ export default function BuyerDashboardEnhanced() {
         </Tabs>
 
         {/* Quick Actions */}
-        <Card className="mt-6 p-6 border-gray-200 bg-gradient-to-r from-gray-900 to-gray-700 text-white">
+        <Card className="mt-6 p-6 border-gray-200 bg-linear-to-r from-gray-900 to-gray-700 text-white">
           <h3 className="font-semibold mb-4">Quick Actions</h3>
           <div className="grid grid-cols-6 gap-3">
             <Link to="/app/listings">
@@ -849,7 +853,7 @@ export default function BuyerDashboardEnhanced() {
                 <div className="text-xs">Browse</div>
               </button>
             </Link>
-            <Link to="/contractor-supplier-marketplace">
+            <Link to="/service-providers">
               <button className="w-full p-4 bg-white bg-opacity-10 rounded-lg hover:bg-opacity-20 transition-colors">
                 <Users className="w-6 h-6 mx-auto mb-2" />
                 <div className="text-xs">Contractors</div>

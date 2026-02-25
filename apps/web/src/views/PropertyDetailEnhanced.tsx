@@ -6,13 +6,13 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   MapPin, Bed, Bath, Car, Maximize, Heart, Share2, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, MapPinned, Shield, AlertTriangle,
-  Calendar, Clock, FileText, History, Eye, Info, Flag, ChevronRight, X, Video, ZoomIn
+  Calendar, Clock, History, Info, Flag, ChevronRight, X, Video, ZoomIn
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken } from "@/lib/auth-session";
-import { propertiesApi, type PropertyListing } from "@/lib/api-client";
+import { propertiesApi, type AgentProfileResponse, type PropertyListing } from "@/lib/api-client";
 
 const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop";
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
@@ -24,6 +24,35 @@ type SimilarProperty = {
   location: string;
   price: string;
 };
+
+function getListingStatusBadge(status: string) {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return { label: 'ON SHOW', className: 'bg-blue-600 text-white' };
+    case 'under_offer':
+      return { label: 'OFFER SUBMITTED', className: 'bg-amber-600 text-white' };
+    case 'sold':
+      return { label: 'SOLD', className: 'bg-emerald-600 text-white' };
+    case 'withdrawn':
+      return { label: 'WITHDRAWN', className: 'bg-gray-600 text-white' };
+    default:
+      return { label: 'DRAFT', className: 'bg-gray-500 text-white' };
+  }
+}
+
+function getVerificationBadge(status: string) {
+  const normalizedStatus = status.toUpperCase();
+
+  if (normalizedStatus === 'FLAGGED') {
+    return { label: 'FLAGGED', className: 'bg-red-600 text-white' };
+  }
+
+  if (normalizedStatus === 'VERIFIED') {
+    return { label: 'VERIFIED', className: 'bg-green-500 text-white' };
+  }
+
+  return { label: normalizedStatus || 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
+}
 
 function formatMoney(price: string, currency: string): string {
   const value = Number(price);
@@ -39,6 +68,16 @@ function toFeatureLabel(feature: string): string {
   return feature
     .replace(/_/g, " ")
     .replace(/\b\w/g, (part) => part.toUpperCase());
+}
+
+function pickFirstString(...values: Array<unknown>): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 function mapSimilarProperty(listing: PropertyListing): SimilarProperty {
@@ -74,6 +113,8 @@ type PropertyDetailState = {
     verified: boolean;
     trustScore: number;
     image: string;
+    companyName: string;
+    companyLogoUrl: string | null;
   };
   verificationStatus: string;
   propertyType: string;
@@ -101,6 +142,8 @@ function getEmptyPropertyDetail(): PropertyDetailState {
       verified: false,
       trustScore: 0,
       image: DEFAULT_AGENT_IMAGE,
+      companyName: "PRIBEC Agent Network",
+      companyLogoUrl: null,
     },
     verificationStatus: "UNVERIFIED",
     propertyType: "",
@@ -310,6 +353,8 @@ export default function PropertyDetailEnhanced() {
 
   const [property, setProperty] = useState<PropertyDetailState>(getEmptyPropertyDetail);
   const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
+  const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
+  const verificationBadge = getVerificationBadge(property.verificationStatus);
 
   useEffect(() => {
     if (!propertyId) {
@@ -322,6 +367,17 @@ export default function PropertyDetailEnhanced() {
 
       try {
         const listing = await propertiesApi.getById(propertyId);
+        const looseListing = listing as PropertyListing & {
+          agent?: {
+            companyName?: string | null;
+            company_name?: string | null;
+            companyLogoUrl?: string | null;
+            company_logo_url?: string | null;
+          } | null;
+          company_name?: string | null;
+          company_logo_url?: string | null;
+          agent_company_logo_url?: string | null;
+        };
 
         let relatedListings: PropertyListing[] = [];
         try {
@@ -339,6 +395,13 @@ export default function PropertyDetailEnhanced() {
         if (listing.agent_id) {
           try {
             const profile = await propertiesApi.getAgentProfile(listing.agent_id);
+            const looseProfile = profile as AgentProfileResponse & {
+              companyName?: string | null;
+              company_name?: string | null;
+              companyLogoUrl?: string | null;
+              company_logo_url?: string | null;
+            };
+
             const trustScore =
               profile.totalListings > 0
                 ? Math.min(
@@ -347,6 +410,24 @@ export default function PropertyDetailEnhanced() {
                   )
                 : 0;
 
+            const companyName =
+              pickFirstString(
+                looseProfile.companyName,
+                looseProfile.company_name,
+                looseListing.agent?.companyName,
+                looseListing.agent?.company_name,
+                looseListing.company_name,
+              ) ?? "PRIBEC Agent Network";
+
+            const companyLogoUrl = pickFirstString(
+              looseProfile.companyLogoUrl,
+              looseProfile.company_logo_url,
+              looseListing.agent?.companyLogoUrl,
+              looseListing.agent?.company_logo_url,
+              looseListing.agent_company_logo_url,
+              looseListing.company_logo_url,
+            );
+
             mappedAgent = {
               id: profile.id,
               name: `${profile.firstName} ${profile.lastName}`.trim(),
@@ -354,11 +435,29 @@ export default function PropertyDetailEnhanced() {
               verified: profile.status === "active",
               trustScore,
               image: profile.avatarUrl || DEFAULT_AGENT_IMAGE,
+              companyName,
+              companyLogoUrl,
             };
           } catch {
+            const companyName =
+              pickFirstString(
+                looseListing.agent?.companyName,
+                looseListing.agent?.company_name,
+                looseListing.company_name,
+              ) ?? "PRIBEC Agent Network";
+
+            const companyLogoUrl = pickFirstString(
+              looseListing.agent?.companyLogoUrl,
+              looseListing.agent?.company_logo_url,
+              looseListing.agent_company_logo_url,
+              looseListing.company_logo_url,
+            );
+
             mappedAgent = {
               ...getEmptyPropertyDetail().agent,
               id: listing.agent_id,
+              companyName,
+              companyLogoUrl,
             };
           }
         }
@@ -375,7 +474,7 @@ export default function PropertyDetailEnhanced() {
               .map((feature) => ({ label: toFeatureLabel(feature), icon: true }))
           : [];
 
-        setProperty((prev) => ({
+        setProperty(() => ({
           title: listing.title,
           address,
           price: formatMoney(listing.price, listing.currency),
@@ -416,11 +515,13 @@ export default function PropertyDetailEnhanced() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-4">
-        <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Listings</span>
-        </Link>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <ChevronLeft className="w-4 h-4" />
+            <span>Back to Listings</span>
+          </Link>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -445,7 +546,7 @@ export default function PropertyDetailEnhanced() {
                 <img
                   src={property.images[selectedImage]}
                   alt="Main"
-                  className="w-full h-64 md:h-[500px] object-cover cursor-pointer"
+                  className="w-full h-64 md:h-125 object-cover cursor-pointer"
                   onClick={() => {
                     setLightboxImage(selectedImage);
                     setShowLightbox(true);
@@ -456,10 +557,13 @@ export default function PropertyDetailEnhanced() {
                   <ZoomIn className="w-5 h-5 text-gray-700" />
                 </div>
                 {/* Verification Badge Overlay */}
-                <div className="absolute top-4 left-4">
-                  <Badge className={`${property.verificationStatus === 'VERIFIED' ? 'bg-green-500' : 'bg-yellow-600'} text-white flex items-center gap-2 px-4 py-2`}>
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  <Badge className={`${verificationBadge.className} flex items-center gap-2 px-4 py-2`}>
                     <Shield className="w-4 h-4" />
-                    {property.verificationStatus}
+                    {verificationBadge.label}
+                  </Badge>
+                  <Badge className={`${statusBadge.className} px-4 py-2`}>
+                    {statusBadge.label}
                   </Badge>
                 </div>
                 {/* Actions */}
@@ -472,7 +576,11 @@ export default function PropertyDetailEnhanced() {
                   >
                     <Heart className="w-5 h-5" />
                   </button>
-                  <button className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50">
+                  <button
+                    className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
+                    aria-label="Share property"
+                    title="Share property"
+                  >
                     <Share2 className="w-5 h-5" />
                   </button>
                 </div>
@@ -489,7 +597,9 @@ export default function PropertyDetailEnhanced() {
                   <button
                     onClick={() => setCarouselOffset(Math.max(0, carouselOffset - 1))}
                     disabled={carouselOffset === 0}
-                    className={`flex-shrink-0 p-2 rounded-lg transition-all ${
+                    aria-label="Previous thumbnails"
+                    title="Previous thumbnails"
+                    className={`shrink-0 p-2 rounded-lg transition-all ${
                       carouselOffset === 0
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
@@ -500,32 +610,30 @@ export default function PropertyDetailEnhanced() {
 
                   {/* Thumbnails Container */}
                   <div className="flex-1 overflow-hidden">
-                    <div 
-                      className="flex gap-2 transition-transform duration-300"
-                      style={{ transform: `translateX(-${carouselOffset * (100 / 4)}%)` }}
-                    >
-                      {property.images.map((image, idx) => (
+                    <div className="grid grid-cols-4 gap-2">
+                      {property.images.slice(carouselOffset, carouselOffset + 4).map((image, idx) => {
+                        const actualIdx = carouselOffset + idx;
+                        return (
                         <div
-                          key={idx}
-                          className="flex-shrink-0"
-                          style={{ width: 'calc(25% - 6px)' }}
+                          key={`${image}-${actualIdx}`}
+                          className="shrink-0"
                         >
                           <div className="relative group/thumb">
                             <img
                               src={image}
-                              alt={`View ${idx + 1}`}
+                              alt={`View ${actualIdx + 1}`}
                               className={`w-full h-16 md:h-20 object-cover rounded cursor-pointer border-2 transition-all ${
-                                selectedImage === idx 
+                                selectedImage === actualIdx 
                                   ? "border-blue-500 ring-2 ring-blue-300" 
                                   : "border-transparent hover:border-gray-300"
                               }`}
-                              onClick={() => setSelectedImage(idx)}
+                              onClick={() => setSelectedImage(actualIdx)}
                             />
                             {/* Hover overlay with zoom icon */}
                             <div 
                               className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center rounded cursor-pointer"
                               onClick={() => {
-                                setLightboxImage(idx);
+                                setLightboxImage(actualIdx);
                                 setShowLightbox(true);
                               }}
                             >
@@ -533,7 +641,7 @@ export default function PropertyDetailEnhanced() {
                             </div>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
 
@@ -541,7 +649,9 @@ export default function PropertyDetailEnhanced() {
                   <button
                     onClick={() => setCarouselOffset(Math.min(property.images.length - 4, carouselOffset + 1))}
                     disabled={carouselOffset >= property.images.length - 4}
-                    className={`flex-shrink-0 p-2 rounded-lg transition-all ${
+                    aria-label="Next thumbnails"
+                    title="Next thumbnails"
+                    className={`shrink-0 p-2 rounded-lg transition-all ${
                       carouselOffset >= property.images.length - 4
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
@@ -617,9 +727,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Status</span>
-                    <Badge className={`${property.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    <Badge className={verificationBadge.className}>
                       <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {property.verificationStatus || 'UNKNOWN'}
+                      {verificationBadge.label}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
@@ -628,7 +738,7 @@ export default function PropertyDetailEnhanced() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Listing Status</span>
-                    <span className="font-medium text-sm capitalize">{property.listingStatus || 'N/A'}</span>
+                    <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Last Updated</span>
@@ -654,7 +764,7 @@ export default function PropertyDetailEnhanced() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Verification</span>
-                    <span className="font-medium">{property.verificationStatus || 'UNKNOWN'}</span>
+                    <Badge className={verificationBadge.className}>{verificationBadge.label}</Badge>
                   </div>
                 </div>
               </Card>
@@ -675,7 +785,7 @@ export default function PropertyDetailEnhanced() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {property.features.map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
                       <span className="text-sm">{feature.label}</span>
                     </div>
                   ))}
@@ -708,7 +818,7 @@ export default function PropertyDetailEnhanced() {
             {/* Fraud Report Section */}
             <Card className="p-6 border-2 border-red-100">
               <div className="flex items-start gap-3">
-                <Flag className="w-5 h-5 text-red-600 flex-shrink-0 mt-1" />
+                <Flag className="w-5 h-5 text-red-600 shrink-0 mt-1" />
                 <div className="flex-1">
                   <h3 className="font-semibold mb-2">Report Suspicious Activity</h3>
                   <p className="text-sm text-gray-600 mb-4">
@@ -730,7 +840,7 @@ export default function PropertyDetailEnhanced() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Schedule Viewing Button - Prominent */}
-            <Card className="p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+            <Card className="p-6 bg-linear-to-br from-blue-500 to-purple-600 text-white">
               <Calendar className="w-8 h-8 mb-3" />
               <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
               <p className="text-blue-100 text-sm mb-4">
@@ -750,6 +860,23 @@ export default function PropertyDetailEnhanced() {
                 <Calendar className="w-4 h-4 mr-2" />
                 {isSoldListing ? "Unavailable" : "Schedule Now"}
               </Button>
+            </Card>
+
+            <Card className="p-5 text-center">
+              <div className="flex justify-center mb-2">
+                {property.agent.companyLogoUrl ? (
+                  <img
+                    src={property.agent.companyLogoUrl}
+                    alt={`${property.agent.companyName} logo`}
+                    className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500">
+                    {property.agent.companyName.charAt(0).toUpperCase() || "C"}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm font-medium text-gray-800">{property.agent.companyName}</p>
             </Card>
 
             {/* Agent Card */}
@@ -907,7 +1034,12 @@ export default function PropertyDetailEnhanced() {
           <Card className="max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-xl">Report Suspicious Activity</h3>
-              <button onClick={() => setShowFraudReport(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setShowFraudReport(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close fraud report"
+                title="Close fraud report"
+              >
                 <ChevronLeft className="w-6 h-6" />
               </button>
             </div>
@@ -915,6 +1047,8 @@ export default function PropertyDetailEnhanced() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Issue Type</label>
                 <select
+                  aria-label="Issue type"
+                  title="Issue type"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   value={fraudReportType}
                   onChange={(event) => setFraudReportType(event.target.value as typeof fraudReportType)}
@@ -970,6 +1104,8 @@ export default function PropertyDetailEnhanced() {
                   setScheduleStep(1);
                 }} 
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close schedule viewing"
+                title="Close schedule viewing"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -1013,6 +1149,7 @@ export default function PropertyDetailEnhanced() {
                           type="radio"
                           name="viewingType"
                           value="inPerson"
+                          title="In-person viewing"
                           className="w-5 h-5 mt-1"
                           checked={viewingType === "inPerson"}
                           onChange={() => setViewingType("inPerson")}
@@ -1040,6 +1177,7 @@ export default function PropertyDetailEnhanced() {
                           type="radio"
                           name="viewingType"
                           value="virtual"
+                          title="Virtual viewing"
                           className="w-5 h-5 mt-1"
                           checked={viewingType === "virtual"}
                           onChange={() => setViewingType("virtual")}
@@ -1070,6 +1208,7 @@ export default function PropertyDetailEnhanced() {
                       <label className="text-sm font-medium mb-2 block">Preferred Date</label>
                       <input
                         type="date"
+                        title="Preferred date"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
@@ -1079,6 +1218,8 @@ export default function PropertyDetailEnhanced() {
                     <div>
                       <label className="text-sm font-medium mb-2 block">Preferred Time</label>
                       <select
+                        aria-label="Preferred time"
+                        title="Preferred time"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={selectedTime}
                         onChange={(e) => setSelectedTime(e.target.value)}
@@ -1098,7 +1239,7 @@ export default function PropertyDetailEnhanced() {
 
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-start gap-2">
-                      <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                       <div className="text-sm text-blue-900">
                         <p className="font-medium mb-1">Available Time Slots</p>
                         <p className="text-blue-700">The agent typically responds within 2 hours to confirm your booking. You'll receive a confirmation email once approved.</p>
@@ -1282,11 +1423,13 @@ export default function PropertyDetailEnhanced() {
 
       {/* Image Lightbox/Viewer Modal */}
       {showLightbox && (
-        <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/95 z-60 flex items-center justify-center">
           {/* Close Button */}
           <button
             onClick={() => setShowLightbox(false)}
-            className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+            className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-white/10 opacity-70 hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:bg-white/25 rounded-full text-white transition-all z-10"
+            aria-label="Close image viewer"
+            title="Close image viewer"
           >
             <X className="w-6 h-6" />
           </button>
@@ -1299,7 +1442,9 @@ export default function PropertyDetailEnhanced() {
           {/* Previous Button */}
           <button
             onClick={() => setLightboxImage((lightboxImage - 1 + property.images.length) % property.images.length)}
-            className="absolute left-4 md:left-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+            className="absolute top-[calc(50%-1rem)] -translate-y-1/2 left-4 md:left-8 p-3 bg-white/10 opacity-70 hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:bg-white/25 rounded-full text-white transition-all z-10"
+            aria-label="Previous image"
+            title="Previous image"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -1307,17 +1452,19 @@ export default function PropertyDetailEnhanced() {
           {/* Next Button */}
           <button
             onClick={() => setLightboxImage((lightboxImage + 1) % property.images.length)}
-            className="absolute right-4 md:right-8 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+            className="absolute top-[calc(50%-1rem)] -translate-y-1/2 right-4 md:right-8 p-3 bg-white/10 opacity-70 hover:opacity-100 hover:bg-white/20 focus-visible:opacity-100 focus-visible:bg-white/25 rounded-full text-white transition-all z-10"
+            aria-label="Next image"
+            title="Next image"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
 
           {/* Main Image */}
-          <div className="w-full h-full flex items-center justify-center p-4 md:p-16">
+          <div className="w-full h-full flex items-center justify-center p-4 pt-16 pb-24 md:p-16 md:pt-24 md:pb-32">
             <img
               src={property.images[lightboxImage].replace('w=400&h=300', 'w=1600&h=1200')}
               alt={`Property view ${lightboxImage + 1}`}
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-full object-cover object-center"
             />
           </div>
 
@@ -1330,7 +1477,7 @@ export default function PropertyDetailEnhanced() {
                     key={idx}
                     src={image}
                     alt={`Thumbnail ${idx + 1}`}
-                    className={`w-16 h-12 md:w-20 md:h-16 object-cover rounded cursor-pointer flex-shrink-0 transition-all ${
+                    className={`w-16 h-12 md:w-20 md:h-16 object-cover rounded cursor-pointer shrink-0 transition-all ${
                       lightboxImage === idx
                         ? 'border-2 border-white ring-2 ring-white/50 opacity-100'
                         : 'border-2 border-transparent opacity-60 hover:opacity-100'

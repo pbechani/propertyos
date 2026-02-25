@@ -833,9 +833,9 @@ export default function IntelligentBOQWorkspace() {
                           </div>
                         </div>
                         {swap.impactOnBudget === "positive" ? (
-                          <TrendingDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          <TrendingDown className="w-5 h-5 text-green-600 shrink-0" />
                         ) : (
-                          <TrendingUp className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                          <TrendingUp className="w-5 h-5 text-yellow-600 shrink-0" />
                         )}
                       </div>
 
@@ -1040,7 +1040,7 @@ export default function IntelligentBOQWorkspace() {
                   <ul className="space-y-2">
                     {showMaterialSwap.pros.map((pro: string, index: number) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                         <span>{pro}</span>
                       </li>
                     ))}
@@ -1054,7 +1054,7 @@ export default function IntelligentBOQWorkspace() {
                   <ul className="space-y-2">
                     {showMaterialSwap.cons.map((con: string, index: number) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
-                        <Info className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <Info className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
                         <span>{con}</span>
                       </li>
                     ))}

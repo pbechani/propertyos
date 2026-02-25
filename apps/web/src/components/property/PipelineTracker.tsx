@@ -119,7 +119,7 @@ export default function PipelineTracker({ stages, compact = false }: Props) {
             {/* Connector line */}
             {idx < stages.length - 1 && (
               <div
-                className={`h-0.5 w-4 mt-[18px] flex-shrink-0 ${
+                className={`h-0.5 w-4 mt-4.5 shrink-0 ${
                   idx < activeIdx ? 'bg-[#22C55E]' : idx === activeIdx ? 'bg-[#F5A623]' : 'bg-gray-200'
                 }`}
               />

@@ -22,7 +22,11 @@ export default function BuyerDashboard() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Recommended for You</h1>
           <div className="flex space-x-4">
-            <select className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500">
+            <select
+              aria-label="Sort listings"
+              title="Sort listings"
+              className="border border-gray-300 rounded-md px-4 py-2 text-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500"
+            >
               <option>Sort by: Relevance</option>
               <option>Price: Low to High</option>
               <option>Price: High to Low</option>
@@ -42,7 +46,11 @@ export default function BuyerDashboard() {
               <div className="relative h-48 bg-gray-200">
                 {/* Placeholder for image */}
                 <div className="absolute top-4 right-4">
-                  <button className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-400 hover:text-red-500 transition-colors">
+                  <button
+                    className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="Add to favorites"
+                    title="Add to favorites"
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                   </button>
                 </div>

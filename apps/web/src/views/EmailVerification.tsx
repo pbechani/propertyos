@@ -47,7 +47,7 @@ export default function EmailVerification() {
       setVerificationStatus("success");
       setIsVerifying(false);
       setTimeout(() => {
-        navigate("/profile-setup");
+        navigate("/role-setup");
       }, 2000);
     } catch (err) {
       setVerificationStatus("error");

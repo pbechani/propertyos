@@ -316,7 +316,7 @@ export default function RiskAnalyticsDashboard() {
           {fraudAlerts.filter((a) => a.severity === "critical").length > 0 && (
             <Card className="p-4 bg-red-50 border-red-200">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <div className="font-semibold text-red-900 mb-1">
                     {fraudAlerts.filter((a) => a.severity === "critical").length} Critical Alerts
@@ -604,7 +604,7 @@ export default function RiskAnalyticsDashboard() {
                   >
                     <div className="flex items-start gap-4">
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
                           alert.severity === "critical"
                             ? "bg-red-600"
                             : alert.severity === "high"
@@ -795,16 +795,7 @@ export default function RiskAnalyticsDashboard() {
                       </div>
                     </div>
                     <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                      <div
-                        className={`absolute left-0 top-0 h-full transition-all ${
-                          region.risk >= 70
-                            ? "bg-red-600"
-                            : region.risk >= 40
-                            ? "bg-yellow-600"
-                            : "bg-green-600"
-                        }`}
-                        style={{ width: `${region.risk}%` }}
-                      />
+                      <Progress value={region.risk} className="h-8 bg-gray-100" />
                       <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
                         Risk Score: {region.risk}
                       </div>

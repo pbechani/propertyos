@@ -95,6 +95,17 @@ export default function Analytics() {
     },
   ];
 
+  const getLeadSourceDotClass = (source: string) => {
+    switch (source) {
+      case "Organic":
+        return "bg-blue-500";
+      case "Paid":
+        return "bg-purple-500";
+      default:
+        return "bg-green-500";
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
       {/* Header */}
@@ -142,12 +153,16 @@ export default function Analytics() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Lead Source Breakdown</h3>
-            <button className="text-gray-400 hover:text-gray-600">
+            <button
+              className="text-gray-400 hover:text-gray-600"
+              title="Filter lead source breakdown"
+              aria-label="Filter lead source breakdown"
+            >
               <Filter className="w-4 h-4" />
             </button>
           </div>
           <div className="flex items-center justify-center">
-            <div className="relative w-[150px] h-[150px]">
+            <div className="relative w-37.5 h-37.5">
               <PieChart width={150} height={150}>
                 <Pie
                   data={leadSourceData}
@@ -175,7 +190,7 @@ export default function Analytics() {
             <div className="ml-6 space-y-2">
               {leadSourceData.map((item) => (
                 <div key={item.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <div className={`w-3 h-3 rounded-full ${getLeadSourceDotClass(item.name)}`}></div>
                   <span className="text-sm">{item.name}</span>
                   <span className="text-sm text-gray-500">({item.percentage})</span>
                 </div>
@@ -292,7 +307,11 @@ export default function Analytics() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold">Recent Leads</h3>
-            <button className="text-gray-400 hover:text-gray-600">
+            <button
+              className="text-gray-400 hover:text-gray-600"
+              title="Filter recent leads"
+              aria-label="Filter recent leads"
+            >
               <Filter className="w-4 h-4" />
             </button>
           </div>
@@ -301,7 +320,7 @@ export default function Analytics() {
             {recentLeads.map((lead, idx) => (
               <div key={idx} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg">
                 <div
-                  className={`w-10 h-10 rounded-full bg-${lead.color}-100 text-${lead.color}-600 flex items-center justify-center font-semibold text-sm flex-shrink-0`}
+                  className={`w-10 h-10 rounded-full bg-${lead.color}-100 text-${lead.color}-600 flex items-center justify-center font-semibold text-sm shrink-0`}
                 >
                   {lead.initials}
                 </div>

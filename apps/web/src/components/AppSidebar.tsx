@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Shield, BarChart3, User, Settings, Menu, X } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X } from 'lucide-react';
 
 interface AppSidebarProps {
   pathname: string;
@@ -13,9 +13,9 @@ interface AppSidebarProps {
 }
 
 const navigation = [
+  { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Dashboard', href: '/app', icon: Home },
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
-  { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
 ];
@@ -26,7 +26,7 @@ const quickLinks = [
   { name: 'Property Workspace', href: '/workspace/1' },
   { name: 'Escrow & Financial', href: '/escrow' },
   { name: 'Construction', href: '/construction' },
-  { name: 'Marketplace', href: '/contractor-supplier-marketplace' },
+  { name: 'Marketplace', href: '/service-providers' },
   { name: 'BOQ Workspace', href: '/boq-workspace' },
   { name: 'Inspection & Verification', href: '/inspection-verification' },
   { name: 'Logistics & Delivery', href: '/logistics-delivery-marketplace' },
@@ -56,7 +56,18 @@ export function AppSidebar({
   return (
     <>
       <aside className={`hidden lg:flex bg-card border-r border-border flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className={`p-2 border-b border-border flex ${isSidebarCollapsed ? 'justify-center' : 'justify-start'}`}>
+        <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
+          <Link
+            href="/app/listings"
+            className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2'} text-foreground`}
+            aria-label="Go to Listings"
+            title="PropertyOS"
+          >
+            <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
+              <Home className="w-4 h-4 text-white" />
+            </div>
+            {!isSidebarCollapsed && <span className="font-semibold text-sm">PropertyOS</span>}
+          </Link>
           <button
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
             aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -87,21 +98,6 @@ export function AppSidebar({
 
         {!isSidebarCollapsed && (
           <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">Marcus Sterling</div>
-                <div className="text-xs text-muted-foreground">Senior Agent</div>
-              </div>
-              <button
-                aria-label="Open settings"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-            </div>
             <div className="mt-2">
               {quickLinks.map((link) => (
                 <Link
@@ -121,7 +117,18 @@ export function AppSidebar({
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileMenu(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card flex flex-col">
-            <div className="p-6 border-b border-border flex justify-end">
+            <div className="p-6 border-b border-border flex items-center justify-between gap-2">
+              <Link
+                href="/app/listings"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-2 text-foreground"
+                aria-label="Go to Listings"
+              >
+                <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
+                  <Home className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-semibold text-sm">PropertyOS</span>
+              </Link>
               <button
                 onClick={() => setShowMobileMenu(false)}
                 aria-label="Close navigation menu"
@@ -151,21 +158,6 @@ export function AppSidebar({
             </nav>
 
             <div className="p-4 border-t border-border">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">Marcus Sterling</div>
-                  <div className="text-xs text-muted-foreground">Senior Agent</div>
-                </div>
-                <button
-                  aria-label="Open settings"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Settings className="w-5 h-5" />
-                </button>
-              </div>
               <div className="mt-2">
                 {quickLinks.map((link) => (
                   <Link

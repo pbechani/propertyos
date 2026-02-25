@@ -65,10 +65,10 @@ Navigation note:
 |-----------|-------|---------|
 | `ConstructionProjectDashboard.tsx` | `/construction` | Sprint 6 — project dashboard |
 
-### Contractor & Supplier Marketplace
+### Service Provider Marketplace
 | Page File | Route | Maps To |
 |-----------|-------|---------|
-| `ContractorSupplierMarketplace.tsx` | `/contractor-supplier-marketplace` | Sprint 7 |
+| `ServiceProviderMarketplace.tsx` | `/service-providers` | Sprint 7 |
 
 ### BOQ System
 | Page File | Route | Maps To |
@@ -268,7 +268,7 @@ For each sprint, the corresponding sample_ui page provides the **complete visual
 | Sprint 4 — Sales Progression | `PropertySaleWorkspace`, `BuyerDashboardEnhanced`, `ConveyancerView` | High — 14-stage state machine |
 | Sprint 5 — Escrow & Payments | `EscrowFinancialDashboard` | High — financial ledger display |
 | Sprint 6 — Construction | `ConstructionProjectDashboard` | High — recharts + offline indicators |
-| Sprint 7 — Contractor/Supplier | `ContractorSupplierMarketplace`, `AgentProfile` | Medium |
+| Sprint 7 — Service Providers | `ServiceProviderMarketplace`, `AgentProfile` | Medium |
 | Sprint 8 — BOQ | `IntelligentBOQWorkspace` | High — dynamic calculations |
 | Sprint 9 — Inspections | `InspectionVerificationModule` | Medium |
 | Sprint 10 — Logistics | `LogisticsDeliveryMarketplace` | Medium |

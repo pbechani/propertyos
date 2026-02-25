@@ -63,11 +63,13 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
   return (
     <div className="bg-gray-50">
       {/* Back Button */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4">
-        <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Listings</span>
-        </Link>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <ChevronLeft className="w-4 h-4" />
+            <span>Back to Listings</span>
+          </Link>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-8">
@@ -80,7 +82,7 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 <img
                   src={property.images[0]}
                   alt="Main"
-                  className="w-full h-[400px] object-cover rounded-lg"
+                  className="w-full h-100 object-cover rounded-lg"
                 />
               </div>
               {property.images.slice(1).map((image, idx) => (
@@ -104,10 +106,18 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button
+                    className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    title="Save property"
+                    aria-label="Save property"
+                  >
                     <Heart className="w-5 h-5" />
                   </button>
-                  <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button
+                    className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    title="Share property"
+                    aria-label="Share property"
+                  >
                     <Share2 className="w-5 h-5" />
                   </button>
                 </div>

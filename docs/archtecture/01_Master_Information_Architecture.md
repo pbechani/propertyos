@@ -18,7 +18,7 @@
 ## Marketplace Core
 
 -   Property Marketplace
--   Contractor Marketplace
+-   Service Provider Marketplace
 -   Supplier Marketplace
 -   Logistics Marketplace
 

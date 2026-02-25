@@ -656,7 +656,7 @@ Similar to buyer, seller sees:
   - **Stage Management** (materials by stage)
 - **Budget flexibility** allows different project types and user preferences
 
-### MODULE 3: Contractor Marketplace
+### MODULE 3: Service Provider Marketplace
 **Purpose:** Professional hiring with performance tracking
 
 **Key Features:**
@@ -2133,7 +2133,7 @@ Pending Inspections (DB)
   - Ensure inspection schedule meets legal timeframes
   - Validate contractor licensing
 
-**MODULE 3: Contractor Marketplace**
+**MODULE 3: Service Provider Marketplace**
 - **AI Contractor Matching:**
   - Match project requirements to contractor skills
   - Consider: experience, ratings, availability, cost
@@ -3867,7 +3867,7 @@ Job Accepted → Navigate to Pickup
 **Epic Priority:** 9, 10
 
 **Includes:**
-- Contractor Marketplace
+- Service Provider Marketplace
 - Supplier Marketplace
 
 **Deliverables:**

@@ -10,6 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 type StageStatus = "not-started" | "in-progress" | "completed" | "blocked";
 
@@ -148,12 +149,7 @@ export default function PropertySaleWorkspace() {
               <div className="text-sm text-gray-600 mb-1">Overall Progress</div>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
-                      style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                  </div>
+                  <Progress value={progressPercentage} className="h-2 bg-gray-200" />
                 </div>
                 <div className="font-bold text-lg">{Math.round(progressPercentage)}%</div>
               </div>
@@ -268,7 +264,7 @@ export default function PropertySaleWorkspace() {
                 <div className="space-y-4">
                   {activityLog.map((activity, idx) => (
                     <div key={idx} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                         <Clock className="w-5 h-5 text-blue-600" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -365,7 +361,7 @@ export default function PropertySaleWorkspace() {
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className={`
-                              w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                              w-10 h-10 rounded-full flex items-center justify-center shrink-0
                               ${doc.uploaded ? "bg-green-100" : "bg-gray-100"}
                             `}>
                               {doc.uploaded ? (
@@ -576,7 +572,7 @@ export default function PropertySaleWorkspace() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3 flex-1">
-                      <AlertTriangle className={`w-5 h-5 flex-shrink-0 ${issue.severity === "high" ? "text-red-600" : "text-yellow-600"}`} />
+                      <AlertTriangle className={`w-5 h-5 shrink-0 ${issue.severity === "high" ? "text-red-600" : "text-yellow-600"}`} />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-semibold">{issue.title}</h4>
@@ -606,7 +602,7 @@ export default function PropertySaleWorkspace() {
                     { title: "Title deed name mismatch", resolved: "Feb 28, 2024" },
                   ].map((issue, idx) => (
                     <div key={idx} className="flex items-center gap-3 text-sm text-gray-600">
-                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                       <span className="flex-1">{issue.title}</span>
                       <span className="text-xs">{issue.resolved}</span>
                     </div>
@@ -630,7 +626,7 @@ export default function PropertySaleWorkspace() {
                     { from: "Bank", message: "Bond grant letter has been issued. Please find attached.", time: "1 day ago" },
                   ].map((msg, idx) => (
                     <div key={idx} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                         <Users className="w-5 h-5 text-blue-600" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -682,14 +678,14 @@ export default function PropertySaleWorkspace() {
                 <h3 className="font-semibold mb-4">Notifications</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 shrink-0"></div>
                     <div>
                       <div className="font-medium">Stage Update</div>
                       <div className="text-gray-600 text-xs">Stage 8 progress updated</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 shrink-0"></div>
                     <div>
                       <div className="font-medium">Document Uploaded</div>
                       <div className="text-gray-600 text-xs">Gas certificate received</div>
@@ -711,6 +707,8 @@ export default function PropertySaleWorkspace() {
               <button 
                 onClick={() => setShowProgressModal(false)} 
                 className="text-gray-400 hover:text-gray-600"
+                title="Close stage details"
+                aria-label="Close stage details"
               >
                 <X className="w-6 h-6" />
               </button>

@@ -159,10 +159,7 @@ export default async function PropertyMarketplace() {
 
       {/* ── HERO ── */}
       <section className="bg-[#0A1628] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }} />
+        <div className="absolute inset-0 opacity-5 hero-grid-pattern" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center max-w-4xl mx-auto">
@@ -195,17 +192,21 @@ export default async function PropertyMarketplace() {
               </div>
               <div className="p-4 flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-[#F5A623] focus-within:ring-1 focus-within:ring-[#F5A623] transition">
-                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <input className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent" placeholder="City, area or neighbourhood" />
                 </div>
-                <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 min-w-[160px] focus-within:border-[#F5A623] transition">
-                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 min-w-40 focus-within:border-[#F5A623] transition">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <select className="flex-1 outline-none text-sm text-gray-700 bg-transparent">
+                  <select
+                    className="flex-1 outline-none text-sm text-gray-700 bg-transparent"
+                    aria-label="Price range"
+                    title="Price range"
+                  >
                     <option>Any Price</option>
                     <option>Under R1M</option>
                     <option>R1M – R3M</option>

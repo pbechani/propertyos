@@ -440,7 +440,7 @@ export default function PropertyLifecycleDashboard() {
           {alerts.filter((a) => a.priority === "critical" || a.priority === "high").length > 0 && (
             <Card className="p-4 bg-red-50 border-red-200">
               <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <div className="font-semibold text-red-900 mb-1">
                     {alerts.filter((a) => a.priority === "critical" || a.priority === "high").length}{" "}
@@ -557,7 +557,7 @@ export default function PropertyLifecycleDashboard() {
                   >
                     <div className="flex items-start gap-4">
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                           alert.priority === "critical"
                             ? "bg-red-600"
                             : alert.priority === "high"
@@ -723,7 +723,7 @@ export default function PropertyLifecycleDashboard() {
                 return (
                   <Card key={warranty.id} className="p-5 border-gray-200">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Icon className="w-6 h-6 text-blue-600" />
                       </div>
                       <div className="flex-1">
@@ -867,7 +867,7 @@ export default function PropertyLifecycleDashboard() {
                   <Card key={task.id} className="p-5 border-gray-200">
                     <div className="flex items-start gap-4">
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${
                           task.status === "overdue"
                             ? "bg-red-100"
                             : task.status === "due"

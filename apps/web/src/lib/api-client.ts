@@ -154,6 +154,10 @@ export type AuthUser = {
   avatarUrl: string | null;
   status: string;
   emailVerifiedAt: string | null;
+  phoneVerifiedAt?: string | null;
+  lastLoginAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   roles?: string[];
   role?: string | null;
 };
@@ -168,7 +172,15 @@ export type KycStatusResponse = {
   status: string;
   userId?: string;
   idDocumentType?: string;
+  idDocumentUrl?: string | null;
+  addressProofUrl?: string | null;
+  businessRegistrationUrl?: string | null;
+  selfieUrl?: string | null;
+  reviewerNotes?: string | null;
+  reviewerId?: string | null;
+  reviewedAt?: string | null;
   submittedAt?: string;
+  createdAt?: string;
 };
 
 export const authApi = {
@@ -252,6 +264,17 @@ export const usersApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+
+  uploadAvatar: (authToken: string, file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    return apiRequest<AuthUser>('/users/me/avatar', {
+      method: 'POST',
+      authToken,
+      body: formData,
+    });
+  },
 };
 
 export const adminUsersApi = {
@@ -307,6 +330,17 @@ export const authExtApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
+    }),
+
+  changePassword: (
+    authToken: string,
+    payload: { currentPassword: string; newPassword: string },
+  ) =>
+    apiRequest<{ success: boolean }>('/auth/change-password', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }),
 };
 
@@ -530,6 +564,17 @@ export type AgentProfileResponse = {
   }>;
 };
 
+export type AgentDashboardResponse = {
+  totalListings: number;
+  byStatus: Record<string, number>;
+  newInquiries7d: number;
+  verificationSummary: Record<string, number>;
+  listingViewsLast7d: number;
+  listingViewsPrevious7d: number;
+  listingViewsTrendPct: number;
+  inquiryResponseRatePct: number;
+};
+
 export type PropertySearchParams = {
   agentId?: string;
   agent_id?: string;
@@ -596,6 +641,12 @@ export const propertiesApi = {
   getAgentProfile: (id: string) =>
     apiRequest<AgentProfileResponse>(`/properties/agents/${id}/profile`, {
       method: 'GET',
+    }),
+
+  getAgentDashboard: (authToken: string) =>
+    apiRequest<AgentDashboardResponse>('/agent/dashboard', {
+      method: 'GET',
+      authToken,
     }),
 
   create: (authToken: string, payload: Record<string, unknown>) =>

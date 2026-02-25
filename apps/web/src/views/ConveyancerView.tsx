@@ -9,6 +9,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export default function ConveyancerView() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "pending" | "blocked">("all");
@@ -241,12 +242,7 @@ export default function ConveyancerView() {
                     <span className="text-gray-600">Progress</span>
                     <span className="font-medium">{case_.completionPercentage}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all"
-                      style={{ width: `${case_.completionPercentage}%` }}
-                    ></div>
-                  </div>
+                  <Progress value={case_.completionPercentage} className="h-2 bg-gray-200" />
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg mb-4">
@@ -262,7 +258,7 @@ export default function ConveyancerView() {
                 </div>
 
                 <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg mb-4">
-                  <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-sm font-medium text-blue-900">Next Action:</div>
                     <div className="text-sm text-blue-700">{case_.nextAction}</div>

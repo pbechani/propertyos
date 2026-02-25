@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
@@ -46,7 +47,7 @@ function toCardData(property: PropertyListing): PropertyCardData {
   };
 }
 
-export default function PropertySearchResults() {
+function PropertySearchResultsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -159,7 +160,7 @@ export default function PropertySearchResults() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-3 items-center">
           {/* Search input */}
           <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 focus-within:border-[#F5A623] focus-within:ring-1 focus-within:ring-[#F5A623] transition bg-white">
-            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -177,6 +178,7 @@ export default function PropertySearchResults() {
           {/* Save search */}
           <button
             onClick={applySearch}
+            title="Save search"
             className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 hover:border-[#F5A623] hover:text-[#0A1628] transition bg-white whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +187,7 @@ export default function PropertySearchResults() {
             Save Search
           </button>
           {/* User avatar */}
-          <div className="w-9 h-9 rounded-full bg-[#0A1628] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#0A1628] flex items-center justify-center text-white text-sm font-bold shrink-0">
             J
           </div>
         </div>
@@ -195,11 +197,11 @@ export default function PropertySearchResults() {
         <div className="flex gap-6">
 
           {/* ── LEFT SIDEBAR FILTERS ── */}
-          <aside className={`${sidebarOpen ? 'w-64 flex-shrink-0' : 'hidden'} transition-all`}>
+          <aside className={`${sidebarOpen ? 'w-64 shrink-0' : 'hidden'} transition-all`}>
             <div className="bg-white rounded-2xl border border-gray-200 p-5 sticky top-36 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-[#0A1628]">Filters</h3>
-                <button className="text-xs text-[#F5A623] font-semibold hover:underline">Clear all</button>
+                <button className="text-xs text-[#F5A623] font-semibold hover:underline" title="Clear all filters">Clear all</button>
               </div>
 
               {/* Verified Only */}
@@ -211,7 +213,9 @@ export default function PropertySearchResults() {
                   </div>
                   <button
                     onClick={toggleVerifiedOnly}
-                    className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${verifiedOnly ? 'bg-[#22C55E]' : 'bg-gray-200'}`}
+                    title="Toggle verified only"
+                    aria-label="Toggle verified only"
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${verifiedOnly ? 'bg-[#22C55E]' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${verifiedOnly ? 'translate-x-5' : ''}`} />
                   </button>
@@ -227,7 +231,9 @@ export default function PropertySearchResults() {
                   </div>
                   <button
                     onClick={() => setEscrowReady(!escrowReady)}
-                    className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${escrowReady ? 'bg-[#F5A623]' : 'bg-gray-200'}`}
+                    title="Toggle escrow ready"
+                    aria-label="Toggle escrow ready"
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${escrowReady ? 'bg-[#F5A623]' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${escrowReady ? 'translate-x-5' : ''}`} />
                   </button>
@@ -309,6 +315,7 @@ export default function PropertySearchResults() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
+                  title="Toggle filters"
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0A1628] transition-colors border border-gray-200 rounded-lg px-3 py-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,6 +337,8 @@ export default function PropertySearchResults() {
                       page: '1',
                     })
                   }
+                  title="Sort results"
+                  aria-label="Sort results"
                   className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#F5A623] text-gray-600 bg-white"
                 >
                   {SORT_OPTIONS.map((option) => (
@@ -342,6 +351,8 @@ export default function PropertySearchResults() {
                 <div className="flex border border-gray-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                    aria-label="Grid view"
                     className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-[#0A1628] text-white' : 'text-gray-500 hover:text-[#0A1628]'}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -350,6 +361,8 @@ export default function PropertySearchResults() {
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
+                    title="List view"
+                    aria-label="List view"
                     className={`px-3 py-2 transition-colors border-l border-gray-200 ${viewMode === 'list' ? 'bg-[#0A1628] text-white' : 'text-gray-500 hover:text-[#0A1628]'}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -376,6 +389,8 @@ export default function PropertySearchResults() {
                       setCityInput('');
                       updateQuery({ city: null, page: '1' });
                     }}
+                    title={`Remove ${f}`}
+                    aria-label={`Remove ${f}`}
                     className="hover:text-[#F5A623] transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,7 +404,7 @@ export default function PropertySearchResults() {
             {/* Fraud alert banner (for unverified results) */}
             {unverifiedCount > 0 && (
               <div className="bg-[#FEF3C7] border border-[#F59E0B] rounded-xl px-4 py-3 flex items-center gap-3 mb-5">
-                <svg className="w-5 h-5 text-[#F59E0B] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-[#F59E0B] shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 <p className="text-sm text-[#92400E] font-medium">
@@ -426,6 +441,8 @@ export default function PropertySearchResults() {
               <button
                 disabled={page <= 1}
                 onClick={() => updateQuery({ page: String(Math.max(1, page - 1)) })}
+                title="Previous page"
+                aria-label="Previous page"
                 className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,6 +455,8 @@ export default function PropertySearchResults() {
               <button
                 disabled={page >= totalPages}
                 onClick={() => updateQuery({ page: String(Math.min(totalPages, page + 1)) })}
+                title="Next page"
+                aria-label="Next page"
                 className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,27 +467,26 @@ export default function PropertySearchResults() {
           </div>
 
           {/* ── MAP PANEL ── */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
+          <div className="hidden lg:block w-80 shrink-0">
             <div className="sticky top-36 bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <div className="bg-[#0A1628] px-4 py-3 flex items-center justify-between">
                 <span className="text-white text-sm font-semibold">Map View</span>
-                <button className="text-white/60 hover:text-white text-xs">Expand</button>
+                <button className="text-white/60 hover:text-white text-xs" title="Expand map">Expand</button>
               </div>
               {/* Placeholder map */}
               <div className="h-96 bg-gray-100 relative flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50" />
+                <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-green-50" />
                 {/* Mock property pins */}
                 {[
-                  { x: 40, y: 30, price: 'R4.8M', active: true },
-                  { x: 65, y: 50, price: 'R2.1M', active: false },
-                  { x: 25, y: 65, price: 'R1.75M', active: false },
-                  { x: 75, y: 25, price: 'R8.5M', active: false },
-                  { x: 50, y: 75, price: '$620K', active: false },
+                  { positionClass: 'left-[40%] top-[30%]', price: 'R4.8M', active: true },
+                  { positionClass: 'left-[65%] top-[50%]', price: 'R2.1M', active: false },
+                  { positionClass: 'left-[25%] top-[65%]', price: 'R1.75M', active: false },
+                  { positionClass: 'left-[75%] top-[25%]', price: 'R8.5M', active: false },
+                  { positionClass: 'left-[50%] top-[75%]', price: '$620K', active: false },
                 ].map((pin, i) => (
                   <div
                     key={i}
-                    style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${pin.positionClass}`}
                   >
                     <div className={`px-2 py-1 rounded-full text-xs font-bold shadow-lg cursor-pointer
                       ${pin.active
@@ -505,5 +523,13 @@ export default function PropertySearchResults() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PropertySearchResultsPage() {
+  return (
+    <Suspense fallback={null}>
+      <PropertySearchResultsContent />
+    </Suspense>
   );
 }
