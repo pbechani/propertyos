@@ -42,7 +42,8 @@ Current implemented marketplace routes (web app):
 Current implemented account routes (web app):
 
 - `/change-password` → Authenticated password change
-- `/role-setup` → Post-registration role setup flow
+- `/role-setup` → Post-registration role setup flow (canonical)
+- `/profile-setup` → Legacy alias to `role-setup` for backward compatibility
 
 ------------------------------------------------------------------------
 

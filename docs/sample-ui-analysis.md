@@ -27,7 +27,7 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `OAuthConnect.tsx` | `/oauth-connect` | Sprint 2 — social login |
 | `SessionExpired.tsx` | `/session-expired` | Sprint 2 — token expiry |
 | `RoleSelection.tsx` | `/role-selection` | Sprint 2 — role assignment |
-| `ProfileSetup.tsx` | `/profile-setup` | Sprint 2 — onboarding |
+| `ProfileSetup.tsx` | `/role-setup` (legacy alias: `/profile-setup`) | Sprint 2 — role onboarding |
 | `KYCUpload.tsx` | `/kyc-upload` | Sprint 2 — identity verification |
 | `ProfileDashboard.tsx` | `/profile-dashboard` | Sprint 2 — user profile |
 

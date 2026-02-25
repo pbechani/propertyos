@@ -120,9 +120,9 @@ export { default } from '@/views/LoginEnhanced';
 | `/session-expired` | `SessionExpired` |
 | `/change-password` | `ChangePassword` |
 | `/role-selection` | `RoleSelection` |
-| `/role-setup` | `RoleSetup` |
+| `/role-setup` | `ProfileSetup` (Role Setup flow) |
 | `/kyc-upload` | `KYCUpload` |
-| `/profile-setup` | `ProfileSetup` |
+| `/profile-setup` | `ProfileSetup` (legacy alias for `/role-setup`) |
 | `/profile-dashboard` | `ProfileDashboard` |
 | `/app` | `Dashboard` |
 | `/app/agent` | `AgentDashboardEnhanced` |

@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Role setup + profile roles workflow refresh** (2026-02-25)
+  - Rebuilt `ProfileDashboard` roles management card with role-status visibility and application CTA behavior:
+    - Buyer remains default and non-removable.
+    - Additional roles (Agent, Supplier, Contractor, Conveyancer, Inspector) are application-based.
+    - Role selection now shows status states (`Active`, `Pending`, `Not Applied`) with per-role details.
+  - Moved roles management card to sit directly under verification progress in profile dashboard.
+  - Renamed setup flow user-facing wording from "Profile Setup" to "Role Setup" and standardized route usage:
+    - canonical route: `/role-setup`
+    - backward-compatible alias retained: `/profile-setup`
+  - Updated shared layout behavior to hide the global `Create Listing` action on role setup routes.
+  - Improved role setup flow controls:
+    - added cancel actions back to profile dashboard
+    - added "Save & Go Back" on profile tab
+    - standardized tab footer actions (`Back`, `Cancel`, `Save & Continue`)
+  - Enforced mandatory field completion before progression in role setup:
+    - profile info required fields validated before continue/go-back save
+    - business required fields validated before continue
+    - tab progression gated to prevent bypass without required data
+  - Hardened role setup profile preload behavior:
+    - fall back to stored session user details when `/users/me` is temporarily unavailable
+    - show a non-blocking stale-data warning instead of failing hard
+
 - **Service provider routing + marketplace rename alignment** (2026-02-25)
   - Standardized marketplace naming from "Contractor Marketplace" to "Service Provider Marketplace" across app routes and documentation.
   - Replaced legacy route references with `/service-providers` in navigation/docs where applicable.

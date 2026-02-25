@@ -17,17 +17,30 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { ApiError, usersApi } from "@/lib/api-client";
-import { getAccessToken } from "@/lib/auth-session";
+import { getAccessToken, getStoredUser } from "@/lib/auth-session";
 
 export default function ProfileSetup() {
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState("profile");
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [addressState, setAddressState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [businessType, setBusinessType] = useState("Real Estate Agency");
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [yearsExperience, setYearsExperience] = useState("Less than 1 year");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [error, setError] = useState("");
+  const [profileValidationError, setProfileValidationError] = useState("");
+  const [businessValidationError, setBusinessValidationError] = useState("");
+  const [loadWarning, setLoadWarning] = useState("");
   const [uploadedDocs, setUploadedDocs] = useState({
     idCard: false,
     businessLicense: false,
@@ -36,6 +49,13 @@ export default function ProfileSetup() {
 
   useEffect(() => {
     const loadProfile = async () => {
+      if (typeof window !== "undefined") {
+        const roleFromSession = window.sessionStorage.getItem("pribec.pending_role");
+        if (roleFromSession) {
+          setPendingRole(roleFromSession);
+        }
+      }
+
       const token = getAccessToken();
       if (!token) {
         navigate("/login");
@@ -47,8 +67,19 @@ export default function ProfileSetup() {
         setFirstName(me.firstName ?? "");
         setLastName(me.lastName ?? "");
         setPhone(me.phone ?? "");
+        setLoadWarning("");
       } catch {
-        setError("Unable to load profile details.");
+        const fallbackUser = getStoredUser();
+        if (fallbackUser) {
+          setFirstName(fallbackUser.firstName ?? "");
+          setLastName(fallbackUser.lastName ?? "");
+          setPhone(fallbackUser.phone ?? "");
+          setError("");
+          setLoadWarning("Showing saved profile details. Some information may be out of date.");
+        } else {
+          setError("Unable to load profile details.");
+          setLoadWarning("");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -57,7 +88,25 @@ export default function ProfileSetup() {
     void loadProfile();
   }, [navigate]);
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (nextAction: "continue" | "goBack" = "continue") => {
+    const requiredProfileValues = [
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      streetAddress,
+      city,
+      addressState,
+      zipCode,
+    ];
+
+    if (requiredProfileValues.some((value) => value.trim().length === 0)) {
+      setProfileValidationError("Please complete all mandatory fields before proceeding.");
+      return;
+    }
+
+    setProfileValidationError("");
+
     const token = getAccessToken();
     if (!token) {
       navigate("/login");
@@ -73,7 +122,11 @@ export default function ProfileSetup() {
         lastName,
         phone,
       });
-      setCurrentTab("business");
+      if (nextAction === "goBack") {
+        navigate("/profile-dashboard");
+      } else {
+        setCurrentTab("business");
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -86,31 +139,76 @@ export default function ProfileSetup() {
   };
 
   const handleComplete = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("pribec.pending_role");
+    }
     navigate("/kyc-upload");
   };
 
+  const handleCancelRoleSetup = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("pribec.pending_role");
+    }
+    navigate("/profile-dashboard");
+  };
+
+  const handleBusinessContinue = () => {
+    const requiredBusinessValues = [companyName, licenseNumber];
+    if (requiredBusinessValues.some((value) => value.trim().length === 0)) {
+      setBusinessValidationError("Please complete all mandatory fields before proceeding.");
+      return;
+    }
+
+    setBusinessValidationError("");
+    setCurrentTab("kyc");
+  };
+
+  const formatPendingRole = (role: string) =>
+    role
+      .replace(/_/g, " ")
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+
+  const isProfileInfoComplete = [
+    firstName,
+    lastName,
+    phone,
+    dateOfBirth,
+    streetAddress,
+    city,
+    addressState,
+    zipCode,
+  ].every((value) => value.trim().length > 0);
+
+  const isBusinessInfoComplete = [companyName, licenseNumber].every(
+    (value) => value.trim().length > 0,
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-4 md:p-6 lg:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">Complete Your Profile</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">Complete Role Setup</h1>
               <p className="text-sm md:text-base text-gray-600">
                 Help us verify your identity to access all features
               </p>
             </div>
-            <VerificationBadge status="pending" size="lg" />
+            <div className="flex items-center gap-2">
+              <VerificationBadge status="pending" size="lg" />
+              <Button variant="outline" onClick={handleCancelRoleSetup}>
+                Cancel
+              </Button>
+            </div>
           </div>
 
           {/* Progress Bar */}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-600 transition-all duration-300"
-                style={{ width: "50%" }}
-              ></div>
+              <div className="h-full w-1/2 bg-blue-600 transition-all duration-300"></div>
             </div>
             <span className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap">50% Complete</span>
           </div>
@@ -123,12 +221,20 @@ export default function ProfileSetup() {
               <span className="hidden sm:inline">Profile Info</span>
               <span className="sm:hidden">Profile</span>
             </TabsTrigger>
-            <TabsTrigger value="business" className="flex items-center gap-2 text-xs md:text-sm">
+            <TabsTrigger
+              value="business"
+              disabled={!isProfileInfoComplete}
+              className="flex items-center gap-2 text-xs md:text-sm"
+            >
               <Briefcase className="w-3 h-3 md:w-4 md:h-4" />
               <span className="hidden sm:inline">Business Details</span>
               <span className="sm:hidden">Business</span>
             </TabsTrigger>
-            <TabsTrigger value="kyc" className="flex items-center gap-2 text-xs md:text-sm">
+            <TabsTrigger
+              value="kyc"
+              disabled={!isProfileInfoComplete || !isBusinessInfoComplete}
+              className="flex items-center gap-2 text-xs md:text-sm"
+            >
               <FileText className="w-3 h-3 md:w-4 md:h-4" />
               <span className="hidden sm:inline">KYC Verification</span>
               <span className="sm:hidden">KYC</span>
@@ -143,6 +249,18 @@ export default function ProfileSetup() {
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
                   {error}
+                </div>
+              )}
+
+              {loadWarning && !error && (
+                <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-600">
+                  {loadWarning}
+                </div>
+              )}
+
+              {profileValidationError && !error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                  {profileValidationError}
                 </div>
               )}
 
@@ -182,7 +300,12 @@ export default function ProfileSetup() {
                     <input
                       type="text"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="First name"
+                      placeholder="First name"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -193,7 +316,12 @@ export default function ProfileSetup() {
                     <input
                       type="text"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="Last name"
+                      placeholder="Last name"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -218,7 +346,12 @@ export default function ProfileSetup() {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="Phone number"
+                      placeholder="Phone number"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -228,6 +361,13 @@ export default function ProfileSetup() {
                     </label>
                     <input
                       type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => {
+                        setDateOfBirth(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="Date of birth"
+                      placeholder="Date of birth"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -239,6 +379,11 @@ export default function ProfileSetup() {
                   </label>
                   <input
                     type="text"
+                    value={streetAddress}
+                    onChange={(e) => {
+                      setStreetAddress(e.target.value);
+                      setProfileValidationError("");
+                    }}
                     placeholder="Street address"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -251,6 +396,13 @@ export default function ProfileSetup() {
                     </label>
                     <input
                       type="text"
+                      value={city}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="City"
+                      placeholder="City"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -260,6 +412,13 @@ export default function ProfileSetup() {
                     </label>
                     <input
                       type="text"
+                      value={addressState}
+                      onChange={(e) => {
+                        setAddressState(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="State"
+                      placeholder="State"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -269,20 +428,42 @@ export default function ProfileSetup() {
                     </label>
                     <input
                       type="text"
+                      value={zipCode}
+                      onChange={(e) => {
+                        setZipCode(e.target.value);
+                        setProfileValidationError("");
+                      }}
+                      title="ZIP code"
+                      placeholder="ZIP code"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end mt-8">
+              <div className="flex justify-between mt-8">
                 <Button
-                  onClick={handleSaveProfile}
+                  onClick={handleCancelRoleSetup}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => void handleSaveProfile("goBack")}
+                    disabled={isSavingProfile}
+                    variant="outline"
+                  >
+                    {isSavingProfile ? "Saving..." : "Save & Go Back"}
+                  </Button>
+                <Button
+                  onClick={() => void handleSaveProfile("continue")}
                   disabled={isSavingProfile}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {isSavingProfile ? "Saving..." : "Save & Continue"}
                 </Button>
+                </div>
               </div>
               </>
               )}
@@ -294,6 +475,21 @@ export default function ProfileSetup() {
             <Card className="p-4 md:p-6 lg:p-8">
               <h2 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">Business Information</h2>
 
+              {pendingRole && pendingRole !== "buyer" && (
+                <div className="mb-6 p-4 rounded-lg border border-gray-200 bg-gray-50">
+                  <p className="text-sm text-gray-700">
+                    You are applying for the <strong>{formatPendingRole(pendingRole)}</strong> role.
+                    Complete this section and continue to KYC verification to submit your application.
+                  </p>
+                </div>
+              )}
+
+              {businessValidationError && (
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                  {businessValidationError}
+                </div>
+              )}
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -301,6 +497,11 @@ export default function ProfileSetup() {
                   </label>
                   <input
                     type="text"
+                    value={companyName}
+                    onChange={(e) => {
+                      setCompanyName(e.target.value);
+                      setBusinessValidationError("");
+                    }}
                     placeholder="Your company or agency name"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -311,7 +512,13 @@ export default function ProfileSetup() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Business Type
                     </label>
-                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      title="Business type"
+                      aria-label="Business type"
+                      value={businessType}
+                      onChange={(e) => setBusinessType(e.target.value)}
+                    >
                       <option>Real Estate Agency</option>
                       <option>Independent Agent</option>
                       <option>Brokerage Firm</option>
@@ -324,6 +531,11 @@ export default function ProfileSetup() {
                     </label>
                     <input
                       type="text"
+                      value={licenseNumber}
+                      onChange={(e) => {
+                        setLicenseNumber(e.target.value);
+                        setBusinessValidationError("");
+                      }}
                       placeholder="Real estate license #"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -334,7 +546,13 @@ export default function ProfileSetup() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Years of Experience
                   </label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Years of experience"
+                    aria-label="Years of experience"
+                    value={yearsExperience}
+                    onChange={(e) => setYearsExperience(e.target.value)}
+                  >
                     <option>Less than 1 year</option>
                     <option>1-3 years</option>
                     <option>3-5 years</option>
@@ -359,6 +577,8 @@ export default function ProfileSetup() {
                       <label key={area} className="flex items-center gap-2">
                         <input
                           type="checkbox"
+                          title={area}
+                          aria-label={area}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <span className="text-sm text-gray-700">{area}</span>
@@ -375,12 +595,20 @@ export default function ProfileSetup() {
                 >
                   Back
                 </Button>
-                <Button
-                  onClick={() => setCurrentTab("kyc")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Save & Continue
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCancelRoleSetup}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleBusinessContinue}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Save & Continue
+                  </Button>
+                </div>
               </div>
             </Card>
           </TabsContent>
@@ -527,13 +755,21 @@ export default function ProfileSetup() {
                 >
                   Back
                 </Button>
-                <Button
-                  onClick={handleComplete}
-                  disabled={!uploadedDocs.idCard || !uploadedDocs.businessLicense}
-                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Submit for Verification
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCancelRoleSetup}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleComplete}
+                    disabled={!uploadedDocs.idCard || !uploadedDocs.businessLicense}
+                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Submit for Verification
+                  </Button>
+                </div>
               </div>
             </Card>
           </TabsContent>

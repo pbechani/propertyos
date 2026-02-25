@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { Link } from "@/lib/router-compat";
 import {
   Shield,
   CheckCircle,
+  Check,
   Star,
   Edit,
   Camera,
   Mail,
   Phone,
+  User,
+  Briefcase,
+  Wrench,
+  Package,
+  FileCheck,
+  ClipboardCheck,
   Award,
   TrendingUp,
   Lock,
@@ -27,6 +33,8 @@ import { AuditLogEntry, auditApi, kycApi, usersApi, ApiError } from "@/lib/api-c
 import { getAccessToken, getPrimaryRole } from "@/lib/auth-session";
 
 type BadgeRole = "buyer" | "agent" | "contractor" | "property_manager" | "admin" | "supplier" | "conveyancer" | "inspector";
+type ManagedRole = "buyer" | "agent" | "supplier" | "contractor" | "conveyancer" | "inspector";
+type RoleStatus = "active" | "pending" | "not_applied";
 
 function toBadgeRole(role: string | null): BadgeRole {
   if (role === "buyer_seller" || role === "investor") {
@@ -49,6 +57,28 @@ function toBadgeRole(role: string | null): BadgeRole {
   }
 
   return "buyer";
+}
+
+function toManagedRole(role: string | null | undefined): ManagedRole | null {
+  if (!role) {
+    return null;
+  }
+
+  if (role === "buyer_seller" || role === "investor" || role === "buyer") {
+    return "buyer";
+  }
+
+  if (
+    role === "agent" ||
+    role === "supplier" ||
+    role === "contractor" ||
+    role === "conveyancer" ||
+    role === "inspector"
+  ) {
+    return role;
+  }
+
+  return null;
 }
 
 function formatRelativeTime(iso: string): string {
@@ -103,6 +133,9 @@ export default function ProfileDashboard() {
   const [completedSteps, setCompletedSteps] = useState<Array<{ id: number; title: string; completed: boolean; date: string }>>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [activeRoles, setActiveRoles] = useState<Set<ManagedRole>>(new Set(["buyer"]));
+  const [appliedRoles, setAppliedRoles] = useState<Set<ManagedRole>>(new Set());
+  const [selectedRole, setSelectedRole] = useState<ManagedRole>("buyer");
 
   // Edit panel state
   const [editFirstName, setEditFirstName] = useState("");
@@ -131,6 +164,16 @@ export default function ProfileDashboard() {
           `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "?",
         );
         setRole(toBadgeRole(getPrimaryRole()));
+
+        const assignedRoles = new Set<ManagedRole>(["buyer"]);
+        const roleCandidates = [user.role, ...(user.roles ?? [])];
+        roleCandidates.forEach((candidate) => {
+          const mapped = toManagedRole(candidate ?? null);
+          if (mapped) {
+            assignedRoles.add(mapped);
+          }
+        });
+        setActiveRoles(assignedRoles);
 
         // Edit panel pre-fill
         setEditFirstName(user.firstName ?? "");
@@ -203,6 +246,27 @@ export default function ProfileDashboard() {
     void load();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const pendingRole = toManagedRole(window.sessionStorage.getItem("pribec.pending_role"));
+    if (!pendingRole || pendingRole === "buyer") {
+      return;
+    }
+
+    setAppliedRoles((prev) => {
+      if (prev.has(pendingRole)) {
+        return prev;
+      }
+
+      const next = new Set(prev);
+      next.add(pendingRole);
+      return next;
+    });
+  }, []);
+
   const handleSaveProfile = async () => {
     const token = getAccessToken();
     if (!token) return;
@@ -239,6 +303,47 @@ export default function ProfileDashboard() {
     }
   };
 
+  const roleOptions: Array<{ id: ManagedRole; title: string; description: string; icon: typeof User }> = [
+    { id: "buyer", title: "Buyer", description: "Default role for all new profiles", icon: User },
+    { id: "agent", title: "Agent", description: "List and manage property sales", icon: Briefcase },
+    { id: "supplier", title: "Supplier", description: "Provide materials and quotes", icon: Package },
+    { id: "contractor", title: "Contractor", description: "Manage project work and milestones", icon: Wrench },
+    { id: "conveyancer", title: "Conveyancer", description: "Handle legal transfer workflow", icon: FileCheck },
+    { id: "inspector", title: "Inspector", description: "Run site and compliance inspections", icon: ClipboardCheck },
+  ];
+
+  const getRoleStatus = (roleId: ManagedRole): RoleStatus => {
+    if (activeRoles.has(roleId)) {
+      return "active";
+    }
+
+    if (appliedRoles.has(roleId)) {
+      return "pending";
+    }
+
+    return "not_applied";
+  };
+
+  const handleRoleApplication = (roleId: ManagedRole) => {
+    if (roleId === "buyer" || activeRoles.has(roleId) || appliedRoles.has(roleId)) {
+      return;
+    }
+
+    setAppliedRoles((prev) => {
+      const next = new Set(prev);
+      next.add(roleId);
+      return next;
+    });
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("pribec.pending_role", roleId);
+      window.location.href = "/role-setup";
+    }
+  };
+
+  const selectedRoleConfig = roleOptions.find((item) => item.id === selectedRole) ?? roleOptions[0];
+  const selectedRoleStatus = getRoleStatus(selectedRole);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -251,11 +356,6 @@ export default function ProfileDashboard() {
                 Manage your account and verification status
               </p>
             </div>
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                Admin Panel
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -488,6 +588,103 @@ export default function ProfileDashboard() {
                     )}
                   </div>
                 ))}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-semibold mb-2">Roles</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Buyer is assigned by default and cannot be removed. Apply for additional roles below.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                {roleOptions.map((roleItem) => {
+                  const status = getRoleStatus(roleItem.id);
+                  const isSelected = selectedRole === roleItem.id;
+                  const Icon = roleItem.icon;
+
+                  return (
+                    <button
+                      key={roleItem.id}
+                      type="button"
+                      onClick={() => setSelectedRole(roleItem.id)}
+                      className={`w-full text-left p-4 rounded-lg border transition-colors relative ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-600"
+                        }`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{roleItem.title}</div>
+                          <div className="text-xs text-gray-600">{roleItem.description}</div>
+                        </div>
+                        {isSelected && (
+                          <span className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end">
+                        <span
+                          className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            status === "active"
+                              ? "bg-green-100 text-green-700"
+                              : status === "pending"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {status === "active"
+                            ? "Active"
+                            : status === "pending"
+                              ? "Pending"
+                              : "Not Applied"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+                <div className="font-medium mb-1 text-gray-900">{selectedRoleConfig.title} Status</div>
+                <p className="text-sm text-gray-600 mb-3">
+                  {selectedRoleStatus === "active"
+                    ? "This role is active on your account."
+                    : selectedRoleStatus === "pending"
+                      ? "Your application is submitted and currently under review."
+                      : "You have not applied for this role yet."}
+                </p>
+
+                {selectedRole === "buyer" ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Buyer role is assigned by default
+                  </Button>
+                ) : selectedRoleStatus === "not_applied" ? (
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => handleRoleApplication(selectedRole)}
+                  >
+                    Start Role Application
+                  </Button>
+                ) : selectedRoleStatus === "pending" ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Application in Review
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full" disabled>
+                    Role Active
+                  </Button>
+                )}
               </div>
             </Card>
 
