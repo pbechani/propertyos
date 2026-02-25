@@ -1,5 +1,7 @@
 'use client';
 
+import { clearAuthSession, getRefreshToken, saveAuthSession } from './auth-session';
+
 const DEFAULT_API_BASE_URL = 'http://localhost:3001/api/v1';
 
 export const API_BASE_URL =
@@ -24,6 +26,48 @@ const getResponseCache = new Map<string, { data: unknown; expiresAt: number }>()
 const getRateLimitCooldowns = new Map<string, number>();
 const DEFAULT_GET_CACHE_TTL_MS = 15_000;
 const RATE_LIMIT_COOLDOWN_MS = 3_000;
+let inFlightTokenRefresh: Promise<string | null> | null = null;
+
+function canAttemptTokenRefresh(path: string, authToken: string | null | undefined): boolean {
+  if (!authToken) {
+    return false;
+  }
+
+  return !path.startsWith('/auth/login') && !path.startsWith('/auth/register') && !path.startsWith('/auth/refresh');
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (inFlightTokenRefresh) {
+    return inFlightTokenRefresh;
+  }
+
+  inFlightTokenRefresh = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearAuthSession();
+      return null;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      clearAuthSession();
+      return null;
+    }
+
+    const data = (await response.json()) as AuthResponse;
+    saveAuthSession(data);
+    return data.tokens.accessToken;
+  })().finally(() => {
+    inFlightTokenRefresh = null;
+  });
+
+  return inFlightTokenRefresh;
+}
 
 function getCacheTtlMs(path: string): number {
   if (path.startsWith('/properties')) {
@@ -88,15 +132,29 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   const executeRequest = async (): Promise<T> => {
-    const response = await fetch(requestUrl, {
-      ...rest,
-      headers: {
-        ...(headers ?? {}),
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      },
-    });
+    const send = (token: string | null | undefined) =>
+      fetch(requestUrl, {
+        ...rest,
+        headers: {
+          ...(headers ?? {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+    let response = await send(authToken);
+
+    if (response.status === 401 && canAttemptTokenRefresh(path, authToken)) {
+      const refreshedToken = await refreshAccessToken();
+      if (refreshedToken) {
+        response = await send(refreshedToken);
+      }
+    }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new ApiError('Session expired. Please sign in again.', 401);
+      }
+
       if (response.status === 429 && dedupeKey) {
         getRateLimitCooldowns.set(dedupeKey, Date.now() + RATE_LIMIT_COOLDOWN_MS);
 
@@ -224,6 +282,12 @@ export const authApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }),
+
+  resendVerificationEmail: (authToken: string) =>
+    apiRequest<{ success: boolean }>('/auth/resend-verification-email', {
+      method: 'POST',
+      authToken,
     }),
 
   oauthLogin: (
@@ -448,12 +512,53 @@ export type AuditLogEntry = {
   createdAt: string;
 };
 
+type AuditLogApiRow = {
+  id: string;
+  actor_id?: string;
+  actorId?: string;
+  actor_role?: string | null;
+  actorRole?: string | null;
+  action: string;
+  resource_type?: string;
+  resourceType?: string;
+  resource_id?: string | null;
+  resourceId?: string | null;
+  previous_status?: string | null;
+  previousStatus?: string | null;
+  payload?: Record<string, unknown> | null;
+  ip_address?: string | null;
+  ipAddress?: string | null;
+  user_agent?: string | null;
+  userAgent?: string | null;
+  created_at?: string;
+  createdAt?: string;
+};
+
+function normalizeAuditLogEntry(row: AuditLogApiRow): AuditLogEntry {
+  return {
+    id: row.id,
+    actorId: row.actorId ?? row.actor_id ?? '',
+    actorRole: row.actorRole ?? row.actor_role ?? null,
+    action: row.action,
+    resourceType: row.resourceType ?? row.resource_type ?? '',
+    resourceId: row.resourceId ?? row.resource_id ?? null,
+    previousStatus: row.previousStatus ?? row.previous_status ?? null,
+    payload: row.payload ?? null,
+    ipAddress: row.ipAddress ?? row.ip_address ?? null,
+    userAgent: row.userAgent ?? row.user_agent ?? null,
+    createdAt: row.createdAt ?? row.created_at ?? '',
+  };
+}
+
 export const auditApi = {
-  getMyLogs: (authToken: string, limit = 20, offset = 0) =>
-    apiRequest<AuditLogEntry[]>(`/audit-logs/me?limit=${limit}&offset=${offset}`, {
+  getMyLogs: async (authToken: string, limit = 20, offset = 0) => {
+    const rows = await apiRequest<AuditLogApiRow[]>(`/audit-logs/me?limit=${limit}&offset=${offset}`, {
       method: 'GET',
       authToken,
-    }),
+    });
+
+    return rows.map(normalizeAuditLogEntry);
+  },
 
   getAdminLogs: (
     authToken: string,
@@ -474,10 +579,10 @@ export const auditApi = {
     if (params.limit != null) qs.set('limit', String(params.limit));
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
-    return apiRequest<AuditLogEntry[]>(`/admin/audit-logs${query ? `?${query}` : ''}`, {
+    return apiRequest<AuditLogApiRow[]>(`/admin/audit-logs${query ? `?${query}` : ''}`, {
       method: 'GET',
       authToken,
-    });
+    }).then((rows) => rows.map(normalizeAuditLogEntry));
   },
 };
 

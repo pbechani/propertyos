@@ -3,6 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { join } from 'path';
+import { homedir } from 'os';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -34,6 +38,17 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api/v1');
+
+  const localStorageDir =
+    process.env.LOCAL_STORAGE_DIR || join(homedir(), '.pribec', 'storage');
+  const legacyStorageDir = join(process.cwd(), 'storage');
+  app.use('/storage', (req: Request, res: Response, next: NextFunction) => {
+    void req;
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
+  app.use('/storage', express.static(localStorageDir));
+  app.use('/storage', express.static(legacyStorageDir));
 
   // Swagger documentation
   const swaggerConfig = new DocumentBuilder()

@@ -9,6 +9,7 @@ import { CreateListing } from "@/components/CreateListing";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -178,15 +179,7 @@ export function Layout({ children }: LayoutProps) {
                         aria-label="Open user menu"
                         title={fullName}
                       >
-                        {currentUser?.avatarUrl ? (
-                          <img
-                            src={currentUser.avatarUrl}
-                            alt="User avatar"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span>{initials}</span>
-                        )}
+                        <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">

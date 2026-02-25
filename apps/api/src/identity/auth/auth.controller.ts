@@ -135,6 +135,20 @@ export class AuthController {
     return { success: true };
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
+  @Post('resend-verification-email')
+  async resendVerificationEmail(
+    @Req() req: RequestMeta,
+  ): Promise<{ success: boolean }> {
+    await this.authService.resendVerificationEmail(req.user!.sub, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return { success: true };
+  }
+
   @Post('oauth/google')
   oauthGoogle(
     @Req() req: RequestMeta,

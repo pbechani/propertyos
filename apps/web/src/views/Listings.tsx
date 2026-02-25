@@ -5,6 +5,7 @@ import { MapPin, Filter, Grid3x3, List, Bookmark, Shield, Search, Map as MapIcon
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { getAccessToken } from "@/lib/auth-session";
 import { ApiError, propertiesApi, type AgentProfileResponse, type PropertyListing } from "@/lib/api-client";
@@ -2957,29 +2958,21 @@ export default function Listings() {
                           </span>
                         </div>
                         <div className="pt-4 border-t border-gray-200 flex items-start justify-between gap-3">
-                          {property.agentCompanyLogoUrl ? (
-                            <img
-                              src={property.agentCompanyLogoUrl}
+                          <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0" title={property.agentCompany}>
+                            <UserAvatarContent
+                              avatarUrl={property.agentCompanyLogoUrl}
+                              initials={companyInitials}
                               alt={property.agentCompany}
-                              className="w-10 h-10 rounded-full border border-gray-200 object-cover shrink-0"
                             />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0" title={property.agentCompany}>
-                              {companyInitials}
-                            </div>
-                          )}
+                          </div>
                           <div className="ml-auto flex flex-col items-center text-center shrink-0">
-                            {property.agentAvatarUrl ? (
-                              <img
-                                src={property.agentAvatarUrl}
+                            <div className="w-8 h-8 bg-gray-200 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center text-[10px] font-semibold text-gray-700">
+                              <UserAvatarContent
+                                avatarUrl={property.agentAvatarUrl}
+                                initials={agentInitials}
                                 alt={property.agent}
-                                className="w-8 h-8 rounded-full border border-gray-200 object-cover"
                               />
-                            ) : (
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-semibold text-gray-700">
-                                {agentInitials}
-                              </div>
-                            )}
+                            </div>
                             <div className="text-xs font-medium text-gray-700 mt-1 max-w-24 truncate" title={property.agent}>{property.agent}</div>
                           </div>
                         </div>

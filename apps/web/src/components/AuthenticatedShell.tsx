@@ -3,27 +3,11 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Layout } from '@/components/Layout';
-import { getAccessToken } from '@/lib/auth-session';
+import { getAccessToken, getSessionUpdatedEventName } from '@/lib/auth-session';
+import { isAuthExemptRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
 
 interface AuthenticatedShellProps {
   children: ReactNode;
-}
-
-const AUTH_EXEMPT_ROUTES = [
-  '/login',
-  '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/email-verification',
-  '/oauth-connect',
-  '/mfa-setup',
-  '/mfa-verify',
-  '/auth-flow',
-  '/session-expired',
-];
-
-function isAuthExemptRoute(pathname: string): boolean {
-  return AUTH_EXEMPT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 export default function AuthenticatedShell({ children }: AuthenticatedShellProps) {
@@ -31,13 +15,18 @@ export default function AuthenticatedShell({ children }: AuthenticatedShellProps
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    const sessionUpdatedEventName = getSessionUpdatedEventName();
     const syncAuth = () => setIsAuthenticated(Boolean(getAccessToken()));
     syncAuth();
     window.addEventListener('storage', syncAuth);
-    return () => window.removeEventListener('storage', syncAuth);
+    window.addEventListener(sessionUpdatedEventName, syncAuth);
+    return () => {
+      window.removeEventListener('storage', syncAuth);
+      window.removeEventListener(sessionUpdatedEventName, syncAuth);
+    };
   }, [pathname]);
 
-  if (!isAuthenticated || isAuthExemptRoute(pathname)) {
+  if (!isAuthenticated || isAuthExemptRoute(pathname) || !shouldUseAuthenticatedShell(pathname)) {
     return <>{children}</>;
   }
 

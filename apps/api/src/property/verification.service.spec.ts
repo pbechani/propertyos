@@ -8,6 +8,7 @@ import {
 import { VerificationService } from './verification.service';
 import { PropertyAuditService } from './property-audit.service';
 import { PrismaService } from '../database';
+import { VerificationStorageService } from './verification-storage.service';
 
 describe('VerificationService', () => {
   let service: VerificationService;
@@ -19,6 +20,10 @@ describe('VerificationService', () => {
 
   const mockAudit = {
     log: jest.fn(),
+  };
+
+  const mockVerificationStorage = {
+    uploadTitleDeed: jest.fn(),
   };
 
   const agentId = 'agent-uuid-0001';
@@ -34,6 +39,10 @@ describe('VerificationService', () => {
         VerificationService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: PropertyAuditService, useValue: mockAudit },
+        {
+          provide: VerificationStorageService,
+          useValue: mockVerificationStorage,
+        },
       ],
     }).compile();
 
@@ -61,6 +70,11 @@ describe('VerificationService', () => {
         .mockResolvedValueOnce([])  // no existing pending verification
         .mockResolvedValueOnce([{ id: 'ver-uuid-001', status: 'pending' }]); // INSERT verification
 
+      mockVerificationStorage.uploadTitleDeed.mockResolvedValueOnce({
+        storagePath: 'property-verifications/prop-uuid-0001/agent-uuid-0001/title_deed/deed.pdf',
+        publicUrl: 'http://localhost:3001/storage/property-verifications/prop-uuid-0001/agent-uuid-0001/title_deed/deed.pdf',
+      });
+
       mockPrisma.$executeRaw.mockResolvedValue(1); // UPDATE property
 
       const result = await service.submitVerificationRequest(
@@ -73,6 +87,9 @@ describe('VerificationService', () => {
 
       expect(result.status).toBe('pending');
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockVerificationStorage.uploadTitleDeed).toHaveBeenCalledWith(
+        expect.objectContaining({ propertyId, agentId, file: titleDeedFile }),
+      );
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'property.verification.submitted' }),
       );

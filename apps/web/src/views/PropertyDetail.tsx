@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 
 export default function PropertyDetail() {
   const property = {
@@ -59,6 +60,12 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
       competitive: true,
     },
   };
+  const agentInitials = property.agent.name
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'A';
 
   return (
     <div className="bg-gray-50">
@@ -217,11 +224,13 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             {/* Agent Card */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <img
-                  src={property.agent.image}
-                  alt={property.agent.name}
-                  className="w-14 h-14 rounded-full object-cover"
-                />
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
+                  <UserAvatarContent
+                    avatarUrl={property.agent.image}
+                    initials={agentInitials}
+                    alt={property.agent.name}
+                  />
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{property.agent.name}</h3>

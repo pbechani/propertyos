@@ -2,18 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from './redis.service';
 
+const mockRedisClient = {
+  ping: jest.fn().mockResolvedValue('PONG'),
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  exists: jest.fn(),
+  quit: jest.fn().mockResolvedValue('OK'),
+  on: jest.fn(),
+};
+
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => mockRedisClient);
+});
+
 describe('RedisService', () => {
   let service: RedisService;
-
-  const mockRedisClient = {
-    ping: jest.fn().mockResolvedValue('PONG'),
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-    exists: jest.fn(),
-    quit: jest.fn().mockResolvedValue('OK'),
-    on: jest.fn(),
-  };
 
   let module: TestingModule;
 
@@ -34,9 +38,6 @@ describe('RedisService', () => {
     }).compile();
 
     service = module.get<RedisService>(RedisService);
-
-    // Replace the actual Redis client with mock
-    (service as any).client = mockRedisClient;
   });
 
   afterEach(() => {

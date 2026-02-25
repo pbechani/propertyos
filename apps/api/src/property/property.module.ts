@@ -10,6 +10,7 @@ import { BuyerController, InquiryResponseController, SavedPropertiesController }
 import { SavedPropertiesService } from './saved-properties.service';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
+import { VerificationStorageService } from './verification-storage.service';
 
 @Module({
   controllers: [
@@ -31,6 +32,7 @@ import { PropertyAuditService } from './property-audit.service';
     SavedPropertiesService,
     MediaStorageService,
     PropertyAuditService,
+    VerificationStorageService,
   ],
   exports: [PropertyService, PropertyAuditService],
 })

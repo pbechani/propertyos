@@ -51,6 +51,10 @@ docker/rabbitmq_data/
 docker/minio_data/
 docker/elasticsearch_data/
 
+# Local uploaded files (avatars, documents)
+apps/api/storage/
+storage/
+
 # Secrets (never commit these)
 *.pem
 *.key

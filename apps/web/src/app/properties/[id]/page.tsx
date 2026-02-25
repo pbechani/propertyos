@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Navbar from '@/components/property/Navbar';
 import PipelineTracker, { PURCHASE_STAGES } from '@/components/property/PipelineTracker';
 import { PropertyActions } from '@/components/property/PropertyActions';
 
@@ -208,7 +207,6 @@ export default async function PropertyDetail({ params }: PropertyPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <Navbar />
 
       {/* ── BREADCRUMB ── */}
       <div className="bg-white border-b border-gray-100">

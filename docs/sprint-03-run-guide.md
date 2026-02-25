@@ -32,6 +32,19 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
+Set persistent file storage values in `apps/api/.env` so uploaded avatars/documents survive API restarts:
+
+```dotenv
+LOCAL_STORAGE_DIR=/absolute/path/to/pribec-storage
+PUBLIC_STORAGE_BASE_URL=http://localhost:3001/storage
+```
+
+Create the storage directory once:
+
+```bash
+mkdir -p /absolute/path/to/pribec-storage
+```
+
 > Note: the web app currently reads `NEXT_PUBLIC_API_BASE_URL` in code, but defaults to `http://localhost:3001/api/v1` if not set.
 
 ## 3) Start infrastructure services

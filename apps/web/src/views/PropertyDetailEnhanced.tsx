@@ -11,6 +11,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken } from "@/lib/auth-session";
 import { propertiesApi, type AgentProfileResponse, type PropertyListing } from "@/lib/api-client";
 
@@ -355,6 +356,12 @@ export default function PropertyDetailEnhanced() {
   const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
   const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
   const verificationBadge = getVerificationBadge(property.verificationStatus);
+  const agentInitials = property.agent.name
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'A';
 
   useEffect(() => {
     if (!propertyId) {
@@ -882,11 +889,13 @@ export default function PropertyDetailEnhanced() {
             {/* Agent Card */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <img
-                  src={property.agent.image}
-                  alt={property.agent.name}
-                  className="w-14 h-14 rounded-full object-cover"
-                />
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
+                  <UserAvatarContent
+                    avatarUrl={property.agent.image}
+                    initials={agentInitials}
+                    alt={property.agent.name}
+                  />
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Link 
@@ -1366,11 +1375,13 @@ export default function PropertyDetailEnhanced() {
                     {/* Agent Info */}
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={property.agent.image}
-                          alt={property.agent.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-700">
+                          <UserAvatarContent
+                            avatarUrl={property.agent.image}
+                            initials={agentInitials}
+                            alt={property.agent.name}
+                          />
+                        </div>
                         <div>
                           <p className="font-semibold">{property.agent.name}</p>
                           <p className="text-sm text-gray-600">{property.agent.title}</p>

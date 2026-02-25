@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Home as HomeIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { UserAvatarContent } from '@/components/UserAvatarContent';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +22,14 @@ import {
   getSessionUpdatedEventName,
   getStoredUser,
 } from '@/lib/auth-session';
+import { isAuthExemptRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
 import type { AuthUser } from '@/lib/api-client';
 
 export default function HomeNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const isLoginActive = pathname === '/login' || pathname === '/auth/login';
+  const isHomeRoute = pathname === '/';
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
@@ -62,24 +65,17 @@ export default function HomeNavbar() {
 
   const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
 
-  const authExemptRoutes = [
-    '/login',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/email-verification',
-    '/oauth-connect',
-    '/mfa-setup',
-    '/mfa-verify',
-    '/auth-flow',
-    '/session-expired',
-  ];
+  const isExemptRoute = isAuthExemptRoute(pathname);
+  const shouldTreatAsPublicNavbar = isHomeRoute;
+  const shouldHideForAuthenticatedRoute =
+    isAuthenticated &&
+    !isExemptRoute &&
+    !shouldTreatAsPublicNavbar &&
+    shouldUseAuthenticatedShell(pathname);
 
-  const isAuthExemptRoute = authExemptRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  const showAuthenticatedUserMenu = isAuthenticated && !shouldTreatAsPublicNavbar;
 
-  if (isAuthenticated && !isAuthExemptRoute) {
+  if (shouldHideForAuthenticatedRoute) {
     return null;
   }
 
@@ -134,7 +130,7 @@ export default function HomeNavbar() {
 
           <div className="flex items-center justify-end gap-3 md:gap-6">
             <ThemeToggle className="border-white/30 text-white bg-transparent hover:bg-white/10 hover:text-white" />
-            {!isAuthenticated ? (
+            {!showAuthenticatedUserMenu ? (
               <Button
                 variant="ghost"
                 className={isLoginActive ? 'text-white bg-gray-800' : 'text-white hover:bg-gray-800'}
@@ -150,15 +146,7 @@ export default function HomeNavbar() {
                     aria-label="Open user menu"
                     title={`${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim() || 'User'}
                   >
-                    {currentUser?.avatarUrl ? (
-                      <img
-                        src={currentUser.avatarUrl}
-                        alt="User avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span>{initials}</span>
-                    )}
+                    <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">

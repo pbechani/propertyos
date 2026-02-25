@@ -461,6 +461,43 @@ export class AuthService {
     });
   }
 
+  async resendVerificationEmail(
+    userId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ): Promise<void> {
+    const user = await this.usersService.findById(userId);
+
+    if (user.email_verified_at) {
+      return;
+    }
+
+    const verifyToken = randomUUID();
+    const verifyKey = `auth:verify-email:${verifyToken}`;
+    await this.redisService.set(
+      verifyKey,
+      JSON.stringify({ userId: user.id }),
+      this.emailTokenExpiryMinutes * 60,
+    );
+
+    await this.notificationService.sendEmail(
+      user.email,
+      'Verify your PRIBEC account',
+      `${this.frontendUrl}/verify-email?token=${verifyToken}`,
+    );
+
+    await this.auditService.log({
+      eventId: 'user.verification_email_resent',
+      actorId: user.id,
+      actorRole: (await this.usersService.getUserRoleNames(user.id))[0] ?? null,
+      action: 'resend_verification_email',
+      resourceType: 'user',
+      resourceId: user.id,
+      payload: {},
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent ?? null,
+    });
+  }
+
   async oauthLogin(
     provider: 'google' | 'apple' | 'facebook',
     dto: OAuthLoginDto,

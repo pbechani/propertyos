@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import {
   Shield,
   CheckCircle,
@@ -23,14 +23,17 @@ import {
   Eye,
   FileText,
   AlertCircle,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
-import { AuditLogEntry, auditApi, kycApi, usersApi, ApiError } from "@/lib/api-client";
-import { getAccessToken, getPrimaryRole } from "@/lib/auth-session";
+import { AuditLogEntry, auditApi, authApi, kycApi, usersApi, ApiError, KycStatusResponse } from "@/lib/api-client";
+import { getAccessToken, getPrimaryRole, updateStoredUser } from "@/lib/auth-session";
 
 type BadgeRole = "buyer" | "agent" | "contractor" | "property_manager" | "admin" | "supplier" | "conveyancer" | "inspector";
 type ManagedRole = "buyer" | "agent" | "supplier" | "contractor" | "conveyancer" | "inspector";
@@ -81,8 +84,17 @@ function toManagedRole(role: string | null | undefined): ManagedRole | null {
   return null;
 }
 
-function formatRelativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+function formatRelativeTime(iso?: string | null): string {
+  if (!iso) {
+    return "—";
+  }
+
+  const parsedTime = Date.parse(iso);
+  if (Number.isNaN(parsedTime)) {
+    return "—";
+  }
+
+  const diff = Math.max(0, Date.now() - parsedTime);
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
@@ -95,25 +107,73 @@ function formatRelativeTime(iso: string): string {
 type ActivityItem = {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   timestamp: string;
   type: "success" | "info" | "error" | "pending";
   user: string;
 };
 
+const REQUIRED_KYC_DOCUMENT_FIELDS: Array<keyof KycStatusResponse> = [
+  "idDocumentUrl",
+  "addressProofUrl",
+  "businessRegistrationUrl",
+  "selfieUrl",
+];
+
+function getRequiredKycDocumentFields(activeRoles: Set<ManagedRole>): Array<keyof KycStatusResponse> {
+  const hasProfessionalRole = Array.from(activeRoles).some((role) => role !== "buyer");
+
+  if (!hasProfessionalRole) {
+    return REQUIRED_KYC_DOCUMENT_FIELDS.filter((field) => field !== "businessRegistrationUrl");
+  }
+
+  return REQUIRED_KYC_DOCUMENT_FIELDS;
+}
+
+function getKycDocumentStats(
+  kyc: KycStatusResponse,
+  requiredFields: Array<keyof KycStatusResponse>,
+): { verified: number; total: number } {
+  const verified = requiredFields.reduce((count, field) => {
+    return kyc[field] ? count + 1 : count;
+  }, 0);
+
+  return {
+    verified,
+    total: requiredFields.length,
+  };
+}
+
+function getAuditActivityType(action: string): ActivityItem["type"] {
+  if (/approv|success|verified|register|login/.test(action)) return "success";
+  if (/reject|fail|suspend|delet/.test(action)) return "error";
+  if (/submit|pending|upload|review/.test(action)) return "pending";
+  return "info";
+}
+
+function calculateResponseRate(logs: AuditLogEntry[]): number | null {
+  if (logs.length === 0) {
+    return null;
+  }
+
+  const actionableLogs = logs.filter((entry) =>
+    /review|submit|upload|approve|reject|update|respond|verify/.test(entry.action),
+  );
+  const measurementSet = actionableLogs.length > 0 ? actionableLogs : logs;
+  const successful = measurementSet.filter(
+    (entry) => getAuditActivityType(entry.action) === "success",
+  ).length;
+
+  return Math.round((successful / measurementSet.length) * 100);
+}
+
 function auditToActivity(entry: AuditLogEntry): ActivityItem {
   const actionLabel = entry.action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  let type: ActivityItem["type"] = "info";
-  if (/approv|success|verified|register|login/.test(entry.action)) type = "success";
-  else if (/reject|fail|suspend|delet/.test(entry.action)) type = "error";
-  else if (/submit|pending|upload|review/.test(entry.action)) type = "pending";
+  const type = getAuditActivityType(entry.action);
 
   return {
     id: entry.id,
     title: actionLabel,
-    description: entry.resourceType
-      ? `${entry.resourceType.replace(/_/g, " ")} · ${entry.resourceId?.slice(0, 8) ?? "-"}`
-      : "-",
     timestamp: formatRelativeTime(entry.createdAt),
     type,
     user: "You",
@@ -125,11 +185,18 @@ export default function ProfileDashboard() {
   const [displayName, setDisplayName] = useState("User");
   const [displayEmail, setDisplayEmail] = useState("-");
   const [displayPhone, setDisplayPhone] = useState("-");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarInitials, setAvatarInitials] = useState("?");
   const [verificationStatus, setVerificationStatus] = useState<"verified" | "pending" | "rejected" | "unverified">("unverified");
   const [role, setRole] = useState<BadgeRole>("buyer");
   const [verificationLevel, setVerificationLevel] = useState(1);
   const [trustScore, setTrustScore] = useState(25);
+  const [verifiedDocumentCount, setVerifiedDocumentCount] = useState(0);
+  const [requiredDocumentCount, setRequiredDocumentCount] = useState(
+    getRequiredKycDocumentFields(new Set<ManagedRole>(["buyer"])).length,
+  );
+  const [responseRate, setResponseRate] = useState<number | null>(null);
+  const [premiumVerificationComplete, setPremiumVerificationComplete] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Array<{ id: number; title: string; completed: boolean; date: string }>>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
@@ -144,6 +211,13 @@ export default function ProfileDashboard() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const [avatarSuccess, setAvatarSuccess] = useState(false);
+  const [isResendingVerificationEmail, setIsResendingVerificationEmail] = useState(false);
+  const [resendVerificationEmailStatus, setResendVerificationEmailStatus] = useState<"idle" | "success" | "error">("idle");
+  const [resendVerificationEmailMessage, setResendVerificationEmailMessage] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -160,6 +234,7 @@ export default function ProfileDashboard() {
         setDisplayName(fullName);
         setDisplayEmail(user.email);
         setDisplayPhone(user.phone || "-");
+        setAvatarUrl(user.avatarUrl || null);
         setAvatarInitials(
           `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "?",
         );
@@ -182,31 +257,49 @@ export default function ProfileDashboard() {
 
         // KYC-derived state
         const kycStatus = kyc.status;
+        const requiredKycFields = getRequiredKycDocumentFields(assignedRoles);
+        const { verified, total } = getKycDocumentStats(kyc, requiredKycFields);
         const emailVerified = !!user.emailVerifiedAt;
         const kycSubmitted = kycStatus !== "not_submitted";
         const kycApproved = kycStatus === "approved";
         const kycRejected = kycStatus === "rejected";
+        const phoneVerified = !!user.phoneVerifiedAt;
+        const premiumComplete = kycApproved && phoneVerified && verified === total;
+        const documentCompletionRatio = total > 0 ? verified / total : 0;
+        const documentCompletionBonus = Math.round(documentCompletionRatio * 15);
+        let baseTrustScore = 25;
+
+        setVerifiedDocumentCount(verified);
+        setRequiredDocumentCount(total);
+        setPremiumVerificationComplete(premiumComplete);
 
         if (kycApproved) {
           setVerificationStatus("verified");
-          setVerificationLevel(3);
-          setTrustScore(85);
+          setVerificationLevel(premiumComplete ? 4 : 3);
+          baseTrustScore = 85;
         } else if (kycRejected) {
           setVerificationStatus("rejected");
           setVerificationLevel(emailVerified ? 2 : 1);
-          setTrustScore(emailVerified ? 40 : 25);
+          baseTrustScore = emailVerified ? 40 : 25;
         } else if (kycStatus === "pending" || kycStatus === "under_review") {
           setVerificationStatus("pending");
           setVerificationLevel(emailVerified ? 2 : 1);
-          setTrustScore(emailVerified ? 55 : 35);
+          baseTrustScore = emailVerified ? 55 : 35;
         } else {
           setVerificationStatus("unverified");
           setVerificationLevel(emailVerified ? 2 : 1);
-          setTrustScore(emailVerified ? 40 : 25);
+          baseTrustScore = emailVerified ? 40 : 25;
         }
 
+        setTrustScore(Math.min(100, baseTrustScore + documentCompletionBonus));
+
         setCompletedSteps([
-          { id: 1, title: "Account Created", completed: true, date: "Completed" },
+          {
+            id: 1,
+            title: "Account Created",
+            completed: Boolean(user.createdAt),
+            date: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown",
+          },
           {
             id: 2,
             title: "Email Verified",
@@ -219,25 +312,44 @@ export default function ProfileDashboard() {
             id: 3,
             title: "KYC Documents Submitted",
             completed: kycSubmitted,
-            date: kycSubmitted ? "Submitted" : "Pending",
+            date:
+              kyc.submittedAt
+                ? new Date(kyc.submittedAt).toLocaleDateString()
+                : kycSubmitted
+                  ? "Submitted"
+                  : "Pending",
           },
           {
             id: 4,
             title: "Identity Verified",
             completed: kycApproved,
-            date: kycApproved ? "Approved" : kycRejected ? "Rejected" : "Pending",
+            date:
+              kyc.reviewedAt
+                ? new Date(kyc.reviewedAt).toLocaleDateString()
+                : kycApproved
+                  ? "Approved"
+                  : kycRejected
+                    ? "Rejected"
+                    : "Pending",
           },
         ]);
+
+        if (emailVerified) {
+          setResendVerificationEmailStatus("idle");
+          setResendVerificationEmailMessage("");
+        }
       } catch {
         setRole(toBadgeRole(getPrimaryRole()));
       }
 
       // Load recent activity separately so the rest of the UI isn't blocked
       try {
-        const logs = await auditApi.getMyLogs(token, 5, 0);
-        setRecentActivity(logs.map(auditToActivity));
+        const logs = await auditApi.getMyLogs(token, 50, 0);
+        setRecentActivity(logs.slice(0, 5).map(auditToActivity));
+        setResponseRate(calculateResponseRate(logs));
       } catch {
         // activity is non-critical, leave empty
+        setResponseRate(null);
       } finally {
         setActivityLoading(false);
       }
@@ -284,9 +396,11 @@ export default function ProfileDashboard() {
       const fullName = `${updated.firstName} ${updated.lastName}`.trim();
       setDisplayName(fullName);
       setDisplayPhone(updated.phone || "-");
+      setAvatarUrl(updated.avatarUrl || null);
       setAvatarInitials(
         `${updated.firstName?.[0] ?? ""}${updated.lastName?.[0] ?? ""}`.toUpperCase() || "?",
       );
+      updateStoredUser(updated);
       setEditSuccess(true);
       setTimeout(() => {
         setShowEditPanel(false);
@@ -300,6 +414,76 @@ export default function ProfileDashboard() {
       }
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const token = getAccessToken();
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+    if (!token || !file) {
+      return;
+    }
+
+    setAvatarError("");
+    setAvatarSuccess(false);
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("Avatar image must be 5MB or smaller.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      const updated = await usersApi.uploadAvatar(token, file);
+      setAvatarUrl(updated.avatarUrl || null);
+      setAvatarInitials(
+        `${updated.firstName?.[0] ?? ""}${updated.lastName?.[0] ?? ""}`.toUpperCase() || "?",
+      );
+      updateStoredUser(updated);
+      setAvatarSuccess(true);
+      window.setTimeout(() => setAvatarSuccess(false), 1500);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setAvatarError(err.message);
+      } else {
+        setAvatarError("Unable to upload avatar. Please try again.");
+      }
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      return;
+    }
+
+    setResendVerificationEmailStatus("idle");
+    setResendVerificationEmailMessage("");
+    setIsResendingVerificationEmail(true);
+
+    try {
+      await authApi.resendVerificationEmail(token);
+      setResendVerificationEmailStatus("success");
+      setResendVerificationEmailMessage("Verification email sent. Check your inbox.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setResendVerificationEmailMessage(err.message);
+      } else {
+        setResendVerificationEmailMessage("Unable to resend verification email. Please try again.");
+      }
+      setResendVerificationEmailStatus("error");
+    } finally {
+      setIsResendingVerificationEmail(false);
     }
   };
 
@@ -366,19 +550,47 @@ export default function ProfileDashboard() {
             <Card className="p-6">
               <div className="text-center mb-6">
                 <div className="relative inline-block mb-4">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                    {avatarInitials}
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full overflow-hidden flex items-center justify-center text-white text-3xl font-bold">
+                    <UserAvatarContent avatarUrl={avatarUrl} initials={avatarInitials} alt={displayName} />
                   </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    title="Choose avatar image"
+                    aria-label="Choose avatar image"
+                    onChange={handleAvatarUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    title={isUploadingAvatar ? "Uploading avatar" : "Upload avatar"}
+                    aria-label={isUploadingAvatar ? "Uploading avatar" : "Upload avatar"}
+                    className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-70"
+                  >
                     <Camera className="w-4 h-4 text-white" />
                   </button>
                 </div>
+                {avatarError && <p className="text-xs text-red-600 mb-2">{avatarError}</p>}
+                {avatarSuccess && <p className="text-xs text-green-600 mb-2">Avatar updated successfully.</p>}
                 <h2 className="text-xl font-bold mb-1">{displayName}</h2>
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <RoleBadge role={role} size="sm" />
                   <VerificationBadge status={verificationStatus} size="sm" />
                 </div>
-                <p className="text-sm text-gray-600">Verified Account</p>
+                <p className="text-sm text-gray-600">
+                  {verificationStatus === "verified"
+                    ? premiumVerificationComplete
+                      ? "Premium Verified Account"
+                      : "Verified Account"
+                    : verificationStatus === "pending"
+                      ? "Verification in progress"
+                      : verificationStatus === "rejected"
+                        ? "Verification requires attention"
+                        : "Unverified account"}
+                </p>
               </div>
 
               <div className="space-y-3 mb-6">
@@ -433,11 +645,29 @@ export default function ProfileDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Documents Verified</span>
-                  <span className="font-medium text-gray-900">6/6</span>
+                  <span className="font-medium text-gray-900">{verifiedDocumentCount}/{requiredDocumentCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Response Rate</span>
-                  <span className="font-medium text-gray-900">98%</span>
+                  <span className="text-gray-600 inline-flex items-center gap-1">
+                    Response Rate
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center text-gray-400 hover:text-gray-600"
+                          aria-label="How response rate is calculated"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={6}>
+                        Based on successful actions vs total actionable activity logs.
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {responseRate !== null ? `${responseRate}%` : "—"}
+                  </span>
                 </div>
               </div>
             </Card>
@@ -473,7 +703,7 @@ export default function ProfileDashboard() {
                     level: 4,
                     name: "Premium",
                     description: "Background check complete",
-                    completed: false,
+                    completed: premiumVerificationComplete,
                   },
                 ].map((item) => (
                   <div
@@ -529,7 +759,7 @@ export default function ProfileDashboard() {
                   <CheckCircle className="w-8 h-8" />
                 </div>
                 <div className="text-2xl font-bold mb-1">
-                  {completedSteps.filter((s) => s.completed).length}/{completedSteps.length || 4}
+                  {completedSteps.filter((s) => s.completed).length}/{completedSteps.length}
                 </div>
                 <div className="text-sm text-green-100">Steps Completed</div>
               </Card>
@@ -583,11 +813,34 @@ export default function ProfileDashboard() {
                       </div>
                       <div className="text-xs text-gray-500">{step.date}</div>
                     </div>
-                    {step.completed && (
+
+                    {step.id === 2 && !step.completed ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 px-3 text-xs"
+                        disabled={isResendingVerificationEmail}
+                        onClick={handleResendVerificationEmail}
+                      >
+                        {isResendingVerificationEmail ? "Sending..." : "Resend email"}
+                      </Button>
+                    ) : step.completed && (
                       <Eye className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
                     )}
                   </div>
                 ))}
+
+                {resendVerificationEmailStatus !== "idle" && (
+                  <div
+                    className={`text-xs rounded-lg px-3 py-2 border ${
+                      resendVerificationEmailStatus === "success"
+                        ? "bg-green-50 border-green-200 text-green-700"
+                        : "bg-red-50 border-red-200 text-red-700"
+                    }`}
+                  >
+                    {resendVerificationEmailMessage}
+                  </div>
+                )}
               </div>
             </Card>
 

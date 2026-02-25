@@ -11,6 +11,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { propertiesApi, type AgentProfileResponse } from "@/lib/api-client";
 
 const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop";
@@ -100,6 +101,12 @@ export default function AgentProfile() {
   const profileName = agentProfile
     ? `${agentProfile.firstName} ${agentProfile.lastName}`.trim()
     : "";
+  const profileInitials = profileName
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'A';
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -133,11 +140,13 @@ export default function AgentProfile() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Agent Image */}
             <div className="shrink-0">
-              <img
-                src={agentProfile.avatarUrl || DEFAULT_AGENT_IMAGE}
-                alt={profileName}
-                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-blue-100"
-              />
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-100 bg-blue-50 flex items-center justify-center text-3xl font-semibold text-blue-700">
+                <UserAvatarContent
+                  avatarUrl={agentProfile.avatarUrl || DEFAULT_AGENT_IMAGE}
+                  initials={profileInitials}
+                  alt={profileName}
+                />
+              </div>
             </div>
 
             {/* Agent Info */}
