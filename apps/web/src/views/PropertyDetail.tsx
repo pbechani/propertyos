@@ -13,16 +13,20 @@ import {
   MessageSquare,
   ChevronLeft,
   CheckCircle2,
-  MapPinned,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
+import { buildSinglePointMapSource } from "@/lib/map-utils";
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export default function PropertyDetail() {
   const property = {
     title: "Contemporary Coastal Residence",
     address: "4.2 Beach Road, Sea Point, Cape Town, 8005",
+    latitude: -33.9154,
+    longitude: 18.3897,
     price: "R 12,500,000",
     beds: 4,
     baths: 3.5,
@@ -66,6 +70,11 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
     .join('')
     .slice(0, 2)
     .toUpperCase() || 'A';
+  const locationMapSource = buildSinglePointMapSource({
+    latitude: property.latitude,
+    longitude: property.longitude,
+    mapboxToken: MAPBOX_TOKEN,
+  });
 
   return (
     <div className="bg-gray-50">
@@ -204,17 +213,23 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   Sea Point, Cape Town
                 </Link>
               </div>
-              <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&h=300&fit=crop"
-                  alt="Map"
-                  className="w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-blue-500 text-white p-4 rounded-full">
-                    <MapPinned className="w-8 h-8" />
-                  </div>
-                </div>
+              <div className="bg-gray-200 rounded-lg h-64 overflow-hidden border border-gray-200">
+                {locationMapSource.type === 'image' ? (
+                  <img
+                    src={locationMapSource.url}
+                    alt="Property location map"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <iframe
+                    title="Property location map"
+                    src={locationMapSource.url}
+                    className="w-full h-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                )}
               </div>
             </Card>
           </div>

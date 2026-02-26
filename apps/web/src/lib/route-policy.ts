@@ -13,6 +13,7 @@ export const AUTH_EXEMPT_ROUTES = [
 
 const AUTH_SHELL_ROUTE_PREFIXES = [
   '/app',
+  '/agent-profile',
   '/profile-dashboard',
   '/profile-setup',
   '/kyc-upload',

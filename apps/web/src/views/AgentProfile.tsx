@@ -4,15 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "@/lib/router-compat";
 import { useSearchParams } from "next/navigation";
 import {
-  ChevronLeft, Shield, CheckCircle2, Star, MapPin, Phone, Mail, 
-  MessageSquare, Award, TrendingUp, Home, Calendar, 
-  Clock, Eye, ThumbsUp
+  ChevronLeft, Shield, CheckCircle2, Star, MapPin, Phone, Mail,
+  MessageSquare, Award, TrendingUp, Home, Calendar,
+  Clock, Eye, ThumbsUp, X, Loader2, CheckCircle, Quote
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
-import { propertiesApi, type AgentProfileResponse } from "@/lib/api-client";
+import {
+  propertiesApi,
+  type AgentProfileResponse,
+  type ContactAgentPayload,
+  type ScheduleCallPayload,
+  type AgentReview,
+} from "@/lib/api-client";
+import { getAccessToken, getStoredUser } from "@/lib/auth-session";
 
 const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop";
 const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=300&h=200&fit=crop";
@@ -27,7 +34,7 @@ function formatMoney(price: string, currency: string): string {
   }).format(safeValue);
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string | Date): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
     return "-";
@@ -39,12 +46,351 @@ function getYearsExperienceFromStatus(status: string): number {
   return status === "active" ? 5 : 0;
 }
 
+// ─── Modal base ───────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Contact Agent Modal ──────────────────────────────────────────────────────
+function ContactAgentModal({
+  agentId,
+  agentName,
+  onClose,
+}: {
+  agentId: string;
+  agentName: string;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({ message: "", requesterName: "", requesterEmail: "", requesterPhone: "" });
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const storedUser = getStoredUser();
+  const token = getAccessToken();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("submitting");
+    setErrorMsg("");
+
+    const payload: ContactAgentPayload = {
+      message: form.message.trim() || undefined,
+      requesterName: storedUser
+        ? `${storedUser.firstName ?? ""} ${storedUser.lastName ?? ""}`.trim() || undefined
+        : form.requesterName.trim() || undefined,
+      requesterEmail: storedUser?.email ?? (form.requesterEmail.trim() || undefined),
+      requesterPhone: form.requesterPhone.trim() || undefined,
+    };
+
+    try {
+      await propertiesApi.contactAgent(agentId, payload, token ?? undefined);
+      setStatus("success");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Unable to send your message. Please try again.");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <Modal title="Message Sent" onClose={onClose}>
+        <div className="text-center py-4">
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="font-semibold text-gray-800 mb-1">Message sent to {agentName}</p>
+          <p className="text-sm text-gray-500 mb-4">The agent will get back to you shortly.</p>
+          <Button onClick={onClose} className="bg-blue-500 hover:bg-blue-600 text-white w-full">Close</Button>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal title={`Contact ${agentName}`} onClose={onClose}>
+      <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+        {!storedUser && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Full name"
+                value={form.requesterName}
+                onChange={(e) => setForm({ ...form, requesterName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="your@email.com"
+                value={form.requesterEmail}
+                onChange={(e) => setForm({ ...form, requesterEmail: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+          <input
+            type="tel"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="+27 xxx xxx xxxx"
+            value={form.requesterPhone}
+            onChange={(e) => setForm({ ...form, requesterPhone: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+          <textarea
+            rows={4}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            placeholder="I'm interested in your listings. Please get in touch..."
+            value={form.message}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
+          />
+        </div>
+        {status === "error" && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{errorMsg}</p>
+        )}
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button
+            type="submit"
+            disabled={status === "submitting"}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            {status === "submitting" ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</>
+            ) : (
+              <><MessageSquare className="w-4 h-4 mr-2" /> Send Message</>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ─── Schedule Call Modal ──────────────────────────────────────────────────────
+function ScheduleCallModal({
+  agentId,
+  agentName,
+  onClose,
+}: {
+  agentId: string;
+  agentName: string;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    preferredDate: "",
+    message: "",
+    requesterName: "",
+    requesterEmail: "",
+    requesterPhone: "",
+  });
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const storedUser = getStoredUser();
+  const token = getAccessToken();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.preferredDate) {
+      setErrorMsg("Please choose a preferred date and time.");
+      setStatus("error");
+      return;
+    }
+    setStatus("submitting");
+    setErrorMsg("");
+
+    const payload: ScheduleCallPayload = {
+      preferredDate: new Date(form.preferredDate).toISOString(),
+      message: form.message.trim() || undefined,
+      requesterName: storedUser
+        ? `${storedUser.firstName ?? ""} ${storedUser.lastName ?? ""}`.trim() || undefined
+        : form.requesterName.trim() || undefined,
+      requesterEmail: storedUser?.email ?? (form.requesterEmail.trim() || undefined),
+      requesterPhone: form.requesterPhone.trim() || undefined,
+    };
+
+    try {
+      await propertiesApi.scheduleCall(agentId, payload, token ?? undefined);
+      setStatus("success");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Unable to schedule the call. Please try again.");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <Modal title="Call Scheduled" onClose={onClose}>
+        <div className="text-center py-4">
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <p className="font-semibold text-gray-800 mb-1">Call scheduled with {agentName}</p>
+          <p className="text-sm text-gray-500 mb-1">
+            Preferred time: <span className="font-medium">{form.preferredDate ? new Date(form.preferredDate).toLocaleString() : "—"}</span>
+          </p>
+          <p className="text-sm text-gray-500 mb-4">The agent will confirm your appointment shortly.</p>
+          <Button onClick={onClose} className="bg-blue-500 hover:bg-blue-600 text-white w-full">Close</Button>
+        </div>
+      </Modal>
+    );
+  }
+
+  const minDateTime = new Date();
+  minDateTime.setMinutes(minDateTime.getMinutes() + 30);
+  const minDateTimeStr = minDateTime.toISOString().slice(0, 16);
+
+  return (
+    <Modal title={`Schedule Call with ${agentName}`} onClose={onClose}>
+      <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+        {!storedUser && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Full name"
+                value={form.requesterName}
+                onChange={(e) => setForm({ ...form, requesterName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="your@email.com"
+                value={form.requesterEmail}
+                onChange={(e) => setForm({ ...form, requesterEmail: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Date &amp; Time <span className="text-red-500">*</span></label>
+          <input
+            type="datetime-local"
+            min={minDateTimeStr}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={form.preferredDate}
+            onChange={(e) => setForm({ ...form, preferredDate: e.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+          <input
+            type="tel"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="+27 xxx xxx xxxx"
+            value={form.requesterPhone}
+            onChange={(e) => setForm({ ...form, requesterPhone: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+          <textarea
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            placeholder="Topics you'd like to discuss..."
+            value={form.message}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
+          />
+        </div>
+        {status === "error" && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{errorMsg}</p>
+        )}
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button
+            type="submit"
+            disabled={status === "submitting"}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            {status === "submitting" ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scheduling…</>
+            ) : (
+              <><Calendar className="w-4 h-4 mr-2" /> Confirm Schedule</>
+            )}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ─── Review Card ──────────────────────────────────────────────────────────────
+function ReviewCard({ review }: { review: AgentReview }) {
+  const initials = review.reviewerName
+    ? review.reviewerName.split(' ').slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()
+    : '?';
+  const displayName = review.reviewerName ?? 'Anonymous';
+  return (
+    <div className="rounded-lg border border-gray-200 p-4 bg-white dark:bg-gray-800">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-700 font-semibold text-sm">
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-sm truncate">{displayName}</p>
+            <span className="text-xs text-gray-400 shrink-0">{formatDate(review.createdAt)}</span>
+          </div>
+          <div className="flex items-center gap-1 mt-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={`w-3.5 h-3.5 ${i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+              />
+            ))}
+            {review.propertyType && (
+              <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{review.propertyType}</Badge>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="relative pl-4">
+        <Quote className="w-3.5 h-3.5 text-blue-200 absolute left-0 top-0" />
+        <p className="text-sm text-gray-600 leading-relaxed">{review.comment ?? ''}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function AgentProfile() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const [agentProfile, setAgentProfile] = useState<AgentProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  const [reviews, setReviews] = useState<AgentReview[]>([]);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const [reviewAvg, setReviewAvg] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const agentId = typeof id === "string" ? id : "";
   const backParam = searchParams.get('back');
@@ -62,16 +408,28 @@ export default function AgentProfile() {
     const loadProfile = async () => {
       setIsLoading(true);
       setError("");
+      setReviewsLoading(true);
 
-      try {
-        const profile = await propertiesApi.getAgentProfile(agentId);
-        setAgentProfile(profile);
-      } catch {
+      const [profileResult, reviewsResult] = await Promise.allSettled([
+        propertiesApi.getAgentProfile(agentId),
+        propertiesApi.getAgentReviews(agentId, 10, 0),
+      ]);
+
+      if (profileResult.status === 'fulfilled') {
+        setAgentProfile(profileResult.value);
+      } else {
         setAgentProfile(null);
         setError("Unable to load agent profile from database.");
-      } finally {
-        setIsLoading(false);
       }
+
+      if (reviewsResult.status === 'fulfilled') {
+        setReviews(reviewsResult.value.reviews);
+        setReviewTotal(reviewsResult.value.total);
+        setReviewAvg(reviewsResult.value.averageRating);
+      }
+
+      setReviewsLoading(false);
+      setIsLoading(false);
     };
 
     void loadProfile();
@@ -108,7 +466,25 @@ export default function AgentProfile() {
     .slice(0, 2)
     .toUpperCase() || 'A';
 
+  const callHref = agentProfile?.phone ? `tel:${agentProfile.phone.replace(/\s+/g, '')}` : undefined;
+  const emailHref = agentProfile?.email ? `mailto:${agentProfile.email}` : undefined;
+
   return (
+    <>
+      {showContactModal && agentId && (
+        <ContactAgentModal
+          agentId={agentId}
+          agentName={profileName || "the agent"}
+          onClose={() => setShowContactModal(false)}
+        />
+      )}
+      {showScheduleModal && agentId && (
+        <ScheduleCallModal
+          agentId={agentId}
+          agentName={profileName || "the agent"}
+          onClose={() => setShowScheduleModal(false)}
+        />
+      )}
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
       <div className="bg-white border-b border-gray-200">
@@ -122,8 +498,9 @@ export default function AgentProfile() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         {isLoading && (
-          <Card className="p-6 mb-6 text-sm text-blue-700 bg-blue-50 border-blue-200">
-            Loading agent profile from database...
+          <Card className="p-6 mb-6 flex items-center gap-3 text-sm text-blue-700 bg-blue-50 border-blue-200">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            Loading agent profile…
           </Card>
         )}
 
@@ -180,11 +557,14 @@ export default function AgentProfile() {
 
                 {/* Quick Actions */}
                 <div className="flex flex-col gap-2 md:min-w-50">
-                  <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                  <Button
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                    onClick={() => setShowContactModal(true)}
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Contact Agent
                   </Button>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
                     <Calendar className="w-4 h-4 mr-2" />
                     Schedule Call
                   </Button>
@@ -339,12 +719,33 @@ export default function AgentProfile() {
 
             {/* Client Reviews */}
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <ThumbsUp className="w-5 h-5 text-purple-600" />
-                Client Reviews
-              </h2>
-              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 text-sm text-gray-600">
-                Reviews are not available yet for this agent profile.
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <ThumbsUp className="w-5 h-5 text-purple-600" />
+                  Client Reviews
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    ))}
+                  </div>
+                  <span className="text-sm font-semibold">{reviewAvg > 0 ? reviewAvg.toFixed(1) : '–'}</span>
+                  <span className="text-xs text-gray-500">({reviewTotal} review{reviewTotal !== 1 ? 's' : ''})</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {reviewsLoading && (
+                  <p className="text-sm text-gray-400 flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading reviews…
+                  </p>
+                )}
+                {!reviewsLoading && reviews.length === 0 && (
+                  <p className="text-sm text-gray-500">No reviews yet.</p>
+                )}
+                {!reviewsLoading && reviews.map((r) => (
+                  <ReviewCard key={r.id} review={r} />
+                ))}
               </div>
               <Button variant="outline" className="w-full mt-4">
                 <Eye className="w-4 h-4 mr-2" />
@@ -382,14 +783,32 @@ export default function AgentProfile() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button className="bg-blue-500 hover:bg-blue-600 text-white text-sm">
-                  <Phone className="w-4 h-4 mr-1" />
-                  Call
-                </Button>
-                <Button variant="outline" className="text-sm">
-                  <Mail className="w-4 h-4 mr-1" />
-                  Email
-                </Button>
+                {callHref ? (
+                  <a href={callHref}>
+                    <Button className="bg-green-500 hover:bg-green-600 text-white text-sm w-full">
+                      <Phone className="w-4 h-4 mr-1" />
+                      Call
+                    </Button>
+                  </a>
+                ) : (
+                  <Button disabled className="text-sm" variant="outline">
+                    <Phone className="w-4 h-4 mr-1" />
+                    Call
+                  </Button>
+                )}
+                {emailHref ? (
+                  <a href={emailHref}>
+                    <Button variant="outline" className="text-sm w-full">
+                      <Mail className="w-4 h-4 mr-1" />
+                      Email
+                    </Button>
+                  </a>
+                ) : (
+                  <Button disabled variant="outline" className="text-sm">
+                    <Mail className="w-4 h-4 mr-1" />
+                    Email
+                  </Button>
+                )}
               </div>
             </Card>
 
@@ -407,11 +826,14 @@ export default function AgentProfile() {
                 </Badge>
               </div>
             </Card>
+
+
           </div>
         </div>
           </>
         )}
       </div>
     </div>
+    </>
   );
 }

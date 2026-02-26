@@ -47,7 +47,7 @@ export default function LoginEnhanced() {
     try {
       const response = await authApi.login({ email, password });
       saveAuthSession(response);
-      navigate(nextPath ?? "/app");
+      navigate(nextPath ?? "/app/listings");
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 400 || err.status === 401) {

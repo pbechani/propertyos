@@ -5,9 +5,86 @@ All notable changes to the PRIBEC platform will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Related docs:
+- [README.md](README.md)
+- [docs/sprint-03-run-guide.md](docs/sprint-03-run-guide.md)
+- [docs/audit-sprint-01-02-03-2026-02-25.md](docs/audit-sprint-01-02-03-2026-02-25.md)
+
 ## [Unreleased]
 
+### Added
+- **Sprint 01-b: Service Provider & Company Management** (2026-02-26)
+  - **DB migration** `202602260006_sprint01b_companies`: four new tables — `identity.companies`, `identity.company_members`, `identity.company_invitations`, `identity.company_orphaned_tasks` with all indexes and constraints.
+  - **Prisma schema**: `Company`, `CompanyMember`, `CompanyInvitation`, `CompanyOrphanedTask` models added under the `identity` schema.
+  - **JWT extension** (`auth.types.ts`): `JwtPayload` now carries `active_company_id | null`, `active_company_role | null`, `active_company_is_admin: boolean`. Backward compatible — individual/sole-proprietor users receive `null` company fields.
+  - **Auth context switching** (`auth.service.ts`, `auth.controller.ts`):
+    - `AuthService.login()` detects multi-company users and returns a `ContextSelectorResponse` instead of tokens.
+    - `GET /api/v1/auth/contexts` — lists active company memberships for a user.
+    - `POST /api/v1/auth/contexts/select` — issues a new JWT pair with the chosen company context embedded.
+    - Redis session stores the active company context alongside the JTI.
+  - **Companies module** (`apps/api/src/identity/companies/`):
+    - `CompaniesService` — create (with auto-slug), read, update, submit-for-verification, admin list/verify/reject/suspend.
+    - `CompaniesController` — full REST surface for company CRUD and platform-admin review.
+    - Company category ↔ allowed-role matrix enforced on creation and invite.
+  - **Member management**:
+    - `CompanyMembersService` — list members, get member, update permissions (ceiling-enforced), promote to admin, revoke access; last-admin safeguard prevents orphaning a company.
+    - `CompanyInvitationsService` — cryptographically random token (SHA-256 stored), 72-hour expiry, duplicate-invite rejection, preview endpoint, accept flow (links existing users; new-user redirect is handled at UI layer), revoke pending invites.
+  - **Orphaned task pool** (`OrphanedTasksService`, `OrphanedTasksController`):
+    - On member revocation, open property listings are detected and moved into the orphaned pool automatically.
+    - Audit log emitted per task created.
+    - Admin endpoints to list, assign, and close orphaned tasks.
+  - **Guards**:
+    - `CompanyContextGuard` — validates JWT `active_company_id` and confirms membership is still `active` in the DB.
+    - `CompanyAdminGuard` — validates `active_company_is_admin === true`; `ForbiddenException` on missing context or non-admin.
+    - `CompanyPermissionGuard` — reads required permission from route metadata via `Reflector.getAllAndOverride`, bypasses check for admins; throws `ForbiddenException` when permission absent.
+  - **Notifications**: verified/rejected/suspended company emails + SMS, invitation deep-link email (72 h expiry), revoked-member email, orphaned-task summary to company admin.
+  - **Audit events**: `company.created`, `company.submitted_for_verification`, `company.verified`, `company.rejected`, `company.suspended`, `company_member.invited`, `company_member.joined`, `company_member.permissions_updated`, `company_member.promoted_to_admin`, `company_member.access_revoked`, `company_context.selected`, `orphaned_task.created`, `orphaned_task.assigned`, `orphaned_task.closed` — all include `company_id` in payload.
+  - **Tests** (46 passing): `CompaniesService`, `CompanyMembersService`, `CompanyInvitationsService`, `OrphanedTasksService`, `CompanyAdminGuard`, `CompanyContextGuard`, `CompanyPermissionGuard`.
+
 ### Changed
+- **Agent profile page — functional contact, schedule call, reviews from DB** (2026-02-26)
+  - `apps/web/src/lib/route-policy.ts`
+    - Added `/agent-profile` to `AUTH_SHELL_ROUTE_PREFIXES` so logged-in users see the full sidebar and header on the agent profile page.
+  - `apps/web/src/views/AgentProfile.tsx`
+    - Replaced inert "Contact Agent" and "Schedule Call" buttons with modal dialogs that POST to the new API endpoints and show a success confirmation.
+    - Contact modal pre-fills reviewer name and email from the authenticated session where available.
+    - Schedule Call modal enforces a minimum booking time of 30 minutes from now via a `datetime-local` input.
+    - "Call" and "Email" sidebar buttons are now real `<a href="tel:...">` / `<a href="mailto:...">` links; disabled when the agent has no phone/email on file.
+    - `PLACEHOLDER_REVIEWS` constant removed entirely. Reviews are now fetched live from `GET /api/v1/properties/agents/:id/reviews`, loaded in parallel with the agent profile.
+    - Review count and average rating in the reviews header reflect real DB values.
+    - Shows a spinner while reviews load and an empty-state message when none exist.
+  - `apps/web/src/lib/api-client.ts`
+    - Added `AgentReview` and `AgentReviewsResponse` types.
+    - Added `propertiesApi.getAgentReviews(agentId, limit, offset)`.
+    - Added `ContactAgentPayload`, `ScheduleCallPayload`, `AgentContactResponse` types.
+    - Added `propertiesApi.contactAgent()` and `propertiesApi.scheduleCall()`.
+
+- **Profile dashboard metrics + verification status wiring** (2026-02-26)
+  - `apps/web/src/views/ProfileDashboard.tsx`
+    - Replaced hardcoded verification metrics with live calculations from user/KYC/audit data.
+    - `Documents Verified` is now role-aware (`buyer` excludes business registration; professional roles include it).
+    - `Trust Score` now reflects verification completion progress instead of static placeholders.
+    - `Response Rate` now derives from real audit activity rather than a fixed value.
+    - Verification progress row now offers `Resend email` when email is still unverified.
+  - `apps/web/src/components/ui/activity-timeline.tsx`
+    - Reduced spacing density and removed noisy fallback descriptor text.
+  - `apps/web/src/lib/api-client.ts`
+    - Added audit payload normalization to handle `snake_case` and `camelCase` API timestamp field variants.
+
+- **Role setup persistence + KYC submission completion** (2026-02-26)
+  - `apps/web/src/views/ProfileSetup.tsx`
+    - Aligned page styling with listings theme tokens (`background`, `card`, `border`, `foreground`, `muted`).
+    - Implemented real avatar display and upload flow with initials fallback.
+    - Removed `Save & Go Back`; `Save & Continue` now validates required fields, persists, and advances tabs.
+    - Wired business details fields to backend persistence via `PATCH /users/me`.
+    - Wired KYC tab upload controls to real file pickers and multipart submission.
+  - `apps/api/src/identity/users.service.ts`
+    - Added read/write support for business profile fields on self profile operations.
+
+- **Verification timestamp robustness and activity rendering fixes** (2026-02-26)
+  - `apps/web/src/views/ProfileDashboard.tsx`
+    - Hardened relative-time formatter for missing/invalid dates to prevent `NaNd ago` output.
+
 - **Role setup + profile roles workflow refresh** (2026-02-25)
   - Rebuilt `ProfileDashboard` roles management card with role-status visibility and application CTA behavior:
     - Buyer remains default and non-removable.
@@ -72,6 +149,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - added Next.js app icon asset used for browser tab/favicon rendering
 
 ### Added
+- **Agent contact, schedule call, and reviews persistence** (2026-02-26)
+  - `apps/api/prisma/migrations/202602260004_agent_contacts/migration.sql`
+    - Added `property.agent_contacts` table: stores Contact Agent and Schedule Call submissions with `contact_type` (`contact` | `schedule_call`), optional `requester_id`, `preferred_date`, `status`, `ip_address`, and `user_agent`.
+    - Indexed on `(agent_id, created_at DESC)` and `requester_id`.
+  - `apps/api/prisma/migrations/202602260005_agent_reviews/migration.sql`
+    - Added `property.agent_reviews` table: stores client reviews with `rating (1–5)`, `comment`, `property_type`, optional `property_id`, `reviewer_name/email`, `reviewer_id`, `status` (`published` | `hidden` | `flagged`).
+    - Indexed on `(agent_id, created_at DESC)` and `reviewer_id`.
+  - `apps/api/src/property/property.service.ts`
+    - Added `AgentReviewRow` type.
+    - Added `contactAgent()`: verifies agent exists, inserts into `property.agent_contacts` with `contact_type='contact'`, emits audit event `agent.contact.requested`.
+    - Added `scheduleAgentCall()`: validates ISO date, inserts with `contact_type='schedule_call'`, emits audit event `agent.call.scheduled`.
+    - Added `getAgentReviews(agentId, limit, offset)`: returns paginated published reviews plus `total` and `averageRating`.
+  - `apps/api/src/property/property.dto.ts`
+    - Added `ContactAgentDto` (optional message, name, email, phone) with `class-validator` decorators.
+    - Added `ScheduleCallDto` (required `preferredDate` ISO string, optional message, name, email, phone).
+  - `apps/api/src/property/property.controller.ts`
+    - Added `POST /api/v1/properties/agents/:id/contact` — auth optional, logs contact request.
+    - Added `POST /api/v1/properties/agents/:id/schedule-call` — auth optional, logs call request.
+    - Added `GET /api/v1/properties/agents/:id/reviews` — public, supports `?limit` and `?offset`.
+
+- **Identity API + persistence extensions for role setup** (2026-02-26)
+  - `apps/api/src/identity/auth/auth.controller.ts`
+    - Added authenticated endpoint: `POST /api/v1/auth/resend-verification-email`.
+  - `apps/api/src/identity/auth/auth.service.ts`
+    - Added resend-verification flow: token generation, Redis persistence, email dispatch, and audit event.
+  - `apps/api/prisma/migrations/202602250003_identity_business_profile/migration.sql`
+    - Added `identity.user_business_profiles` table and supporting index for business details persistence.
+  - `scripts/verify_role_setup_flow.py`
+    - Added runtime script validating business details persistence and KYC submission end-to-end.
+
 - **Web account/client API extensions** (2026-02-25)
   - `apps/web/src/lib/api-client.ts`
     - Added `usersApi.uploadAvatar(authToken, file)` for profile avatar upload.
@@ -86,7 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `package.json`
     - added script: `smoke:web` → `bash scripts/smoke-web-routes.sh`
 
-### Added
+### Added (Earlier entries)
 - **Sprint-03 agent dashboard metrics wiring** (2026-02-23)
   - `apps/api/src/property/property.service.ts`
     - Extended `GET /api/v1/agent/dashboard` response with:

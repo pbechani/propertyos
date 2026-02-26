@@ -26,7 +26,7 @@ export default function MFASetup() {
   const handleVerify = () => {
     if (verificationCode.length === 6) {
       // MFA backend not yet available — navigate to app directly.
-      navigate("/app");
+      navigate("/app/listings");
     }
   };
 
@@ -111,7 +111,7 @@ export default function MFASetup() {
 
               <div className="text-center">
                 <button
-                  onClick={() => navigate("/app")}
+                  onClick={() => navigate("/app/listings")}
                   className="text-sm text-gray-600 hover:text-black"
                 >
                   Skip for now

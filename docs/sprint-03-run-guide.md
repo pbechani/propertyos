@@ -2,6 +2,12 @@
 
 This guide starts the Sprint 03 app locally and opens it for browser review.
 
+## Related docs
+
+- [README.md](../README.md)
+- [CHANGELOG.md](../CHANGELOG.md)
+- [audit-sprint-01-02-03-2026-02-25.md](./audit-sprint-01-02-03-2026-02-25.md)
+
 ## What you will run
 
 - API (NestJS): `http://localhost:3001`
@@ -75,7 +81,7 @@ Preferred:
 npm run db:migrate
 ```
 
-If `P3006` occurs due shadow DB schema validation, use:
+If `P3006` occurs due to shadow DB schema validation, use:
 
 ```bash
 npm run migrate:deploy --workspace=apps/api
@@ -132,6 +138,40 @@ curl -s http://localhost:3001/api/v1/agent/dashboard \
 
 Expected: response includes the four fields above in addition to existing `totalListings`, `byStatus`, `newInquiries7d`, and `verificationSummary`.
 
+## Profile dashboard + role setup verification (updated)
+
+The profile/role setup flow now uses persisted backend state for verification metrics, business details, and KYC submission.
+
+### Required migration
+
+Run this once if your local DB was created before the business-profile table was added:
+
+```bash
+npm run migrate:deploy --workspace=apps/api
+```
+
+### Verify role-setup persistence and KYC submission
+
+From repo root:
+
+```bash
+python3 scripts/verify_role_setup_flow.py
+```
+
+Expected output includes:
+- `"business_persisted": true`
+- `"kyc_submitted": true`
+
+### Verify resend email endpoint
+
+From Swagger (`/api/docs`) or API client, call:
+- `POST /api/v1/auth/resend-verification-email`
+
+Expected behavior:
+- `200` response for authenticated user
+- verification token re-issued and email dispatch attempted
+- audit event recorded for resend action
+
 ## Listings first-load behavior (updated)
 
 - On first load, the listings screen now starts with no selected filters.
@@ -176,15 +216,80 @@ curl -s "http://localhost:3001/api/v1/properties?sort=newest&limit=100"
 
 > Note: public property search currently returns only `active` listings; newly created listings default to `draft`.
 
+## Agent profile page verification (updated)
+
+The agent profile page now uses the full authenticated shell (sidebar + header) for logged-in users and all interactive buttons are wired to real API endpoints.
+
+### New API endpoints
+
+| Method | Path | Description |
+|--------|------|--------------|
+| `POST` | `/api/v1/properties/agents/:id/contact` | Log a Contact Agent message (auth optional) |
+| `POST` | `/api/v1/properties/agents/:id/schedule-call` | Log a Schedule Call request (auth optional) |
+| `GET`  | `/api/v1/properties/agents/:id/reviews` | Paginated published client reviews |
+
+### Required migration
+
+Apply the two new migrations if your local DB was created before these tables existed:
+
+```bash
+docker exec -i pribec-postgres psql -U pribec -d pribec_dev \
+  < apps/api/prisma/migrations/202602260004_agent_contacts/migration.sql
+
+docker exec -i pribec-postgres psql -U pribec -d pribec_dev \
+  < apps/api/prisma/migrations/202602260005_agent_reviews/migration.sql
+```
+
+### Verify contact and schedule-call persistence
+
+```bash
+AGENT_ID=<uuid-of-any-agent-in-your-db>
+
+# Contact agent
+curl -s -X POST http://localhost:3001/api/v1/properties/agents/$AGENT_ID/contact \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Interested in your listing","requesterName":"Test Buyer","requesterEmail":"buyer@example.com"}'
+
+# Schedule a call (at least 30 min from now)
+curl -s -X POST http://localhost:3001/api/v1/properties/agents/$AGENT_ID/schedule-call \
+  -H 'Content-Type: application/json' \
+  -d '{"preferredDate":"2026-03-01T10:00:00Z"}'
+```
+
+Both return `201` with `{ id, status, createdAt }`.  Rows visible in `property.agent_contacts`.
+
+### Verify reviews endpoint
+
+Insert a test review and confirm it is served back:
+
+```bash
+# Insert directly (replace AGENT_ID)
+docker exec -i pribec-postgres psql -U pribec -d pribec_dev -c \
+  "INSERT INTO property.agent_reviews (agent_id, reviewer_name, rating, comment, property_type) \
+   VALUES ('${AGENT_ID}'::uuid, 'Happy Client', 5, 'Excellent service', 'Residential');"
+
+# Read via API
+curl -s http://localhost:3001/api/v1/properties/agents/$AGENT_ID/reviews | node -e \
+  "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const r=JSON.parse(d);console.log('total='+r.total,'avg='+r.averageRating);})"
+```
+
+Expected: `total=1 avg=5`.
+
 ## UX Verification Checklist (Routing + Shell)
 
 - Logged-out user does not see left sidebar on `/app/*` screens
 - Logged-in user sees reusable left sidebar on `/app/*` screens
+- Logged-in user sees full sidebar and header on `/agent-profile/:id`
 - `/app/property/:id` shows minimal header (no search/create-listing toolbar)
 - Clicking a listing card or map pin opens `/app/property/:id`
 - Opening agent profile from property detail appends `?back=/app/property/:id`
 - Back action on agent profile returns to originating property detail page
 - Direct agent-profile visits without `back` still return to `/app/listings`
+- "Contact Agent" button opens a modal form; submitting it returns a success state and writes to `property.agent_contacts`
+- "Schedule Call" button opens a datetime picker modal; datetime defaults to now+30 min and can be adjusted; submitting writes to `property.agent_contacts`
+- "Call" button is an active `tel:` link when the agent has a phone number; otherwise disabled
+- "Email" button is an active `mailto:` link when the agent has an email; otherwise disabled
+- Client Reviews section shows a loading spinner while fetching, live reviews from the DB, or an empty-state message — no hardcoded placeholder data
 
 ## Stop services
 

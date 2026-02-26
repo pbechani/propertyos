@@ -1,5 +1,17 @@
 # Sprint 03 — Changelog
 
+## Unreleased (Post v0.3.0 patches)
+
+### Added
+- `POST /api/v1/auth/resend-verification-email` endpoint for authenticated verification resend flow.
+- Migration `202602250003_identity_business_profile` adding `identity.user_business_profiles` for persisted business details.
+- Runtime verifier script `scripts/verify_role_setup_flow.py` for end-to-end business + KYC persistence checks.
+
+### Changed
+- Profile dashboard verification cards are now data-driven (documents verified, trust score, response rate).
+- Role setup profile/business/KYC tabs now persist real data (including avatar upload and business details).
+- Activity timeline rendering now handles missing/variant timestamp fields without invalid relative-time output.
+
 ## v0.3.0 — 2026-02-21
 
 ### Added

@@ -22,6 +22,8 @@ import {
   CreatePropertyDto,
   UpdatePropertyDto,
   SearchPropertiesDto,
+  ContactAgentDto,
+  ScheduleCallDto,
 } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
 
@@ -87,6 +89,61 @@ export class PropertyController {
   @Get('agents/:id/profile')
   async agentProfile(@Param('id', ParseUUIDPipe) id: string) {
     return this.propertyService.getAgentProfile(id);
+  }
+
+  /**
+   * GET /api/v1/properties/agents/:id/reviews
+   * Public list of client reviews for an agent.
+   */
+  @Get('agents/:id/reviews')
+  async agentReviews(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.propertyService.getAgentReviews(
+      id,
+      limit ? Math.min(parseInt(limit, 10) || 10, 50) : 10,
+      offset ? parseInt(offset, 10) || 0 : 0,
+    );
+  }
+
+  /**
+   * POST /api/v1/properties/agents/:id/contact
+   * Log a Contact Agent request. Auth optional.
+   */
+  @Post('agents/:id/contact')
+  async contactAgent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ContactAgentDto,
+    @Request() req: PublicRequest,
+  ) {
+    return this.propertyService.contactAgent(
+      id,
+      dto,
+      req.user?.sub,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  /**
+   * POST /api/v1/properties/agents/:id/schedule-call
+   * Log a Schedule Call request. Auth optional.
+   */
+  @Post('agents/:id/schedule-call')
+  async scheduleCall(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ScheduleCallDto,
+    @Request() req: PublicRequest,
+  ) {
+    return this.propertyService.scheduleAgentCall(
+      id,
+      dto,
+      req.user?.sub,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   /**

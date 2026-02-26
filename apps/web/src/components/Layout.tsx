@@ -93,7 +93,7 @@ export function Layout({ children }: LayoutProps) {
   const shouldShowSidebar = isAuthenticated;
   const shouldShowToolbar = !isPropertyDetailRoute;
   const shouldShowThemeToggle = true;
-  const shouldShowHeader = !isPropertyDetailRoute;
+  const shouldShowHeader = true;
   const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
   const fullName = `${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim() || 'User';
 
@@ -114,7 +114,7 @@ export function Layout({ children }: LayoutProps) {
         {shouldShowHeader && (
           <header className="bg-card border-b border-border px-4 md:px-8 py-4">
             {!shouldShowToolbar ? (
-              <div className="flex items-center">
+              <div className="flex items-center justify-between w-full">
                 {shouldShowSidebar && (
                   <button
                     onClick={() => setShowMobileMenu(true)}
@@ -124,6 +124,31 @@ export function Layout({ children }: LayoutProps) {
                     <Menu className="w-6 h-6" />
                   </button>
                 )}
+                <div className="flex items-center gap-2 ml-auto">
+                  {shouldShowThemeToggle && <ThemeToggle />}
+                  {isAuthenticated && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="w-9 h-9 rounded-full bg-muted border border-border overflow-hidden flex items-center justify-center text-sm font-semibold hover:bg-accent transition-colors"
+                          aria-label="Open user menu"
+                          title={fullName}
+                        >
+                          <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem asChild>
+                          <Link href="/profile-dashboard">View Profile</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                          Logout
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-4">

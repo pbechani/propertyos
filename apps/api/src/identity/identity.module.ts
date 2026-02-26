@@ -18,6 +18,16 @@ import { DocumentAccessService } from './document-access.service';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
 import { IdentityBootstrapService } from './identity.bootstrap.service';
+// Sprint 01-b: Companies
+import { CompaniesController } from './companies/companies.controller';
+import { OrphanedTasksController } from './companies/orphaned-tasks.controller';
+import { CompaniesService } from './companies/companies.service';
+import { CompanyMembersService } from './companies/company-members.service';
+import { CompanyInvitationsService } from './companies/company-invitations.service';
+import { OrphanedTasksService } from './companies/orphaned-tasks.service';
+import { CompanyContextGuard } from './companies/guards/company-context.guard';
+import { CompanyAdminGuard } from './companies/guards/company-admin.guard';
+import { CompanyPermissionGuard } from './companies/guards/company-permission.guard';
 
 @Module({
   imports: [
@@ -40,6 +50,9 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
     KycController,
     AdminKycController,
     AuditController,
+    // Sprint 01-b
+    CompaniesController,
+    OrphanedTasksController,
   ],
   providers: [
     AuthService,
@@ -54,6 +67,19 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
     NotificationService,
     AuditService,
     IdentityBootstrapService,
+    // Sprint 01-b
+    CompaniesService,
+    CompanyMembersService,
+    CompanyInvitationsService,
+    OrphanedTasksService,
+    CompanyContextGuard,
+    CompanyAdminGuard,
+    CompanyPermissionGuard,
+  ],
+  exports: [
+    CompanyContextGuard,
+    CompanyAdminGuard,
+    CompanyPermissionGuard,
   ],
 })
 export class IdentityModule {}

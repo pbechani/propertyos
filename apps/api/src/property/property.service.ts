@@ -98,6 +98,17 @@ export type AgentProfile = {
   listings: AgentProfileListing[];
 };
 
+export type AgentReviewRow = {
+  id: string;
+  reviewerName: string | null;
+  reviewerEmail: string | null;
+  rating: number;
+  comment: string | null;
+  propertyType: string | null;
+  propertyId: string | null;
+  createdAt: Date;
+};
+
 @Injectable()
 export class PropertyService {
   constructor(
@@ -720,6 +731,164 @@ export class PropertyService {
         media_url: listing.media_url,
       })),
     };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Agent Reviews
+  // ──────────────────────────────────────────────────────────
+
+  async getAgentReviews(
+    agentId: string,
+    limit = 10,
+    offset = 0,
+  ): Promise<{ reviews: AgentReviewRow[]; total: number; averageRating: number }> {
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const [rows, countRows] = await Promise.all([
+      this.prisma.$queryRaw<AgentReviewRow[]>`
+        SELECT
+          id,
+          reviewer_name  AS "reviewerName",
+          reviewer_email AS "reviewerEmail",
+          rating,
+          comment,
+          property_type  AS "propertyType",
+          property_id    AS "propertyId",
+          created_at     AS "createdAt"
+        FROM property.agent_reviews
+        WHERE agent_id = ${agentId}::uuid
+          AND status = 'published'
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `,
+      this.prisma.$queryRaw<{ total: string; avg_rating: string }[]>`
+        SELECT
+          COUNT(*)::text                               AS total,
+          COALESCE(AVG(rating), 0)::text              AS avg_rating
+        FROM property.agent_reviews
+        WHERE agent_id = ${agentId}::uuid
+          AND status = 'published'
+      `,
+    ]);
+
+    return {
+      reviews: rows,
+      total: parseInt(countRows[0]?.total ?? '0', 10),
+      averageRating:
+        Math.round(parseFloat(countRows[0]?.avg_rating ?? '0') * 10) / 10,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Agent Contact & Schedule Call
+  // ──────────────────────────────────────────────────────────
+
+  async contactAgent(
+    agentId: string,
+    dto: {
+      message?: string;
+      requesterName?: string;
+      requesterEmail?: string;
+      requesterPhone?: string;
+    },
+    requesterId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ id: string; status: string; createdAt: Date }> {
+    // Verify the agent exists
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const rows = await this.prisma.$queryRaw<{ id: string; status: string; created_at: Date }[]>`
+      INSERT INTO property.agent_contacts
+        (agent_id, requester_id, contact_type, message, requester_name, requester_email, requester_phone, ip_address, user_agent)
+      VALUES (
+        ${agentId}::uuid,
+        ${requesterId ? requesterId : null}::uuid,
+        'contact',
+        ${dto.message ?? null},
+        ${dto.requesterName ?? null},
+        ${dto.requesterEmail ?? null},
+        ${dto.requesterPhone ?? null},
+        ${ipAddress ?? null}::inet,
+        ${userAgent ?? null}
+      )
+      RETURNING id, status, created_at
+    `;
+
+    await this.audit.log({
+      actorId: requesterId,
+      actorRole: requesterId ? 'authenticated' : 'public',
+      action: 'agent.contact.requested',
+      resourceType: 'agent',
+      resourceId: agentId,
+      payload: { contactType: 'contact', hasMessage: Boolean(dto.message) },
+      ipAddress,
+      userAgent,
+    });
+
+    return { id: rows[0].id, status: rows[0].status, createdAt: rows[0].created_at };
+  }
+
+  async scheduleAgentCall(
+    agentId: string,
+    dto: {
+      preferredDate: string;
+      message?: string;
+      requesterName?: string;
+      requesterEmail?: string;
+      requesterPhone?: string;
+    },
+    requesterId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ id: string; status: string; createdAt: Date }> {
+    // Verify the agent exists
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const preferredDateTs = new Date(dto.preferredDate);
+    if (Number.isNaN(preferredDateTs.getTime())) {
+      throw new BadRequestException('Invalid preferredDate – must be an ISO date-time string');
+    }
+
+    const rows = await this.prisma.$queryRaw<{ id: string; status: string; created_at: Date }[]>`
+      INSERT INTO property.agent_contacts
+        (agent_id, requester_id, contact_type, message, requester_name, requester_email, requester_phone, preferred_date, ip_address, user_agent)
+      VALUES (
+        ${agentId}::uuid,
+        ${requesterId ? requesterId : null}::uuid,
+        'schedule_call',
+        ${dto.message ?? null},
+        ${dto.requesterName ?? null},
+        ${dto.requesterEmail ?? null},
+        ${dto.requesterPhone ?? null},
+        ${preferredDateTs}::timestamptz,
+        ${ipAddress ?? null}::inet,
+        ${userAgent ?? null}
+      )
+      RETURNING id, status, created_at
+    `;
+
+    await this.audit.log({
+      actorId: requesterId,
+      actorRole: requesterId ? 'authenticated' : 'public',
+      action: 'agent.call.scheduled',
+      resourceType: 'agent',
+      resourceId: agentId,
+      payload: { contactType: 'schedule_call', preferredDate: dto.preferredDate },
+      ipAddress,
+      userAgent,
+    });
+
+    return { id: rows[0].id, status: rows[0].status, createdAt: rows[0].created_at };
   }
 
   // ──────────────────────────────────────────────────────────

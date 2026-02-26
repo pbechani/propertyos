@@ -2,6 +2,7 @@
 
 import { useState, DragEvent, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
+import { useSearchParams } from "next/navigation";
 import {
   Upload,
   FileText,
@@ -18,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { ApiError, kycApi } from "@/lib/api-client";
 import { getAccessToken } from "@/lib/auth-session";
+import { requiresBusinessLicenseForRole } from "@/lib/kyc-requirements";
 
 interface UploadedFile {
   id: string;
@@ -30,6 +32,7 @@ interface UploadedFile {
 
 export default function KYCUpload() {
   const navigate = useNavigate();
+  const searchParams = useSearchParams();
   const [dragActive, setDragActive] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<string | null>(null);
@@ -37,6 +40,11 @@ export default function KYCUpload() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [kycStatus, setKycStatus] = useState<"pending" | "under_review" | "approved" | "rejected" | "not_submitted">("not_submitted");
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
+  const isFromProfileDashboard =
+    searchParams.get("source") === "profile-dashboard";
+  const isBusinessLicenseRequiredForRoleApplication =
+    requiresBusinessLicenseForRole(pendingRole);
 
   const documents = [
     {
@@ -57,7 +65,7 @@ export default function KYCUpload() {
       id: "business_license",
       title: "Business License / Certificate",
       description: "Real estate license or business registration",
-      required: true,
+      required: !isFromProfileDashboard || isBusinessLicenseRequiredForRoleApplication,
       acceptedFormats: "PDF, JPG, PNG (Max 5MB)",
     },
     {
@@ -68,6 +76,14 @@ export default function KYCUpload() {
       acceptedFormats: "PDF, JPG, PNG (Max 5MB)",
     },
   ];
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setPendingRole(window.sessionStorage.getItem("pribec.pending_role"));
+  }, []);
 
   useEffect(() => {
     const loadStatus = async () => {
@@ -145,7 +161,6 @@ export default function KYCUpload() {
     const idDocumentFile = files.government_id?.file;
     const addressProofFile = files.proof_address?.file;
     const businessRegistrationFile = files.business_license?.file;
-    const selfieFile = files.tax_document?.file;
 
     if (idDocumentFile) {
       formData.append("id_document", idDocumentFile);
@@ -155,9 +170,6 @@ export default function KYCUpload() {
     }
     if (businessRegistrationFile) {
       formData.append("business_registration", businessRegistrationFile);
-    }
-    if (selfieFile) {
-      formData.append("selfie", selfieFile);
     }
 
     setIsSubmitting(true);
@@ -171,6 +183,8 @@ export default function KYCUpload() {
     } catch (err) {
       if (err instanceof ApiError) {
         setSubmitError(err.message);
+      } else if (err instanceof Error) {
+        setSubmitError(err.message || "Unable to submit KYC right now.");
       } else {
         setSubmitError("Unable to submit KYC right now.");
       }
@@ -214,6 +228,9 @@ export default function KYCUpload() {
               <h1 className="text-3xl font-bold mb-2">Identity Verification (KYC)</h1>
               <p className="text-gray-600">
                 Upload your documents to verify your identity and unlock all platform features
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Business License / Certificate is required for professional role applications.
               </p>
             </div>
             <VerificationBadge status={kycStatus === "approved" ? "verified" : "pending"} size="lg" />

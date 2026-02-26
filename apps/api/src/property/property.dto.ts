@@ -10,6 +10,7 @@ import {
   MaxLength,
   IsNotEmpty,
   IsDateString,
+  IsEmail,
   ValidateNested,
   ValidateIf,
 } from 'class-validator';
@@ -428,4 +429,62 @@ export class ResolveFraudReportDto {
   @IsOptional()
   @IsString()
   resolutionNotes?: string;
+}
+
+// ────────────────────────────────────────────────────────────
+// Agent Contact & Schedule Call
+// ────────────────────────────────────────────────────────────
+
+export class ContactAgentDto {
+  /** Optional free-text message for the agent */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  message?: string;
+
+  /** Requester's display name (for anonymous / public requests) */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  requesterName?: string;
+
+  /** Requester's email (for anonymous / public requests) */
+  @IsOptional()
+  @IsEmail()
+  requesterEmail?: string;
+
+  /** Requester's phone (for anonymous / public requests) */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  requesterPhone?: string;
+}
+
+export class ScheduleCallDto {
+  /** ISO date-time for the preferred call slot */
+  @IsDateString()
+  preferredDate!: string;
+
+  /** Optional message / notes for the agent */
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  message?: string;
+
+  /** Requester's display name */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  requesterName?: string;
+
+  /** Requester's email */
+  @IsOptional()
+  @IsEmail()
+  requesterEmail?: string;
+
+  /** Requester's phone */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  requesterPhone?: string;
 }

@@ -64,7 +64,7 @@ export default function MFAVerify() {
     void codeString;
     setIsVerifying(true);
     setError("");
-    navigate("/app");
+    navigate("/app/listings");
     setIsVerifying(false);
   };
 

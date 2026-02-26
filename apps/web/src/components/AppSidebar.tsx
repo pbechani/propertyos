@@ -14,7 +14,7 @@ interface AppSidebarProps {
 
 const navigation = [
   { name: 'Listings', href: '/app/listings', icon: Building2 },
-  { name: 'Dashboard', href: '/app', icon: Home },
+  { name: 'Home', href: '/app', icon: Home },
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },

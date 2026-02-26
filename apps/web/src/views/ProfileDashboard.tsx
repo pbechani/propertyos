@@ -734,7 +734,7 @@ export default function ProfileDashboard() {
               <Button
                 variant="outline"
                 className="w-full mt-4"
-                onClick={() => window.location.href = "/kyc-upload"}
+                onClick={() => window.location.href = "/kyc-upload?source=profile-dashboard"}
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Upgrade Verification

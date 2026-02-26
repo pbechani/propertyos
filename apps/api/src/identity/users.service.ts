@@ -17,6 +17,10 @@ type UserRecord = {
   email_verified_at: Date | null;
   phone_verified_at: Date | null;
   last_login_at: Date | null;
+  company_name?: string | null;
+  business_type?: string | null;
+  license_number?: string | null;
+  years_experience?: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -27,9 +31,26 @@ export class UsersService {
 
   async findById(userId: string): Promise<UserRecord> {
     const users = await this.prisma.$queryRaw<UserRecord[]>`
-      SELECT id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at
-      FROM identity.users
-      WHERE id = ${userId}::uuid
+      SELECT
+        u.id,
+        u.email,
+        u.phone,
+        u.first_name,
+        u.last_name,
+        u.avatar_url,
+        u.status,
+        u.email_verified_at,
+        u.phone_verified_at,
+        u.last_login_at,
+        ubp.company_name,
+        ubp.business_type,
+        ubp.license_number,
+        ubp.years_experience,
+        u.created_at,
+        u.updated_at
+      FROM identity.users u
+      LEFT JOIN identity.user_business_profiles ubp ON ubp.user_id = u.id
+      WHERE u.id = ${userId}::uuid
       LIMIT 1
     `;
 
@@ -46,9 +67,27 @@ export class UsersService {
     const users = await this.prisma.$queryRaw<
       (UserRecord & { password_hash: string | null })[]
     >`
-      SELECT id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at, password_hash
-      FROM identity.users
-      WHERE LOWER(email) = LOWER(${email})
+      SELECT
+        u.id,
+        u.email,
+        u.phone,
+        u.first_name,
+        u.last_name,
+        u.avatar_url,
+        u.status,
+        u.email_verified_at,
+        u.phone_verified_at,
+        u.last_login_at,
+        ubp.company_name,
+        ubp.business_type,
+        ubp.license_number,
+        ubp.years_experience,
+        u.created_at,
+        u.updated_at,
+        u.password_hash
+      FROM identity.users u
+      LEFT JOIN identity.user_business_profiles ubp ON ubp.user_id = u.id
+      WHERE LOWER(u.email) = LOWER(${email})
       LIMIT 1
     `;
 
@@ -62,13 +101,13 @@ export class UsersService {
     lastName: string;
     phone?: string;
   }): Promise<UserRecord> {
-    const created = await this.prisma.$queryRaw<UserRecord[]>`
+    const created = await this.prisma.$queryRaw<Array<{ id: string }>>`
       INSERT INTO identity.users (email, password_hash, first_name, last_name, phone)
       VALUES (LOWER(${params.email}), ${params.passwordHash}, ${params.firstName}, ${params.lastName}, ${params.phone ?? null})
-      RETURNING id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at
+      RETURNING id
     `;
 
-    return created[0];
+    return this.findById(created[0].id);
   }
 
   async updateMe(
@@ -78,6 +117,10 @@ export class UsersService {
       lastName: string;
       phone: string;
       avatarUrl: string;
+      companyName: string;
+      businessType: string;
+      licenseNumber: string;
+      yearsExperience: string;
     }>,
   ): Promise<UserRecord> {
     const current = await this.findById(userId);
@@ -86,7 +129,7 @@ export class UsersService {
     const nextPhone = updates.phone ?? current.phone;
     const nextAvatarUrl = updates.avatarUrl ?? current.avatar_url;
 
-    const updated = await this.prisma.$queryRaw<UserRecord[]>`
+    await this.prisma.$executeRaw`
       UPDATE identity.users
       SET first_name = ${nextFirstName},
           last_name = ${nextLastName},
@@ -94,28 +137,57 @@ export class UsersService {
           avatar_url = ${nextAvatarUrl},
           updated_at = NOW()
       WHERE id = ${userId}::uuid
-      RETURNING id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at
     `;
 
-    return updated[0];
+    const hasBusinessUpdates =
+      updates.companyName !== undefined ||
+      updates.businessType !== undefined ||
+      updates.licenseNumber !== undefined ||
+      updates.yearsExperience !== undefined;
+
+    if (hasBusinessUpdates) {
+      await this.prisma.$executeRaw`
+        INSERT INTO identity.user_business_profiles (
+          user_id,
+          company_name,
+          business_type,
+          license_number,
+          years_experience
+        ) VALUES (
+          ${userId}::uuid,
+          ${updates.companyName ?? null},
+          ${updates.businessType ?? null},
+          ${updates.licenseNumber ?? null},
+          ${updates.yearsExperience ?? null}
+        )
+        ON CONFLICT (user_id) DO UPDATE
+        SET company_name = COALESCE(EXCLUDED.company_name, identity.user_business_profiles.company_name),
+            business_type = COALESCE(EXCLUDED.business_type, identity.user_business_profiles.business_type),
+            license_number = COALESCE(EXCLUDED.license_number, identity.user_business_profiles.license_number),
+            years_experience = COALESCE(EXCLUDED.years_experience, identity.user_business_profiles.years_experience),
+            updated_at = NOW()
+      `;
+    }
+
+    return this.findById(userId);
   }
 
   async updateStatus(
     userId: string,
     status: 'active' | 'suspended' | 'deleted',
   ): Promise<UserRecord> {
-    const updated = await this.prisma.$queryRaw<UserRecord[]>`
+    const updated = await this.prisma.$queryRaw<Array<{ id: string }>>`
       UPDATE identity.users
       SET status = ${status}, updated_at = NOW()
       WHERE id = ${userId}::uuid
-      RETURNING id, email, phone, first_name, last_name, avatar_url, status, email_verified_at, phone_verified_at, last_login_at, created_at, updated_at
+      RETURNING id
     `;
 
     if (!updated[0]) {
       throw new NotFoundException('User not found');
     }
 
-    return updated[0];
+    return this.findById(updated[0].id);
   }
 
   async listUserRoles(
@@ -224,6 +296,10 @@ export class UsersService {
       emailVerifiedAt: user.email_verified_at,
       phoneVerifiedAt: user.phone_verified_at,
       lastLoginAt: user.last_login_at,
+      companyName: user.company_name,
+      businessType: user.business_type,
+      licenseNumber: user.license_number,
+      yearsExperience: user.years_experience,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };

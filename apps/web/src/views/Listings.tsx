@@ -3267,7 +3267,7 @@ export default function Listings() {
 
         </div>
 
-        {viewMode !== "map" && (
+        {viewMode !== "map" && hasSearched && listingCategory === 'For Sale' && (
           <aside className="hidden lg:block w-70 shrink-0 pt-4 pb-4 lg:pl-4 lg:pr-4 lg:border-l lg:border-border/60">
             <div className="sticky top-4 space-y-4">
               <Card className="border border-border bg-foreground text-background p-4">

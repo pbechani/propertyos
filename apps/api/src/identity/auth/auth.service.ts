@@ -14,7 +14,7 @@ import { RedisService } from '../../cache';
 import { UsersService } from '../users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthTokens, JwtPayload } from './auth.types';
+import { AuthTokens, ContextSelectorResponse, JwtPayload } from './auth.types';
 import { PrismaService } from '../../database';
 import { NotificationService } from '../notification.service';
 import { DEFAULT_ROLE } from '../identity.constants';
@@ -121,7 +121,10 @@ export class AuthService {
   async login(
     dto: LoginDto,
     requestContext: { ip: string; userAgent?: string | null },
-  ): Promise<{ user: Record<string, unknown>; tokens: AuthTokens }> {
+  ): Promise<
+    | { user: Record<string, unknown>; tokens: AuthTokens }
+    | ContextSelectorResponse
+  > {
     await this.checkLoginAttempts(requestContext.ip);
 
     const user = await this.usersService.findByEmail(dto.email);
@@ -147,7 +150,9 @@ export class AuthService {
     await this.usersService.markLastLogin(user.id);
 
     const roles = await this.usersService.getUserRoleNames(user.id);
-    const tokens = await this.issueTokens(user.id, user.email, roles);
+
+    // Detect company memberships
+    const memberships = await this.getUserActiveMemberships(user.id);
 
     await this.auditService.log({
       eventId: 'user.login',
@@ -156,10 +161,31 @@ export class AuthService {
       action: 'login',
       resourceType: 'user',
       resourceId: user.id,
-      payload: { successful: true },
+      payload: { successful: true, company_count: memberships.length },
       ipAddress: requestContext.ip,
       userAgent: requestContext.userAgent ?? null,
     });
+
+    // Multi-company: require context selection
+    if (memberships.length > 1) {
+      return {
+        requires_context_selection: true,
+        user: this.usersService.sanitizeUser(user),
+        companies: memberships,
+      };
+    }
+
+    // Single company: embed context automatically
+    const companyCtx =
+      memberships.length === 1
+        ? {
+            active_company_id: memberships[0].id,
+            active_company_role: memberships[0].role,
+            active_company_is_admin: memberships[0].is_admin,
+          }
+        : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+
+    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
 
     return {
       user: this.usersService.sanitizeUser(user),
@@ -552,7 +578,16 @@ export class AuthService {
     }
 
     const roles = await this.usersService.getUserRoleNames(user.id);
-    const tokens = await this.issueTokens(user.id, user.email, roles);
+    const memberships = await this.getUserActiveMemberships(user.id);
+    const singleCtx =
+      memberships.length === 1
+        ? {
+            active_company_id: memberships[0].id,
+            active_company_role: memberships[0].role,
+            active_company_is_admin: memberships[0].is_admin,
+          }
+        : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+    const tokens = await this.issueTokens(user.id, user.email, roles, singleCtx);
 
     await this.auditService.log({
       eventId: `user.oauth.${provider}`,
@@ -572,10 +607,110 @@ export class AuthService {
     };
   }
 
+  /** Return all active company memberships for context selector UI. */
+  async getUserContexts(userId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      slug: string;
+      category: string;
+      role: string;
+      is_admin: boolean;
+    }>
+  > {
+    return this.getUserActiveMemberships(userId);
+  }
+
+  /** Select a company context and issue a fresh JWT pair with that context embedded. */
+  async selectContext(
+    userId: string,
+    email: string,
+    companyId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ): Promise<AuthTokens> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        company_id: string;
+        role: string;
+        is_admin: boolean;
+        status: string;
+      }>
+    >`
+      SELECT cm.company_id, cm.role, cm.is_admin, cm.status
+      FROM identity.company_members cm
+      JOIN identity.companies c ON c.id = cm.company_id
+      WHERE cm.user_id = ${userId}::uuid
+        AND cm.company_id = ${companyId}::uuid
+        AND cm.status = 'active'
+        AND c.status != 'deactivated'
+      LIMIT 1
+    `;
+
+    if (!rows[0]) {
+      throw new UnauthorizedException('Company context not available');
+    }
+
+    const roles = await this.usersService.getUserRoleNames(userId);
+    const tokens = await this.issueTokens(userId, email, roles, {
+      active_company_id: companyId,
+      active_company_role: rows[0].role,
+      active_company_is_admin: rows[0].is_admin,
+    });
+
+    await this.auditService.log({
+      eventId: 'company_context.selected',
+      actorId: userId,
+      actorRole: rows[0].role,
+      action: 'select_context',
+      resourceType: 'company',
+      resourceId: companyId,
+      payload: { company_id: companyId },
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent ?? null,
+    });
+
+    return tokens;
+  }
+
+  private async getUserActiveMemberships(userId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      slug: string;
+      category: string;
+      role: string;
+      is_admin: boolean;
+    }>
+  > {
+    return this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string;
+        slug: string;
+        category: string;
+        role: string;
+        is_admin: boolean;
+      }>
+    >`
+      SELECT c.id, c.name, c.slug, c.category, cm.role, cm.is_admin
+      FROM identity.company_members cm
+      JOIN identity.companies c ON c.id = cm.company_id
+      WHERE cm.user_id = ${userId}::uuid
+        AND cm.status = 'active'
+        AND c.status != 'deactivated'
+      ORDER BY c.name
+    `;
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
     prefetchedRoles?: string[],
+    companyCtx?: {
+      active_company_id: string | null;
+      active_company_role: string | null;
+      active_company_is_admin: boolean;
+    },
   ): Promise<AuthTokens> {
     const roles =
       prefetchedRoles ?? (await this.usersService.getUserRoleNames(userId));
@@ -586,6 +721,9 @@ export class AuthService {
       email,
       roles,
       kyc_status: kycStatus,
+      active_company_id: companyCtx?.active_company_id ?? null,
+      active_company_role: companyCtx?.active_company_role ?? null,
+      active_company_is_admin: companyCtx?.active_company_is_admin ?? false,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

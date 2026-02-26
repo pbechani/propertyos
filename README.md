@@ -95,6 +95,8 @@ A financial-grade digital infrastructure for property buying, construction manag
 | [design/design-phase.md](design/design-phase.md) | 18-phase implementation plan |
 | [design/sprints/](design/sprints/) | Sprint-by-sprint specifications |
 | [docs/sprint-03-run-guide.md](docs/sprint-03-run-guide.md) | Local run instructions + UX verification checklist |
+| [docs/audit-sprint-01-02-03-2026-02-25.md](docs/audit-sprint-01-02-03-2026-02-25.md) | Consolidated Sprint 01–03 audit evidence and release readiness |
+| [CHANGELOG.md](CHANGELOG.md) | Unreleased and historical platform changelog |
 
 ---
 
@@ -269,6 +271,34 @@ Quick check (replace with a valid agent token):
 curl -s http://localhost:3001/api/v1/agent/dashboard \
    -H "Authorization: Bearer <AGENT_TOKEN>"
 ```
+
+### Profile Dashboard + Role Setup Validation (2026-02-26)
+
+The profile trust/verification cards and role setup tabs now use persisted backend data (no hardcoded metrics).
+
+Run required migration (if not already applied):
+
+```bash
+npm run migrate:deploy --workspace=apps/api
+```
+
+Run end-to-end flow verification:
+
+```bash
+python3 scripts/verify_role_setup_flow.py
+```
+
+Expected output includes:
+- `"business_persisted": true`
+- `"kyc_submitted": true`
+
+Verification resend endpoint:
+- `POST /api/v1/auth/resend-verification-email`
+
+Expected behavior:
+- authenticated user receives `200`
+- verification token is re-issued and email dispatch is attempted
+- resend action is audit logged
 
 ### AI Voice Search Verification (Listings)
 

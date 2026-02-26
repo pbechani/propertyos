@@ -1,22 +1,26 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@/lib/router-compat";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  MapPin, Bed, Bath, Car, Maximize, Heart, Share2, Phone, MessageSquare,
-  ChevronLeft, CheckCircle2, MapPinned, Shield, AlertTriangle,
-  Calendar, Clock, History, Info, Flag, ChevronRight, X, Video, ZoomIn
+  MapPin, Bed, Bath, Car, Maximize, Share2, Phone, MessageSquare,
+  ChevronLeft, CheckCircle2, Shield, AlertTriangle,
+  Calendar, Clock, History, Flag, ChevronRight, X, ZoomIn,
+  Bookmark, BookmarkCheck
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
-import { getAccessToken } from "@/lib/auth-session";
-import { propertiesApi, type AgentProfileResponse, type PropertyListing } from "@/lib/api-client";
+import { getAccessToken, getStoredUser } from "@/lib/auth-session";
+import { propertiesApi, usersApi, type AgentProfileResponse, type AuthUser, type PropertyListing } from "@/lib/api-client";
+import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop";
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+const SHOW_SIMILARITY_SCORE = process.env.NODE_ENV === 'development';
 
 type SimilarProperty = {
   id: string;
@@ -24,6 +28,7 @@ type SimilarProperty = {
   title: string;
   location: string;
   price: string;
+  similarityScore?: number;
 };
 
 function getListingStatusBadge(status: string) {
@@ -81,7 +86,7 @@ function pickFirstString(...values: Array<unknown>): string | null {
   return null;
 }
 
-function mapSimilarProperty(listing: PropertyListing): SimilarProperty {
+function mapSimilarProperty(listing: PropertyListing, similarityScore?: number): SimilarProperty {
   const city = listing.location?.city ?? "";
   const region = listing.location?.region ?? "";
   const location = [city, region].filter(Boolean).join(", ") || "Location unavailable";
@@ -93,12 +98,210 @@ function mapSimilarProperty(listing: PropertyListing): SimilarProperty {
     title: listing.title,
     location,
     price: formatMoney(listing.price, listing.currency),
+    similarityScore,
   };
+}
+
+function parseNumericValue(value: string | number | null | undefined): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function normalizeFeatureList(features: unknown): Set<string> {
+  if (!Array.isArray(features)) {
+    return new Set();
+  }
+
+  return new Set(
+    features
+      .filter((feature): feature is string => typeof feature === 'string')
+      .map((feature) => feature.toLowerCase().trim())
+      .filter((feature) => feature.length > 0),
+  );
+}
+
+function computeFeatureOverlapScore(target: unknown, candidate: unknown): number {
+  const targetSet = normalizeFeatureList(target);
+  const candidateSet = normalizeFeatureList(candidate);
+
+  if (targetSet.size === 0 || candidateSet.size === 0) {
+    return 0.5;
+  }
+
+  let intersectionCount = 0;
+  targetSet.forEach((feature) => {
+    if (candidateSet.has(feature)) {
+      intersectionCount += 1;
+    }
+  });
+
+  const unionCount = new Set([...targetSet, ...candidateSet]).size;
+  return unionCount > 0 ? intersectionCount / unionCount : 0;
+}
+
+function haversineDistanceKm(
+  fromLatitude: number,
+  fromLongitude: number,
+  toLatitude: number,
+  toLongitude: number,
+): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+
+  const dLat = toRadians(toLatitude - fromLatitude);
+  const dLon = toRadians(toLongitude - fromLongitude);
+  const fromLatRad = toRadians(fromLatitude);
+  const toLatRad = toRadians(toLatitude);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(fromLatRad) * Math.cos(toLatRad)
+    * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusKm * c;
+}
+
+function computeLocationSimilarity(target: PropertyListing, candidate: PropertyListing): number {
+  const targetLatitude = parseNumericValue(target.location?.latitude);
+  const targetLongitude = parseNumericValue(target.location?.longitude);
+  const candidateLatitude = parseNumericValue(candidate.location?.latitude);
+  const candidateLongitude = parseNumericValue(candidate.location?.longitude);
+
+  if (
+    targetLatitude != null
+    && targetLongitude != null
+    && candidateLatitude != null
+    && candidateLongitude != null
+  ) {
+    const distanceKm = haversineDistanceKm(
+      targetLatitude,
+      targetLongitude,
+      candidateLatitude,
+      candidateLongitude,
+    );
+
+    if (distanceKm <= 3) return 1;
+    if (distanceKm <= 10) return 0.9;
+    if (distanceKm <= 25) return 0.75;
+    if (distanceKm <= 50) return 0.6;
+    if (distanceKm <= 100) return 0.4;
+    return 0.2;
+  }
+
+  const targetCity = (target.location?.city ?? '').toLowerCase().trim();
+  const targetRegion = (target.location?.region ?? '').toLowerCase().trim();
+  const targetCountry = (target.location?.country ?? '').toLowerCase().trim();
+  const candidateCity = (candidate.location?.city ?? '').toLowerCase().trim();
+  const candidateRegion = (candidate.location?.region ?? '').toLowerCase().trim();
+  const candidateCountry = (candidate.location?.country ?? '').toLowerCase().trim();
+
+  if (targetCity && candidateCity && targetCity === candidateCity) {
+    return 0.85;
+  }
+
+  if (targetRegion && candidateRegion && targetRegion === candidateRegion) {
+    return 0.7;
+  }
+
+  if (targetCountry && candidateCountry && targetCountry === candidateCountry) {
+    return 0.5;
+  }
+
+  return 0.3;
+}
+
+function computeNumericSimilarity(
+  target: number | null,
+  candidate: number | null,
+  divisor: number,
+): number {
+  if (target == null || candidate == null) {
+    return 0.5;
+  }
+
+  const delta = Math.abs(target - candidate);
+  return Math.max(0, 1 - delta / divisor);
+}
+
+function computePriceSimilarity(target: PropertyListing, candidate: PropertyListing): number {
+  const targetPrice = parseNumericValue(target.price);
+  const candidatePrice = parseNumericValue(candidate.price);
+
+  if (targetPrice == null || candidatePrice == null || targetPrice <= 0 || candidatePrice <= 0) {
+    return 0.5;
+  }
+
+  const base = Math.max(targetPrice, candidatePrice);
+  const deltaRatio = Math.abs(targetPrice - candidatePrice) / base;
+  return Math.max(0, 1 - deltaRatio);
+}
+
+function computeVerificationScore(status: string): number {
+  switch (status) {
+    case 'verified':
+      return 1;
+    case 'pending':
+      return 0.8;
+    case 'unverified':
+      return 0.6;
+    case 'flagged':
+      return 0.2;
+    default:
+      return 0.5;
+  }
+}
+
+function computeSimilarityScore(target: PropertyListing, candidate: PropertyListing): number {
+  const weights = {
+    type: 0.22,
+    location: 0.24,
+    price: 0.2,
+    beds: 0.1,
+    baths: 0.08,
+    area: 0.08,
+    features: 0.05,
+    verification: 0.03,
+  };
+
+  const typeScore = target.property_type === candidate.property_type ? 1 : 0.25;
+  const locationScore = computeLocationSimilarity(target, candidate);
+  const priceScore = computePriceSimilarity(target, candidate);
+  const bedsScore = computeNumericSimilarity(target.bedrooms ?? null, candidate.bedrooms ?? null, 5);
+  const bathsScore = computeNumericSimilarity(target.bathrooms ?? null, candidate.bathrooms ?? null, 4);
+  const areaScore = computeNumericSimilarity(
+    parseNumericValue(target.area_sqm),
+    parseNumericValue(candidate.area_sqm),
+    350,
+  );
+  const featureScore = computeFeatureOverlapScore(target.features, candidate.features);
+  const verificationScore = computeVerificationScore(candidate.verification_status);
+
+  return (
+    weights.type * typeScore
+    + weights.location * locationScore
+    + weights.price * priceScore
+    + weights.beds * bedsScore
+    + weights.baths * bathsScore
+    + weights.area * areaScore
+    + weights.features * featureScore
+    + weights.verification * verificationScore
+  );
 }
 
 type PropertyDetailState = {
   title: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   price: string;
   beds: number;
   baths: number;
@@ -128,6 +331,8 @@ function getEmptyPropertyDetail(): PropertyDetailState {
   return {
     title: "",
     address: "Address unavailable",
+    latitude: null,
+    longitude: null,
     price: formatMoney("0", "USD"),
     beds: 0,
     baths: 0,
@@ -161,10 +366,15 @@ export default function PropertyDetailEnhanced() {
   const searchParams = useSearchParams();
   const propertyId = typeof id === "string" ? id : "";
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSavingProperty, setIsSavingProperty] = useState(false);
+  const [agentPhone, setAgentPhone] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [showFraudReport, setShowFraudReport] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleStep, setScheduleStep] = useState(1); // 1: Select type, 2: Select date/time, 3: Confirmation
   const [viewingType, setViewingType] = useState("inPerson");
+  const [minViewingDate, setMinViewingDate] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [viewerName, setViewerName] = useState("");
@@ -195,7 +405,7 @@ export default function PropertyDetailEnhanced() {
   const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
   const [similarProperties, setSimilarProperties] = useState<SimilarProperty[]>([]);
 
-  const handleAddToFavourites = () => {
+  const handleAddToFavourites = async () => {
     const token = getAccessToken();
     if (!token) {
       const query = searchParams.toString();
@@ -204,7 +414,24 @@ export default function PropertyDetailEnhanced() {
       return;
     }
 
-    // TODO: Persist saved property when favorites backend endpoint is available.
+    if (isSavingProperty || !propertyId) {
+      return;
+    }
+
+    setIsSavingProperty(true);
+    try {
+      if (isSaved) {
+        await propertiesApi.unsave(token, propertyId);
+        setIsSaved(false);
+      } else {
+        await propertiesApi.save(token, propertyId);
+        setIsSaved(true);
+      }
+    } catch {
+      // Non-critical — ignore silently
+    } finally {
+      setIsSavingProperty(false);
+    }
   };
 
   const getActionToken = () => {
@@ -219,6 +446,43 @@ export default function PropertyDetailEnhanced() {
     return token;
   };
 
+  const handleCallAgent = async () => {
+    if (!agentPhone) return;
+    const token = getAccessToken();
+    if (token && property.agent.id) {
+      try {
+        await propertiesApi.contactAgent(property.agent.id, {
+          message: `Phone call initiated from property listing: ${property.title}`,
+          requesterName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : undefined,
+          requesterEmail: currentUser?.email ?? undefined,
+          requesterPhone: currentUser?.phone ?? undefined,
+        }, token);
+      } catch {
+        // Log silently
+      }
+    }
+    window.location.href = `tel:${agentPhone}`;
+  };
+
+  const handleWhatsAppAgent = async () => {
+    if (!agentPhone) return;
+    const token = getAccessToken();
+    if (token && property.agent.id) {
+      try {
+        await propertiesApi.contactAgent(property.agent.id, {
+          message: `WhatsApp contact initiated from property listing: ${property.title}`,
+          requesterName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : undefined,
+          requesterEmail: currentUser?.email ?? undefined,
+          requesterPhone: currentUser?.phone ?? undefined,
+        }, token);
+      } catch {
+        // Log silently
+      }
+    }
+    const phone = agentPhone.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I'm interested in your property: ${property.title}`)}`, '_blank');
+  };
+
   const handleSubmitInquiry = async () => {
     if (!propertyId) {
       setInquiryError("Unable to identify this listing.");
@@ -227,6 +491,16 @@ export default function PropertyDetailEnhanced() {
 
     if (isSoldListing) {
       setInquiryError("This property is sold. Inquiries are disabled.");
+      return;
+    }
+
+    if (!inquiryName.trim()) {
+      setInquiryError("Please enter your full name.");
+      return;
+    }
+
+    if (!inquiryEmail.trim() && !inquiryPhone.trim()) {
+      setInquiryError("Please enter your email address or phone number.");
       return;
     }
 
@@ -356,12 +630,65 @@ export default function PropertyDetailEnhanced() {
   const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
   const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
   const verificationBadge = getVerificationBadge(property.verificationStatus);
+  const hasLocationCoordinates = property.latitude != null && property.longitude != null;
+  const locationMapSource = useMemo(() => {
+    if (!hasLocationCoordinates) {
+      return null;
+    }
+
+    return buildSinglePointMapSource({
+      latitude: property.latitude as number,
+      longitude: property.longitude as number,
+      mapboxToken: MAPBOX_TOKEN,
+    });
+  }, [hasLocationCoordinates, property.latitude, property.longitude]);
   const agentInitials = property.agent.name
     .split(' ')
     .map((part) => part[0] ?? '')
     .join('')
     .slice(0, 2)
     .toUpperCase() || 'A';
+
+  useEffect(() => {
+    setMinViewingDate(new Date().toISOString().split('T')[0] ?? "");
+  }, []);
+
+  // Pre-fill enquiry form and load current user when logged in
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    const stored = getStoredUser();
+    if (stored) {
+      setCurrentUser(stored);
+      setInquiryName(`${stored.firstName} ${stored.lastName}`.trim());
+      setInquiryEmail(stored.email ?? '');
+      setInquiryPhone(stored.phone ?? '');
+    }
+
+    // Also fetch fresh user data from API
+    usersApi.me(token).then((user) => {
+      setCurrentUser(user);
+      setInquiryName((prev) => prev || `${user.firstName} ${user.lastName}`.trim());
+      setInquiryEmail((prev) => prev || (user.email ?? ''));
+      setInquiryPhone((prev) => prev || (user.phone ?? ''));
+    }).catch(() => {
+      // Use stored data as fallback
+    });
+  }, []);
+
+  // Load saved status for current property
+  useEffect(() => {
+    if (!propertyId) return;
+    const token = getAccessToken();
+    if (!token) return;
+
+    propertiesApi.getSavedProperties(token).then((result) => {
+      setIsSaved(result.data.some((p) => p.id === propertyId));
+    }).catch(() => {
+      // Non-critical
+    });
+  }, [propertyId]);
 
   useEffect(() => {
     if (!propertyId) {
@@ -389,9 +716,8 @@ export default function PropertyDetailEnhanced() {
         let relatedListings: PropertyListing[] = [];
         try {
           const relatedResponse = await propertiesApi.search({
-            type: listing.property_type,
             sort: 'newest',
-            limit: 12,
+            limit: 60,
           });
           relatedListings = relatedResponse.data;
         } catch {
@@ -445,6 +771,7 @@ export default function PropertyDetailEnhanced() {
               companyName,
               companyLogoUrl,
             };
+            setAgentPhone(profile.phone ?? null);
           } catch {
             const companyName =
               pickFirstString(
@@ -473,6 +800,10 @@ export default function PropertyDetailEnhanced() {
         const region = listing.location?.region ?? "";
         const country = listing.location?.country ?? "";
         const address = [city, region, country].filter(Boolean).join(", ") || "Address unavailable";
+        const parsedLatitude = listing.location?.latitude ? Number(listing.location.latitude) : null;
+        const parsedLongitude = listing.location?.longitude ? Number(listing.location.longitude) : null;
+        const latitude = parsedLatitude != null && Number.isFinite(parsedLatitude) ? parsedLatitude : null;
+        const longitude = parsedLongitude != null && Number.isFinite(parsedLongitude) ? parsedLongitude : null;
         const images =
           listing.media?.map((media) => media.url).filter(Boolean) ?? [];
         const mappedFeatures = Array.isArray(listing.features)
@@ -484,6 +815,8 @@ export default function PropertyDetailEnhanced() {
         setProperty(() => ({
           title: listing.title,
           address,
+          latitude,
+          longitude,
           price: formatMoney(listing.price, listing.currency),
           beds: listing.bedrooms ?? 0,
           baths: listing.bathrooms ?? 0,
@@ -502,8 +835,19 @@ export default function PropertyDetailEnhanced() {
         const similar = relatedListings
           .filter((item) => item.id !== listing.id)
           .filter((item) => item.status === 'active')
+          .map((item) => ({
+            listing: item,
+            score: computeSimilarityScore(listing, item),
+          }))
+          .sort((a, b) => {
+            if (b.score !== a.score) {
+              return b.score - a.score;
+            }
+
+            return new Date(b.listing.created_at).getTime() - new Date(a.listing.created_at).getTime();
+          })
           .slice(0, 2)
-          .map(mapSimilarProperty);
+          .map((entry) => mapSimilarProperty(entry.listing, entry.score));
 
         setSimilarProperties(similar);
         setSelectedImage(0);
@@ -576,12 +920,17 @@ export default function PropertyDetailEnhanced() {
                 {/* Actions */}
                 <div className="absolute top-4 right-4 flex gap-2">
                   <button
-                    className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
-                    onClick={handleAddToFavourites}
-                    aria-label="Add property to favourites"
-                    title="Add property to favourites"
+                    className={`p-3 rounded-lg shadow-md transition-colors ${
+                      isSaved ? 'bg-primary/10 hover:bg-primary/20' : 'bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => { void handleAddToFavourites(); }}
+                    disabled={isSavingProperty}
+                    aria-label={isSaved ? 'Remove from saved' : 'Save property'}
+                    title={isSaved ? 'Remove from saved' : 'Save property'}
                   >
-                    <Heart className="w-5 h-5" />
+                    {isSaved
+                      ? <BookmarkCheck className="w-5 h-5 text-primary fill-primary" />
+                      : <Bookmark className="w-5 h-5 text-gray-600" />}
                   </button>
                   <button
                     className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
@@ -723,59 +1072,38 @@ export default function PropertyDetailEnhanced() {
               </div>
             </Card>
 
-            {/* Listing Verification & Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Verification Status */}
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold">Listing Verification</h3>
+            {/* Listing Timeline & Status */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold">Listing Timeline & Status</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Listing Status</span>
+                  <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Status</span>
-                    <Badge className={verificationBadge.className}>
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {verificationBadge.label}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Property Type</span>
-                    <span className="font-medium text-sm capitalize">{property.propertyType || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Listing Status</span>
-                    <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Last Updated</span>
-                    <span className="font-medium text-sm">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
-                  </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Verification</span>
+                  <Badge className={verificationBadge.className}>
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    {verificationBadge.label}
+                  </Badge>
                 </div>
-              </Card>
-
-              {/* Listing Timeline */}
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <History className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold">Listing Timeline</h3>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Property Type</span>
+                  <span className="font-medium capitalize">{property.propertyType || 'N/A'}</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Created</span>
-                    <span className="font-medium">{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Last Updated</span>
-                    <span className="font-medium">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Verification</span>
-                    <Badge className={verificationBadge.className}>{verificationBadge.label}</Badge>
-                  </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Listed</span>
+                  <span className="font-medium">{property.createdAt ? new Date(property.createdAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
-              </Card>
-            </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Last Updated</span>
+                  <span className="font-medium">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
+                </div>
+              </div>
+            </Card>
 
             {/* Property Description */}
             <Card className="p-6">
@@ -808,17 +1136,29 @@ export default function PropertyDetailEnhanced() {
                 <h2 className="text-xl font-semibold">Location</h2>
                 <span className="text-sm text-blue-500">{property.address}</span>
               </div>
-              <div className="bg-gray-200 rounded-lg h-64 md:h-80 flex items-center justify-center relative overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&h=300&fit=crop"
-                  alt="Map"
-                  className="w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-blue-500 text-white p-4 rounded-full">
-                    <MapPinned className="w-8 h-8" />
+              <div className="bg-gray-200 rounded-lg h-64 md:h-80 overflow-hidden border border-gray-200">
+                {locationMapSource ? (
+                  locationMapSource.type === 'image' ? (
+                    <img
+                      src={locationMapSource.url}
+                      alt="Property location map"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <iframe
+                      title="Property location map"
+                      src={locationMapSource.url}
+                      className="w-full h-full border-0"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      allowFullScreen
+                    />
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600 px-6 text-center">
+                    Map view is available when listing coordinates are provided.
                   </div>
-                </div>
+                )}
               </div>
             </Card>
 
@@ -983,7 +1323,9 @@ export default function PropertyDetailEnhanced() {
                   <Button
                     variant="outline"
                     className="flex items-center justify-center gap-2"
-                    disabled={isSoldListing}
+                    disabled={isSoldListing || !agentPhone}
+                    title={agentPhone ? `Call agent: ${agentPhone}` : 'Agent phone not available'}
+                    onClick={() => { void handleCallAgent(); }}
                   >
                     <Phone className="w-4 h-4" />
                     Call
@@ -991,12 +1333,17 @@ export default function PropertyDetailEnhanced() {
                   <Button
                     variant="outline"
                     className="flex items-center justify-center gap-2"
-                    disabled={isSoldListing}
+                    disabled={isSoldListing || !agentPhone}
+                    title={agentPhone ? `WhatsApp agent: ${agentPhone}` : 'Agent phone not available'}
+                    onClick={() => { void handleWhatsAppAgent(); }}
                   >
                     <MessageSquare className="w-4 h-4" />
                     WhatsApp
                   </Button>
                 </div>
+                {!agentPhone && (
+                  <p className="text-xs text-gray-400 text-center">Agent contact number not available</p>
+                )}
               </div>
             </Card>
 
@@ -1020,6 +1367,11 @@ export default function PropertyDetailEnhanced() {
                         {item.title}
                       </Link>
                       <div className="text-xs text-gray-600 truncate">{item.location}</div>
+                      {SHOW_SIMILARITY_SCORE && typeof item.similarityScore === 'number' && Number.isFinite(item.similarityScore) && (
+                        <div className="text-[11px] text-gray-500 mt-1">
+                          Match {Math.round(item.similarityScore * 100)}%
+                        </div>
+                      )}
                       <div className="font-bold text-blue-600 text-sm mt-1">{item.price}</div>
                     </div>
                   </div>
@@ -1221,7 +1573,7 @@ export default function PropertyDetailEnhanced() {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={minViewingDate || undefined}
                       />
                     </div>
                     <div>

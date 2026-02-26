@@ -19,6 +19,26 @@ export class UpdateMeDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  businessType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  yearsExperience?: string;
 }
 
 export class UpdateUserStatusDto {

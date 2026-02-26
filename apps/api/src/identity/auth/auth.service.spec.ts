@@ -198,14 +198,19 @@ describe('AuthService', () => {
         ...baseUser,
         password_hash: hash,
       });
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
 
       const result = await service.login(
         { email: EMAIL, password: PASSWORD },
         requestCtx,
       );
 
-      expect(result.tokens.accessToken).toBe('signed-access-token');
+      expect('tokens' in result).toBe(true);
+      if ('tokens' in result) {
+        expect(result.tokens.accessToken).toBe('signed-access-token');
+      }
       expect(mockUsers.markLastLogin).toHaveBeenCalledWith(USER_ID);
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ eventId: 'user.login' }),
@@ -530,7 +535,9 @@ describe('AuthService', () => {
 
     it('logs in existing user without creating a new record', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token insert
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token insert
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
 
@@ -547,7 +554,9 @@ describe('AuthService', () => {
         .mockResolvedValueOnce(baseUser); // second call after create
 
       mockUsers.create.mockResolvedValueOnce(baseUser);
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id' }]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
 
