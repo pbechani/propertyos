@@ -214,6 +214,10 @@ export type AuthUser = {
   emailVerifiedAt: string | null;
   phoneVerifiedAt?: string | null;
   lastLoginAt?: string | null;
+  companyName?: string | null;
+  businessType?: string | null;
+  licenseNumber?: string | null;
+  yearsExperience?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   roles?: string[];
@@ -320,6 +324,10 @@ export const usersApi = {
       lastName?: string;
       phone?: string;
       avatarUrl?: string;
+      companyName?: string;
+      businessType?: string;
+      licenseNumber?: string;
+      yearsExperience?: string;
     },
   ) =>
     apiRequest<AuthUser>('/users/me', {
@@ -601,6 +609,14 @@ export type PropertyStatus =
   | 'sold'
   | 'withdrawn';
 
+export type FeaturedAgentCard = {
+  id: string;
+  fullName: string;
+  location: string;
+  tier: 'gold' | 'silver' | 'bronze';
+  deals: number;
+};
+
 export type PropertyListing = {
   id: string;
   title: string;
@@ -704,6 +720,44 @@ export type CreateInquiryPayload = {
   inquiryType: 'viewing' | 'offer' | 'question';
   message?: string;
   preferredDate?: string;
+};
+
+export type ContactAgentPayload = {
+  message?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requesterPhone?: string;
+};
+
+export type ScheduleCallPayload = {
+  preferredDate: string;
+  message?: string;
+  requesterName?: string;
+  requesterEmail?: string;
+  requesterPhone?: string;
+};
+
+export type AgentContactResponse = {
+  id: string;
+  status: string;
+  createdAt: string;
+};
+
+export type AgentReview = {
+  id: string;
+  reviewerName: string | null;
+  reviewerEmail: string | null;
+  rating: number;
+  comment: string | null;
+  propertyType: string | null;
+  propertyId: string | null;
+  createdAt: string;
+};
+
+export type AgentReviewsResponse = {
+  reviews: AgentReview[];
+  total: number;
+  averageRating: number;
 };
 
 export type CreateFraudReportPayload = {
@@ -821,5 +875,38 @@ export const propertiesApi = {
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }),
+
+  contactAgent: (agentId: string, payload: ContactAgentPayload, authToken?: string) =>
+    apiRequest<AgentContactResponse>(`/properties/agents/${agentId}/contact`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  scheduleCall: (agentId: string, payload: ScheduleCallPayload, authToken?: string) =>
+    apiRequest<AgentContactResponse>(`/properties/agents/${agentId}/schedule-call`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getAgentReviews: (agentId: string, limit = 10, offset = 0) =>
+    apiRequest<AgentReviewsResponse>(
+      `/properties/agents/${agentId}/reviews?limit=${limit}&offset=${offset}`,
+      { method: 'GET' },
+    ),
+
+  getFeaturedAgents: (limit = 20) =>
+    apiRequest<FeaturedAgentCard[]>(`/properties/agents/featured?limit=${limit}`, {
+      method: 'GET',
+    }),
+
+  getSavedProperties: (authToken: string) =>
+    apiRequest<{ data: PropertyListing[]; total: number }>('/users/me/saved-properties', {
+      method: 'GET',
+      authToken,
     }),
 };

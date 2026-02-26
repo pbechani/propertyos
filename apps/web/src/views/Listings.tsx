@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { MapPin, Filter, Grid3x3, List, Bookmark, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Filter, Grid3x3, List, Bookmark, BookmarkCheck, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { getAccessToken } from "@/lib/auth-session";
-import { ApiError, propertiesApi, type AgentProfileResponse, type PropertyListing } from "@/lib/api-client";
+import { ApiError, propertiesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing } from "@/lib/api-client";
+import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const getDefaultFilters = () => ({
@@ -538,6 +539,13 @@ export default function Listings() {
   const [properties, setProperties] = useState<ListingCard[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
   const [propertiesError, setPropertiesError] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set());
+  const [savingPropertyIds, setSavingPropertyIds] = useState<Set<string>>(new Set());
+  const [featuredAgents, setFeaturedAgents] = useState<FeaturedAgentCard[]>([]);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+  const [agentsError, setAgentsError] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Pre-computed stable heights for the voice-search waveform visualisation.
@@ -656,6 +664,25 @@ export default function Listings() {
     setShowFilters(false);
   };
 
+  const applyInsightsPropertyTypeFilter = (type: keyof ListingsFilters['propertyTypes']) => {
+    const nextPropertyTypes = {
+      ...getDefaultFilters().propertyTypes,
+      [type]: true,
+    };
+
+    setPendingFilters((prev) => ({
+      ...prev,
+      propertyTypes: nextPropertyTypes,
+    }));
+
+    setAppliedFilters((prev) => ({
+      ...prev,
+      propertyTypes: nextPropertyTypes,
+    }));
+
+    setShowFilters(false);
+  };
+
   const selectedPropertyTypeCount = useMemo(
     () => Object.values(pendingFilters.propertyTypes).filter(Boolean).length,
     [pendingFilters.propertyTypes],
@@ -716,6 +743,14 @@ export default function Listings() {
 
   const handleTopSearch = () => {
     const normalizedLocation = locationInput.trim();
+
+    // Require at least something in the search bar (typed text or already-added location tags)
+    if (!normalizedLocation && pendingFilters.locations.length === 0) {
+      setSearchError("Please enter a location or area to search.");
+      return;
+    }
+
+    setSearchError("");
     let nextFilters = pendingFilters;
 
     if (normalizedLocation.length > 0) {
@@ -745,6 +780,7 @@ export default function Listings() {
 
     setAppliedFilters(nextFilters);
     setShowFilters(false);
+    setHasSearched(true);
   };
 
   const openMinPriceDropdown = () => {
@@ -997,7 +1033,7 @@ export default function Listings() {
     }).slice(0, 6);
   }, [locationInput, pendingFilters.locations]);
 
-  const handleAddToFavourites = () => {
+  const handleAddToFavourites = async (propertyId: string) => {
     const token = getAccessToken();
     if (!token) {
       const query = searchParams.toString();
@@ -1006,7 +1042,34 @@ export default function Listings() {
       return;
     }
 
-    // TODO: Persist saved property when favorites backend endpoint is available.
+    if (savingPropertyIds.has(propertyId)) {
+      return; // Already in-flight
+    }
+
+    setSavingPropertyIds((prev) => new Set(prev).add(propertyId));
+
+    try {
+      const isSaved = savedPropertyIds.has(propertyId);
+      if (isSaved) {
+        await propertiesApi.unsave(token, propertyId);
+        setSavedPropertyIds((prev) => {
+          const next = new Set(prev);
+          next.delete(propertyId);
+          return next;
+        });
+      } else {
+        await propertiesApi.save(token, propertyId);
+        setSavedPropertyIds((prev) => new Set(prev).add(propertyId));
+      }
+    } catch {
+      // Non-critical — silently ignore
+    } finally {
+      setSavingPropertyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(propertyId);
+        return next;
+      });
+    }
   };
 
   useEffect(() => {
@@ -1093,6 +1156,44 @@ export default function Listings() {
     void loadProperties();
   }, []);
 
+  // Load saved property IDs for the currently-logged-in user (non-blocking)
+  useEffect(() => {
+    const loadSavedProperties = async () => {
+      const token = getAccessToken();
+      if (!token) return;
+
+      try {
+        const result = await propertiesApi.getSavedProperties(token);
+        const ids = new Set<string>(result.data.map((p) => p.id));
+        setSavedPropertyIds(ids);
+      } catch {
+        // Non-critical — user may not be logged in
+      }
+    };
+
+    void loadSavedProperties();
+  }, []);
+
+  // Load featured agents whenever Estate Agencies category is selected
+  useEffect(() => {
+    if (listingCategory !== 'Estate Agencies' || !hasSearched) return;
+
+    const loadAgents = async () => {
+      setIsLoadingAgents(true);
+      setAgentsError("");
+      try {
+        const data = await propertiesApi.getFeaturedAgents(40);
+        setFeaturedAgents(data);
+      } catch {
+        setAgentsError("Unable to load estate agents right now.");
+      } finally {
+        setIsLoadingAgents(false);
+      }
+    };
+
+    void loadAgents();
+  }, [listingCategory, hasSearched]);
+
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(LISTINGS_VIEW_STATE_KEY);
@@ -1167,17 +1268,32 @@ export default function Listings() {
     return properties.filter((property) => {
       const propertyPrice = parsePrice(property.price);
       const locationLower = property.location.toLowerCase();
+      const titleLower = property.title.toLowerCase();
+      const propertyFeaturesLower = property.features.map((feature) => feature.toLowerCase());
+      const isTownhouse = titleLower.includes('townhouse') || propertyFeaturesLower.includes('townhouse');
+      const isFarm = titleLower.includes('farm') || propertyFeaturesLower.includes('farm');
+      const isIndustrial = titleLower.includes('industrial') || propertyFeaturesLower.includes('industrial');
 
       if (appliedFilters.verifiedOnly && !property.verified) {
         return false;
       }
 
       if (selectedPropertyTypes.length > 0) {
+        const matchesHouse = property.propertyType === 'house' && !isTownhouse && selectedPropertyTypes.includes('house');
+        const matchesTownhouse = property.propertyType === 'house' && isTownhouse && selectedPropertyTypes.includes('townhouse');
+        const matchesApartment = property.propertyType === 'apartment' && selectedPropertyTypes.includes('apartment');
+        const matchesLand = property.propertyType === 'land' && !isFarm && selectedPropertyTypes.includes('land');
+        const matchesFarm = property.propertyType === 'land' && isFarm && selectedPropertyTypes.includes('farm');
+        const matchesCommercial = property.propertyType === 'commercial' && !isIndustrial && selectedPropertyTypes.includes('commercial');
+        const matchesIndustrial = property.propertyType === 'commercial' && isIndustrial && selectedPropertyTypes.includes('industrial');
         const matchesPropertyType =
-          (property.propertyType === 'house' && (selectedPropertyTypes.includes('house') || selectedPropertyTypes.includes('townhouse')))
-          || (property.propertyType === 'apartment' && selectedPropertyTypes.includes('apartment'))
-          || (property.propertyType === 'land' && (selectedPropertyTypes.includes('land') || selectedPropertyTypes.includes('farm')))
-          || (property.propertyType === 'commercial' && (selectedPropertyTypes.includes('commercial') || selectedPropertyTypes.includes('industrial')));
+          matchesHouse
+          || matchesTownhouse
+          || matchesApartment
+          || matchesLand
+          || matchesFarm
+          || matchesCommercial
+          || matchesIndustrial;
 
         if (!matchesPropertyType) {
           return false;
@@ -1225,8 +1341,6 @@ export default function Listings() {
       if (selectedOther.includes('onShow') && property.status !== 'active') {
         return false;
       }
-
-      const propertyFeaturesLower = property.features.map((feature) => feature.toLowerCase());
 
       if (selectedOther.includes('retirement') && !propertyFeaturesLower.includes('retirement')) {
         return false;
@@ -1279,8 +1393,21 @@ export default function Listings() {
     );
   }, [sortBy, filteredProperties]);
 
+  // Category-aware view: 'To Rent' applies a keyword filter; all others show the full sorted list
+  const displayedProperties = useMemo(() => {
+    if (listingCategory === 'To Rent') {
+      const filtered = sortedProperties.filter(
+        (p) =>
+          p.title.toLowerCase().includes('rent') ||
+          p.features.some((f) => f.toLowerCase().includes('rent')),
+      );
+      return filtered;
+    }
+    return sortedProperties;
+  }, [listingCategory, sortedProperties]);
+
   const mapPoints = useMemo<MapPoint[]>(() => {
-    return sortedProperties
+    return displayedProperties
       .filter(
         (property) =>
           property.latitude !== null
@@ -1293,57 +1420,18 @@ export default function Listings() {
         latitude: property.latitude as number,
         longitude: property.longitude as number,
       }));
-  }, [sortedProperties]);
+  }, [displayedProperties]);
 
   const mapViewport = useMemo(() => {
-    if (mapPoints.length === 0) {
-      return null;
-    }
-
-    const latitudes = mapPoints.map((point) => point.latitude);
-    const longitudes = mapPoints.map((point) => point.longitude);
-
-    const minLatitude = Math.min(...latitudes);
-    const maxLatitude = Math.max(...latitudes);
-    const minLongitude = Math.min(...longitudes);
-    const maxLongitude = Math.max(...longitudes);
-
-    const latPadding = Math.max(0.03, (maxLatitude - minLatitude) * 0.25 || 0.03);
-    const lonPadding = Math.max(0.03, (maxLongitude - minLongitude) * 0.25 || 0.03);
-
-    return {
-      minLatitude: minLatitude - latPadding,
-      maxLatitude: maxLatitude + latPadding,
-      minLongitude: minLongitude - lonPadding,
-      maxLongitude: maxLongitude + lonPadding,
-      centerLatitude: (minLatitude + maxLatitude) / 2,
-      centerLongitude: (minLongitude + maxLongitude) / 2,
-    };
+    return buildMapViewport(mapPoints);
   }, [mapPoints]);
 
-  const mapImageUrl = useMemo(() => {
-    if (!mapViewport) {
-      return null;
-    }
-
-    if (MAPBOX_TOKEN) {
-      const markers = mapPoints
-        .slice(0, 20)
-        .map((point) => `pin-s+2563eb(${point.longitude},${point.latitude})`)
-        .join(',');
-
-      const markerPrefix = markers.length > 0 ? `${markers}/` : '';
-      return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${markerPrefix}${mapViewport.centerLongitude},${mapViewport.centerLatitude},9/1200x800?access_token=${MAPBOX_TOKEN}`;
-    }
-
-    const bbox = [
-      mapViewport.minLongitude,
-      mapViewport.minLatitude,
-      mapViewport.maxLongitude,
-      mapViewport.maxLatitude,
-    ].join(',');
-
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik`;
+  const mapSource = useMemo(() => {
+    return buildViewportMapSource({
+      points: mapPoints,
+      viewport: mapViewport,
+      mapboxToken: MAPBOX_TOKEN,
+    });
   }, [mapPoints, mapViewport]);
 
   const mapPins = useMemo(() => {
@@ -1431,6 +1519,42 @@ export default function Listings() {
     const ranked = Array.from(locationCounts.entries()).sort((a, b) => b[1] - a[1]);
     return ranked[0]?.[0] ?? 'Selected Area';
   }, [appliedFilters.locations, sortedProperties]);
+
+  const insightsSingleLocation = useMemo(() => {
+    const selectedLocations = appliedFilters.locations.filter((location) => location.trim().length > 0);
+
+    if (selectedLocations.length === 1) {
+      return selectedLocations[0];
+    }
+
+    if (selectedLocations.length > 1) {
+      return null;
+    }
+
+    const visibleLocations = new Set<string>();
+    sortedProperties.forEach((property) => {
+      const primaryLocation = property.location.split(',')[0]?.trim();
+      if (primaryLocation) {
+        visibleLocations.add(primaryLocation);
+      }
+    });
+
+    if (visibleLocations.size === 1) {
+      return Array.from(visibleLocations)[0];
+    }
+
+    return null;
+  }, [appliedFilters.locations, sortedProperties]);
+
+  const insightsTrendsHeading = useMemo(() => {
+    return insightsSingleLocation ? `${insightsSingleLocation} Trends` : 'Trends';
+  }, [insightsSingleLocation]);
+
+  const insightsPropertyForSaleHeading = useMemo(() => {
+    return insightsSingleLocation ? `${insightsSingleLocation} Property for Sale` : 'Property for Sale';
+  }, [insightsSingleLocation]);
+
+  const insightsLocationSuffix = insightsSingleLocation ? ` in ${insightsSingleLocation}` : '';
 
   const insightsTypeCounts = useMemo(() => {
     const counts = {
@@ -1682,6 +1806,12 @@ export default function Listings() {
               Search
             </Button>
           </div>
+
+          {searchError && (
+            <div className="mt-2 px-1 flex items-center gap-1.5 text-sm font-medium text-red-500" role="alert">
+              <span aria-hidden="true">⚠</span> {searchError}
+            </div>
+          )}
 
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
             <div className="relative">
@@ -2722,14 +2852,57 @@ export default function Listings() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Landing Panel — shown before any search is submitted */}
+        {!hasSearched && (
+          <div className="flex-1 p-6 md:p-12 flex flex-col items-center justify-center text-center">
+            <div className="max-w-2xl w-full">
+              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Shield className="w-10 h-10 text-primary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">Southern Africa&apos;s Trusted Property Platform</h2>
+              <p className="text-muted-foreground text-base mb-8 max-w-xl mx-auto">
+                PRIBEC combines financial-grade transparency with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left mb-8">
+                <div className="bg-muted/50 rounded-xl p-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mb-3">
+                    <Shield className="w-4 h-4 text-green-600" />
+                  </div>
+                  <h4 className="font-semibold text-sm mb-1">Fraud Protection</h4>
+                  <p className="text-xs text-muted-foreground">Every listing is verified against title deeds with immutable audit trails that prevent double-selling.</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <h4 className="font-semibold text-sm mb-1">Diaspora Ready</h4>
+                  <p className="text-xs text-muted-foreground">Geo-tagged progress photos, escrow protection, and remote oversight tools built for international buyers.</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h4 className="font-semibold text-sm mb-1">14-Stage Pipeline</h4>
+                  <p className="text-xs text-muted-foreground">Track your purchase through every legal stage with full document visibility and milestone escrow.</p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
+                <Search className="w-4 h-4 inline mr-2 text-primary" />
+                Enter a location above and click <strong className="text-foreground">Search</strong> to explore verified {listingCategory === 'Estate Agencies' ? 'estate agents' : listingCategory === 'News' ? 'news &amp; updates' : 'properties'}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Results Header */}
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && (
         <div className="bg-card border-b border-border px-4 md:px-6 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg md:text-xl font-semibold mb-1">
                 <span className="text-green-600 flex items-center gap-2">
                   <Shield className="w-5 h-5" />
-                  {sortedProperties.length} {appliedFilters.verifiedOnly ? 'Verified ' : ''}Propert{sortedProperties.length === 1 ? 'y' : 'ies'} Found
+                  {displayedProperties.length} {appliedFilters.verifiedOnly ? 'Verified ' : ''}{listingCategory === 'To Rent' ? (displayedProperties.length === 1 ? 'Rental Property' : 'Rental Properties') : `Propert${displayedProperties.length === 1 ? 'y' : 'ies'}`} Found
                 </span>
               </h2>
               <div className="flex items-center gap-2 text-xs md:text-sm flex-wrap">
@@ -2792,9 +2965,10 @@ export default function Listings() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Alert Banner */}
-        {fraudFlaggedCount > 0 && (
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && fraudFlaggedCount > 0 && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mx-4 md:mx-6 my-4 md:my-6">
             <div className="flex items-start gap-3">
               <div className="text-yellow-600">⚠️</div>
@@ -2811,33 +2985,33 @@ export default function Listings() {
           </div>
         )}
 
-        {isLoadingProperties && (
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && isLoadingProperties && (
           <div className="mx-4 md:mx-6 mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
             Loading listings from database...
           </div>
         )}
 
-        {!isLoadingProperties && propertiesError && (
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && !isLoadingProperties && propertiesError && (
           <div className="mx-4 md:mx-6 mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {propertiesError}
           </div>
         )}
 
         {/* Map View */}
-        {viewMode === "map" && (
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && viewMode === "map" && (
           <div className="flex-1 overflow-auto p-4 md:p-6">
             <div className="relative bg-gray-100 rounded-lg h-full min-h-125 overflow-hidden">
-              {mapImageUrl ? (
-                MAPBOX_TOKEN ? (
+              {mapSource ? (
+                mapSource.type === 'image' ? (
                   <img
-                    src={mapImageUrl}
+                    src={mapSource.url}
                     alt="Map view"
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <iframe
                     title="Property map"
-                    src={mapImageUrl}
+                    src={mapSource.url}
                     className="w-full h-full border-0"
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
@@ -2874,15 +3048,17 @@ export default function Listings() {
         )}
 
         {/* Properties Grid */}
-        {viewMode !== "map" && (
+        {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && viewMode !== "map" && (
           <div className="flex-1 overflow-auto p-4 md:p-6">
-                {!isLoadingProperties && sortedProperties.length === 0 && !propertiesError && (
+                {!isLoadingProperties && displayedProperties.length === 0 && !propertiesError && (
                   <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-600">
-                    No properties found in the database for the selected filters.
+                    {listingCategory === 'To Rent'
+                      ? 'No rental properties found. Try a different location or adjust your filters.'
+                      : 'No properties found in the database for the selected filters.'}
                   </div>
                 )}
                 <div className={viewMode === "grid" ? "grid grid-cols-1 gap-4 md:gap-6" : "flex flex-col gap-4 md:gap-6"}>
-                {sortedProperties.map((property) => (
+                {displayedProperties.map((property) => (
                   <Link
                     key={property.id}
                     to={`/app/property/${property.id}`}
@@ -2914,16 +3090,23 @@ export default function Listings() {
                           <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
                         </div>
                         <button
-                          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-50"
-                          aria-label="Save property"
-                          title="Save property"
+                          className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${
+                            savedPropertyIds.has(property.id)
+                              ? 'bg-primary/10 hover:bg-primary/20'
+                              : 'bg-white hover:bg-gray-50'
+                          }`}
+                          aria-label={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
+                          title={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
+                          disabled={savingPropertyIds.has(property.id)}
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            handleAddToFavourites();
+                            void handleAddToFavourites(property.id);
                           }}
                         >
-                          <Bookmark className="w-4 h-4" />
+                          {savedPropertyIds.has(property.id)
+                            ? <BookmarkCheck className="w-4 h-4 text-primary fill-primary" />
+                            : <Bookmark className="w-4 h-4 text-gray-600" />}
                         </button>
                       </div>
                       <div className="p-4 md:p-5 flex-1">
@@ -2985,13 +3168,110 @@ export default function Listings() {
                 </div>
               </div>
         )}
+
+        {/* Estate Agencies view */}
+        {hasSearched && listingCategory === 'Estate Agencies' && (
+          <div className="flex-1 overflow-auto p-4 md:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">
+                {isLoadingAgents
+                  ? 'Loading agents...'
+                  : `${featuredAgents.length} Estate ${featuredAgents.length === 1 ? 'Agency' : 'Agencies'} Found`}
+              </h3>
+            </div>
+            {agentsError && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mb-4">
+                {agentsError}
+              </div>
+            )}
+            {!isLoadingAgents && featuredAgents.length === 0 && !agentsError && (
+              <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-600">
+                No estate agents found for the selected area.
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {featuredAgents.map((agent) => (
+                <Card key={agent.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                      {agent.fullName.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{agent.fullName}</p>
+                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3 shrink-0" />{agent.location}
+                      </p>
+                    </div>
+                    <Badge className={
+                      agent.tier === 'gold' ? 'bg-amber-500 text-white' :
+                      agent.tier === 'silver' ? 'bg-gray-400 text-white' :
+                      'bg-orange-700 text-white'
+                    }>
+                      {agent.tier.charAt(0).toUpperCase() + agent.tier.slice(1)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{agent.deals} active deal{agent.deals !== 1 ? 's' : ''}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* News view */}
+        {hasSearched && listingCategory === 'News' && (
+          <div className="flex-1 overflow-auto p-4 md:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Newspaper className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">Property News &amp; Updates</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {([
+                { title: 'Southern Africa Property Market Shows Resilience in 2026', date: 'Feb 24, 2026', category: 'Market', summary: 'Despite global headwinds, the residential property sector in Botswana and Zimbabwe continues to attract both local and diaspora investment.' },
+                { title: 'New Anti-Fraud Regulations Strengthen Land Title Protections', date: 'Feb 20, 2026', category: 'Regulation', summary: 'Government amendments to the Land Registry Act introduce mandatory digital verification of title deeds before any transfer can proceed.' },
+                { title: 'Diaspora Investment in Real Estate Grows 18% Year-on-Year', date: 'Feb 15, 2026', category: 'Investment', summary: 'New data shows a significant uptick in cross-border property purchases, driven by improved verification tools and escrow services.' },
+                { title: 'Construction Costs: How to Protect Your Project Budget', date: 'Feb 10, 2026', category: 'Construction', summary: 'Experts share strategies for managing material price volatility and contractor reliability in the current market environment.' },
+              ] as Array<{ title: string; date: string; category: string; summary: string }>).map((item, idx) => (
+                <Card key={idx} className="p-4 md:p-5 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                      <Newspaper className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                        <span className="text-xs text-muted-foreground">{item.date}</span>
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
+                      <p className="text-xs text-muted-foreground">{item.summary}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Other categories placeholder */}
+        {hasSearched && !(['For Sale', 'To Rent', 'Estate Agencies', 'News'] as string[]).includes(listingCategory) && (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-xs">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">{listingCategory}</h3>
+              <p className="text-sm text-muted-foreground">This section is coming soon. We&apos;re building comprehensive data and tools for this category.</p>
+            </div>
+          </div>
+        )}
+
         </div>
 
         {viewMode !== "map" && (
           <aside className="hidden lg:block w-70 shrink-0 pt-4 pb-4 lg:pl-4 lg:pr-4 lg:border-l lg:border-border/60">
             <div className="sticky top-4 space-y-4">
               <Card className="border border-border bg-foreground text-background p-4">
-                <h3 className="text-xl font-semibold">{insightsLocation} Trends</h3>
+                <h3 className="text-xl font-semibold">{insightsTrendsHeading}</h3>
                 <p className="text-sm text-background/70 mb-4">Average Property Price</p>
 
                 <div className="relative h-48 rounded-lg bg-background/5 border border-background/10 p-3">
@@ -3014,21 +3294,25 @@ export default function Listings() {
                   </div>
                 </div>
 
-                <Button className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button
+                  className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  onClick={() => navigate('/app/risk-analytics')}
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
                   More Trends and Statistics
                 </Button>
               </Card>
 
               <Card className="border border-border bg-foreground text-background p-4">
-                <h3 className="text-xl font-semibold mb-3">{insightsLocation} Property for Sale</h3>
+                <h3 className="text-xl font-semibold mb-3">{insightsPropertyForSaleHeading}</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="border-b border-background/15 pb-2">Houses for Sale in {insightsLocation} ({insightsTypeCounts.house})</div>
-                  <div className="border-b border-background/15 pb-2">Apartments / Flats for Sale in {insightsLocation} ({insightsTypeCounts.apartment})</div>
-                  <div className="border-b border-background/15 pb-2">Townhouses for Sale in {insightsLocation} ({insightsTypeCounts.townhouse})</div>
-                  <div className="border-b border-background/15 pb-2">Vacant Land / Plots for Sale in {insightsLocation} ({insightsTypeCounts.land})</div>
-                  <div className="border-b border-background/15 pb-2">Farms for Sale in {insightsLocation} ({insightsTypeCounts.farm})</div>
-                  <div className="border-b border-background/15 pb-2">Commercial Property for Sale in {insightsLocation} ({insightsTypeCounts.commercial})</div>
-                  <div className="border-b border-background/15 pb-1">Industrial Property for Sale in {insightsLocation} ({insightsTypeCounts.industrial})</div>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('house')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Houses for Sale{insightsLocationSuffix} ({insightsTypeCounts.house})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('apartment')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Apartments / Flats for Sale{insightsLocationSuffix} ({insightsTypeCounts.apartment})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('townhouse')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Townhouses for Sale{insightsLocationSuffix} ({insightsTypeCounts.townhouse})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('land')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Vacant Land / Plots for Sale{insightsLocationSuffix} ({insightsTypeCounts.land})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('farm')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Farms for Sale{insightsLocationSuffix} ({insightsTypeCounts.farm})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('commercial')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Commercial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.commercial})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('industrial')} className="w-full text-left border-b border-background/15 pb-1 hover:underline focus:outline-none focus:underline">Industrial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.industrial})</button>
                 </div>
               </Card>
             </div>
