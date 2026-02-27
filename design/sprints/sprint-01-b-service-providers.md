@@ -473,6 +473,44 @@ apps/api/src/identity/
 
 ---
 
+## UI Deliverables (apps/web — completed 2026-02-26)
+
+All views live in `apps/web/src/views/` as `'use client'` components using `@/lib/router-compat`
+for Next.js-compatible routing. Stub data is clearly labelled `STUB_*` for API wiring.
+
+### Views created
+
+| View file | Route | Purpose |
+|-----------|-------|---------|
+| `CompanyRegistration.tsx` | `/company-registration` | 2-step company registration form (identity + address → contact + docs) |
+| `CompanyContextSelect.tsx` | `/company-context-select` | Multi-company login context switcher — shown when `requires_context_selection: true` |
+| `AcceptInvitation.tsx` | `/invitations/[token]` | Invitation acceptance — handles existing user, new user, expired and success states |
+| `CompanyDashboard.tsx` | `/company/dashboard` | Admin dashboard — stats, verification banners, recent activity feed, quick actions |
+| `CompanyProfile.tsx` | `/company/profile` | Company profile view/edit with verification status badge and document submissions |
+| `CompanyUserManagement.tsx` | `/company/users` | Member table with search, status filter, stats row, invite CTA |
+| `CompanyInviteUser.tsx` | `/company/users/invite` | Invite form — email, role (gated by company category), permissions, admin toggle |
+| `CompanyAdminManagement.tsx` | `/company/admins` | Admin list with Crown icon for primary admin; promote-to-admin modal |
+| `CompanyPermissions.tsx` | `/company/permissions` | Per-member permission panel with category groups and select-all per group |
+| `CompanyActivityLogs.tsx` | `/company/activities` | Audit log viewer — search, event-type filter, colour-coded event badges |
+| `CompanyRevokedPool.tsx` | `/company/revoked-pool` | Orphaned task pool — revoked member list, affected parties, assign/close tasks |
+
+### Page wrappers created
+
+All 11 thin `page.tsx` wrappers created under `apps/web/src/app/`:
+`company-registration/`, `company-context-select/`, `invitations/[token]/`,
+`company/dashboard/`, `company/profile/`, `company/users/`, `company/users/invite/`,
+`company/admins/`, `company/permissions/`, `company/activities/`, `company/revoked-pool/`
+
+### Implementation notes
+
+- PRIBEC company categories: `agent | contractor | supplier | conveyancer | inspector | logistics | developing`
+- Role-gating in `CompanyInviteUser` enforces the category → allowed-roles matrix from this spec
+- Permission ceiling respected — UI surfaces "cannot grant beyond role baseline" notice
+- Verification banner adapts to `unverified | pending | verified | rejected` states
+- Revoked pool maps directly to `company_orphaned_tasks` — PATCH assign and POST close targets documented inline
+
+---
+
 ## Acceptance Criteria
 
 - [x] User registers, creates company profile; caller automatically becomes company admin
@@ -488,6 +526,7 @@ apps/api/src/identity/
 - [x] All actions under a company context are tagged with `company_id` in audit logs
 - [x] Company admin can view full activity history of all members under their company
 - [x] Company admin can update a member's permissions within the role's allowed permission ceiling
+- [x] All 11 company-management UI screens implemented and routed in the Next.js web app
 - [x] Company admin can promote any member to admin
 - [x] Company must always retain at least one admin — system rejects operations that would violate this
 - [x] Revoking a member: member cannot log in to that company; all open tasks move to orphaned pool

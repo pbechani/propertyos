@@ -863,12 +863,19 @@ export default function PropertyDetailEnhanced() {
     void loadProperty();
   }, [propertyId]);
 
+  // Restore the listings URL (with filters) when the user navigates back.
+  const backToListings = useMemo(() => {
+    const raw = searchParams.get('back') ?? '';
+    // Only accept paths that point back to the listings page to prevent open-redirect.
+    return raw.startsWith('/app/listings') ? raw : '/app/listings';
+  }, [searchParams]);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <Link to={backToListings} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ChevronLeft className="w-4 h-4" />
             <span>Back to Listings</span>
           </Link>
@@ -1239,7 +1246,7 @@ export default function PropertyDetailEnhanced() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Link 
-                      to={`/agent-profile/${property.agent.id}?back=${encodeURIComponent(pathname || '/app/listings')}`}
+                      to={`/agent-profile/${property.agent.id}?back=${encodeURIComponent(`${pathname || '/app/listings'}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`}
                       className="font-semibold hover:text-blue-600 transition-colors"
                     >
                       {property.agent.name}

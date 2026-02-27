@@ -110,20 +110,18 @@ export default function Register() {
     || (currentStep === 3 && (!formData.agreeToTerms || hasPasswordMismatch));
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Left Side - Branding */}
         <div className="hidden lg:block">
           <Link to="/" className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Home className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+              <Home className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="font-bold text-2xl">
-              PropertyOS <span className="text-blue-500">Pro</span>
-            </span>
+            <span className="font-bold text-2xl">PropertyOS</span>
           </Link>
 
-          <h1 className="text-5xl font-bold mb-6 bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-6">
             Join PropertyOS
           </h1>
           <p className="text-xl text-gray-600 mb-8">
@@ -132,27 +130,27 @@ export default function Register() {
 
           {/* Trust Indicators */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6 text-green-600" />
+            <div className="flex items-center gap-3 p-4 bg-card rounded-lg border border-border">
+              <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <div className="font-semibold text-gray-900">Bank-Level Security</div>
                 <div className="text-sm text-gray-600">256-bit encryption & secure storage</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center gap-3 p-4 bg-card rounded-lg border border-border">
+              <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <div className="font-semibold text-gray-900">Identity Verification</div>
                 <div className="text-sm text-gray-600">KYC protected & verified accounts</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6 text-purple-600" />
+            <div className="flex items-center gap-3 p-4 bg-card rounded-lg border border-border">
+              <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <div className="font-semibold text-gray-900">Compliance Ready</div>
@@ -163,13 +161,13 @@ export default function Register() {
         </div>
 
         {/* Right Side - Registration Form */}
-        <Card className="p-6 md:p-8 bg-white shadow-xl">
+        <Card className="p-6 md:p-8">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Home className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <Home className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl">PropertyOS Pro</span>
+            <span className="font-bold text-xl">PropertyOS</span>
           </div>
 
           {/* Progress Steps */}
@@ -181,8 +179,8 @@ export default function Register() {
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${
                         currentStep >= step.number
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 text-gray-500"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {currentStep > step.number ? <CheckCircle className="w-6 h-6" /> : step.number}
@@ -194,7 +192,7 @@ export default function Register() {
                   {idx < steps.length - 1 && (
                     <div
                       className={`flex-1 h-1 mx-2 ${
-                        currentStep > step.number ? "bg-blue-600" : "bg-gray-200"
+                        currentStep > step.number ? "bg-primary" : "bg-muted"
                       }`}
                     ></div>
                   )}
@@ -226,7 +224,7 @@ export default function Register() {
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/oauth-connect?provider=google")}
-                  className="w-full py-3 border-2 hover:bg-gray-50"
+                  className="w-full py-3 border-2 hover:bg-muted"
                   disabled={isSubmitting}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -253,7 +251,7 @@ export default function Register() {
                   type="button"
                   variant="outline"
                   onClick={() => navigate("/oauth-connect?provider=facebook")}
-                  className="w-full py-3 border-2 hover:bg-gray-50"
+                  className="w-full py-3 border-2 hover:bg-muted"
                   disabled={isSubmitting}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="#1877F2">
@@ -265,10 +263,10 @@ export default function Register() {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+                  <div className="w-full border-t border-border"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">Or continue with email</span>
+                  <span className="px-4 bg-card text-muted-foreground">Or continue with email</span>
                 </div>
               </div>
 
@@ -283,7 +281,7 @@ export default function Register() {
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     placeholder="your.email@example.com"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                     required
                   />
                 </div>
@@ -300,7 +298,7 @@ export default function Register() {
                     value={formData.phone}
                     onChange={(e) => handleChange("phone", e.target.value)}
                     placeholder="+1 (555) 000-0000"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                     required
                   />
                 </div>
@@ -323,7 +321,7 @@ export default function Register() {
                       value={formData.firstName}
                       onChange={(e) => handleChange("firstName", e.target.value)}
                       placeholder="John"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                       required
                     />
                   </div>
@@ -339,19 +337,19 @@ export default function Register() {
                       value={formData.lastName}
                       onChange={(e) => handleChange("lastName", e.target.value)}
                       placeholder="Doe"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-secondary rounded-lg border border-border">
                 <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <Shield className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <div className="font-medium text-blue-900 mb-1">Privacy Protected</div>
-                    <div className="text-sm text-blue-700">
+                    <div className="font-medium mb-1">Privacy Protected</div>
+                    <div className="text-sm text-muted-foreground">
                       Your personal information is encrypted and never shared without your consent.
                     </div>
                   </div>
@@ -374,7 +372,7 @@ export default function Register() {
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
                     placeholder="Create a strong password"
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-12 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                     required
                   />
                   <button
@@ -421,7 +419,7 @@ export default function Register() {
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
                       hasPasswordMismatch
                         ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                        : "border-border focus:ring-ring"
                     }`}
                     required
                   />
@@ -437,20 +435,20 @@ export default function Register() {
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={(e) => handleChange("agreeToTerms", e.target.checked)}
-                  className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 mt-1 border-border rounded focus:ring-ring"
                   required
                 />
                 <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                   I agree to the{" "}
-                  <a href="#" className="text-blue-600 hover:underline font-medium">
+                  <a href="#" className="text-primary hover:underline font-medium">
                     Terms of Service
                   </a>
                   ,{" "}
-                  <a href="#" className="text-blue-600 hover:underline font-medium">
+                  <a href="#" className="text-primary hover:underline font-medium">
                     Privacy Policy
                   </a>
                   , and{" "}
-                  <a href="#" className="text-blue-600 hover:underline font-medium">
+                  <a href="#" className="text-primary hover:underline font-medium">
                     Data Processing Agreement
                   </a>
                 </label>
@@ -474,7 +472,7 @@ export default function Register() {
               type="button"
               onClick={handleNext}
               disabled={isCreateAccountDisabled}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3"
+              className="flex-1 py-3"
             >
               {isSubmitting
                 ? "Creating Account..."
@@ -489,7 +487,7 @@ export default function Register() {
               Already have an account?{" "}
               <Link
                 to={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
-                className="text-blue-600 font-semibold hover:underline"
+                className="text-primary font-semibold hover:underline"
               >
                 Sign In
               </Link>
@@ -497,8 +495,8 @@ export default function Register() {
           </div>
 
           {/* Security Badge */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+          <div className="mt-6 pt-6 border-t border-border">
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Shield className="w-4 h-4" />
               <span>Secured by 256-bit SSL encryption</span>
             </div>

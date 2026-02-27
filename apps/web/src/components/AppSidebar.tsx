@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Shield, BarChart3, User, Menu, X } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard } from 'lucide-react';
 
 interface AppSidebarProps {
   pathname: string;
@@ -13,6 +13,7 @@ interface AppSidebarProps {
 }
 
 const navigation = [
+  { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Home', href: '/app', icon: Home },
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
@@ -58,9 +59,9 @@ export function AppSidebar({
       <aside className={`hidden lg:flex bg-card border-r border-border flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
         <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
           <Link
-            href="/app/listings"
+            href="/app/my-dashboard"
             className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2'} text-foreground`}
-            aria-label="Go to Listings"
+            aria-label="Go to My Dashboard"
             title="PropertyOS"
           >
             <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
@@ -119,10 +120,10 @@ export function AppSidebar({
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card flex flex-col">
             <div className="p-6 border-b border-border flex items-center justify-between gap-2">
               <Link
-                href="/app/listings"
+                href="/app/my-dashboard"
                 onClick={() => setShowMobileMenu(false)}
                 className="flex items-center gap-2 text-foreground"
-                aria-label="Go to Listings"
+                aria-label="Go to My Dashboard"
               >
                 <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
                   <Home className="w-4 h-4 text-white" />

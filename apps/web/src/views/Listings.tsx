@@ -10,7 +10,7 @@ import { Link, useNavigate } from "@/lib/router-compat";
 import { getAccessToken } from "@/lib/auth-session";
 import { ApiError, propertiesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing } from "@/lib/api-client";
 import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const getDefaultFilters = () => ({
   verifiedOnly: false,
@@ -500,9 +500,111 @@ function buildVoiceSearchResult(query: string): VoiceParseResult {
   return { filters, suggestions };
 }
 
+function filtersToSearchParams(
+  filters: ListingsFilters,
+  sortBy: string,
+  listingCategory: string,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set('searched', '1');
+  if (sortBy !== 'relevance') params.set('sort', sortBy);
+  if (listingCategory !== 'For Sale') params.set('category', listingCategory);
+
+  filters.locations.forEach((loc) => params.append('location', loc));
+  Object.entries(filters.propertyTypes).forEach(([type, selected]) => {
+    if (selected) params.append('type', type);
+  });
+
+  if (filters.verifiedOnly) params.set('verified', '1');
+  if (filters.minPrice) params.set('minPrice', filters.minPrice);
+  if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
+  if (filters.minBedrooms > 0) params.set('minBeds', String(filters.minBedrooms));
+  if (filters.minBathrooms > 0) params.set('minBaths', String(filters.minBathrooms));
+  if (filters.minGarage > 0) params.set('minGarage', String(filters.minGarage));
+  if (filters.minFloorSize) params.set('minFloor', filters.minFloorSize);
+  if (filters.minErfSize) params.set('minErf', filters.minErfSize);
+
+  Object.entries(filters.features).forEach(([feat, selected]) => {
+    if (selected) params.append('feat', feat);
+  });
+  Object.entries(filters.other).forEach(([other, selected]) => {
+    if (selected) params.append('other', other);
+  });
+
+  return params;
+}
+
+function filtersFromSearchParams(
+  searchParams: Pick<URLSearchParams, 'has' | 'get' | 'getAll'>,
+): {
+  filters: ListingsFilters;
+  sortBy: 'relevance' | 'price-low-high' | 'price-high-low' | 'newest';
+  listingCategory: (typeof LISTING_CATEGORY_OPTIONS)[number];
+} | null {
+  if (!searchParams.has('searched')) return null;
+
+  const filters = getDefaultFilters();
+
+  const locations = searchParams.getAll('location');
+  if (locations.length > 0) filters.locations = locations;
+
+  const types = searchParams.getAll('type');
+  types.forEach((type) => {
+    if (type in filters.propertyTypes) {
+      filters.propertyTypes[type as keyof typeof filters.propertyTypes] = true;
+    }
+  });
+
+  if (searchParams.get('verified') === '1') filters.verifiedOnly = true;
+
+  const minPrice = searchParams.get('minPrice');
+  if (minPrice) filters.minPrice = minPrice;
+  const maxPrice = searchParams.get('maxPrice');
+  if (maxPrice) filters.maxPrice = maxPrice;
+
+  const minBeds = searchParams.get('minBeds');
+  if (minBeds) filters.minBedrooms = Math.max(0, Number(minBeds));
+  const minBaths = searchParams.get('minBaths');
+  if (minBaths) filters.minBathrooms = Math.max(0, Number(minBaths));
+  const minGarage = searchParams.get('minGarage');
+  if (minGarage) filters.minGarage = Math.max(0, Number(minGarage));
+
+  const minFloor = searchParams.get('minFloor');
+  if (minFloor) filters.minFloorSize = minFloor;
+  const minErf = searchParams.get('minErf');
+  if (minErf) filters.minErfSize = minErf;
+
+  const feats = searchParams.getAll('feat');
+  feats.forEach((feat) => {
+    if (feat in filters.features) {
+      filters.features[feat as keyof typeof filters.features] = true;
+    }
+  });
+  const others = searchParams.getAll('other');
+  others.forEach((other) => {
+    if (other in filters.other) {
+      filters.other[other as keyof typeof filters.other] = true;
+    }
+  });
+
+  const validSorts = ['relevance', 'price-low-high', 'price-high-low', 'newest'] as const;
+  const sortParam = searchParams.get('sort') ?? 'relevance';
+  const sortBy = (validSorts as readonly string[]).includes(sortParam)
+    ? (sortParam as (typeof validSorts)[number])
+    : 'relevance';
+
+  const categoryParam = searchParams.get('category');
+  const listingCategory = (LISTING_CATEGORY_OPTIONS as readonly string[]).includes(categoryParam ?? '')
+    ? (categoryParam as (typeof LISTING_CATEGORY_OPTIONS)[number])
+    : 'For Sale';
+
+  return { filters, sortBy, listingCategory };
+}
+
 export default function Listings() {
   const navigate = useNavigate();
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [showFilters, setShowFilters] = useState(false);
@@ -1194,7 +1296,19 @@ export default function Listings() {
     void loadAgents();
   }, [listingCategory, hasSearched]);
 
+  // Initialise filters: URL params take priority (enables shareable URLs and back-navigation filter preservation);
+  // falls back to sessionStorage on direct visits without params.
   useEffect(() => {
+    const fromUrl = filtersFromSearchParams(searchParams);
+    if (fromUrl) {
+      setAppliedFilters(fromUrl.filters);
+      setPendingFilters(fromUrl.filters);
+      setSortBy(fromUrl.sortBy);
+      setListingCategory(fromUrl.listingCategory);
+      setHasSearched(true);
+      return;
+    }
+
     try {
       const raw = window.sessionStorage.getItem(LISTINGS_VIEW_STATE_KEY);
       if (!raw) {
@@ -1210,6 +1324,7 @@ export default function Listings() {
     } catch {
       // Ignore malformed persisted state.
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -1223,6 +1338,15 @@ export default function Listings() {
 
     window.sessionStorage.setItem(LISTINGS_VIEW_STATE_KEY, JSON.stringify(state));
   }, [viewMode, showDesktopFilters, sortBy, pendingFilters, appliedFilters]);
+
+  // Keep the URL in sync with applied filters so links to property details carry the full filter state back.
+  useEffect(() => {
+    if (!hasSearched) return;
+    const params = filtersToSearchParams(appliedFilters, sortBy, listingCategory);
+    const paramsString = params.toString();
+    const newUrl = `${pathname}${paramsString ? `?${paramsString}` : ''}`;
+    router.replace(newUrl, { scroll: false });
+  }, [appliedFilters, hasSearched, sortBy, listingCategory, pathname, router]);
 
   const parsePrice = (price: string) =>
     Number(price.replace(/[^\d]/g, ''));
@@ -1658,6 +1782,14 @@ export default function Listings() {
       latestValue: values[values.length - 1] ?? fallbackBase,
     };
   }, [sortedProperties, insightsAveragePrice]);
+
+  // URL to return to from the property detail page — includes current filter state so it survives navigation.
+  const listingsBackUrl = useMemo(() => {
+    if (!hasSearched) return '/app/listings';
+    const params = filtersToSearchParams(appliedFilters, sortBy, listingCategory);
+    const paramsString = params.toString();
+    return `/app/listings${paramsString ? `?${paramsString}` : ''}`;
+  }, [appliedFilters, hasSearched, sortBy, listingCategory]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -3026,7 +3158,7 @@ export default function Listings() {
               {mapPins.map((property) => (
                 <Link
                   key={property.id}
-                  to={`/app/property/${property.id}`}
+                  to={`/app/property/${property.id}?back=${encodeURIComponent(listingsBackUrl)}`}
                 >
                   <div
                     className={`absolute ${property.positionClass} -translate-x-1/2 -translate-y-full bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors`}
@@ -3061,7 +3193,7 @@ export default function Listings() {
                 {displayedProperties.map((property) => (
                   <Link
                     key={property.id}
-                    to={`/app/property/${property.id}`}
+                    to={`/app/property/${property.id}?back=${encodeURIComponent(listingsBackUrl)}`}
                     className="group"
                   >
                     {(() => {

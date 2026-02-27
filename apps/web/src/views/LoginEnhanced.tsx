@@ -2,11 +2,10 @@
 
 import { useState, FormEvent, KeyboardEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Home, Mail, Lock, Eye, EyeOff, Shield, Chrome, AlertCircle } from "lucide-react";
+import { Home, Mail, Lock, Eye, EyeOff, Shield, Chrome, AlertCircle, Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { authApi, ApiError } from "@/lib/api-client";
 import { saveAuthSession } from "@/lib/auth-session";
 import { useSearchParams } from "next/navigation";
@@ -47,7 +46,14 @@ export default function LoginEnhanced() {
     try {
       const response = await authApi.login({ email, password });
       saveAuthSession(response);
-      navigate(nextPath ?? "/app/listings");
+
+      const roles = response.user.roles ?? [];
+      if (roles.length > 1) {
+        const nextQuery = nextPath ? `?next=${encodeURIComponent(nextPath)}` : '';
+        navigate(`/company-role-selector${nextQuery}`);
+      } else {
+        navigate(nextPath ?? "/app/listings");
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 400 || err.status === 401) {
@@ -85,11 +91,7 @@ export default function LoginEnhanced() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center p-4">
-      {/* Theme toggle in top right corner */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -100,7 +102,7 @@ export default function LoginEnhanced() {
           <span className="font-bold text-2xl">PropertyOS</span>
         </Link>
 
-        <Card className="p-8 border-gray-200 dark:border-gray-800">
+        <Card className="p-8">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to your account</p>
@@ -128,7 +130,7 @@ export default function LoginEnhanced() {
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleEnterSubmit}
                   placeholder="your.email@example.com"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
               </div>
@@ -146,7 +148,7 @@ export default function LoginEnhanced() {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleEnterSubmit}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full pl-10 pr-12 py-3 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
                 <button
@@ -165,11 +167,11 @@ export default function LoginEnhanced() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 border-gray-300 rounded focus:ring-black"
+                  className="w-4 h-4 border-border rounded focus:ring-ring"
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <Link to="/forgot-password" className="text-sm text-black hover:underline font-medium">
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline font-medium">
                 Forgot password?
               </Link>
             </div>
@@ -177,7 +179,7 @@ export default function LoginEnhanced() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black hover:bg-gray-800 text-white py-3"
+              className="w-full py-3"
             >
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
@@ -199,7 +201,7 @@ export default function LoginEnhanced() {
                 <Separator />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
 
@@ -232,16 +234,24 @@ export default function LoginEnhanced() {
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+          <div className="mt-6">
+            <p className="text-sm text-center text-gray-500 mb-3">Don't have an account?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                to="/company-registration"
+                className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+              >
+                <Building2 className="w-4 h-4 shrink-0" />
+                Business Partner
+              </Link>
               <Link
                 to={nextPath ? `/register?next=${encodeURIComponent(nextPath)}` : "/register"}
-                className="text-black font-semibold hover:underline"
+                className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
-                Sign Up
+                <User className="w-4 h-4 shrink-0" />
+                Individual
               </Link>
-            </p>
+            </div>
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
@@ -250,13 +260,13 @@ export default function LoginEnhanced() {
           </div>
         </Card>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className="mt-6 text-center text-xs text-muted-foreground">
           By signing in, you agree to our{" "}
-          <Link to="#" className="text-black hover:underline">
+          <Link to="#" className="text-foreground hover:underline">
             Terms
           </Link>{" "}
           and{" "}
-          <Link to="#" className="text-black hover:underline">
+          <Link to="#" className="text-foreground hover:underline">
             Privacy Policy
           </Link>
         </div>

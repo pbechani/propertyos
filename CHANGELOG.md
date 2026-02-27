@@ -12,7 +12,76 @@ Related docs:
 
 ## [Unreleased]
 
+### Fixed
+- **Listings filter parameters lost after agent profile navigation** (2026-02-27)
+  - `apps/web/src/views/PropertyDetailEnhanced.tsx`
+    - The agent name link built its `back` param using only `pathname`, discarding the `?back=…` query string that carried the encoded listings filter URL.
+    - Fixed to include the full current URL (`pathname + searchParams`) so the chain Listings → Property Detail → Agent Profile → back → Property Detail → back to Listings correctly restores all filter state.
+
 ### Added
+- **Sprint 01-b: Company Management — Web UI layer** (2026-02-27)
+  - `apps/web/src/views/CompanyRoleSelector.tsx`
+    - Post-login role selector shown when a user holds multiple roles.
+    - Reads roles from stored session user and JWT claims (union, de-duplicated).
+    - Auto-selects when only one role present; routes to role-specific dashboard on continue.
+    - `?next=` redirect param forwarded safely through the selection flow.
+    - Sign-out link clears auth session and returns to `/login`.
+  - `apps/web/src/views/CompanyContextSelect.tsx`
+    - Multi-company context selector shown when `requires_context_selection = true` on login.
+    - Displays company name, category label, role badge, admin badge, and active status.
+    - Calls `POST /api/v1/auth/contexts/select { company_id }` and redirects to company dashboard.
+    - Individual "skip" path available for sole-proprietor users without a company.
+  - `apps/web/src/views/CompanyRegistration.tsx`
+    - Two-step registration form: (1) identity/category/address, (2) contact details/documents.
+    - All seven PRIBEC business categories available as selection options.
+    - Document upload zone (PDF/image) included in step 2 for verification documents.
+    - On submit calls `POST /api/v1/companies`, then navigates to company dashboard.
+  - `apps/web/src/views/CompanyDashboard.tsx`
+    - Overview dashboard for company admins: stats grid (active members, today's activity, pending invitations, verification status).
+    - Verification status banners (pending / verified / rejected) with contextual guidance.
+    - Recent activity feed (latest 5 events) with link to full activity log.
+    - Quick-actions panel: Invite Member, Manage Permissions, Company Profile, Revoked Pool alert.
+  - `apps/web/src/views/CompanyProfile.tsx`
+    - Read / edit view for company details: registration number, tax number, category, address, contact, description.
+    - Inline verification status badge (Verified / Pending / Rejected) with rejection reason display.
+    - Verification documents list with upload CTA and per-document status.
+    - Submit for Verification button shown only when `verificationStatus === 'unverified'`.
+  - `apps/web/src/views/CompanyUserManagement.tsx`
+    - Member table with search and status filters (All / Active / Suspended / Revoked).
+    - Displays role badge, admin shield icon, invitation acceptance state, permission count, and join date.
+    - Invite Member CTA links to invitation flow; stats cards summarize member counts by status.
+  - `apps/web/src/views/CompanyInviteUser.tsx`
+    - Invitation form: email, role selection (limited to company category's allowed roles), optional admin toggle.
+    - Granular permission selector grouped by resource category with select-all per group.
+    - 72-hour expiry caveat shown; success confirmation screen with Invite Another / Back to Users actions.
+  - `apps/web/src/views/CompanyPermissions.tsx`
+    - Split-panel permission manager: member list on left, permission matrix on right.
+    - Permission toggles ceiling-enforced to the member's role baseline.
+    - Save Changes button with inline success state; calls `PATCH /api/v1/companies/:id/members/:memberId/permissions`.
+  - `apps/web/src/views/CompanyAdminManagement.tsx`
+    - Admin-only table listing company administrators with primary/admin type badges.
+    - Warning banner explains elevated privileges; last-admin protection notice at page footer.
+    - Promote Member modal accepts email input and calls promote-admin endpoint.
+  - `apps/web/src/views/CompanyActivityLogs.tsx`
+    - Full-width audit log table with search and event-type filter.
+    - Color-coded event badges for each audit event type.
+    - Stats cards: Total Events, Today, Active Members, Most Active user.
+    - Export Logs CTA (stub — wires to download endpoint in integration).
+  - `apps/web/src/views/CompanyRevokedPool.tsx`
+    - Split-panel manager: revoked member list on left, orphaned task detail on right.
+    - Per-task assign/reassign modal with active-member dropdown.
+    - Notification banner lists affected third parties with "Send Notifications" action.
+    - Close All Tasks and Export Report CTAs per revoked member.
+
+- **Agent dashboard (MyDashboard) — live DB metrics** (2026-02-27)
+  - `apps/web/src/views/MyDashboard.tsx`
+    - Three-tab layout: Overview, Analytics, My Listings.
+    - Overview: stat cards (total listings, views last 7d with trend %, inquiries with response rate, portfolio value) sourced from `GET /api/v1/agent/dashboard` and the properties search API.
+    - Analytics: line/bar charts for Views & Inquiries trend and Top Performing Listings (Recharts); conversion metrics grid.
+    - My Listings: live table of agent's own properties with per-row View/Edit actions.
+    - Add New Listing modal with full form (title, price, address, property type, beds/baths/parking/size, description, photo upload zone, amenity checkboxes) wired to `POST /api/v1/properties`.
+    - `mapPropertyToDashboardListing()` helper maps API `PropertyListing` to table display format with days-on-market calculation.
+
 - **Sprint 01-b: Service Provider & Company Management** (2026-02-26)
   - **DB migration** `202602260006_sprint01b_companies`: four new tables — `identity.companies`, `identity.company_members`, `identity.company_invitations`, `identity.company_orphaned_tasks` with all indexes and constraints.
   - **Prisma schema**: `Company`, `CompanyMember`, `CompanyInvitation`, `CompanyOrphanedTask` models added under the `identity` schema.

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function AppIndexPage() {
-	redirect('/app/listings');
+	redirect('/app/my-dashboard');
 }
