@@ -17,7 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthTokens, ContextSelectorResponse, JwtPayload } from './auth.types';
 import { PrismaService } from '../../database';
 import { NotificationService } from '../notification.service';
-import { DEFAULT_ROLE } from '../identity.constants';
+import { DEFAULT_ROLE, SELF_COMPANY_SLUG } from '../identity.constants';
 import { OAuthLoginDto } from './dto/oauth.dto';
 import { AuditService } from '../audit.service';
 import { OAuthVerificationService } from './oauth-verification.service';
@@ -87,6 +87,9 @@ export class AuthService {
       dto.role ?? DEFAULT_ROLE,
       user.id,
     );
+
+    // Automatically enrol the new user in the Self company as a buyer
+    await this.addUserToSelfCompany(user.id);
 
     const verifyToken = randomUUID();
     const verifyKey = `auth:verify-email:${verifyToken}`;
@@ -166,11 +169,18 @@ export class AuthService {
       userAgent: requestContext.userAgent ?? null,
     });
 
-    // Multi-company: require context selection
+    // Multi-company: issue interim tokens (no company context) so the client
+    // can call POST /auth/contexts/select with a valid Bearer token.
     if (memberships.length > 1) {
+      const interimTokens = await this.issueTokens(user.id, user.email, roles, {
+        active_company_id: null,
+        active_company_role: null,
+        active_company_is_admin: false,
+      });
       return {
         requires_context_selection: true,
         user: this.usersService.sanitizeUser(user),
+        tokens: interimTokens,
         companies: memberships,
       };
     }
@@ -563,6 +573,7 @@ export class AuthService {
         lastName: verifiedIdentity.lastName ?? dto.lastName ?? 'user',
       });
       await this.usersService.assignRole(created.id, DEFAULT_ROLE, created.id);
+      await this.addUserToSelfCompany(created.id);
       if (verifiedIdentity.emailVerified) {
         await this.usersService.markEmailVerified(created.id);
       }
@@ -680,6 +691,7 @@ export class AuthService {
       category: string;
       role: string;
       is_admin: boolean;
+      is_system: boolean;
     }>
   > {
     return this.prisma.$queryRaw<
@@ -690,15 +702,42 @@ export class AuthService {
         category: string;
         role: string;
         is_admin: boolean;
+        is_system: boolean;
       }>
     >`
-      SELECT c.id, c.name, c.slug, c.category, cm.role, cm.is_admin
+      SELECT c.id, c.name, c.slug, c.category, cm.role, cm.is_admin, c.is_system
       FROM identity.company_members cm
       JOIN identity.companies c ON c.id = cm.company_id
       WHERE cm.user_id = ${userId}::uuid
         AND cm.status = 'active'
         AND c.status != 'deactivated'
-      ORDER BY c.name
+      ORDER BY c.is_system DESC, c.name
+    `;
+  }
+
+  /**
+   * Enrols a user in the built-in "Self" system company as a buyer_seller.
+   * Called automatically on every registration path (password + OAuth).
+   * Safe to call multiple times — INSERT is idempotent via ON CONFLICT DO NOTHING.
+   */
+  private async addUserToSelfCompany(userId: string): Promise<void> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM identity.companies
+      WHERE slug = ${SELF_COMPANY_SLUG} AND is_system = true
+      LIMIT 1
+    `;
+    if (rows.length === 0) {
+      this.logger.warn(
+        'Self company not found — skipping auto-enrolment for user ' + userId,
+      );
+      return;
+    }
+    await this.prisma.$executeRaw`
+      INSERT INTO identity.company_members
+        (company_id, user_id, role, is_admin, status, permissions)
+      VALUES
+        (${rows[0].id}::uuid, ${userId}::uuid, 'buyer_seller', false, 'active', '[]'::jsonb)
+      ON CONFLICT (company_id, user_id) DO NOTHING
     `;
   }
 

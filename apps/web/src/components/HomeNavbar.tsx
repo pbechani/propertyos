@@ -22,7 +22,7 @@ import {
   getSessionUpdatedEventName,
   getStoredUser,
 } from '@/lib/auth-session';
-import { isAuthExemptRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
+import { isAuthExemptRoute, isNoNavbarRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
 import type { AuthUser } from '@/lib/api-client';
 
 export default function HomeNavbar() {
@@ -75,7 +75,7 @@ export default function HomeNavbar() {
 
   const showAuthenticatedUserMenu = isAuthenticated && !shouldTreatAsPublicNavbar;
 
-  if (shouldHideForAuthenticatedRoute) {
+  if (shouldHideForAuthenticatedRoute || isNoNavbarRoute(pathname)) {
     return null;
   }
 

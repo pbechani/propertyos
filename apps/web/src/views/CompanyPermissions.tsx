@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings, Search, Save, CheckCircle } from "lucide-react";
+import { useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 
 type Permission = { id: string; name: string; description: string; category: string };
 type Member = { id: string; userId: string; name: string; email: string; role: string };
@@ -46,6 +48,17 @@ function initials(name: string) {
 }
 
 export default function CompanyPermissions() {
+  const navigate = useNavigate();
+  const activeCompany = getActiveCompanyContext();
+
+  useEffect(() => {
+    if (!activeCompany || activeCompany.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const companyName = activeCompany?.name ?? 'Company';
+
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [memberPerms, setMemberPerms] = useState<Record<string, string[]>>(STUB_MEMBER_PERMISSIONS);
   const [search, setSearch] = useState("");
@@ -84,7 +97,7 @@ export default function CompanyPermissions() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl mb-2">Permission Management</h1>
-        <p className="text-gray-600">Configure fine-grained permissions for each team member</p>
+        <p className="text-gray-600">{companyName} · Configure fine-grained permissions for each team member</p>
       </div>
 
       <div className="grid grid-cols-3 gap-6">

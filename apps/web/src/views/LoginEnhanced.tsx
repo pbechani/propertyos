@@ -45,15 +45,20 @@ export default function LoginEnhanced() {
 
     try {
       const response = await authApi.login({ email, password });
+
+      // Always save the session first — for multi-company logins this persists
+      // the interim tokens that the context-select screen needs.
       saveAuthSession(response);
 
-      const roles = response.user.roles ?? [];
-      if (roles.length > 1) {
+      if (response.requires_context_selection) {
+        // User belongs to multiple companies — let them pick a context.
         const nextQuery = nextPath ? `?next=${encodeURIComponent(nextPath)}` : '';
-        navigate(`/company-role-selector${nextQuery}`);
-      } else {
-        navigate(nextPath ?? "/app/listings");
+        navigate(`/company-context-select${nextQuery}`);
+        return;
       }
+
+      // Single company or no company: go straight to the app.
+      navigate(nextPath ?? "/app/listings");
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 400 || err.status === 401) {

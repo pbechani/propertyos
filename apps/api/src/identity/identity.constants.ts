@@ -22,6 +22,13 @@ export const SELF_REGISTRATION_ROLES = IDENTITY_ROLES.filter(
   (r) => r !== 'admin',
 ) as ReadonlyArray<IdentityRole>;
 
+/**
+ * The slug of the built-in "Self" system company.
+ * Every registered user is automatically enrolled as a buyer_seller member.
+ * This company cannot be modified or deleted by users.
+ */
+export const SELF_COMPANY_SLUG = 'self';
+
 export const IDENTITY_PERMISSIONS: Array<{ resource: string; action: string }> =
   [
     { resource: 'property', action: 'read' },

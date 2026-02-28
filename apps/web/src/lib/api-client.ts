@@ -224,9 +224,21 @@ export type AuthUser = {
   role?: string | null;
 };
 
+export type CompanyContext = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  role: string;
+  is_admin: boolean;
+};
+
 export type AuthResponse = {
   user: AuthUser;
   tokens: AuthTokens;
+  /** True when the user belongs to multiple companies — must select a context */
+  requires_context_selection?: boolean;
+  companies?: CompanyContext[];
 };
 
 export type KycStatusResponse = {
@@ -307,6 +319,18 @@ export const authApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }),
+
+  /**
+   * Exchange a company selection for a fully-scoped JWT pair.
+   * Requires the interim access token issued during multi-company login.
+   */
+  selectContext: (authToken: string, companyId: string) =>
+    apiRequest<AuthTokens>('/auth/contexts/select', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_id: companyId }),
     }),
 };
 
@@ -906,6 +930,62 @@ export const propertiesApi = {
 
   getSavedProperties: (authToken: string) =>
     apiRequest<{ data: PropertyListing[]; total: number }>('/users/me/saved-properties', {
+      method: 'GET',
+      authToken,
+    }),
+};
+
+// ─── Companies ────────────────────────────────────────────────────────────────
+
+export type UserCompany = {
+  member_id: string;
+  role: string;
+  is_admin: boolean;
+  status: string;
+  permissions: unknown;
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  company_status: string;
+  verification_status: string;
+};
+
+export type CompanyDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  email: string;
+  phone?: string | null;
+  website?: string | null;
+  description?: string | null;
+  status: string;
+  verification_status: string;
+  is_system: boolean;
+  registration_number?: string | null;
+  tax_number?: string | null;
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    postal_code?: string;
+  } | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const companiesApi = {
+  getMyCompanies: (authToken: string) =>
+    apiRequest<UserCompany[]>('/users/me/companies', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getCompany: (authToken: string, id: string) =>
+    apiRequest<CompanyDetail>(`/companies/${id}`, {
       method: 'GET',
       authToken,
     }),

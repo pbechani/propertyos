@@ -201,7 +201,8 @@ model Company {
   verifiedBy         String?   @map("verified_by") @db.Uuid
   verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(6)
   rejectionReason    String?   @map("rejection_reason") @db.Text
-  createdBy          String    @map("created_by") @db.Uuid
+  isSystem           Boolean   @default(false) @map("is_system")
+  createdBy          String?   @map("created_by") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 

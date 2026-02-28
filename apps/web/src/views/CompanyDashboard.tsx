@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect } from "react";
 import { Link } from "@/lib/router-compat";
+import { useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 import {
   Users,
   Activity,
@@ -65,6 +68,16 @@ function timeAgo(iso: string): string {
 }
 
 export default function CompanyDashboard() {
+  const navigate = useNavigate();
+
+  // Self is the personal system company — it has no company dashboard.
+  useEffect(() => {
+    const active = getActiveCompanyContext();
+    if (!active || active.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const { company, stats, recentActivity } = STUB;
 
   const statItems: StatItem[] = [

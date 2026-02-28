@@ -9,10 +9,14 @@ export type JwtPayload = {
   active_company_is_admin: boolean;
 };
 
-/** Returned instead of tokens when user belongs to multiple companies */
+/** Returned instead of tokens when user belongs to multiple companies.
+ *  Includes interim tokens (no company context) so the client can call
+ *  POST /auth/contexts/select with a valid Bearer token.
+ */
 export type ContextSelectorResponse = {
   requires_context_selection: true;
   user: Record<string, unknown>;
+  tokens: AuthTokens;
   companies: Array<{
     id: string;
     name: string;
@@ -20,6 +24,7 @@ export type ContextSelectorResponse = {
     category: string;
     role: string;
     is_admin: boolean;
+    is_system: boolean;
   }>;
 };
 

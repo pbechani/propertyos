@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Activity, Filter, Download, Search, Calendar } from "lucide-react";
+import { useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 
 type AuditEvent =
   | "company.created"
@@ -71,6 +73,17 @@ function formatEvent(event: string): string {
 }
 
 export default function CompanyActivityLogs() {
+  const navigate = useNavigate();
+  const activeCompany = getActiveCompanyContext();
+
+  useEffect(() => {
+    if (!activeCompany || activeCompany.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const companyName = activeCompany?.name ?? 'Company';
+
   const [search, setSearch] = useState("");
   const [filterEvent, setFilterEvent] = useState("all");
 
@@ -98,7 +111,7 @@ export default function CompanyActivityLogs() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl mb-2">Activity Logs</h1>
-          <p className="text-gray-600">Complete audit trail of company events and user actions</p>
+          <p className="text-gray-600">{companyName} · Complete audit trail of company events and user actions</p>
         </div>
         <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 text-sm">
           <Download className="w-5 h-5" />

@@ -212,6 +212,7 @@ export class CompanyMembersService {
       JOIN identity.companies c ON c.id = cm.company_id
       WHERE cm.user_id = ${userId}::uuid
         AND cm.status = 'active'
+        AND c.is_system = false
       ORDER BY c.name
     `;
   }

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 import {
   Building2,
   Mail,
@@ -71,6 +73,15 @@ function VerificationBadge({ status }: { status: VerificationStatus }) {
 }
 
 export default function CompanyProfile() {
+  const navigate = useNavigate();
+  const activeCompany = getActiveCompanyContext();
+
+  useEffect(() => {
+    if (!activeCompany || activeCompany.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [isEditing, setIsEditing] = useState(false);
   const company = STUB_COMPANY;
 
@@ -79,7 +90,7 @@ export default function CompanyProfile() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl mb-2">Company Profile</h1>
-        <p className="text-gray-600">View and manage your company information</p>
+        <p className="text-gray-600">{activeCompany?.name ?? company.name} · View and manage your company information</p>
       </div>
 
       <div className="max-w-4xl space-y-6">

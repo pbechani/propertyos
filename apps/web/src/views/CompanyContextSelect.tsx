@@ -1,41 +1,12 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
-import { Building2, ChevronRight, Shield, LogOut } from "lucide-react";
-
-type CompanyContext = {
-  companyId: string;
-  companyName: string;
-  category: string;
-  role: string;
-  isAdmin: boolean;
-  isActive: boolean;
-};
-
-type CompanyContextSelectProps = {
-  /** Populated by the login response when requires_context_selection = true */
-  contexts?: CompanyContext[];
-};
-
-const STUB_CONTEXTS: CompanyContext[] = [
-  {
-    companyId: "c1",
-    companyName: "Elite Properties Ltd.",
-    category: "agent",
-    role: "agent",
-    isAdmin: true,
-    isActive: true,
-  },
-  {
-    companyId: "c2",
-    companyName: "BuildRight Contractors",
-    category: "contractor",
-    role: "contractor",
-    isAdmin: false,
-    isActive: true,
-  },
-];
+import { useSearchParams } from "next/navigation";
+import { Building2, ChevronRight, Home, LogOut, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { authApi, ApiError } from "@/lib/api-client";
+import { getAccessToken, getPendingCompanies, getUserCompanies, saveSelectedContextTokens, saveActiveCompanyContext, clearAuthSession } from "@/lib/auth-session";
 
 const CATEGORY_LABELS: Record<string, string> = {
   agent: "Real Estate Agent",
@@ -47,46 +18,100 @@ const CATEGORY_LABELS: Record<string, string> = {
   developing: "Developer",
 };
 
-export default function CompanyContextSelect({ contexts = STUB_CONTEXTS }: CompanyContextSelectProps) {
+export default function CompanyContextSelect() {
   const navigate = useNavigate();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next');
+
   const [selected, setSelected] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Load companies — prefer the pending list (set immediately after login) but fall
+  // back to the persisted list so the "Switch Company" flow from the sidebar also works.
+  const companies = getPendingCompanies() ?? getUserCompanies() ?? [];
+
+  // Only redirect to login if there is no active session at all.
+  useEffect(() => {
+    if (!getAccessToken()) {
+      navigate("/login");
+    } else if (companies.length === 0) {
+      navigate("/login");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleContinue = async () => {
     if (!selected) return;
+    setError("");
     setIsLoading(true);
+
     try {
-      // POST /api/v1/auth/contexts/select { company_id: selected }
-      // → server issues new JWT pair with company context embedded
-      navigate("/company/dashboard");
+      const accessToken = getAccessToken();
+      if (!accessToken) throw new Error("No interim token found.");
+
+      // Exchange the selected company for a fully-scoped JWT pair
+      const tokens = await authApi.selectContext(accessToken, selected);
+      saveSelectedContextTokens(tokens);
+
+      // Persist the selected company so the sidebar can display it
+      const selectedCompany = companies.find((c) => c.id === selected);
+      if (selectedCompany) saveActiveCompanyContext(selectedCompany);
+
+      const safeNext = nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null;
+      // Self is the personal system company — send to My Dashboard, not Company Dashboard
+      const defaultDestination = selectedCompany?.slug === 'self' ? '/app/my-dashboard' : '/company/dashboard';
+      navigate(safeNext ?? defaultDestination);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError("Could not select company context. Please try signing in again.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSignOut = () => {
+    clearAuthSession();
+    navigate("/login");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        {/* Logo — matches login page */}
+        <Link href="/" className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-black dark:bg-white rounded-lg flex items-center justify-center">
+            <Home className="w-7 h-7 text-white dark:text-black" />
+          </div>
+          <span className="font-bold text-2xl">PropertyOS</span>
+        </Link>
+
+        <div className="bg-card border border-border rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl mb-2">Select Company & Role</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-bold mb-2">Select Company & Role</h1>
+            <p className="text-muted-foreground">
               You belong to multiple companies. Choose which context to work in.
             </p>
           </div>
 
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <span className="text-sm text-red-800">{error}</span>
+            </div>
+          )}
+
           {/* Context Cards */}
           <div className="space-y-3 mb-8">
-            {contexts.map((ctx) => {
-              const isSelected = selected === ctx.companyId;
+            {companies.map((co) => {
+              const isSelected = selected === co.id;
               return (
                 <button
-                  key={ctx.companyId}
-                  onClick={() => setSelected(ctx.companyId)}
+                  key={co.id}
+                  onClick={() => setSelected(co.id)}
                   className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
                     isSelected
                       ? "border-indigo-600 bg-indigo-50 shadow-md"
@@ -112,12 +137,12 @@ export default function CompanyContextSelect({ contexts = STUB_CONTEXTS }: Compa
                             isSelected ? "text-indigo-900" : "text-gray-900"
                           }`}
                         >
-                          {ctx.companyName}
+                          {co.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Category badge */}
                           <span className="inline-block px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
-                            {CATEGORY_LABELS[ctx.category] ?? ctx.category}
+                            {CATEGORY_LABELS[co.category] ?? co.category}
                           </span>
                           {/* Role badge */}
                           <span
@@ -127,19 +152,12 @@ export default function CompanyContextSelect({ contexts = STUB_CONTEXTS }: Compa
                                 : "bg-gray-200 text-gray-700"
                             }`}
                           >
-                            {ctx.role.toUpperCase()}
+                            {co.role.toUpperCase()}
                           </span>
                           {/* Admin badge */}
-                          {ctx.isAdmin && (
+                          {co.is_admin && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
                               Admin
-                            </span>
-                          )}
-                          {/* Active indicator */}
-                          {ctx.isActive && (
-                            <span className="text-xs text-green-600 flex items-center gap-1">
-                              <span className="w-2 h-2 bg-green-600 rounded-full" />
-                              Active
                             </span>
                           )}
                         </div>
@@ -164,29 +182,18 @@ export default function CompanyContextSelect({ contexts = STUB_CONTEXTS }: Compa
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {isLoading ? "Loading..." : "Continue to Dashboard"}
+            {isLoading ? "Signing In…" : "Continue to Dashboard"}
             {!isLoading && <ChevronRight className="w-5 h-5" />}
           </button>
 
-          {/* Individual / Solo Mode */}
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Continue as individual without a company context?{" "}
-            <button
-              className="text-indigo-600 hover:underline"
-              onClick={() => navigate("/profile-dashboard")}
-            >
-              Skip
-            </button>
-          </p>
-
           {/* Sign out */}
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-6">
             <button
-              onClick={() => navigate("/login")}
+              onClick={handleSignOut}
               className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1 transition"
             >
               <LogOut className="w-4 h-4" />
-              Sign out
+              Sign out and go back
             </button>
           </div>
         </div>
@@ -194,3 +201,5 @@ export default function CompanyContextSelect({ contexts = STUB_CONTEXTS }: Compa
     </div>
   );
 }
+
+

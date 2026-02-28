@@ -24,7 +24,10 @@ import {
   getRefreshToken,
   getSessionUpdatedEventName,
   getStoredUser,
+  getActiveCompanyContext,
+  getUserCompanies,
 } from "@/lib/auth-session";
+import type { CompanyContext } from "@/lib/api-client";
 
 interface LayoutProps {
   children: ReactNode;
@@ -39,6 +42,8 @@ export function Layout({ children }: LayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [activeCompany, setActiveCompany] = useState<CompanyContext | null>(null);
+  const [hasMultipleCompanies, setHasMultipleCompanies] = useState(false);
 
   const SIDEBAR_COLLAPSED_KEY = 'pribec.sidebar_collapsed';
 
@@ -47,6 +52,8 @@ export function Layout({ children }: LayoutProps) {
     const syncAuth = () => {
       setIsAuthenticated(Boolean(getAccessToken()));
       setCurrentUser(getStoredUser());
+      setActiveCompany(getActiveCompanyContext());
+      setHasMultipleCompanies((getUserCompanies()?.length ?? 0) > 1);
     };
     syncAuth();
     window.addEventListener('storage', syncAuth);
@@ -90,6 +97,7 @@ export function Layout({ children }: LayoutProps) {
   const isPropertyDetailRoute = pathname.startsWith('/app/property/');
   const isProfileDashboardRoute = pathname === '/profile-dashboard';
   const isRoleSetupRoute = pathname === '/role-setup' || pathname === '/profile-setup';
+  const isCompanyRoute = pathname.startsWith('/company/');
   const shouldShowSidebar = isAuthenticated;
   const shouldShowToolbar = !isPropertyDetailRoute;
   const shouldShowThemeToggle = true;
@@ -106,6 +114,9 @@ export function Layout({ children }: LayoutProps) {
         setIsSidebarCollapsed={setIsSidebarCollapsed}
         showMobileMenu={showMobileMenu}
         setShowMobileMenu={setShowMobileMenu}
+        currentUser={currentUser}
+        activeCompany={activeCompany}
+        hasMultipleCompanies={hasMultipleCompanies}
       />
 
       {/* Main Content */}
@@ -167,7 +178,7 @@ export function Layout({ children }: LayoutProps) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 md:gap-4">
-                  {!isProfileDashboardRoute && !isRoleSetupRoute && (
+                  {!isProfileDashboardRoute && !isRoleSetupRoute && !isCompanyRoute && (
                     <>
                       <Button
                         className="bg-blue-500 hover:bg-blue-600 text-white hidden sm:flex"

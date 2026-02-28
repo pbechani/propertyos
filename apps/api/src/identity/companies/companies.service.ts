@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -116,7 +117,11 @@ export class CompaniesService {
     actorId: string,
     requestContext: { ip: string; userAgent?: string | null },
   ) {
-    const company = await this.findById(id);
+    const company = await this.findById(id) as Record<string, unknown>;
+
+    if (company['is_system']) {
+      throw new ForbiddenException('System companies cannot be modified');
+    }
 
     const setClauses: string[] = [];
     const values: unknown[] = [];
@@ -187,6 +192,11 @@ export class CompaniesService {
     requestContext: { ip: string; userAgent?: string | null },
   ) {
     const company = await this.findById(id) as Record<string, string>;
+
+    if ((company as Record<string, unknown>)['is_system']) {
+      throw new ForbiddenException('System companies cannot be modified');
+    }
+
     if (company['verification_status'] !== 'unverified') {
       throw new BadRequestException(
         'Verification already submitted or completed',

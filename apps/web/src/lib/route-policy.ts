@@ -1,3 +1,18 @@
+/**
+ * Routes where the top HomeNavbar should never render,
+ * regardless of authentication state.
+ */
+export const NO_NAVBAR_ROUTES = [
+  '/login',
+  '/company-context-select',
+] as const;
+
+export function isNoNavbarRoute(pathname: string): boolean {
+  return NO_NAVBAR_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 export const AUTH_EXEMPT_ROUTES = [
   '/login',
   '/register',
@@ -13,25 +28,37 @@ export const AUTH_EXEMPT_ROUTES = [
 
 const AUTH_SHELL_ROUTE_PREFIXES = [
   '/app',
+  '/agent',
   '/agent-profile',
-  '/profile-dashboard',
-  '/profile-setup',
-  '/kyc-upload',
-  '/change-password',
-  '/role-setup',
-  '/role-selection',
+  '/ai-design-studio',
+  '/admin',
+  '/boq-workspace',
+  '/buyer',
   '/buyer-dashboard',
-  '/buyer-workspace',
   '/buyer-flow',
+  '/buyer-workspace',
+  '/change-password',
+  '/company',
+  '/company-registration',
+  '/company-role-selector',
+  '/construction',
+  '/contractor-supplier-marketplace',
   '/conveyancer',
   '/escrow',
+  '/fraud-report',
   '/inspection-verification',
+  '/invitations',
+  '/kyc-upload',
   '/logistics-delivery-marketplace',
+  '/profile-dashboard',
+  '/profile-setup',
+  '/properties',
   '/property-lifecycle',
   '/risk-analytics',
-  '/boq-workspace',
+  '/role-selection',
+  '/role-setup',
+  '/service-providers',
   '/workspace',
-  '/admin',
 ] as const;
 
 export function isAuthExemptRoute(pathname: string): boolean {

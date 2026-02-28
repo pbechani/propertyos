@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX } from 'lucide-react';
+import type { AuthUser, CompanyContext } from '@/lib/api-client';
 
 interface AppSidebarProps {
   pathname: string;
@@ -10,15 +13,40 @@ interface AppSidebarProps {
   setIsSidebarCollapsed: (value: boolean | ((prev: boolean) => boolean)) => void;
   showMobileMenu: boolean;
   setShowMobileMenu: (value: boolean) => void;
+  currentUser?: AuthUser | null;
+  activeCompany?: CompanyContext | null;
+  hasMultipleCompanies?: boolean;
 }
 
-const navigation = [
+/** Navigation shown when the active company is the built-in "Self" personal context. */
+const selfNavigation = [
+  { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
+  { name: 'Listings', href: '/app/listings', icon: Building2 },
+  { name: 'Service Providers', href: '/service-providers', icon: Users },
+  { name: 'Project Management', href: '/construction', icon: ClipboardList },
+  { name: 'Safety', href: '/app/safety', icon: Shield },
+  { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+  { name: 'Company Registration', href: '/app/my-companies', icon: Briefcase },
+];
+
+/** Navigation shown when the user is operating under a real company context (non-admin). */
+const companyNavigation = [
   { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Home', href: '/app', icon: Home },
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+];
+
+/** Navigation shown when the user is a company admin. */
+const adminCompanyNavigation = [
+  { name: 'Company Dashboard', href: '/company/dashboard', icon: LayoutDashboard },
+  { name: 'Company Profile', href: '/company/profile', icon: Building2 },
+  { name: 'User Management', href: '/company/users', icon: Users },
+  { name: 'Permissions', href: '/company/permissions', icon: Shield },
+  { name: 'Activity Logs', href: '/company/activities', icon: Activity },
+  { name: 'Revoked Users', href: '/company/revoked-pool', icon: UserX },
 ];
 
 const quickLinks = [
@@ -49,14 +77,37 @@ export function AppSidebar({
   setIsSidebarCollapsed,
   showMobileMenu,
   setShowMobileMenu,
+  currentUser,
+  activeCompany,
+  hasMultipleCompanies = false,
 }: AppSidebarProps) {
+  const router = useRouter();
+  const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+
+  const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
+  const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
+  const isAdmin = activeCompany?.is_admin ?? false;
+  const isSelfCompany = activeCompany?.slug === 'self' || (!activeCompany && !hasMultipleCompanies);
+  const navigation = isSelfCompany
+    ? selfNavigation
+    : isAdmin
+    ? adminCompanyNavigation
+    : companyNavigation;
+
+  const handleSwitchCompany = () => {
+    setShowCompanyMenu(false);
+    router.push('/company-context-select');
+  };
   if (!isAuthenticated) {
     return null;
   }
 
   return (
     <>
+      {/* ── Desktop sidebar ─────────────────────────────────────── */}
       <aside className={`hidden lg:flex bg-card border-r border-border flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+
+        {/* Logo row */}
         <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
           <Link
             href="/app/my-dashboard"
@@ -78,6 +129,62 @@ export function AppSidebar({
           </button>
         </div>
 
+        {/* Company context selector */}
+        {companyName && hasMultipleCompanies && (
+          <div className={`border-b border-border relative ${isSidebarCollapsed ? 'px-2 py-3' : 'p-3'}`}>
+            {isSidebarCollapsed ? (
+              <button
+                onClick={() => setShowCompanyMenu((v) => !v)}
+                aria-label="Company menu"
+                className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-accent transition-colors"
+              >
+                <Building2 className="w-5 h-5 text-muted-foreground" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowCompanyMenu((v) => !v)}
+                className="w-full rounded-lg bg-muted/50 hover:bg-accent transition-colors text-left p-3"
+                aria-expanded={showCompanyMenu}
+                aria-haspopup="true"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Current Company</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {companyRole && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
+                          {companyRole}
+                        </span>
+                      )}
+                      {isAdmin && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500 uppercase tracking-wide">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${showCompanyMenu ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+            )}
+
+            {/* Dropdown */}
+            {showCompanyMenu && (
+              <div className={`absolute z-20 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg py-1 ${isSidebarCollapsed ? 'left-full ml-2 w-48' : 'left-3 right-3'}`}>
+                <button
+                  onClick={handleSwitchCompany}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                >
+                  <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                  Switch Company / Role
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2" aria-label="Main navigation">
           {navigation.map((item) => (
             <Link
@@ -97,6 +204,7 @@ export function AppSidebar({
           ))}
         </nav>
 
+        {/* Quick links */}
         {!isSidebarCollapsed && (
           <div className="p-4 border-t border-border">
             <div className="mt-2">
@@ -114,10 +222,13 @@ export function AppSidebar({
         )}
       </aside>
 
+      {/* ── Mobile drawer ────────────────────────────────────────── */}
       {showMobileMenu && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileMenu(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card flex flex-col">
+
+            {/* Logo row */}
             <div className="p-6 border-b border-border flex items-center justify-between gap-2">
               <Link
                 href="/app/my-dashboard"
@@ -139,7 +250,50 @@ export function AppSidebar({
               </button>
             </div>
 
-            <nav className="flex-1 p-4 space-y-2" aria-label="Mobile main navigation">
+            {/* Company context selector (mobile) */}
+            {companyName && hasMultipleCompanies && (
+              <div className="p-3 border-b border-border relative">
+                <button
+                  onClick={() => setShowCompanyMenu((v) => !v)}
+                  className="w-full rounded-lg bg-muted/50 hover:bg-accent transition-colors text-left p-3"
+                  aria-expanded={showCompanyMenu}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Current Company</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {companyRole && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
+                            {companyRole}
+                          </span>
+                        )}
+                        {isAdmin && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-500 uppercase tracking-wide">
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${showCompanyMenu ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+                {showCompanyMenu && (
+                  <div className="mt-1 bg-popover border border-border rounded-lg shadow-lg py-1">
+                    <button
+                      onClick={() => { handleSwitchCompany(); setShowMobileMenu(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                    >
+                      <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                      Switch Company / Role
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Navigation */}
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto" aria-label="Mobile main navigation">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -164,6 +318,7 @@ export function AppSidebar({
                   <Link
                     key={link.name}
                     href={link.href}
+                    onClick={() => setShowMobileMenu(false)}
                     className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
                   >
                     {link.name}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   UserX,
   AlertTriangle,
@@ -10,6 +10,8 @@ import {
   MoreHorizontal,
   ChevronRight,
 } from "lucide-react";
+import { useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 
 type OrphanedTask = {
   id: string;
@@ -80,6 +82,17 @@ function timeAgo(iso: string): string {
 }
 
 export default function CompanyRevokedPool() {
+  const navigate = useNavigate();
+  const activeCompany = getActiveCompanyContext();
+
+  useEffect(() => {
+    if (!activeCompany || activeCompany.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const companyName = activeCompany?.name ?? 'Company';
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [assignModalTask, setAssignModalTask] = useState<OrphanedTask | null>(null);
   const [selectedAssignee, setSelectedAssignee] = useState("");
@@ -102,7 +115,7 @@ export default function CompanyRevokedPool() {
       <div className="mb-8">
         <h1 className="text-3xl mb-2">Revoked Member Pool</h1>
         <p className="text-gray-600">
-          Manage open tasks from members whose access has been revoked
+          {companyName} · Manage open tasks from members whose access has been revoked
         </p>
       </div>
 

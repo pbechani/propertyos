@@ -13,12 +13,85 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **Self company context: sidebar showed wrong navigation items** (2026-02-28)
+  - `apps/web/src/components/AppSidebar.tsx`
+    - When the active company is the built-in Self system company (`slug === 'self'`), the sidebar was rendering the same navigation as a real company context (Home, Agent Dashboard, etc.).
+    - Introduced `selfNavigation` (My Dashboard, Listings, Service Providers, Project Management, Safety, Analytics) and `companyNavigation` (previous list) as separate static arrays.
+    - `isSelfCompany` flag derived from `activeCompany?.slug === 'self'`; applies to both desktop sidebar and mobile drawer.
+
+- **Self company context: post-login redirect sent user to Company Dashboard** (2026-02-28)
+  - `apps/web/src/views/CompanyContextSelect.tsx`
+    - After selecting the Self company from the multi-company picker, users were unconditionally redirected to `/company/dashboard`.
+    - Fixed: redirect destination now checks `selectedCompany?.slug === 'self'` and sends Self-context users to `/app/my-dashboard` instead.
+  - `apps/web/src/views/CompanyDashboard.tsx`
+    - Added `useEffect` guard: reads `getActiveCompanyContext()` on mount and immediately redirects to `/app/my-dashboard` when the active company is Self or absent (defence-in-depth for direct URL access).
+
+- **12 authenticated routes missing from the shell policy** (2026-02-28)
+  - `apps/web/src/lib/route-policy.ts`
+    - The following routes were not listed in `AUTH_SHELL_ROUTE_PREFIXES` and therefore rendered without sidebar or header when navigated to by an authenticated user:
+      `/agent`, `/ai-design-studio`, `/buyer`, `/company-registration`, `/company-role-selector`, `/construction`, `/contractor-supplier-marketplace`, `/fraud-report`, `/invitations`, `/properties`, `/service-providers`
+    - All routes added. List is now sorted to ease future maintenance.
+
+- **HomeNavbar rendered on login and company-context-select pages** (2026-02-28)
+  - `apps/web/src/lib/route-policy.ts`
+    - Added `NO_NAVBAR_ROUTES` export (`/login`, `/company-context-select`) and `isNoNavbarRoute()` helper.
+  - `apps/web/src/components/HomeNavbar.tsx`
+    - Imports `isNoNavbarRoute` and returns `null` immediately when on a no-navbar route, regardless of authentication state.
+
+- **CompanyContextSelect page had incorrect branding** (2026-02-28)
+  - `apps/web/src/views/CompanyContextSelect.tsx`
+    - Replaced the indigo Shield-icon header and `bg-gradient` full-page background with the PropertyOS logo block used on the login page (black rounded square + `Home` icon + "PropertyOS" wordmark).
+    - Card background updated to `bg-card`/`border-border` tokens to respect the active theme.
+
+### Added
+- **Context-aware sidebar navigation (Self vs Company)** (2026-02-28)
+  - `apps/web/src/components/AppSidebar.tsx`
+    - `selfNavigation` array: My Dashboard · Listings · Service Providers · Project Management · Safety · Analytics — with `Users` and `ClipboardList` icons from Lucide.
+    - `companyNavigation` array: previous set retained for real-company contexts.
+    - Selection is automatic; no prop changes required from `Layout`.
+  - `apps/web/src/lib/route-policy.ts`
+    - `NO_NAVBAR_ROUTES` and `isNoNavbarRoute()` exported as a standalone policy for the top HomeNavbar.
+
+
+  - `apps/web/src/views/CompanyContextSelect.tsx`
+    - Previously read companies exclusively from `sessionStorage` (`getPendingCompanies`), which had already been cleared after the initial login selection.
+    - Now falls back to `getUserCompanies()` (persisted in `localStorage`) so the sidebar's "Switch Company / Role" flow reaches the selector correctly.
+    - Redirect guard now checks `getAccessToken()` first — only sends to `/login` when there is genuinely no active session, not when the pending list was already consumed.
+
+- **Company routes missing from authenticated shell** (2026-02-27)
+  - `apps/web/src/lib/route-policy.ts`
+    - Added `/company` to `AUTH_SHELL_ROUTE_PREFIXES` so all `/company/*` pages render inside the shared shell (left navbar + top header).
+    - Verified prefix matching does **not** accidentally capture `/company-context-select` or `/company-registration` (requires `/company/` with trailing slash or exact match).
+
 - **Listings filter parameters lost after agent profile navigation** (2026-02-27)
   - `apps/web/src/views/PropertyDetailEnhanced.tsx`
     - The agent name link built its `back` param using only `pathname`, discarding the `?back=…` query string that carried the encoded listings filter URL.
     - Fixed to include the full current URL (`pathname + searchParams`) so the chain Listings → Property Detail → Agent Profile → back → Property Detail → back to Listings correctly restores all filter state.
 
 ### Added
+- **Authenticated shell: persistent left navbar on all protected routes** (2026-02-27)
+  - `apps/web/src/components/AppSidebar.tsx`
+    - Accepts two new props: `currentUser?: AuthUser | null` and `activeCompany?: CompanyContext | null` and `hasMultipleCompanies?: boolean`.
+    - **Company context control** rendered between the logo and the nav links when the user belongs to more than one company (`hasMultipleCompanies === true`):
+      - Displays current company name, role badge, and optional Admin badge.
+      - Chevron dropdown exposes a single **Switch Company / Role** action that navigates to `/company-context-select`.
+      - Collapses to a `Building2` icon with a tooltip when the sidebar is in collapsed mode; dropdown offset to the right of the sidebar.
+      - Identical control present in the mobile drawer.
+  - `apps/web/src/components/Layout.tsx`
+    - Tracks `activeCompany` state via `getActiveCompanyContext()`.
+    - Tracks `hasMultipleCompanies` state via `getUserCompanies().length > 1`.
+    - Both synced on every `pribec:session-updated` event so they update without a page reload.
+    - Forwards `currentUser`, `activeCompany`, and `hasMultipleCompanies` to `AppSidebar`.
+    - Added `isCompanyRoute = pathname.startsWith('/company/')` flag; suppresses the **Create Listing** button on all company management pages.
+  - `apps/web/src/lib/auth-session.ts`
+    - New `pribec.user_companies` localStorage key persists the full company list from login response.
+    - `saveActiveCompanyContext(company: CompanyContext)` — writes selected company to `pribec.active_company`.
+    - `getActiveCompanyContext()` — reads it back.
+    - `getUserCompanies()` — returns the persisted companies list (or `null`).
+    - `clearAuthSession()` now also removes both `pribec.user_companies` and `pribec.active_company`.
+  - `apps/web/src/views/CompanyContextSelect.tsx`
+    - Calls `saveActiveCompanyContext(selectedCompany)` after successful context token exchange so the sidebar displays the name and role immediately.
+
 - **Sprint 01-b: Company Management — Web UI layer** (2026-02-27)
   - `apps/web/src/views/CompanyRoleSelector.tsx`
     - Post-login role selector shown when a user holds multiple roles.

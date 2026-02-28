@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from "react";
-import { Link } from "@/lib/router-compat";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "@/lib/router-compat";
+import { getActiveCompanyContext } from "@/lib/auth-session";
 import {
   Users,
   Search,
@@ -43,6 +44,17 @@ function initials(name: string) {
 }
 
 export default function CompanyUserManagement() {
+  const navigate = useNavigate();
+  const activeCompany = getActiveCompanyContext();
+
+  useEffect(() => {
+    if (!activeCompany || activeCompany.slug === 'self') {
+      navigate('/app/my-dashboard');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const companyName = activeCompany?.name ?? 'Company';
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "suspended" | "revoked">("all");
 
@@ -67,7 +79,7 @@ export default function CompanyUserManagement() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl mb-2">User Management</h1>
-          <p className="text-gray-600">Manage company members, roles, and permissions</p>
+          <p className="text-gray-600">{companyName} · Manage company members, roles, and permissions</p>
         </div>
         <Link
           to="/company/users/invite"

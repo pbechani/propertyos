@@ -193,8 +193,7 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions({ resource: 'users', action: 'self' })
+  @UseGuards(JwtAuthGuard)
   @Post('contexts/select')
   selectContext(
     @Req() req: RequestMeta,
