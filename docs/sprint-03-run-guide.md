@@ -87,6 +87,12 @@ If `P3006` occurs due to shadow DB schema validation, use:
 npm run migrate:deploy --workspace=apps/api
 ```
 
+> **Note (2026-03-02):** Two migrations are required for login and registration to work correctly:
+> - `202603020008_property_listing_type` — adds `listing_type` column to `property.properties`
+> - `202603020009_company_id_on_transactions` — adds `company_id` to `identity.audit_logs` and several property tables
+>
+> Without `202603020009`, `AuditService.log()` will throw a Postgres "column not found" error on every auth action, returning HTTP 500. These are included automatically by the `migrate:deploy` command above.
+
 ## 5) Start API and Web
 
 Use separate terminals from repository root:

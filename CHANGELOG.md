@@ -13,6 +13,16 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **Login and registration returning HTTP 500 "Internal server error"** (2026-03-02)
+  - `apps/api/prisma/migrations/202603020008_property_listing_type/migration.sql`
+  - `apps/api/prisma/migrations/202603020009_company_id_on_transactions/migration.sql`
+    - Two Prisma migrations had been authored and committed but never applied to the local development database.
+    - Migration `202603020009` adds a `company_id UUID` column to `identity.audit_logs` (plus `property.properties`, `property.audit_logs`, `property.inquiries`, and `property.fraud_reports`).
+    - `AuditService.log()` already referenced `company_id` in its raw SQL `INSERT`; with the column absent in the DB, every authenticated action that writes an audit entry (login, register, logout, token refresh, etc.) threw a Postgres "column not found" error, which NestJS caught and returned as a 500 response.
+    - Both migrations applied via `prisma migrate deploy`.
+  - `apps/api/prisma/schema.prisma`
+    - Added `companyId String? @map("company_id") @db.Uuid` to the `IdentityAuditLog` model to keep the Prisma schema in sync with the applied migration; re-ran `prisma generate`.
+
 - **Self company context: sidebar showed wrong navigation items** (2026-02-28)
   - `apps/web/src/components/AppSidebar.tsx`
     - When the active company is the built-in Self system company (`slug === 'self'`), the sidebar was rendering the same navigation as a real company context (Home, Agent Dashboard, etc.).

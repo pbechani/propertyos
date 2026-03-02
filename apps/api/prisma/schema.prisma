@@ -151,6 +151,7 @@ model IdentityAuditLog {
   eventId        String   @map("event_id") @db.VarChar(100)
   actorId        String?  @map("actor_id") @db.Uuid
   actorRole      String?  @map("actor_role") @db.VarChar(50)
+  companyId      String?  @map("company_id") @db.Uuid
   action         String   @db.VarChar(100)
   resourceType   String?  @map("resource_type") @db.VarChar(100)
   resourceId     String?  @map("resource_id") @db.Uuid
