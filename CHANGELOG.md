@@ -13,6 +13,31 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **Prisma schema out of sync with applied DB migrations** (2026-03-03)
+  - `apps/api/prisma/schema.prisma`
+    - `Property` model: added `listingType String? @map("listing_type")` (from migration `202603020008`) and `companyId String? @map("company_id")` (from migration `202603020009`) with corresponding `@@index` declarations.
+    - `PropertyInquiry` model: added `companyId String?` field and `@@index([companyId])` — records the company context of the buyer at time of inquiry.
+    - `FraudReport` model: added `companyId String?` field and `@@index([companyId])` — records the company context of the reporter.
+    - `PropertyAuditLog` model: added `companyId String?` field and `@@index([companyId])` — records which company context the action was performed under.
+    - Ran `prisma generate` to regenerate the Prisma Client.
+  - Applied pending migration `202603020010_sprint04_sales_progression` to local dev DB (`prisma migrate deploy`).
+
+### Added
+- **Company-scoped transaction attribution** (2026-03-03)
+  - All authenticated write operations (create/update property listing, submit inquiry, file fraud report, emit audit log entry) are now stamped with the `active_company_id` from the user's JWT so that every transaction is attributed to the company the user was operating under at the time.
+  - **DB layer** — migration `202603020009` (already applied) added `company_id UUID` columns + indexes to:
+    - `property.properties` — records which company the listing agent was operating under.
+    - `property.inquiries` — records which company the buyer was acting as.
+    - `property.fraud_reports` — records which company the reporter was acting as.
+    - `property.audit_logs` — records which company context initiated the audited action.
+    - `identity.audit_logs` — same for identity/auth events (login, register, token refresh).
+  - **API layer** — each controller already extracts `req.user.active_company_id` from the JWT (set by `JwtStrategy` when a user has selected a company context via `POST /auth/contexts/select`) and passes it to:
+    - `PropertyService.createProperty()` / `updateProperty()` / `changeStatus()` / `deleteProperty()`
+    - `InquiryService.createInquiry()`
+    - `FraudService.createReport()`
+    - `PropertyAuditService.log()`
+  - **Self-company users** — `active_company_id` is `null` for sole-proprietor users belonging only to the built-in Self system company; all services handle `null` gracefully (column remains `NULL`).
+
 - **Listings: "Privately Listed" badge missing for Self-company agents** (2026-03-03)
   - `apps/web/src/views/Listings.tsx`
     - Added `isPrivateListing: boolean` field to the `ListingCard` type.

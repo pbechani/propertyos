@@ -301,6 +301,7 @@ model Property {
   title              String    @db.VarChar(255)
   description        String?   @db.Text
   propertyType       String    @map("property_type") @db.VarChar(30)
+  listingType        String?   @map("listing_type") @db.VarChar(20)
   status             String    @default("draft") @db.VarChar(30)
   price              Decimal   @db.Decimal(18, 2)
   currency           String    @default("USD") @db.Char(3)
@@ -311,6 +312,8 @@ model Property {
   features           Json      @default("[]") @db.JsonB
   agentId            String?   @map("agent_id") @db.Uuid
   ownerId            String?   @map("owner_id") @db.Uuid
+  /// Company the agent was acting under when the listing was created (from JWT active_company_id)
+  companyId          String?   @map("company_id") @db.Uuid
   verificationStatus String    @default("unverified") @map("verification_status") @db.VarChar(30)
   verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(6)
   verifiedBy         String?   @map("verified_by") @db.Uuid
@@ -320,8 +323,10 @@ model Property {
   @@index([agentId], name: "idx_properties_agent")
   @@index([status], name: "idx_properties_status")
   @@index([propertyType], name: "idx_properties_type")
+  @@index([listingType], name: "idx_properties_listing_type")
   @@index([verificationStatus], name: "idx_properties_verification")
   @@index([price], name: "idx_properties_price")
+  @@index([companyId], name: "idx_properties_company")
   @@schema("property")
   @@map("properties")
 }
@@ -397,6 +402,8 @@ model PropertyInquiry {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   propertyId    String    @map("property_id") @db.Uuid
   buyerId       String    @map("buyer_id") @db.Uuid
+  /// Company the buyer was acting under at the time of inquiry (from JWT active_company_id)
+  companyId     String?   @map("company_id") @db.Uuid
   inquiryType   String    @map("inquiry_type") @db.VarChar(20)
   message       String?   @db.Text
   preferredDate DateTime? @map("preferred_date") @db.Timestamptz(6)
@@ -407,6 +414,7 @@ model PropertyInquiry {
 
   @@index([propertyId], name: "idx_inquiries_property")
   @@index([buyerId], name: "idx_inquiries_buyer")
+  @@index([companyId], name: "idx_inquiries_company")
   @@schema("property")
   @@map("inquiries")
 }
@@ -426,6 +434,8 @@ model FraudReport {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   propertyId      String    @map("property_id") @db.Uuid
   reporterId      String    @map("reporter_id") @db.Uuid
+  /// Company the reporter was acting under when submitting the report (from JWT active_company_id)
+  companyId       String?   @map("company_id") @db.Uuid
   reportType      String    @map("report_type") @db.VarChar(50)
   description     String    @db.Text
   evidenceUrls    Json      @default("[]") @map("evidence_urls") @db.JsonB
@@ -437,6 +447,7 @@ model FraudReport {
 
   @@index([propertyId], name: "idx_fraud_reports_property")
   @@index([status], name: "idx_fraud_reports_status")
+  @@index([companyId], name: "idx_fraud_reports_company")
   @@schema("property")
   @@map("fraud_reports")
 }
@@ -446,6 +457,8 @@ model PropertyAuditLog {
   eventId      String   @map("event_id") @db.VarChar(100)
   actorId      String?  @map("actor_id") @db.Uuid
   actorRole    String?  @map("actor_role") @db.VarChar(50)
+  /// Company context under which this action was performed (from JWT active_company_id)
+  companyId    String?  @map("company_id") @db.Uuid
   action       String   @db.VarChar(100)
   resourceType String?  @map("resource_type") @db.VarChar(100)
   resourceId   String?  @map("resource_id") @db.Uuid
@@ -456,6 +469,7 @@ model PropertyAuditLog {
 
   @@index([actorId, createdAt], name: "idx_property_audit_actor")
   @@index([resourceType, resourceId], name: "idx_property_audit_resource")
+  @@index([companyId], name: "idx_property_audit_company")
   @@schema("property")
   @@map("audit_logs")
 }
