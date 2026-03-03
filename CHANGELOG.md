@@ -38,18 +38,23 @@ Related docs:
     - `PropertyAuditService.log()`
   - **Self-company users** — `active_company_id` is `null` for sole-proprietor users belonging only to the built-in Self system company; all services handle `null` gracefully (column remains `NULL`).
 
-- **Listings: "Privately Listed" badge missing for Self-company agents** (2026-03-03)
-  - `apps/web/src/views/Listings.tsx`
-    - Added `isPrivateListing: boolean` field to the `ListingCard` type.
-    - `mapPropertyToListingCard()` now sets `isPrivateListing: agentProfile ? !agentProfile.primaryCompanySlug : false`. `primaryCompanySlug` is `null` when the agent belongs only to the built-in Self system company (the SQL subquery in `getAgentProfile` filters `c.is_system = false`), so this correctly evaluates to `true` for privately-listed properties.
-    - A purple `🔒 Privately Listed` badge is now rendered on the listing card overlay whenever `isPrivateListing` is `true`.
-    - The company logo thumbnail at the bottom of the card is hidden for private listings (`{!property.isPrivateListing && ...}`).
-  - `apps/web/src/views/PropertyDetailEnhanced.tsx`
-    - Same `isPrivateListing` logic applied on the detail page: badge appears in both the image hero section and the sidebar agent card.
-    - Company name/logo block in the agent section is conditionally hidden when `isPrivateListing`.
+- **Listings: "Privately Listed" badge missing for Self-company agents** (2026-03-03) — _revised 2026-03-03_
+  - **Root cause (previous approach was insufficient):** The original fix derived `isPrivateListing` from the agent's company membership profile (`!primaryCompanySlug`). This broke for agents who belong to *both* a real company and the Self system company — the badge never showed even when they created a listing under the Self context, because `primaryCompanySlug` was non-null (the real company).
+  - **Correct approach:** Read `company_is_system` directly from the property record. The listing's `company_id` column records which company the agent was operating under at creation time; joining with `identity.companies` provides the `is_system` flag. A listing is privately listed when `company_is_system IS NULL` (no company set) or `company_is_system = true` (Self system company).
   - `apps/api/src/property/property.service.ts`
-    - `getAgentProfile()` SQL subquery selects the agent's first non-system company slug as `primary_company_slug`; returns `null` for sole users who only belong to the Self company.
-    - Response DTO now carries `primaryCompanySlug: string | null`, consumed by both the listings page and the property detail page.
+    - `PropertyRecord` type now includes `company_is_system: boolean | null`.
+    - All four data-fetching queries (`findById`, `getAgentListings`, `getOwnerListings`, `search`) updated from `SELECT p.*` to `SELECT p.*, c.is_system AS company_is_system FROM property.properties p LEFT JOIN identity.companies c ON c.id = p.company_id`.
+  - `apps/web/src/lib/api-client.ts`
+    - `PropertyListing` type now includes `company_is_system?: boolean | null`.
+  - `apps/web/src/views/Listings.tsx`
+    - `mapPropertyToListingCard()` sets `isPrivateListing: property.company_is_system !== false` (i.e. `true` when `null` or `true`).
+    - Added `isPrivateListing: boolean` field to `ListingCard` type (retained from previous fix).
+    - Purple `🔒 Privately Listed` badge rendered on card overlay when `isPrivateListing` is `true`.
+    - Company logo thumbnail hidden for private listings.
+  - `apps/web/src/views/PropertyDetailEnhanced.tsx`
+    - `isPrivateListing = listing.company_is_system !== false` (reads per-listing flag instead of agent profile).
+    - Badge appears in both the image hero section and the sidebar agent card when `isPrivateListing`.
+    - Company name/logo block in the agent section hidden when `isPrivateListing`.
 
 - **Login and registration returning HTTP 500 "Internal server error"** (2026-03-02)
   - `apps/api/prisma/migrations/202603020008_property_listing_type/migration.sql`

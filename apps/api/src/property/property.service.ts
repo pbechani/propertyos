@@ -36,6 +36,8 @@ export type PropertyRecord = {
   owner_id: string | null;
   /** Company the listing was created under. */
   company_id: string | null;
+  /** Whether the listing's company is a system (Self) company. Null means no company was set (also treated as private). */
+  company_is_system: boolean | null;
   verification_status: string;
   verified_at: Date | null;
   created_at: Date;
@@ -191,7 +193,10 @@ export class PropertyService {
     },
   ): Promise<PropertyWithLocation> {
     const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
-      SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
+      SELECT p.*, c.is_system AS company_is_system
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
+      WHERE p.id = ${id}::uuid LIMIT 1
     `;
 
     if (!properties[0]) {
@@ -363,7 +368,9 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.* FROM property.properties p
+      SELECT p.*, c.is_system AS company_is_system
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
       ORDER BY p.created_at DESC
     `;
@@ -403,7 +410,9 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT DISTINCT p.* FROM property.properties p
+      SELECT DISTINCT p.*, c.is_system AS company_is_system
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
       ORDER BY p.created_at DESC
     `;
@@ -536,7 +545,9 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.* FROM property.properties p
+      SELECT p.*, c.is_system AS company_is_system
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
       ORDER BY ${orderBy}
       LIMIT $${idx++}

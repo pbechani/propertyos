@@ -666,6 +666,8 @@ export type PropertyListing = {
   area_sqm?: string | null;
   features?: string[] | null;
   verification_status: PropertyVerificationStatus;
+  /** True = system (Self) company, false = real company, null/undefined = no company set. All non-false values mean privately listed. */
+  company_is_system?: boolean | null;
   created_at: string;
   updated_at: string;
   location?: {

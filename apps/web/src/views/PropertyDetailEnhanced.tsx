@@ -832,7 +832,7 @@ export default function PropertyDetailEnhanced() {
               companyName,
               companyLogoUrl,
             };
-            isPrivateListing = !profile.primaryCompanySlug;
+            isPrivateListing = listing.company_is_system !== false;
             setAgentPhone(profile.phone ?? null);
           } catch {
             const companyName =
