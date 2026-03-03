@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useParams, Link } from "@/lib/router-compat";
 import {
   ChevronLeft, Shield, CheckCircle2, Star, MapPin, Phone, Mail,
@@ -374,6 +375,8 @@ function ReviewCard({ review }: { review: AgentReview }) {
 
 export default function AgentProfile() {
   const { id } = useParams();
+  const searchParams = useSearchParams();
+  const privateOwnerParam = searchParams.get('privateOwner') === 'true';
   const [agentProfile, setAgentProfile] = useState<AgentProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -436,7 +439,7 @@ export default function AgentProfile() {
     );
   }, [agentProfile]);
 
-  const isPrivateIndividual = !agentProfile?.primaryCompanySlug;
+  const isPrivateIndividual = privateOwnerParam || !agentProfile?.primaryCompanySlug;
 
   const recentListings = useMemo(
     () => (agentProfile?.listings ?? []).filter((listing) => listing.status !== 'draft').slice(0, 3),
@@ -821,9 +824,11 @@ export default function AgentProfile() {
             <Card className="p-6 bg-linear-to-br from-green-50 to-blue-50 border-green-200">
               <div className="text-center">
                 <Shield className="w-16 h-16 text-green-600 mx-auto mb-3" />
-                <h3 className="font-bold text-lg mb-2">Verified Agent</h3>
+                <h3 className="font-bold text-lg mb-2">{isPrivateIndividual ? 'Verified Owner' : 'Verified Agent'}</h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  This agent has been verified by PropertyOS and meets our strict trust and safety standards.
+                  {isPrivateIndividual
+                    ? 'This private individual has been verified by PropertyOS as the registered property owner.'
+                    : 'This agent has been verified by PropertyOS and meets our strict trust and safety standards.'}
                 </p>
                 <Badge className="bg-green-500 text-white">
                   <CheckCircle2 className="w-4 h-4 mr-1" />

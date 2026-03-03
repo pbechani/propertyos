@@ -899,6 +899,7 @@ export default function PropertyDetailEnhanced() {
         const similar = relatedListings
           .filter((item) => item.id !== listing.id)
           .filter((item) => item.status === 'active')
+          .filter((item) => item.listing_type === listing.listing_type)
           .map((item) => ({
             listing: item,
             score: computeSimilarityScore(listing, item),
@@ -1332,7 +1333,7 @@ export default function PropertyDetailEnhanced() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Link 
-                      to={`/agent-profile/${property.agent.id}?back=${encodeURIComponent(`${pathname || '/app/listings'}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`}
+                      to={`/agent-profile/${property.agent.id}?${property.isPrivateListing ? 'privateOwner=true&' : ''}back=${encodeURIComponent(`${pathname || '/app/listings'}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`}
                       className="font-semibold hover:text-blue-600 transition-colors"
                     >
                       {property.agent.name}
