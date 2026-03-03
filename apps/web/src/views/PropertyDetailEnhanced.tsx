@@ -7,7 +7,7 @@ import {
   MapPin, Bed, Bath, Car, Maximize, Share2, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, Shield, AlertTriangle,
   Calendar, Clock, History, Flag, ChevronRight, X, ZoomIn,
-  Bookmark, BookmarkCheck
+  Heart, Video, Info
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -323,6 +323,7 @@ type PropertyDetailState = {
   verificationStatus: string;
   propertyType: string;
   listingStatus: string;
+  isPrivateListing: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -354,6 +355,7 @@ function getEmptyPropertyDetail(): PropertyDetailState {
     verificationStatus: "UNVERIFIED",
     propertyType: "",
     listingStatus: "",
+    isPrivateListing: false,
     createdAt: "",
     updatedAt: "",
   };
@@ -627,21 +629,79 @@ export default function PropertyDetailEnhanced() {
   };
 
   const [property, setProperty] = useState<PropertyDetailState>(getEmptyPropertyDetail);
+  const [geocodedCoords, setGeocodedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
+  const isOwnListing = !!currentUser && !!property.agent.id && currentUser.id === property.agent.id;
   const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
   const verificationBadge = getVerificationBadge(property.verificationStatus);
   const hasLocationCoordinates = property.latitude != null && property.longitude != null;
-  const locationMapSource = useMemo(() => {
-    if (!hasLocationCoordinates) {
-      return null;
-    }
 
-    return buildSinglePointMapSource({
-      latitude: property.latitude as number,
-      longitude: property.longitude as number,
-      mapboxToken: MAPBOX_TOKEN,
-    });
-  }, [hasLocationCoordinates, property.latitude, property.longitude]);
+  // Geocode the address via Nominatim when the listing has no stored coordinates
+  useEffect(() => {
+    if (hasLocationCoordinates) {
+      setGeocodedCoords(null);
+      return;
+    }
+    const address = property.address;
+    if (!address || address === 'Address unavailable') return;
+
+    // Deduplicate consecutive identical parts (e.g. "Harare, Harare, ZW" → "Harare, ZW")
+    const deduped = address
+      .split(', ')
+      .filter((part, idx, arr) => part !== arr[idx - 1])
+      .join(', ');
+
+    let cancelled = false;
+    setIsGeocodingAddress(true);
+
+    const nominatimSearch = async (query: string) => {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+        { headers: { 'Accept-Language': 'en', 'User-Agent': 'pribec-property-platform/1.0' } },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<Array<{ lat: string; lon: string }>>;
+    };
+
+    void (async () => {
+      try {
+        let data = await nominatimSearch(deduped);
+
+        // Retry with a shorter query (last 2 parts: city + country) if no result
+        if (data.length === 0) {
+          const parts = deduped.split(', ');
+          const shortQuery = parts.slice(-2).join(', ');
+          if (shortQuery !== deduped) {
+            console.warn('[geocode] No results for full address, retrying with:', shortQuery);
+            data = await nominatimSearch(shortQuery);
+          }
+        }
+
+        if (cancelled) return;
+        const first = data[0];
+        if (first) {
+          setGeocodedCoords({ lat: parseFloat(first.lat), lng: parseFloat(first.lon) });
+        } else {
+          console.warn('[geocode] No results from Nominatim for:', deduped);
+        }
+      } catch (err) {
+        console.warn('[geocode] Nominatim request failed:', err);
+      } finally {
+        if (!cancelled) setIsGeocodingAddress(false);
+      }
+    })();
+    return () => { cancelled = true; setIsGeocodingAddress(false); };
+  }, [hasLocationCoordinates, property.address]);
+
+  const locationMapSource = useMemo(() => {
+    const lat = hasLocationCoordinates ? (property.latitude as number) : geocodedCoords?.lat ?? null;
+    const lng = hasLocationCoordinates ? (property.longitude as number) : geocodedCoords?.lng ?? null;
+    if (lat != null && lng != null) {
+      return buildSinglePointMapSource({ latitude: lat, longitude: lng, mapboxToken: MAPBOX_TOKEN });
+    }
+    return null;
+  }, [hasLocationCoordinates, property.latitude, property.longitude, geocodedCoords]);
   const agentInitials = property.agent.name
     .split(' ')
     .map((part) => part[0] ?? '')
@@ -725,6 +785,7 @@ export default function PropertyDetailEnhanced() {
         }
 
         let mappedAgent = getEmptyPropertyDetail().agent;
+        let isPrivateListing = false;
         if (listing.agent_id) {
           try {
             const profile = await propertiesApi.getAgentProfile(listing.agent_id);
@@ -771,6 +832,7 @@ export default function PropertyDetailEnhanced() {
               companyName,
               companyLogoUrl,
             };
+            isPrivateListing = !profile.primaryCompanySlug;
             setAgentPhone(profile.phone ?? null);
           } catch {
             const companyName =
@@ -796,10 +858,11 @@ export default function PropertyDetailEnhanced() {
           }
         }
 
+        const addressLine1 = listing.location?.address_line1 ?? "";
         const city = listing.location?.city ?? "";
         const region = listing.location?.region ?? "";
         const country = listing.location?.country ?? "";
-        const address = [city, region, country].filter(Boolean).join(", ") || "Address unavailable";
+        const address = [addressLine1, city, region, country].filter(Boolean).join(", ") || "Address unavailable";
         const parsedLatitude = listing.location?.latitude ? Number(listing.location.latitude) : null;
         const parsedLongitude = listing.location?.longitude ? Number(listing.location.longitude) : null;
         const latitude = parsedLatitude != null && Number.isFinite(parsedLatitude) ? parsedLatitude : null;
@@ -829,6 +892,7 @@ export default function PropertyDetailEnhanced() {
           verificationStatus: listing.verification_status.toUpperCase(),
           propertyType: listing.property_type,
           listingStatus: listing.status,
+          isPrivateListing,
           createdAt: listing.created_at,
           updatedAt: listing.updated_at,
         }));
@@ -863,22 +927,15 @@ export default function PropertyDetailEnhanced() {
     void loadProperty();
   }, [propertyId]);
 
-  // Restore the listings URL (with filters) when the user navigates back.
-  const backToListings = useMemo(() => {
-    const raw = searchParams.get('back') ?? '';
-    // Only accept paths that point back to the listings page to prevent open-redirect.
-    return raw.startsWith('/app/listings') ? raw : '/app/listings';
-  }, [searchParams]);
-
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Back Button */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <Link to={backToListings} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ChevronLeft className="w-4 h-4" />
-            <span>Back to Listings</span>
-          </Link>
+            <span>Back</span>
+          </button>
         </div>
       </div>
 
@@ -923,12 +980,15 @@ export default function PropertyDetailEnhanced() {
                   <Badge className={`${statusBadge.className} px-4 py-2`}>
                     {statusBadge.label}
                   </Badge>
+                  {property.isPrivateListing && (
+                    <Badge className="bg-purple-600 text-white px-4 py-2">🔒 Privately Listed</Badge>
+                  )}
                 </div>
                 {/* Actions */}
                 <div className="absolute top-4 right-4 flex gap-2">
                   <button
-                    className={`p-3 rounded-lg shadow-md transition-colors ${
-                      isSaved ? 'bg-primary/10 hover:bg-primary/20' : 'bg-white hover:bg-gray-50'
+                    className={`p-3 rounded-full shadow-md transition-colors ${
+                      isSaved ? 'bg-red-50 hover:bg-red-100' : 'bg-white hover:bg-red-50'
                     }`}
                     onClick={() => { void handleAddToFavourites(); }}
                     disabled={isSavingProperty}
@@ -936,8 +996,8 @@ export default function PropertyDetailEnhanced() {
                     title={isSaved ? 'Remove from saved' : 'Save property'}
                   >
                     {isSaved
-                      ? <BookmarkCheck className="w-5 h-5 text-primary fill-primary" />
-                      : <Bookmark className="w-5 h-5 text-gray-600" />}
+                      ? <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+                      : <Heart className="w-5 h-5 text-gray-400" />}
                   </button>
                   <button
                     className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
@@ -1109,6 +1169,12 @@ export default function PropertyDetailEnhanced() {
                   <span className="text-gray-600">Last Updated</span>
                   <span className="font-medium">{property.updatedAt ? new Date(property.updatedAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
+                {property.isPrivateListing && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Listing Type</span>
+                    <Badge className="bg-purple-600 text-white">🔒 Privately Listed</Badge>
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -1161,9 +1227,17 @@ export default function PropertyDetailEnhanced() {
                       allowFullScreen
                     />
                   )
+                ) : isGeocodingAddress ? (
+                  <div className="w-full h-full flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Locating address on map…
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-sm text-gray-600 px-6 text-center">
-                    Map view is available when listing coordinates are provided.
+                    Map unavailable — no coordinates or recognisable address for this listing.
                   </div>
                 )}
               </div>
@@ -1194,44 +1268,56 @@ export default function PropertyDetailEnhanced() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Schedule Viewing Button - Prominent */}
-            <Card className="p-6 bg-linear-to-br from-blue-500 to-purple-600 text-white">
-              <Calendar className="w-8 h-8 mb-3" />
-              <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
-              <p className="text-blue-100 text-sm mb-4">
-                {isSoldListing
-                  ? "Viewing is unavailable because this property is sold"
-                  : "Book a time to see this property in person"}
-              </p>
-              <Button
-                className="w-full bg-white text-blue-600 hover:bg-blue-50"
-                onClick={() => {
-                  if (!isSoldListing) {
-                    setShowScheduleModal(true);
-                  }
-                }}
-                disabled={isSoldListing}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                {isSoldListing ? "Unavailable" : "Schedule Now"}
-              </Button>
-            </Card>
+            {isOwnListing ? (
+              <Card className="p-6 bg-linear-to-br from-gray-100 to-gray-200 border border-gray-300">
+                <Calendar className="w-8 h-8 mb-3 text-gray-400" />
+                <h3 className="font-bold text-xl mb-2 text-gray-700">Your Listing</h3>
+                <p className="text-gray-500 text-sm">
+                  You cannot schedule a viewing on a property you listed.
+                </p>
+              </Card>
+            ) : (
+              <Card className="p-6 bg-linear-to-br from-blue-500 to-purple-600 text-white">
+                <Calendar className="w-8 h-8 mb-3" />
+                <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
+                <p className="text-blue-100 text-sm mb-4">
+                  {isSoldListing
+                    ? "Viewing is unavailable because this property is sold"
+                    : "Book a time to see this property in person"}
+                </p>
+                <Button
+                  className="w-full bg-white text-blue-600 hover:bg-blue-50"
+                  onClick={() => {
+                    if (!isSoldListing) {
+                      setShowScheduleModal(true);
+                    }
+                  }}
+                  disabled={isSoldListing}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {isSoldListing ? "Unavailable" : "Schedule Now"}
+                </Button>
+              </Card>
+            )}
 
-            <Card className="p-5 text-center">
-              <div className="flex justify-center mb-2">
-                {property.agent.companyLogoUrl ? (
-                  <img
-                    src={property.agent.companyLogoUrl}
-                    alt={`${property.agent.companyName} logo`}
-                    className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500">
-                    {property.agent.companyName.charAt(0).toUpperCase() || "C"}
-                  </div>
-                )}
-              </div>
-              <p className="text-sm font-medium text-gray-800">{property.agent.companyName}</p>
-            </Card>
+            {!property.isPrivateListing && (
+              <Card className="p-5 text-center">
+                <div className="flex justify-center mb-2">
+                  {property.agent.companyLogoUrl ? (
+                    <img
+                      src={property.agent.companyLogoUrl}
+                      alt={`${property.agent.companyName} logo`}
+                      className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500">
+                      {property.agent.companyName.charAt(0).toUpperCase() || "C"}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-gray-800">{property.agent.companyName}</p>
+              </Card>
+            )}
 
             {/* Agent Card */}
             <Card className="p-6">
@@ -1263,6 +1349,11 @@ export default function PropertyDetailEnhanced() {
                 </div>
               </div>
 
+              {isOwnListing ? (
+                <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                  You cannot send inquiries or contact yourself on a property you listed.
+                </div>
+              ) : (
               <div className="space-y-3">
                 <div>
                   <label className="text-sm text-gray-600 mb-1 block">Full Name</label>
@@ -1352,6 +1443,7 @@ export default function PropertyDetailEnhanced() {
                   <p className="text-xs text-gray-400 text-center">Agent contact number not available</p>
                 )}
               </div>
+              )}
             </Card>
 
             {/* Similar Properties */}

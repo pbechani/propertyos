@@ -3,10 +3,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { useSearchParams } from "next/navigation";
-import { Building2, ChevronRight, Home, LogOut, AlertCircle } from "lucide-react";
+import { ChevronRight, Home, LogOut, AlertCircle } from "lucide-react";
+
+/** Deterministic pastel-ish bg colour from a string (stays consistent across renders) */
+function nameToColor(name: string): string {
+  const COLORS = [
+    '#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626',
+    '#7c3aed', '#db2777', '#0284c7', '#16a34a', '#ca8a04',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
 import Link from "next/link";
-import { authApi, ApiError } from "@/lib/api-client";
-import { getAccessToken, getPendingCompanies, getUserCompanies, saveSelectedContextTokens, saveActiveCompanyContext, clearAuthSession } from "@/lib/auth-session";
+import { getAccessToken, getPendingCompanies, getUserCompanies, saveSelectedContextTokens, saveActiveCompanyContext, saveUserCompanies, savePendingCompanies, clearAuthSession } from "@/lib/auth-session";
+import { authApi, type CompanyContext, ApiError } from "@/lib/api-client";
 
 const CATEGORY_LABELS: Record<string, string> = {
   agent: "Real Estate Agent",
@@ -26,18 +37,40 @@ export default function CompanyContextSelect() {
   const [selected, setSelected] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
 
-  // Load companies — prefer the pending list (set immediately after login) but fall
-  // back to the persisted list so the "Switch Company" flow from the sidebar also works.
-  const companies = getPendingCompanies() ?? getUserCompanies() ?? [];
+  // Start empty (safe for SSR). The effect below immediately fills from storage
+  // then refreshes from the API so logos are always current.
+  const [companies, setCompanies] = useState<CompanyContext[]>([]);
 
-  // Only redirect to login if there is no active session at all.
   useEffect(() => {
-    if (!getAccessToken()) {
+    const token = getAccessToken();
+    if (!token) {
       navigate("/login");
-    } else if (companies.length === 0) {
-      navigate("/login");
+      return;
     }
+
+    // Step 1: apply stored companies synchronously so the list appears instantly.
+    const stored = getPendingCompanies() ?? getUserCompanies() ?? [];
+    if (stored.length === 0) {
+      navigate("/login");
+      return;
+    }
+    setCompanies(stored);
+
+    // Step 2: fetch fresh data so logos/roles are up-to-date.
+    authApi.getContexts(token)
+      .then((fresh) => {
+        if (Array.isArray(fresh) && fresh.length > 0) {
+          setCompanies(fresh);
+          saveUserCompanies(fresh);
+          savePendingCompanies(fresh);
+        }
+      })
+      .catch((err) => {
+        // Stale stored data is an acceptable fallback, but log for debugging
+        console.warn('[CompanyContextSelect] getContexts refresh failed:', err);
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleContinue = async () => {
@@ -120,15 +153,26 @@ export default function CompanyContextSelect() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      {/* Company Icon */}
-                      <div
-                        className={`flex items-center justify-center w-12 h-12 rounded-lg ${
-                          isSelected ? "bg-indigo-600" : "bg-gray-100"
-                        }`}
-                      >
-                        <Building2
-                          className={`w-6 h-6 ${isSelected ? "text-white" : "text-gray-600"}`}
-                        />
+                      {/* Company Logo / Icon */}
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {co.logo_url && !failedLogos.has(co.id) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={co.logo_url}
+                            alt={co.name}
+                            className="w-12 h-12 object-cover"
+                            onError={() =>
+                              setFailedLogos((prev) => new Set(prev).add(co.id))
+                            }
+                          />
+                        ) : (
+                          <span
+                            className="w-12 h-12 flex items-center justify-center rounded-lg text-white font-bold text-lg select-none"
+                            style={{ backgroundColor: nameToColor(co.name) }}
+                          >
+                            {co.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
 
                       <div>
@@ -154,8 +198,8 @@ export default function CompanyContextSelect() {
                           >
                             {co.role.toUpperCase()}
                           </span>
-                          {/* Admin badge */}
-                          {co.is_admin && (
+                          {/* Admin badge — only shown when the member role is not already "admin" */}
+                          {co.is_admin && co.role !== 'admin' && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
                               Admin
                             </span>

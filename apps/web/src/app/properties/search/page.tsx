@@ -432,7 +432,11 @@ function PropertySearchResultsContent() {
                 </div>
               )}
               {cardResults.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  refParam={'/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '')}
+                />
               ))}
             </div>
 

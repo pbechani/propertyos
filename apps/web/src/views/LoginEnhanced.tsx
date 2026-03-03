@@ -25,16 +25,6 @@ export default function LoginEnhanced() {
   const nextPath = hasSafeNextPath ? nextPathParam : null;
 
   const handleCancel = () => {
-    if (nextPath) {
-      navigate(nextPath);
-      return;
-    }
-
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-
     navigate('/');
   };
 

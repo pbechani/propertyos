@@ -1,6 +1,9 @@
 export const PROPERTY_TYPES = ['land', 'residential', 'commercial', 'off_plan'] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
+export const LISTING_TYPES = ['for_sale', 'to_rent', 'development'] as const;
+export type ListingType = (typeof LISTING_TYPES)[number];
+
 export const PROPERTY_STATUSES = ['draft', 'active', 'under_offer', 'sold', 'withdrawn'] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 

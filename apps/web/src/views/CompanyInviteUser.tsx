@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { useNavigate, Link } from "@/lib/router-compat";
+import { Link } from "@/lib/router-compat";
 import { UserPlus, Mail, ArrowLeft, Send, CheckCircle, Shield } from "lucide-react";
 
 type Permission = { id: string; name: string; description: string; category: string };
@@ -56,7 +56,6 @@ function groupBy<T>(arr: T[], key: (item: T) => string): Record<string, T[]> {
 }
 
 export default function CompanyInviteUser() {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     role: "",

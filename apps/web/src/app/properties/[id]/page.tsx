@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PipelineTracker, { PURCHASE_STAGES } from '@/components/property/PipelineTracker';
 import { PropertyActions } from '@/components/property/PropertyActions';
+import BackButton from '@/components/property/BackButton';
 
 const PROPERTY = {
   id: '1',
@@ -127,7 +128,41 @@ type PropertyPageProps = {
   params: {
     id: string;
   };
+  searchParams: Record<string, string | string[] | undefined>;
 };
+
+type BackContext = { href: string; label: string };
+
+function getBackContext(ref?: string): BackContext {
+  if (!ref) return { href: '/properties', label: 'Property Marketplace' };
+
+  const decoded = decodeURIComponent(ref);
+
+  // Only allow safe internal paths
+  if (!decoded.startsWith('/')) {
+    return { href: '/properties', label: 'Property Marketplace' };
+  }
+
+  if (decoded.startsWith('/properties/search')) {
+    try {
+      const url = new URL(decoded, 'http://localhost');
+      const city = url.searchParams.get('city');
+      const label = city ? `Search Results – ${city}` : 'Search Results';
+      return { href: decoded, label };
+    } catch {
+      return { href: '/properties/search', label: 'Search Results' };
+    }
+  }
+
+  if (decoded === '/properties' || decoded.startsWith('/properties?')) {
+    return { href: decoded, label: 'Property Marketplace' };
+  }
+
+  // Generic internal path fallback
+  const segment = decoded.split('/').filter(Boolean)[1] ?? 'listings';
+  const label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+  return { href: decoded, label };
+}
 
 function getListingSeoDescription(description: string): string {
   const normalized = description.replace(/\s+/g, ' ').trim();
@@ -165,7 +200,9 @@ export async function generateMetadata({ params }: PropertyPageProps): Promise<M
   };
 }
 
-export default async function PropertyDetail({ params }: PropertyPageProps) {
+export default async function PropertyDetail({ params, searchParams }: PropertyPageProps) {
+  const ref = typeof searchParams.ref === 'string' ? searchParams.ref : undefined;
+  const backContext = getBackContext(ref);
   const liveProperty = await fetchPropertyById(params.id);
   const PROPERTY = mapApiPropertyToDisplayProperty(liveProperty);
   const deposit = PROPERTY.price * 0.1;
@@ -210,14 +247,19 @@ export default async function PropertyDetail({ params }: PropertyPageProps) {
 
       {/* ── BREADCRUMB ── */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/" className="hover:text-[#0A1628] transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/properties" className="hover:text-[#0A1628] transition-colors">Marketplace</Link>
-          <span>/</span>
-          <Link href="/properties/search" className="hover:text-[#0A1628] transition-colors">Search</Link>
-          <span>/</span>
-          <span className="text-[#0A1628] font-medium truncate max-w-xs">{PROPERTY.title}</span>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+          <BackButton />
+          <span className="text-gray-200 shrink-0">│</span>
+          {/* Breadcrumb trail */}
+          <div className="flex items-center gap-2 text-sm text-gray-400 min-w-0">
+            <Link href="/" className="hover:text-[#0A1628] transition-colors shrink-0">Home</Link>
+            <span>/</span>
+            <Link href={backContext.href} className="hover:text-[#0A1628] transition-colors shrink-0 hidden sm:inline">
+              {backContext.label}
+            </Link>
+            <span className="hidden sm:inline">/</span>
+            <span className="text-[#0A1628] font-medium truncate">{PROPERTY.title}</span>
+          </div>
         </div>
       </div>
 

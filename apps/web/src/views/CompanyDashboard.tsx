@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@/lib/router-compat";
 import { useNavigate } from "@/lib/router-compat";
-import { getActiveCompanyContext } from "@/lib/auth-session";
+import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
+import { companiesApi, type CompanyDashboardData } from "@/lib/api-client";
 import {
   Users,
   Activity,
@@ -15,10 +16,8 @@ import {
   UserX,
   Shield,
   Mail,
+  Loader2,
 } from "lucide-react";
-
-type CompanyStatus = "pending_verification" | "active" | "suspended";
-type VerificationStatus = "unverified" | "pending" | "verified" | "rejected";
 
 type StatItem = {
   name: string;
@@ -26,36 +25,6 @@ type StatItem = {
   icon: React.ElementType;
   color: string;
   sub: string;
-};
-
-type RecentActivity = {
-  id: string;
-  userName: string;
-  action: string;
-  timestamp: string;
-};
-
-// Stub data — replace with API calls in Sprint 01-b integration
-const STUB = {
-  company: {
-    name: "Elite Properties Ltd.",
-    category: "agent",
-    status: "active" as CompanyStatus,
-    verificationStatus: "verified" as VerificationStatus,
-  },
-  stats: {
-    activeMembers: 6,
-    pendingInvitations: 2,
-    todayActivities: 14,
-    revokedPool: 1,
-  },
-  recentActivity: [
-    { id: "1", userName: "Sarah Johnson", action: "Created a new property listing", timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
-    { id: "2", userName: "Mike Chen", action: "Updated listing: 5 Elm Street", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-    { id: "3", userName: "Lisa Patel", action: "Accepted invitation", timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
-    { id: "4", userName: "Tom Williams", action: "Submitted buyer inquiry response", timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-    { id: "5", userName: "Anna Brooks", action: "Updated company profile", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-  ] as RecentActivity[],
 };
 
 function timeAgo(iso: string): string {
@@ -67,18 +36,70 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function formatAction(action: string): string {
+  return action
+    .replace(/_/g, ' ')
+    .replace(/\./g, ' › ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function actorName(entry: CompanyDashboardData['recentActivity'][number]): string {
+  if (entry.first_name || entry.last_name) {
+    return [entry.first_name, entry.last_name].filter(Boolean).join(' ');
+  }
+  return entry.email ?? 'Unknown user';
+}
+
 export default function CompanyDashboard() {
   const navigate = useNavigate();
+  const [data, setData] = useState<CompanyDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Self is the personal system company — it has no company dashboard.
+  const activeCompany = getActiveCompanyContext();
+
   useEffect(() => {
-    const active = getActiveCompanyContext();
-    if (!active || active.slug === 'self') {
+    if (!activeCompany || activeCompany.slug === 'self') {
       navigate('/app/my-dashboard');
+      return;
     }
+
+    const token = getAccessToken();
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    companiesApi
+      .getDashboard(token, activeCompany.id)
+      .then(setData)
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Failed to load dashboard';
+        setError(msg);
+      })
+      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { company, stats, recentActivity } = STUB;
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-8">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-700">{error ?? 'Could not load dashboard data.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { company, stats, recentActivity } = data;
 
   const statItems: StatItem[] = [
     {
@@ -93,7 +114,7 @@ export default function CompanyDashboard() {
       value: stats.todayActivities,
       icon: Activity,
       color: "bg-green-500",
-      sub: "+3 from yesterday",
+      sub: "Actions logged today",
     },
     {
       name: "Pending Invitations",
@@ -104,10 +125,10 @@ export default function CompanyDashboard() {
     },
     {
       name: "Company Status",
-      value: company.verificationStatus === "verified" ? "Verified" : "Pending",
-      icon: company.verificationStatus === "verified" ? CheckCircle : Clock,
-      color: company.verificationStatus === "verified" ? "bg-emerald-500" : "bg-gray-400",
-      sub: company.verificationStatus === "verified" ? "Fully active" : "Under review",
+      value: company.verification_status === "verified" ? "Verified" : "Pending",
+      icon: company.verification_status === "verified" ? CheckCircle : Clock,
+      color: company.verification_status === "verified" ? "bg-emerald-500" : "bg-gray-400",
+      sub: company.verification_status === "verified" ? "Fully active" : "Under review",
     },
   ];
 
@@ -122,7 +143,7 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Verification Banner */}
-      {company.verificationStatus === "pending" && (
+      {company.verification_status === "pending" && (
         <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -135,7 +156,7 @@ export default function CompanyDashboard() {
         </div>
       )}
 
-      {company.verificationStatus === "verified" && (
+      {company.verification_status === "verified" && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -147,7 +168,7 @@ export default function CompanyDashboard() {
         </div>
       )}
 
-      {company.verificationStatus === "rejected" && (
+      {company.verification_status === "rejected" && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -196,21 +217,25 @@ export default function CompanyDashboard() {
               View all <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="space-y-4">
-            {recentActivity.map((item) => (
-              <div key={item.id} className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0">
-                  <Activity className="w-4 h-4 text-indigo-600" />
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-gray-500">No activity recorded yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((item) => (
+                <div key={item.id} className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0">
+                    <Activity className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <strong>{actorName(item)}</strong> — {formatAction(item.action)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">{timeAgo(item.created_at)}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm">
-                    <strong>{item.userName}</strong> — {item.action}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{timeAgo(item.timestamp)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -253,7 +278,7 @@ export default function CompanyDashboard() {
               <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
             </Link>
 
-            {stats.revokedPool > 0 && (
+            {stats.openOrphanedTasks > 0 && (
               <Link
                 to="/company/revoked-pool"
                 className="flex items-center gap-3 p-4 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 transition group"
@@ -262,7 +287,7 @@ export default function CompanyDashboard() {
                 <div>
                   <p className="text-sm font-medium text-red-700">Revoked Pool</p>
                   <p className="text-xs text-red-600">
-                    {stats.revokedPool} task{stats.revokedPool > 1 ? "s" : ""} need attention
+                    {stats.openOrphanedTasks} task{stats.openOrphanedTasks > 1 ? "s" : ""} need attention
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-red-400 ml-auto" />

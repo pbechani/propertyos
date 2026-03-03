@@ -14,13 +14,16 @@ import { VerificationStorageService } from './verification-storage.service';
 
 @Module({
   controllers: [
+    // BuyerController must be registered BEFORE PropertyController so that
+    // GET /properties/my-listings is matched by its static handler BEFORE
+    // PropertyController's parameterised @Get(':id') route intercepts it.
+    BuyerController,
+    InquiryResponseController,
+    SavedPropertiesController,
     PropertyController,
     AgentDashboardController,
     VerificationController,
     AdminVerificationController,
-    BuyerController,
-    InquiryResponseController,
-    SavedPropertiesController,
     FraudController,
     AdminFraudController,
   ],

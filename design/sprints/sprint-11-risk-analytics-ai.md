@@ -247,6 +247,160 @@ User query → Embed query (text-embedding-ada-002)
            → Log to rag_queries table
 ```
 
+---
+
+### Document Extraction Implementation (Claude API)
+
+Used for: title deeds, contracts, KYC ID documents, inspection certificates, invoices.
+
+```python
+# apps/ai-services/document_extraction/extractor.py
+import anthropic, base64, json
+
+async def extract_document_data(pdf_bytes: bytes, document_type: str) -> dict:
+    client = anthropic.Anthropic()
+    
+    schema_map = {
+        "title_deed": '{ "owner_name": "", "plot_number": "", "area_m2": 0, "registration_date": "YYYY-MM-DD", "encumbrances": [], "red_flags": [] }',
+        "contract":   '{ "parties": [], "effective_date": "YYYY-MM-DD", "value": 0, "currency": "", "key_clauses": [], "red_flags": [] }',
+        "id_document": '{ "full_name": "", "id_number": "", "dob": "YYYY-MM-DD", "expiry": "YYYY-MM-DD", "nationality": "", "red_flags": [] }',
+    }
+    
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=2000,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "application/pdf",
+                        "data": base64.b64encode(pdf_bytes).decode()
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": f"Extract the following from this {document_type} and return ONLY valid JSON:\n{schema_map.get(document_type, '{}')}"
+                }
+            ]
+        }]
+    )
+    return json.loads(response.content[0].text)
+```
+
+---
+
+### Natural Language Analytics (NL-to-SQL)
+
+Used for: admin queries, project owner dashboards, contractor performance reports.
+
+```python
+# apps/ai-services/nlp_query/nl_to_sql.py
+from langchain_community.agent_toolkits import create_sql_agent
+from langchain_anthropic import ChatAnthropic
+from langchain_community.utilities import SQLDatabase
+
+def build_analytics_agent(db_url: str):
+    llm = ChatAnthropic(model="claude-opus-4-6")
+    db = SQLDatabase.from_uri(db_url, schema="analytics")
+    agent = create_sql_agent(llm=llm, db=db, verbose=True)
+    return agent
+
+# Usage:
+# agent.invoke({"input": "Show all contractors with risk score above 60 in the last 30 days"})
+# agent.invoke({"input": "Which projects are most likely to have cost overruns?"})
+```
+
+---
+
+### Anomaly Detection (Prophet)
+
+Used for: transaction anomalies, unusual activity patterns, financial fraud signals.
+
+```python
+# apps/ai-services/maintenance_predictor/anomaly.py
+from prophet import Prophet
+import pandas as pd
+
+def detect_transaction_anomalies(events_df: pd.DataFrame, entity_id: str) -> pd.DataFrame:
+    """
+    Detects anomalous transaction volumes or amounts.
+    events_df: columns = [timestamp, value] (daily aggregated)
+    """
+    df = events_df.rename(columns={"timestamp": "ds", "value": "y"})
+    model = Prophet(interval_width=0.95, yearly_seasonality=False, weekly_seasonality=True)
+    model.fit(df)
+    forecast = model.predict(df)
+    
+    anomalies = df[
+        (df["y"] > forecast["yhat_upper"]) |
+        (df["y"] < forecast["yhat_lower"])
+    ].copy()
+    anomalies["entity_id"] = entity_id
+    return anomalies
+```
+
+---
+
+### ML Risk Model with MLflow
+
+All ML models tracked in MLflow with training dataset version, hyperparameters, evaluation metrics, and feature importance. Promoted via staging → production registry.
+
+```python
+# apps/ai-services/pricing_engine/train.py
+import mlflow
+import xgboost as xgb
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+def train_contractor_risk_model(X_train, y_train, X_val, y_val):
+    with mlflow.start_run(run_name="contractor_risk_v1"):
+        params = {"n_estimators": 300, "learning_rate": 0.05, "max_depth": 6}
+        mlflow.log_params(params)
+        
+        model = xgb.XGBRegressor(**params)
+        model.fit(
+            X_train, y_train,
+            eval_set=[(X_val, y_val)],
+            verbose=False
+        )
+        
+        preds = model.predict(X_val)
+        rmse = np.sqrt(mean_squared_error(y_val, preds))
+        mlflow.log_metric("rmse", rmse)
+        mlflow.xgboost.log_model(model, "contractor_risk_model")
+        
+        # Promote to staging if RMSE < threshold
+        if rmse < 8.0:
+            mlflow.register_model(
+                f"runs:/{mlflow.active_run().info.run_id}/contractor_risk_model",
+                "ContractorRiskModel"
+            )
+    return model
+```
+
+*Retraining schedule:* Nightly via Celery cron task using last 90 days of completed project data.
+
+---
+
+### AI Service Directory Structure
+
+```
+apps/ai-services/
+  document_extraction/      ← Claude API — title deeds, contracts, ID docs
+  risk_scoring/             ← XGBoost — contractor, property, project risk
+  anomaly_detector/         ← Prophet — transaction & activity anomalies
+  nlp_query/                ← LangChain + Claude — NL-to-SQL analytics
+  rag_legal/                ← pgvector + Claude — legislation compliance chatbot
+  progress_vision/          ← YOLOv8 — construction photo verification
+  design_assistant/         ← Claude + CAD engine (Sprint 12)
+  churn_predictor/          ← LightGBM — tenant / contractor renewal likelihood
+```
+
+---
+
 ### AI API Endpoints
 ```
 POST /api/v1/ai/legal-query           — RAG-powered legal question answering

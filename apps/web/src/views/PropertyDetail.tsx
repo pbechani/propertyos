@@ -81,10 +81,10 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
       {/* Back Button */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ChevronLeft className="w-4 h-4" />
-            <span>Back to Listings</span>
-          </Link>
+            <span>Back</span>
+          </button>
         </div>
       </div>
 

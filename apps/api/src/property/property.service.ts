@@ -23,6 +23,7 @@ export type PropertyRecord = {
   title: string;
   description: string | null;
   property_type: string;
+  listing_type: string | null;
   status: string;
   price: string;
   currency: string;
@@ -33,6 +34,8 @@ export type PropertyRecord = {
   features: unknown;
   agent_id: string | null;
   owner_id: string | null;
+  /** Company the listing was created under. */
+  company_id: string | null;
   verification_status: string;
   verified_at: Date | null;
   created_at: Date;
@@ -95,6 +98,9 @@ export type AgentProfile = {
   activeListings: number;
   verifiedListings: number;
   primaryCity: string;
+  /** Slug of the agent's primary non-system company, or null when they only belong to "Self". */
+  primaryCompanySlug: string | null;
+  createdAt: Date | null;
   listings: AgentProfileListing[];
 };
 
@@ -127,17 +133,19 @@ export class PropertyService {
     dto: CreatePropertyDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<PropertyRecord> {
     const normalized = this.normalizeCreateDto(dto);
 
     const property = await this.prisma.$queryRaw<PropertyRecord[]>`
       INSERT INTO property.properties (
-        title, description, property_type, price, currency,
-        area_sqm, bedrooms, bathrooms, parking_spaces, features, agent_id
+        title, description, property_type, listing_type, price, currency,
+        area_sqm, bedrooms, bathrooms, parking_spaces, features, agent_id, owner_id, company_id
       ) VALUES (
         ${normalized.title},
         ${normalized.description ?? null},
         ${normalized.propertyType},
+        ${normalized.listingType ?? null},
         ${normalized.price},
         ${normalized.currency ?? 'USD'},
         ${normalized.areaSqm ?? null},
@@ -145,7 +153,9 @@ export class PropertyService {
         ${normalized.bathrooms ?? null},
         ${normalized.parkingSpaces ?? null},
         ${JSON.stringify(normalized.features ?? [])}::jsonb,
-        ${agentId}::uuid
+        ${agentId}::uuid,
+        ${agentId}::uuid,
+        ${companyId ?? null}::uuid
       )
       RETURNING *
     `;
@@ -159,6 +169,7 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
+      companyId,
       action: 'property.created',
       resourceType: 'property',
       resourceId: created.id,
@@ -215,6 +226,7 @@ export class PropertyService {
     dto: UpdatePropertyDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<PropertyRecord> {
     const normalized = this.normalizeUpdateDto(dto);
 
@@ -224,8 +236,8 @@ export class PropertyService {
 
     if (!existing[0]) throw new NotFoundException('Property not found');
 
-    // Agents may only edit their own listings; admins may edit any
-    if (actorRole === 'agent' && existing[0].agent_id !== actorId) {
+    // Any non-admin may only edit their own listings
+    if (actorRole !== 'admin' && existing[0].agent_id !== actorId) {
       throw new ForbiddenException('You can only update your own listings');
     }
 
@@ -237,6 +249,8 @@ export class PropertyService {
       title: 'title',
       description: 'description',
       status: 'status',
+      propertyType: 'property_type',
+      listingType: 'listing_type',
       price: 'price',
       currency: 'currency',
       areaSqm: 'area_sqm',
@@ -286,6 +300,7 @@ export class PropertyService {
     await this.audit.log({
       actorId,
       actorRole,
+      companyId,
       action: 'property.updated',
       resourceType: 'property',
       resourceId: id,
@@ -303,6 +318,7 @@ export class PropertyService {
     actorRole: string,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<void> {
     const existing = await this.prisma.$queryRaw<PropertyRecord[]>`
       SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
@@ -310,7 +326,7 @@ export class PropertyService {
 
     if (!existing[0]) throw new NotFoundException('Property not found');
 
-    if (actorRole === 'agent' && existing[0].agent_id !== actorId) {
+    if (actorRole !== 'admin' && existing[0].agent_id !== actorId) {
       throw new ForbiddenException('You can only delete your own listings');
     }
 
@@ -321,12 +337,93 @@ export class PropertyService {
     await this.audit.log({
       actorId,
       actorRole,
+      companyId,
       action: 'property.deleted',
       resourceType: 'property',
       resourceId: id,
       ipAddress,
       userAgent,
     });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Agent: own listings (all statuses, including drafts)
+  // ──────────────────────────────────────────────────────────
+
+  async getMyListings(
+    agentId: string,
+    status?: string,
+  ): Promise<{ data: PropertyWithLocation[]; total: number }> {
+    const hasStatusFilter = !!status && status !== 'all';
+    const values: unknown[] = hasStatusFilter ? [agentId, status] : [agentId];
+
+    const whereClause = hasStatusFilter
+      ? 'WHERE p.agent_id = $1::uuid AND p.status = $2'
+      : 'WHERE p.agent_id = $1::uuid';
+
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const dataQuery = `
+      SELECT p.* FROM property.properties p
+      ${whereClause}
+      ORDER BY p.created_at DESC
+    `;
+
+    const [countRows, dataRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<[{ total: string }]>(countQuery, ...values),
+      this.prisma.$queryRawUnsafe<PropertyRecord[]>(dataQuery, ...values),
+    ]);
+
+    const total = parseInt(countRows[0]?.total ?? '0', 10);
+
+    const enriched = await Promise.all(
+      dataRows.map(async (p) => {
+        const location = await this.getLocation(p.id);
+        const media = await this.getMedia(p.id);
+        return { ...p, location: location ?? null, media };
+      }),
+    );
+
+    return { data: enriched, total };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Buyer/Seller: own listings by owner_id (all statuses)
+  // ──────────────────────────────────────────────────────────
+
+  async getOwnerListings(
+    userId: string,
+    status?: string,
+  ): Promise<{ data: PropertyWithLocation[]; total: number }> {
+    const hasStatusFilter = !!status && status !== 'all';
+    const values: unknown[] = hasStatusFilter ? [userId, status] : [userId];
+
+    const whereClause = hasStatusFilter
+      ? 'WHERE (p.owner_id = $1::uuid OR p.agent_id = $1::uuid) AND p.status = $2'
+      : 'WHERE (p.owner_id = $1::uuid OR p.agent_id = $1::uuid)';
+
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const dataQuery = `
+      SELECT DISTINCT p.* FROM property.properties p
+      ${whereClause}
+      ORDER BY p.created_at DESC
+    `;
+
+    const [countRows, dataRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<[{ total: string }]>(countQuery, ...values),
+      this.prisma.$queryRawUnsafe<PropertyRecord[]>(dataQuery, ...values),
+    ]);
+
+    const total = parseInt(countRows[0]?.total ?? '0', 10);
+
+    const enriched = await Promise.all(
+      dataRows.map(async (p) => {
+        const location = await this.getLocation(p.id);
+        const media = await this.getMedia(p.id);
+        return { ...p, location: location ?? null, media };
+      }),
+    );
+
+    return { data: enriched, total };
   }
 
   // ──────────────────────────────────────────────────────────
@@ -622,10 +719,12 @@ export class PropertyService {
         phone: string | null;
         avatar_url: string | null;
         status: string;
+        created_at: Date | null;
         total_listings: string;
         active_listings: string;
         verified_listings: string;
         primary_city: string | null;
+        primary_company_slug: string | null;
       }[]
     >(
       `
@@ -637,15 +736,26 @@ export class PropertyService {
         u.phone,
         u.avatar_url,
         u.status,
+        u.created_at,
         COUNT(p.id)::text AS total_listings,
         COUNT(*) FILTER (WHERE p.status = 'active')::text AS active_listings,
         COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings,
-        MAX(loc.city) AS primary_city
+        MAX(loc.city) AS primary_city,
+        (
+          SELECT c.slug
+          FROM identity.company_members cm
+          JOIN identity.companies c ON c.id = cm.company_id
+          WHERE cm.user_id = u.id
+            AND c.is_system = false
+            AND cm.status = 'active'
+          ORDER BY c.name
+          LIMIT 1
+        ) AS primary_company_slug
       FROM identity.users u
       LEFT JOIN property.properties p ON p.agent_id = u.id
       LEFT JOIN property.property_locations loc ON loc.property_id = p.id
       WHERE u.id = $1::uuid
-      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status, u.created_at
       LIMIT 1
       `,
       agentId,
@@ -716,6 +826,8 @@ export class PropertyService {
       activeListings: parseInt(profile.active_listings, 10) || 0,
       verifiedListings: parseInt(profile.verified_listings, 10) || 0,
       primaryCity: profile.primary_city ?? 'Location unavailable',
+      primaryCompanySlug: profile.primary_company_slug ?? null,
+      createdAt: profile.created_at ?? null,
       listings: listings.map((listing) => ({
         id: listing.id,
         title: listing.title,
@@ -902,6 +1014,7 @@ export class PropertyService {
     file: Express.Multer.File,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<{ id: string; url: string; mediaType: string }> {
     const items = await this.addMediaBatch(
       propertyId,
@@ -910,6 +1023,7 @@ export class PropertyService {
       [file],
       ipAddress,
       userAgent,
+      companyId,
     );
 
     return items[0];
@@ -922,6 +1036,7 @@ export class PropertyService {
     files: Express.Multer.File[],
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<Array<{ id: string; url: string; mediaType: string }>> {
     if (!files.length) {
       throw new BadRequestException('At least one media file is required');
@@ -972,6 +1087,7 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
+      companyId,
       action: uploadedItems.length === 1 ? 'property.media.added' : 'property.media.added_batch',
       resourceType: 'property',
       resourceId: propertyId,
@@ -990,6 +1106,7 @@ export class PropertyService {
     agentRole: string,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<void> {
     await this.assertAgentOwns(propertyId, agentId, agentRole);
 
@@ -1006,6 +1123,7 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
+      companyId,
       action: 'property.media.deleted',
       resourceType: 'property',
       resourceId: propertyId,
@@ -1097,6 +1215,7 @@ export class PropertyService {
   private normalizeUpdateDto(dto: UpdatePropertyDto): UpdatePropertyDto {
     return {
       ...dto,
+      propertyType: dto.propertyType ?? dto.property_type,
       areaSqm: dto.areaSqm ?? dto.area_sqm,
       parkingSpaces: dto.parkingSpaces ?? dto.parking_spaces,
       location: this.normalizeLocation(dto.location),

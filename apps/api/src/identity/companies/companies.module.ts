@@ -8,6 +8,7 @@ import { OrphanedTasksService } from './orphaned-tasks.service';
 import { CompanyContextGuard } from './guards/company-context.guard';
 import { CompanyAdminGuard } from './guards/company-admin.guard';
 import { CompanyPermissionGuard } from './guards/company-permission.guard';
+import { DocumentStorageService } from '../document-storage.service';
 
 @Module({
   controllers: [CompaniesController, OrphanedTasksController],
@@ -19,6 +20,7 @@ import { CompanyPermissionGuard } from './guards/company-permission.guard';
     CompanyContextGuard,
     CompanyAdminGuard,
     CompanyPermissionGuard,
+    DocumentStorageService,
   ],
   exports: [
     CompaniesService,

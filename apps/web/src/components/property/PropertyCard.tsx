@@ -31,7 +31,17 @@ function formatPrice(price: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
 }
 
-export default function PropertyCard({ property }: { property: PropertyCardData }) {
+export default function PropertyCard({
+  property,
+  refParam,
+}: {
+  property: PropertyCardData;
+  refParam?: string;
+}) {
+  const detailHref = refParam
+    ? `/properties/${property.id}?ref=${encodeURIComponent(refParam)}`
+    : `/properties/${property.id}`;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group">
       {/* Image */}
@@ -71,7 +81,7 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-[#0A1628]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Link href={`/properties/${property.id}`} className="bg-[#F5A623] text-[#0A1628] font-bold px-5 py-2.5 rounded-lg text-sm hover:bg-[#FBBF47] transition-colors">
+          <Link href={detailHref} className="bg-[#F5A623] text-[#0A1628] font-bold px-5 py-2.5 rounded-lg text-sm hover:bg-[#FBBF47] transition-colors">
             View Progress →
           </Link>
         </div>
@@ -113,13 +123,13 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
           <div>
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs font-semibold text-[#0A1628]">14-Stage Pipeline</span>
-              <span className="text-xs text-gray-500">Stage {property.pipelineStage} of 14</span>
+              <span className="text-xs text-gray-500">Stage {property.pipelineStage ?? 0} of 14</span>
             </div>
             <div className="grid grid-cols-14 gap-1">
               {Array.from({ length: 14 }).map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full ${index < property.pipelineStage ? 'bg-[#F5A623]' : 'bg-gray-100'}`}
+                  className={`h-1.5 rounded-full ${index < (property.pipelineStage ?? 0) ? 'bg-[#F5A623]' : 'bg-gray-100'}`}
                 />
               ))}
             </div>
@@ -146,7 +156,7 @@ export default function PropertyCard({ property }: { property: PropertyCardData 
         {/* CTAs */}
         <div className="flex gap-2 pt-1">
           <Link
-            href={`/properties/${property.id}`}
+            href={detailHref}
             className="flex-1 bg-[#0A1628] text-white text-sm font-semibold py-2.5 rounded-lg text-center hover:bg-[#0F2040] transition-colors"
           >
             View Details

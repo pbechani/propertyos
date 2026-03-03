@@ -170,7 +170,7 @@ export default function CompanyUserManagement() {
                         {member.role.toUpperCase()}
                       </span>
                       {member.isAdmin && (
-                        <Shield className="w-4 h-4 text-amber-500" title="Admin" />
+                        <Shield className="w-4 h-4 text-amber-500" aria-label="Admin" />
                       )}
                     </div>
                   </td>

@@ -82,17 +82,15 @@ async function parseApiError(response: Response): Promise<string> {
 
   try {
     const data = (await response.json()) as
-      | { message?: string | string[] }
+      | { message?: string | string[]; error?: { message?: string | string[] } }
       | undefined;
-    if (!data?.message) {
-      return fallback;
-    }
 
-    if (Array.isArray(data.message)) {
-      return data.message.join(', ');
-    }
+    // Handle wrapped error shape: { success: false, error: { message } }
+    const msg = data?.message ?? data?.error?.message;
 
-    return data.message;
+    if (!msg) return fallback;
+    if (Array.isArray(msg)) return msg.join(', ');
+    return msg;
   } catch {
     return fallback;
   }
@@ -231,6 +229,7 @@ export type CompanyContext = {
   category: string;
   role: string;
   is_admin: boolean;
+  logo_url?: string | null;
 };
 
 export type AuthResponse = {
@@ -319,6 +318,16 @@ export const authApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }),
+
+  /**
+   * Fetch the list of companies the authenticated user belongs to.
+   * Used by the context-selector screen to get up-to-date logos/data.
+   */
+  getContexts: (authToken: string) =>
+    apiRequest<CompanyContext[]>('/auth/contexts', {
+      method: 'GET',
+      authToken,
     }),
 
   /**
@@ -646,6 +655,7 @@ export type PropertyListing = {
   title: string;
   description?: string | null;
   property_type: 'land' | 'residential' | 'commercial' | 'off_plan';
+  listing_type?: 'for_sale' | 'to_rent' | 'development' | null;
   status: PropertyStatus;
   agent_id?: string | null;
   price: string;
@@ -659,9 +669,11 @@ export type PropertyListing = {
   created_at: string;
   updated_at: string;
   location?: {
+    address_line1?: string | null;
     city?: string | null;
     region?: string | null;
     country: string;
+    postal_code?: string | null;
     latitude?: string | null;
     longitude?: string | null;
   } | null;
@@ -693,6 +705,10 @@ export type AgentProfileResponse = {
   activeListings: number;
   verifiedListings: number;
   primaryCity: string;
+  /** Slug of the agent's primary non-system company. Null means they only belong to the "Self" personal company. */
+  primaryCompanySlug?: string | null;
+  /** UTC timestamp of when the agent's account was created. */
+  createdAt?: string | null;
   listings: Array<{
     id: string;
     title: string;
@@ -832,6 +848,24 @@ export const propertiesApi = {
       authToken,
     }),
 
+  getMyListings: (authToken: string, status?: string) =>
+    apiRequest<PropertySearchResponse>(
+      `/agent/my-listings${status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`,
+      {
+        method: 'GET',
+        authToken,
+      },
+    ),
+
+  getOwnerListings: (authToken: string, status?: string) =>
+    apiRequest<{ data: PropertyListing[]; total: number }>(
+      `/properties/my-listings${status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`,
+      {
+        method: 'GET',
+        authToken,
+      },
+    ),
+
   create: (authToken: string, payload: Record<string, unknown>) =>
     apiRequest<PropertyListing>('/properties', {
       method: 'POST',
@@ -839,6 +873,17 @@ export const propertiesApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+
+  addMedia: (authToken: string, id: string, formData: FormData) =>
+    apiRequest<{ id: string; url: string; mediaType: string } | { items: Array<{ id: string; url: string; mediaType: string }> }>(
+      `/properties/${id}/media`,
+      {
+        method: 'POST',
+        authToken,
+        body: formData,
+        // NOTE: do NOT set Content-Type — browser sets it with multipart boundary
+      },
+    ),
 
   update: (authToken: string, id: string, payload: Record<string, unknown>) =>
     apiRequest<PropertyListing>(`/properties/${id}`, {
@@ -949,6 +994,7 @@ export type UserCompany = {
   category: string;
   company_status: string;
   verification_status: string;
+  logo_url?: string | null;
 };
 
 export type CompanyDetail = {
@@ -977,6 +1023,31 @@ export type CompanyDetail = {
   updated_at: string;
 };
 
+export type CompanyDashboardActivityEntry = {
+  id: string;
+  actor_id: string | null;
+  actor_role: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+};
+
+export type CompanyDashboardData = {
+  company: CompanyDetail;
+  stats: {
+    activeMembers: number;
+    pendingInvitations: number;
+    openOrphanedTasks: number;
+    todayActivities: number;
+  };
+  recentActivity: CompanyDashboardActivityEntry[];
+};
+
 export const companiesApi = {
   getMyCompanies: (authToken: string) =>
     apiRequest<UserCompany[]>('/users/me/companies', {
@@ -989,4 +1060,91 @@ export const companiesApi = {
       method: 'GET',
       authToken,
     }),
+
+  getDashboard: (authToken: string, id: string) =>
+    apiRequest<CompanyDashboardData>(`/companies/${id}/dashboard`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  createCompany: (
+    authToken: string,
+    payload: {
+      name: string;
+      category: string;
+      email: string;
+      phone?: string;
+      website?: string;
+      registration_number?: string;
+      tax_number?: string;
+      description?: string;
+      logo_url?: string;
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        region?: string;
+        postal_code?: string;
+        country?: string;
+      };
+    },
+  ) =>
+    apiRequest<{ id: string; name: string; status: string }>('/companies', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  submitVerification: (authToken: string, companyId: string) =>
+    apiRequest<{ id: string; status: string }>(`/companies/${companyId}/submit-verification`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+
+  deactivateCompany: (authToken: string, companyId: string) =>
+    apiRequest<{ id: string; status: string }>(`/companies/${companyId}/deactivate`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+
+  updateCompany: (
+    authToken: string,
+    companyId: string,
+    payload: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      website?: string;
+      description?: string;
+      registration_number?: string;
+      tax_number?: string;
+      address?: {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        region?: string;
+        postal_code?: string;
+        country?: string;
+      };
+    },
+  ) =>
+    apiRequest<CompanyDetail>(`/companies/${companyId}`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  uploadCompanyLogo: (authToken: string, companyId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    return apiRequest<{ url: string }>(`/companies/${companyId}/logo`, {
+      method: 'POST',
+      authToken,
+      body: formData,
+    });
+  },
 };

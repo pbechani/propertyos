@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import { useNavigate, Link } from "@/lib/router-compat";
+import { useState, useRef } from "react";
+import { Link } from "@/lib/router-compat";
 import {
   Building2,
   Upload,
@@ -13,7 +13,15 @@ import {
   MapPin,
   Globe,
   Hash,
+  ImageIcon,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Paperclip,
 } from "lucide-react";
+import { companiesApi, authApi } from "@/lib/api-client";
+import { getAccessToken } from "@/lib/auth-session";
 
 type FormData = {
   companyName: string;
@@ -42,8 +50,17 @@ const PRIBEC_CATEGORIES = [
 ];
 
 export default function CompanyRegistration() {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState("");
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [docError, setDocError] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<FormData>({
     companyName: "",
     registrationNumber: "",
@@ -64,13 +81,123 @@ export default function CompanyRegistration() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => setFormData((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Please upload a valid image file (PNG, JPG, SVG, WebP).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError("Logo must be smaller than 5 MB.");
+      return;
+    }
+    setLogoError("");
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoPreview(null);
+  };
+
+  const addDocFiles = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const valid = arr.filter((f) => {
+      if (f.size > 10 * 1024 * 1024) return false;
+      const ok = f.type === "application/pdf" || f.type.startsWith("image/");
+      return ok;
+    });
+    if (valid.length < arr.length) {
+      setDocError("Some files were skipped — only PDF or image files under 10 MB are allowed.");
+    } else {
+      setDocError("");
+    }
+    setDocFiles((prev) => {
+      const existing = new Set(prev.map((f) => f.name + f.size));
+      return [...prev, ...valid.filter((f) => !existing.has(f.name + f.size))];
+    });
+  };
+
+  const removeDoc = (idx: number) => {
+    setDocFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    addDocFiles(e.dataTransfer.files);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
+      if (!logoFile) {
+        setLogoError("Company logo is required.");
+        return;
+      }
       setStep(2);
-    } else {
-      // POST /api/v1/companies — handled by API integration layer
-      navigate("/company/dashboard");
+      return;
+    }
+
+    // Step 2 — validate documents
+    if (docFiles.length === 0) {
+      setDocError("Please upload at least one verification document.");
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token) {
+      setSubmitError("You must be logged in to register a company.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const company = await companiesApi.createCompany(token, {
+        name: formData.companyName,
+        category: formData.category,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        website: formData.website || undefined,
+        registration_number: formData.registrationNumber || undefined,
+        tax_number: formData.taxNumber || undefined,
+        description: formData.description || undefined,
+        address: {
+          line1: formData.address || undefined,
+          city: formData.city || undefined,
+          region: formData.region || undefined,
+          postal_code: formData.postalCode || undefined,
+          country: formData.country || undefined,
+        },
+      });
+
+      // Exchange the current token for a company-scoped JWT
+      const scopedTokens = await authApi.selectContext(token, company.id);
+
+      // Upload company logo now that we have a scoped token
+      if (logoFile) {
+        try {
+          await companiesApi.uploadCompanyLogo(scopedTokens.accessToken, company.id, logoFile);
+        } catch {
+          // Logo upload failure is non-fatal — the company was created successfully.
+          // The admin can update the logo from the company profile later.
+        }
+      }
+
+      // Submit for verification immediately after creation
+      await companiesApi.submitVerification(scopedTokens.accessToken, company.id);
+
+      setSubmitted(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Registration failed. Please try again.";
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,9 +240,76 @@ export default function CompanyRegistration() {
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Success State */}
+          {submitted && (
+            <div className="text-center py-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Submitted for Verification</h2>
+              <p className="text-gray-600 mb-6 text-sm">
+                Your company has been registered and sent to our compliance team for review.
+                You'll receive an email once it's approved.
+              </p>
+            </div>
+          )}
+
+          {!submitted && <form onSubmit={handleSubmit} className="space-y-5">
             {step === 1 ? (
               <div className="grid grid-cols-2 gap-4">
+                {/* Company Logo */}
+                <div className="col-span-2">
+                  <label className="block text-sm mb-2 text-gray-700">
+                    Company Logo <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-5">
+                    <div className="relative w-24 h-24 shrink-0">
+                      {logoPreview ? (
+                        <>
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="w-24 h-24 rounded-xl object-contain border border-gray-200 bg-gray-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={removeLogo}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label
+                        htmlFor="logo-upload"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition cursor-pointer text-sm font-medium"
+                      >
+                        <Upload className="w-4 h-4" />
+                        {logoFile ? "Replace Logo" : "Upload Logo"}
+                      </label>
+                      <input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoChange}
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        PNG, JPG, SVG or WebP — max 5 MB. Square format recommended.
+                      </p>
+                      {logoError && (
+                        <p className="text-xs text-red-500 mt-1">{logoError}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Company Name */}
                 <div className="col-span-2">
                   <label className="block text-sm mb-2 text-gray-700">Company Name *</label>
@@ -309,16 +503,67 @@ export default function CompanyRegistration() {
                 {/* Document Upload */}
                 <div className="col-span-2">
                   <label className="block text-sm mb-2 text-gray-700">
-                    Verification Documents *
+                    Verification Documents <span className="text-red-500">*</span>
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition cursor-pointer">
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => docInputRef.current?.click()}
+                    onKeyDown={(e) => e.key === "Enter" && docInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
+                      isDragOver ? "border-indigo-500 bg-indigo-50" : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      ref={docInputRef}
+                      type="file"
+                      multiple
+                      accept="application/pdf,image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files && addDocFiles(e.target.files)}
+                    />
+                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600 mb-1">Click to upload or drag and drop</p>
                     <p className="text-xs text-gray-500">
                       Business licence, registration certificate — PDF or image, max 10 MB each
                     </p>
                   </div>
+                  {docError && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />{docError}
+                    </p>
+                  )}
+                  {/* File list */}
+                  {docFiles.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {docFiles.map((f, i) => (
+                        <li key={i} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                          <Paperclip className="w-4 h-4 text-gray-400 shrink-0" />
+                          <span className="flex-1 truncate text-gray-700">{f.name}</span>
+                          <span className="text-xs text-gray-400 shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+                          <button
+                            type="button"
+                            onClick={() => removeDoc(i)}
+                            className="p-0.5 hover:bg-red-100 rounded text-gray-400 hover:text-red-600 transition shrink-0"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+              </div>
+            )}
+
+            {/* Submit error */}
+            {submitError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {submitError}
               </div>
             )}
 
@@ -328,7 +573,8 @@ export default function CompanyRegistration() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 rounded-lg hover:border-gray-400 transition"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-6 py-3 border-2 border-gray-300 rounded-lg hover:border-gray-400 transition disabled:opacity-50"
                 >
                   <ArrowLeft className="w-5 h-5" />
                   Back
@@ -336,20 +582,26 @@ export default function CompanyRegistration() {
               )}
               <button
                 type="submit"
-                className="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {step === 1 ? "Continue" : "Submit for Verification"}
-                <ArrowRight className="w-5 h-5" />
+                {isSubmitting ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Submitting…</>
+                ) : (
+                  <>{step === 1 ? "Continue" : "Submit for Verification"}<ArrowRight className="w-5 h-5" /></>
+                )}
               </button>
             </div>
-          </form>
+          </form>}
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Already have a company?{" "}
-            <Link to="/company/dashboard" className="text-indigo-600 hover:underline">
-              Go to dashboard
-            </Link>
-          </p>
+          {!submitted && (
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Already have a company?{" "}
+              <Link to="/company/dashboard" className="text-indigo-600 hover:underline">
+                Go to dashboard
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -14,23 +14,6 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-/**
- * Reads the preferred theme synchronously during state initialisation so the
- * correct class is applied on the **first render**, eliminating FOUC.
- * The inline script in index.html applies the class before React hydrates;
- * this function keeps the React state in sync with that initial class.
- */
-function getInitialTheme(): Theme {
-  try {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") return stored;
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
-  } catch {
-    // localStorage unavailable
-  }
-  return "light";
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(LOCKED_THEME);
 

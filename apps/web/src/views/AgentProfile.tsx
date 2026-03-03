@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "@/lib/router-compat";
-import { useSearchParams } from "next/navigation";
 import {
   ChevronLeft, Shield, CheckCircle2, Star, MapPin, Phone, Mail,
   MessageSquare, Award, TrendingUp, Home, Calendar,
@@ -40,10 +39,6 @@ function formatDate(value: string | Date): string {
     return "-";
   }
   return parsed.toISOString().slice(0, 10);
-}
-
-function getYearsExperienceFromStatus(status: string): number {
-  return status === "active" ? 5 : 0;
 }
 
 // ─── Modal base ───────────────────────────────────────────────────────────────
@@ -379,7 +374,6 @@ function ReviewCard({ review }: { review: AgentReview }) {
 
 export default function AgentProfile() {
   const { id } = useParams();
-  const searchParams = useSearchParams();
   const [agentProfile, setAgentProfile] = useState<AgentProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -393,10 +387,6 @@ export default function AgentProfile() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const agentId = typeof id === "string" ? id : "";
-  const backParam = searchParams.get('back');
-  const isSafeBackPath = Boolean(backParam && backParam.startsWith('/') && !backParam.startsWith('//'));
-  const backTo = isSafeBackPath && backParam ? backParam : '/app/listings';
-  const backLabel = backTo.startsWith('/app/property/') ? 'Back to Property' : 'Back to Listings';
 
   useEffect(() => {
     if (!agentId) {
@@ -446,8 +436,10 @@ export default function AgentProfile() {
     );
   }, [agentProfile]);
 
+  const isPrivateIndividual = !agentProfile?.primaryCompanySlug;
+
   const recentListings = useMemo(
-    () => agentProfile?.listings.slice(0, 3) ?? [],
+    () => (agentProfile?.listings ?? []).filter((listing) => listing.status !== 'draft').slice(0, 3),
     [agentProfile],
   );
 
@@ -489,10 +481,13 @@ export default function AgentProfile() {
       {/* Back Button */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <Link to={backTo} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
             <ChevronLeft className="w-4 h-4" />
-            <span>{backLabel}</span>
-          </Link>
+            <span>Back</span>
+          </button>
         </div>
       </div>
 
@@ -539,7 +534,7 @@ export default function AgentProfile() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-lg text-gray-600 mb-1">Property Agent</p>
+                  <p className="text-lg text-gray-600 mb-1">{isPrivateIndividual ? 'Private Individual' : 'Property Agent'}</p>
                   <p className="text-blue-600 font-medium mb-3">{agentProfile.primaryCity}</p>
                   
                   <div className="flex items-center gap-4 flex-wrap">
@@ -562,7 +557,7 @@ export default function AgentProfile() {
                     onClick={() => setShowContactModal(true)}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    Contact Agent
+                    {isPrivateIndividual ? 'Contact Property Owner' : 'Contact Agent'}
                   </Button>
                   <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
                     <Calendar className="w-4 h-4 mr-2" />
@@ -572,18 +567,20 @@ export default function AgentProfile() {
               </div>
 
               {/* Specializations */}
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-600 mb-2">SPECIALIZATIONS</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">Property Listings</Badge>
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">Verified Transactions</Badge>
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">Client Advisory</Badge>
+              {!isPrivateIndividual && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-2">SPECIALIZATIONS</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Property Listings</Badge>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Verified Transactions</Badge>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Client Advisory</Badge>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Bio */}
               <p className="text-gray-700 leading-relaxed">
-                {profileName} is an active agent on PropertyOS with {agentProfile.totalListings} total listings and {agentProfile.verifiedListings} verified properties.
+                {profileName} is a {isPrivateIndividual ? 'private individual' : 'active agent'} on PropertyOS with {agentProfile.totalListings} total listings and {agentProfile.verifiedListings} verified properties.
               </p>
             </div>
           </div>
@@ -621,8 +618,12 @@ export default function AgentProfile() {
                 <Award className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{getYearsExperienceFromStatus(agentProfile.status)}</div>
-                <div className="text-xs text-gray-600">Years Experience</div>
+                <div className="text-2xl font-bold">
+                  {agentProfile.createdAt
+                    ? new Date(agentProfile.createdAt).getFullYear()
+                    : '—'}
+                </div>
+                <div className="text-xs text-gray-600">Member Since</div>
               </div>
             </div>
           </Card>
@@ -633,8 +634,12 @@ export default function AgentProfile() {
                 <Clock className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <div className="text-xl font-bold">&lt; 24 hours</div>
-                <div className="text-xs text-gray-600">Avg Response</div>
+                <div className="text-xl font-bold">
+                  {agentProfile.totalListings > 0
+                    ? `${Math.round((agentProfile.verifiedListings / agentProfile.totalListings) * 100)}%`
+                    : '—'}
+                </div>
+                <div className="text-xs text-gray-600">Verified Rate</div>
               </div>
             </div>
           </Card>

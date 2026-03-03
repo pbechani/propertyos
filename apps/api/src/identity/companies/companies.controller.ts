@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,8 +9,12 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { DocumentStorageService } from '../document-storage.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../rbac/jwt-auth.guard';
 import { RolesGuard } from '../rbac/roles.guard';
@@ -44,6 +49,7 @@ export class CompaniesController {
     private readonly companiesService: CompaniesService,
     private readonly membersService: CompanyMembersService,
     private readonly invitationsService: CompanyInvitationsService,
+    private readonly documentStorageService: DocumentStorageService,
   ) {}
 
   // ----------------------------------------------------------------
@@ -64,6 +70,41 @@ export class CompaniesController {
     return this.companiesService.findById(id);
   }
 
+  @Get('companies/:id/dashboard')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  getDashboard(@Param('id') id: string) {
+    return this.companiesService.getDashboard(id);
+  }
+
+  @Post('companies/:id/logo')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  @UseInterceptors(FileInterceptor('logo'))
+  async uploadLogo(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('Logo file is required');
+    }
+
+    const uploaded = await this.documentStorageService.upload({
+      context: 'company-logos',
+      userId: req.user.sub,
+      documentType: 'logo',
+      file,
+    });
+
+    await this.companiesService.update(
+      id,
+      { logo_url: uploaded.publicUrl },
+      req.user.sub,
+      { ip: req.ip, userAgent: req.headers['user-agent'] ?? null },
+    );
+
+    return { url: uploaded.publicUrl };
+  }
+
   @Patch('companies/:id')
   @UseGuards(CompanyContextGuard, CompanyAdminGuard)
   update(
@@ -81,6 +122,15 @@ export class CompaniesController {
   @UseGuards(CompanyContextGuard, CompanyAdminGuard)
   submitVerification(@Req() req: RequestWithUser, @Param('id') id: string) {
     return this.companiesService.submitForVerification(id, req.user.sub, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+  }
+
+  @Post('companies/:id/deactivate')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  deactivate(@Req() req: RequestWithUser, @Param('id') id: string) {
+    return this.companiesService.deactivate(id, req.user.sub, {
       ip: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });

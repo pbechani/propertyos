@@ -25,6 +25,7 @@ export type ContextSelectorResponse = {
     role: string;
     is_admin: boolean;
     is_system: boolean;
+    logo_url: string | null;
   }>;
 };
 

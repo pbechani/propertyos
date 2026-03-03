@@ -18,7 +18,7 @@ import { CreateFraudReportDto, ResolveFraudReportDto } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
+  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
   ip: string;
   headers: { 'user-agent'?: string };
 };
@@ -49,6 +49,7 @@ export class FraudController {
       dto,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
   }
 }

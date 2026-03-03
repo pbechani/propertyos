@@ -21,6 +21,7 @@ export class InquiryService {
     dto: CreateInquiryDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<unknown> {
     const property = await this.prisma.$queryRaw<{ id: string; agent_id: string }[]>`
       SELECT id, agent_id FROM property.properties
@@ -31,13 +32,14 @@ export class InquiryService {
 
     const result = await this.prisma.$queryRaw`
       INSERT INTO property.inquiries
-        (property_id, buyer_id, inquiry_type, message, preferred_date)
+        (property_id, buyer_id, inquiry_type, message, preferred_date, company_id)
       VALUES (
         ${propertyId}::uuid,
         ${buyerId}::uuid,
         ${dto.inquiryType},
         ${dto.message ?? null},
-        ${dto.preferredDate ? new Date(dto.preferredDate) : null}::timestamptz
+        ${dto.preferredDate ? new Date(dto.preferredDate) : null}::timestamptz,
+        ${companyId ?? null}::uuid
       )
       RETURNING *
     `;
@@ -45,6 +47,7 @@ export class InquiryService {
     await this.audit.log({
       actorId: buyerId,
       actorRole: buyerRole,
+      companyId,
       action: 'property.inquiry.created',
       resourceType: 'property',
       resourceId: propertyId,

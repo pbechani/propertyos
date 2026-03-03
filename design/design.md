@@ -102,29 +102,34 @@ Digital trust infrastructure for real estate and construction in emerging market
 - **Message Broker** - Kafka/RabbitMQ for event-driven architecture
 - **Search Engine** - OpenSearch/Elasticsearch for property/contractor search
 - **AI/ML Infrastructure** (Core Platform Component):
-  - **LLM Gateway:** Unified API for multiple LLMs (OpenAI GPT-4, Anthropic Claude, Google Gemini)
-  - **Vector Database:** Pinecone/Weaviate/Qdrant for embeddings and semantic search
-  - **Document AI:** OCR, document classification, information extraction
-  - **Computer Vision:** Image analysis, plan recognition, progress verification
-  - **Speech AI:** Voice-to-text (Whisper), text-to-speech
-  - **GPU Compute Cluster:** For model inference and training
-  - **Model Registry:** Version control for AI models
-  - **Legislation Corpus Database:** Legal documents, building codes, regulations indexed for RAG
-  - **RAG Pipeline:** Retrieval-Augmented Generation for legal/regulatory queries
-  - **AI Observability:** Model performance monitoring, drift detection
-  - **CAD Generation Engine:** Python + architectural libraries
-  - **3D Rendering Service:** Blender API, Three.js backend
+  - **LLM Gateway:** Unified API for OpenAI GPT-4, Anthropic Claude, Google Gemini — provider fallback, rate limiting, cost tracking (all calls logged to `ai_engine.llm_requests`)
+  - **Primary LLM:** Anthropic Claude API (`claude-opus-4-6`) — document extraction, NL-to-SQL, legal RAG, design generation
+  - **Vector Database:** pgvector (PostgreSQL ext., 1536-dim) for legislation corpus + semantic search; Pinecone/Weaviate at scale
+  - **ML Framework:** scikit-learn, XGBoost, LightGBM — risk scoring, cost estimation, churn prediction
+  - **Time-Series & Anomaly Detection:** Prophet — transaction anomaly detection, activity pattern analysis
+  - **ML Ops:** MLflow — experiment tracking, model versioning, staging → production registry promotion
+  - **Document AI:** Claude API (PDF extraction via base64) + AWS Textract/Google Document AI for OCR fallback
+  - **NL-to-SQL:** LangChain SQL Agent + Claude — natural language analytics queries over `analytics.*` schema
+  - **Computer Vision:** YOLOv8 (Ultralytics) — construction progress verification, site safety, photo tampering detection
+  - **Edge AI:** NVIDIA Jetson Orin — on-site camera inference for safety monitoring (minimises latency + bandwidth)
+  - **Speech AI:** OpenAI Whisper — voice-to-text for AI Design Assistant conversational input
+  - **Background Jobs:** Celery + Redis — model retraining (nightly), async AI tasks, report generation
+  - **IoT Messaging:** MQTT (Eclipse Mosquitto) — lightweight pub/sub for sensor data → TimescaleDB hypertables
+  - **Scheduling Optimization:** Google OR-Tools — crew scheduling, material delivery route optimization
+  - **CAD Generation Engine:** Python (ezdxf, shapely, matplotlib) — programmatic SVG/DXF floor plan generation
+  - **3D Rendering Service:** Blender API (headless) + Three.js — photorealistic renders from floor plans
+  - **AI Observability:** MLflow metrics + custom Prometheus exporters — model performance, drift detection, LLM cost per use-case
 
 #### External Integrations
 - Payment processors
 - Bank APIs
 - SMS/email providers
 - Government registry APIs (future)
-- **AI/ML APIs** (Phase 4):
-  - OpenAI API (GPT-4, DALL-E, Whisper)
-  - Anthropic Claude API
-  - Speech-to-text services
-  - CAD/BIM software APIs (AutoCAD, Revit)
+- **AI/ML APIs:**
+  - Anthropic Claude API (`claude-opus-4-6`) — primary LLM for all document AI and generation tasks
+  - OpenAI API (GPT-4o, Whisper for speech, text-embedding-ada-002 for embeddings)
+  - Google Gemini API — LLM gateway fallback provider
+  - CAD/BIM export: DXF-compatible output via ezdxf; future Revit/AutoCAD API integration
 - **Mapping & Geospatial APIs:**
   - Google Maps Platform (Directions, Distance Matrix, Places, Geocoding)
   - Mapbox APIs (Maps, Navigation, Search)

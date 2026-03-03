@@ -15,12 +15,13 @@ import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { InquiryService } from './inquiry.service';
+import { PropertyService } from './property.service';
 import { SavedPropertiesService } from './saved-properties.service';
 import { CreateInquiryDto, RespondInquiryDto } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
+  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
   ip: string;
   headers: { 'user-agent'?: string };
 };
@@ -31,7 +32,22 @@ export class BuyerController {
   constructor(
     private readonly inquiryService: InquiryService,
     private readonly savedService: SavedPropertiesService,
+    private readonly propertyService: PropertyService,
   ) {}
+
+  /**
+   * GET /api/v1/properties/my-listings
+   * Returns all listings owned by the authenticated user (by owner_id).
+   * Accessible to buyer_seller, investor, admin — all statuses including drafts.
+   * Optional query: ?status=draft|active|under_offer|sold|withdrawn|all
+   */
+  @Get('my-listings')
+  async getMyListings(
+    @Request() req: AuthRequest,
+    @Query('status') status?: string,
+  ) {
+    return this.propertyService.getOwnerListings(req.user.sub, status);
+  }
 
   /**
    * POST /api/v1/properties/:id/save
@@ -77,6 +93,7 @@ export class BuyerController {
       dto,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
   }
 

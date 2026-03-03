@@ -627,6 +627,7 @@ export class AuthService {
       category: string;
       role: string;
       is_admin: boolean;
+      logo_url: string | null;
     }>
   > {
     return this.getUserActiveMemberships(userId);
@@ -692,6 +693,7 @@ export class AuthService {
       role: string;
       is_admin: boolean;
       is_system: boolean;
+      logo_url: string | null;
     }>
   > {
     return this.prisma.$queryRaw<
@@ -703,9 +705,10 @@ export class AuthService {
         role: string;
         is_admin: boolean;
         is_system: boolean;
+        logo_url: string | null;
       }>
     >`
-      SELECT c.id, c.name, c.slug, c.category, cm.role, cm.is_admin, c.is_system
+      SELECT c.id, c.name, c.slug, c.category, cm.role, cm.is_admin, c.is_system, c.logo_url
       FROM identity.company_members cm
       JOIN identity.companies c ON c.id = cm.company_id
       WHERE cm.user_id = ${userId}::uuid

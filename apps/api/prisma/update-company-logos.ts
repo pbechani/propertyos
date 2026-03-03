@@ -7,6 +7,10 @@ const LOGOS: Record<string, string> = {
     'https://ui-avatars.com/api/?name=Acme+Real+Estate&size=256&background=1a5276&color=ffffff&bold=true&format=png',
   'buildright-contractors':
     'https://ui-avatars.com/api/?name=BuildRight+Contractors&size=256&background=1e8449&color=ffffff&bold=true&format=png',
+  'bechani-enterprises':
+    'https://ui-avatars.com/api/?name=Bechani+Enterprises&size=256&background=7c3aed&color=ffffff&bold=true&format=png',
+  'bechani-enterprises-1':
+    'https://ui-avatars.com/api/?name=Bechani+Enterprises&size=256&background=7c3aed&color=ffffff&bold=true&format=png',
 };
 
 async function main() {

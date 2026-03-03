@@ -9,6 +9,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
   'image/jpeg',
   'image/png',
+  'image/webp',
+  'image/svg+xml',
   'image/heic',
   'image/heif',
 ]);

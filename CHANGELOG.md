@@ -13,6 +13,19 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **Listings: "Privately Listed" badge missing for Self-company agents** (2026-03-03)
+  - `apps/web/src/views/Listings.tsx`
+    - Added `isPrivateListing: boolean` field to the `ListingCard` type.
+    - `mapPropertyToListingCard()` now sets `isPrivateListing: agentProfile ? !agentProfile.primaryCompanySlug : false`. `primaryCompanySlug` is `null` when the agent belongs only to the built-in Self system company (the SQL subquery in `getAgentProfile` filters `c.is_system = false`), so this correctly evaluates to `true` for privately-listed properties.
+    - A purple `🔒 Privately Listed` badge is now rendered on the listing card overlay whenever `isPrivateListing` is `true`.
+    - The company logo thumbnail at the bottom of the card is hidden for private listings (`{!property.isPrivateListing && ...}`).
+  - `apps/web/src/views/PropertyDetailEnhanced.tsx`
+    - Same `isPrivateListing` logic applied on the detail page: badge appears in both the image hero section and the sidebar agent card.
+    - Company name/logo block in the agent section is conditionally hidden when `isPrivateListing`.
+  - `apps/api/src/property/property.service.ts`
+    - `getAgentProfile()` SQL subquery selects the agent's first non-system company slug as `primary_company_slug`; returns `null` for sole users who only belong to the Self company.
+    - Response DTO now carries `primaryCompanySlug: string | null`, consumed by both the listings page and the property detail page.
+
 - **Login and registration returning HTTP 500 "Internal server error"** (2026-03-02)
   - `apps/api/prisma/migrations/202603020008_property_listing_type/migration.sql`
   - `apps/api/prisma/migrations/202603020009_company_id_on_transactions/migration.sql`
@@ -54,6 +67,64 @@ Related docs:
     - Card background updated to `bg-card`/`border-border` tokens to respect the active theme.
 
 ### Added
+- **Company Dashboard API endpoint** (2026-03-03)
+  - `apps/api/src/identity/companies/companies.service.ts`
+    - `getDashboard(companyId)` queries active member count, total invitations, orphaned task count, today's audit event count, a recent activity array (last 5 entries), and the full company record in parallel using `Promise.all`.
+    - Returns a single `CompanyDashboardResponse` DTO; no N+1 queries.
+  - `apps/api/src/identity/companies/companies.controller.ts`
+    - `GET /api/v1/companies/:id/dashboard` — requires authenticated user with an active context for that company; returns aggregated dashboard stats and recent activity feed.
+
+- **Company logo upload endpoint** (2026-03-03)
+  - `apps/api/src/identity/companies/companies.controller.ts`
+    - `POST /api/v1/companies/:id/logo` — accepts `multipart/form-data` with a `logo` file field; validates MIME type (image/*) and size (max 5 MB); stores via `DocumentStorageService` and updates `identity.companies.logo_url`.
+  - `apps/web/src/views/CompanyProfile.tsx`
+    - Admin users see a camera-icon overlay on the company logo; clicking it opens a file picker.
+    - Calls `companiesApi.uploadLogo(token, companyId, file)` and refreshes the displayed logo on success.
+    - Non-admin users see the logo as read-only.
+
+- **Company deactivation** (2026-03-03)
+  - `apps/api/src/identity/companies/companies.service.ts`
+    - `deactivate(id, actorId, requestContext)` — sets `status = 'deactivated'` and writes a `company.deactivated` audit log entry.
+  - `apps/api/src/identity/companies/companies.controller.ts`
+    - `POST /api/v1/companies/:id/deactivate` — admin-only; returns `{ id, status: 'deactivated' }`.
+  - `apps/web/src/views/MyCompanies.tsx`
+    - Each company card now shows a **Deactivate** action (PowerOff icon) visible to admins.
+    - Confirmation modal prevents accidental activation; calls `companiesApi.deactivateCompany(token, id)` after exchanging a scoped context token.
+    - Optimistically updates the in-memory list to show `deactivated` status on success.
+
+- **CompanyRegistration: real API wiring with logo and document upload** (2026-03-03)
+  - `apps/web/src/views/CompanyRegistration.tsx`
+    - Logo upload: image drop zone with live preview, type validation (image/*), and 5 MB size limit; blob URL revoked on removal.
+    - Document upload: drag-and-drop zone accepting PDF or images up to 10 MB each; duplicate-file guard by name+size.
+    - On submit calls `companiesApi.createCompany(token, payload)` then uploads logo via `companiesApi.uploadLogo` and queues document uploads via `companiesApi.uploadDocument`.
+    - Error handling surfaces per-field (`logoError`, `docError`) and a global `submitError` banner with a `Loader2` spinner during in-flight requests.
+
+- **MyDashboard: expanded role-aware tabs** (2026-03-03)
+  - `apps/web/src/views/MyDashboard.tsx`
+    - Tab set extended to `overview | analytics | listings | favourites | my-properties | my-projects | my-orders`.
+    - **Favourites** tab: displays saved/bookmarked properties sourced from the saved-properties API.
+    - **My Properties** tab (buyer role): lists properties where the current user is the buyer/owner.
+    - **My Projects** tab: construction project stubs with status and progress bar.
+    - **My Orders** tab: supplier order stubs with amount and status badge.
+    - Inline listing creation form removed; replaced by the new standalone `<CreateListing>` modal component.
+    - Inline listing editing replaced by the new standalone `<EditListing>` modal component.
+    - `auditApi` and `usersApi` imports added for audit log and user profile data.
+
+- **CreateListing and EditListing extracted as standalone components** (2026-03-03)
+  - `apps/web/src/components/CreateListing.tsx` (new, ~714 lines)
+    - Full create-listing modal: title, price, currency, listing type, property type, address fields, bedrooms/bathrooms/parking/area, description, amenity checkboxes, and photo upload zone.
+    - Wires to `propertiesApi.create(token, payload)` on submit; triggers an `onSuccess` callback to refresh the parent listing table.
+  - `apps/web/src/components/EditListing.tsx` (new)
+    - Same form fields pre-populated from the existing listing record; calls `propertiesApi.update(token, id, payload)` on save.
+
+- **Listings: URL-persistent search filter state** (2026-03-03)
+  - `apps/web/src/views/Listings.tsx`
+    - `filtersToSearchParams(filters, sortBy, listingCategory)` — serialises all active filters into a `URLSearchParams` object appended to the browser URL whenever a search is executed; enables deep-linking and back-button restoration.
+    - `filtersFromSearchParams(searchParams)` — rehydrates filter state from URL params on mount so bookmarked or shared search URLs restore the full filter panel state.
+    - `useRouter` added alongside `useSearchParams`; URL updated via `router.replace` (no history stack entry per keystroke).
+  - `apps/web/src/lib/api-client.ts`
+    - `AgentProfileResponse`: `primaryCompanySlug?: string | null` field added; used by both listings and property-detail pages to determine private-listing status.
+
 - **Context-aware sidebar navigation (Self vs Company)** (2026-02-28)
   - `apps/web/src/components/AppSidebar.tsx`
     - `selfNavigation` array: My Dashboard · Listings · Service Providers · Project Management · Safety · Analytics — with `Users` and `ClipboardList` icons from Lucide.

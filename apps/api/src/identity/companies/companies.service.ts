@@ -364,6 +364,76 @@ export class CompaniesService {
     return updated;
   }
 
+  async deactivate(
+    id: string,
+    actorId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ) {
+    const company = await this.findById(id) as Record<string, unknown>;
+
+    if (company['status'] === 'deactivated') {
+      throw new BadRequestException('Company is already deactivated');
+    }
+
+    await this.prisma.$executeRaw`
+      UPDATE identity.companies
+      SET status = 'deactivated', updated_at = NOW()
+      WHERE id = ${id}::uuid
+    `;
+
+    await this.auditService.log({
+      eventId: 'company.deactivated',
+      actorId,
+      actorRole: 'admin',
+      action: 'deactivate',
+      resourceType: 'company',
+      resourceId: id,
+      payload: { company_id: id },
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent,
+    });
+
+    return { id, status: 'deactivated' };
+  }
+
+  async getDashboard(companyId: string) {
+    const [company, memberRows, inviteRows, orphanRows, recentActivity, todayCount] =
+      await Promise.all([
+        this.findById(companyId),
+        this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+          SELECT COUNT(*) AS cnt
+          FROM identity.company_members
+          WHERE company_id = ${companyId}::uuid
+            AND status = 'active'
+        `,
+        this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+          SELECT COUNT(*) AS cnt
+          FROM identity.company_invitations
+          WHERE company_id = ${companyId}::uuid
+            AND status = 'pending'
+        `,
+        this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+          SELECT COUNT(*) AS cnt
+          FROM identity.company_orphaned_tasks
+          WHERE company_id = ${companyId}::uuid
+            AND status = 'open'
+        `,
+        this.auditService.findByCompany(companyId, 5),
+        this.auditService.countTodayByCompany(companyId),
+      ]);
+
+    return {
+      company,
+      stats: {
+        activeMembers: Number(memberRows[0]?.cnt ?? 0),
+        pendingInvitations: Number(inviteRows[0]?.cnt ?? 0),
+        openOrphanedTasks: Number(orphanRows[0]?.cnt ?? 0),
+        todayActivities: todayCount,
+      },
+      recentActivity,
+    };
+  }
+
   // ----------------------------------------------------------------
   // Helpers
   // ----------------------------------------------------------------

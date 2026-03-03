@@ -26,6 +26,8 @@ import {
   SortOption,
   FraudReportType,
   InquiryType,
+  LISTING_TYPES,
+  ListingType,
 } from './property.constants';
 
 // ────────────────────────────────────────────────────────────
@@ -114,6 +116,10 @@ export class CreatePropertyDto {
   @IsIn(PROPERTY_TYPES)
   property_type?: PropertyType;
 
+  @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listingType?: ListingType;
+
   @IsNumber()
   @Min(0)
   price!: number;
@@ -180,6 +186,18 @@ export class UpdatePropertyDto {
   @IsOptional()
   @IsIn(PROPERTY_STATUSES)
   status?: PropertyStatus;
+
+  @IsOptional()
+  @IsIn(PROPERTY_TYPES)
+  propertyType?: PropertyType;
+
+  @IsOptional()
+  @IsIn(PROPERTY_TYPES)
+  property_type?: PropertyType;
+
+  @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listingType?: ListingType;
 
   @IsOptional()
   @IsNumber()

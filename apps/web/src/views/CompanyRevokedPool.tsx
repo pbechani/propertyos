@@ -7,7 +7,6 @@ import {
   Send,
   CheckCircle,
   Users,
-  MoreHorizontal,
   ChevronRight,
 } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";

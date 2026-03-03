@@ -266,13 +266,13 @@ export default function CompanyStatus() {
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => router.push(`/company/${company.id}/profile`)}
+            onClick={() => router.push('/company/profile?edit=true')}
             className="px-4 py-2 text-sm font-medium bg-card border border-border text-foreground rounded-lg hover:bg-accent transition-colors"
           >
             Edit Company Profile
           </button>
           <button
-            onClick={() => router.push(`/company/${company.id}/users`)}
+            onClick={() => router.push('/company/users')}
             className="px-4 py-2 text-sm font-medium bg-card border border-border text-foreground rounded-lg hover:bg-accent transition-colors"
           >
             Manage Members

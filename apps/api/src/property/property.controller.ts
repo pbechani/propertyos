@@ -28,7 +28,7 @@ import {
 import { resolvePropertyActorRole } from './property.constants';
 
 type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
+  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
   ip: string;
   headers: { 'user-agent'?: string };
 };
@@ -45,10 +45,10 @@ export class PropertyController {
 
   /**
    * POST /api/v1/properties
-   * Create a new property listing. [agent, admin]
+   * Create a new property listing. [agent, admin, buyer_seller, investor]
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
   @Post()
   async create(@Body() dto: CreatePropertyDto, @Request() req: AuthRequest) {
     const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
@@ -58,6 +58,7 @@ export class PropertyController {
       dto,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
   }
 
@@ -166,10 +167,10 @@ export class PropertyController {
 
   /**
    * PATCH /api/v1/properties/:id
-   * Update a listing. [agent (own), admin]
+   * Update a listing. [owner, admin]
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -184,6 +185,7 @@ export class PropertyController {
       dto,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
   }
 
@@ -192,7 +194,7 @@ export class PropertyController {
    * Delete a listing. [agent (own), admin]
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
   @Delete(':id')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
@@ -205,16 +207,17 @@ export class PropertyController {
       agentRole,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
     return { message: 'Property deleted successfully' };
   }
 
   /**
    * POST /api/v1/properties/:id/media
-   * Upload photo/video to a listing. [agent (own)]
+   * Upload photo/video to a listing. [owner, admin]
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
   @Post(':id/media')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -242,6 +245,7 @@ export class PropertyController {
       files,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
 
     return result.length === 1 ? result[0] : { items: result };
@@ -249,10 +253,10 @@ export class PropertyController {
 
   /**
    * DELETE /api/v1/properties/:id/media/:mediaId
-   * Remove a media file from a listing. [agent (own)]
+   * Remove a media file from a listing. [owner, admin]
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
   @Delete(':id/media/:mediaId')
   async deleteMedia(
     @Param('id', ParseUUIDPipe) id: string,
@@ -267,6 +271,7 @@ export class PropertyController {
       agentRole,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
     return { message: 'Media deleted successfully' };
   }
@@ -288,5 +293,18 @@ export class AgentDashboardController {
   @Get('dashboard')
   async getDashboard(@Request() req: AuthRequest) {
     return this.propertyService.getAgentDashboard(req.user.sub);
+  }
+
+  /**
+   * GET /api/v1/agent/my-listings
+   * All listings for the authenticated agent, including drafts.
+   * Optional query param: ?status=draft|active|under_offer|sold|withdrawn|all
+   */
+  @Get('my-listings')
+  async getMyListings(
+    @Request() req: AuthRequest,
+    @Query('status') status?: string,
+  ) {
+    return this.propertyService.getMyListings(req.user.sub, status);
   }
 }

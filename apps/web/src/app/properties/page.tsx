@@ -289,7 +289,7 @@ export default async function PropertyMarketplace() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredListings.map((listing) => (
-              <PropertyCard key={listing.id} property={listing} />
+              <PropertyCard key={listing.id} property={listing} refParam="/properties" />
             ))}
           </div>
           {featuredListings.length === 0 && (

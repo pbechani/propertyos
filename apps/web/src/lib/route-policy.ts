@@ -67,6 +67,23 @@ export function isAuthExemptRoute(pathname: string): boolean {
   );
 }
 
+/**
+ * Routes that use the authenticated shell layout (sidebar, header) when a
+ * user is logged in, but are intentionally accessible to anonymous visitors
+ * too — e.g. the public property listings and property detail pages.
+ */
+export const PUBLIC_SHELL_ROUTES = [
+  '/app/listings',
+  '/app/property',
+  '/agent-profile',
+] as const;
+
+export function isPublicShellRoute(pathname: string): boolean {
+  return PUBLIC_SHELL_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
 export function shouldUseAuthenticatedShell(pathname: string): boolean {
   if (pathname === '/') {
     return false;

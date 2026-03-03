@@ -207,7 +207,7 @@ export class CompanyMembersService {
   async getUserCompanies(userId: string) {
     return this.prisma.$queryRaw<Array<Record<string, unknown>>>`
       SELECT cm.id as member_id, cm.role, cm.is_admin, cm.status, cm.permissions,
-             c.id, c.name, c.slug, c.category, c.status as company_status, c.verification_status
+             c.id, c.name, c.slug, c.category, c.status as company_status, c.verification_status, c.logo_url
       FROM identity.company_members cm
       JOIN identity.companies c ON c.id = cm.company_id
       WHERE cm.user_id = ${userId}::uuid

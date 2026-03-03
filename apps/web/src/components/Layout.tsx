@@ -93,7 +93,6 @@ export function Layout({ children }: LayoutProps) {
     router.push('/');
   };
 
-  const isListingsRoute = pathname.startsWith('/app/listings');
   const isPropertyDetailRoute = pathname.startsWith('/app/property/');
   const isProfileDashboardRoute = pathname === '/profile-dashboard';
   const isRoleSetupRoute = pathname === '/role-setup' || pathname === '/profile-setup';

@@ -5,6 +5,8 @@ import { PrismaService } from '../database';
 export interface PropertyAuditParams {
   actorId?: string | null;
   actorRole?: string | null;
+  /** Active company context at the time of the action. */
+  companyId?: string | null;
   action: string;
   resourceType?: string | null;
   resourceId?: string | null;
@@ -28,6 +30,7 @@ export class PropertyAuditService {
         event_id,
         actor_id,
         actor_role,
+        company_id,
         action,
         resource_type,
         resource_id,
@@ -38,6 +41,7 @@ export class PropertyAuditService {
         ${eventId},
         ${entry.actorId ?? null}::uuid,
         ${entry.actorRole ?? null},
+        ${entry.companyId ?? null}::uuid,
         ${entry.action},
         ${entry.resourceType ?? null},
         ${entry.resourceId ?? null}::uuid,

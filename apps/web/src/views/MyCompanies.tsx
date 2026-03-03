@@ -8,8 +8,10 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  PowerOff,
+  X,
 } from 'lucide-react';
-import { companiesApi, type UserCompany } from '@/lib/api-client';
+import { companiesApi, authApi, type UserCompany } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -45,6 +47,31 @@ export default function MyCompanies() {
   const [companies, setCompanies] = useState<UserCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<UserCompany | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
+
+  const handleDeactivate = async () => {
+    if (!confirmDeactivate) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setDeactivating(true);
+    setDeactivateError(null);
+    try {
+      const scoped = await authApi.selectContext(token, confirmDeactivate.id);
+      await companiesApi.deactivateCompany(scoped.accessToken, confirmDeactivate.id);
+      setCompanies((prev) =>
+        prev.map((c) =>
+          c.id === confirmDeactivate.id ? { ...c, company_status: 'deactivated' } : c,
+        ),
+      );
+      setConfirmDeactivate(null);
+    } catch (err: unknown) {
+      setDeactivateError(err instanceof Error ? err.message : 'Failed to deactivate.');
+    } finally {
+      setDeactivating(false);
+    }
+  };
 
   useEffect(() => {
     const token = getAccessToken();
@@ -121,53 +148,108 @@ export default function MyCompanies() {
         {/* Company list */}
         <div className="space-y-3">
           {companies.map((company) => (
-            <button
-              key={company.id}
-              onClick={() => router.push(`/app/my-companies/${company.id}`)}
-              className="w-full text-left bg-card border border-border rounded-xl p-5 hover:border-blue-400 hover:shadow-sm transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                {/* Icon */}
-                <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-muted-foreground" />
-                </div>
+            <div key={company.id} className="bg-card border border-border rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-sm transition-all group">
+              <button
+                onClick={() => router.push(`/app/my-companies/${company.id}`)}
+                className="w-full text-left p-5"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Icon */}
+                  <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5 text-muted-foreground" />
+                  </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-foreground truncate">{company.name}</span>
-                    {company.is_admin && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 uppercase tracking-wide shrink-0">
-                        Admin
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-foreground truncate">{company.name}</span>
+                      {company.is_admin && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 uppercase tracking-wide shrink-0">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {CATEGORY_LABELS[company.category] ?? company.category}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_STYLES[company.company_status] ?? 'bg-gray-100 text-gray-500'}`}
+                      >
+                        {formatStatus(company.company_status)}
                       </span>
-                    )}
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${VERIFICATION_STYLES[company.verification_status] ?? 'bg-gray-100 text-gray-500'}`}
+                      >
+                        {formatStatus(company.verification_status)}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-600 capitalize">
+                        {company.role}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {CATEGORY_LABELS[company.category] ?? company.category}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${STATUS_STYLES[company.company_status] ?? 'bg-gray-100 text-gray-500'}`}
-                    >
-                      {formatStatus(company.company_status)}
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${VERIFICATION_STYLES[company.verification_status] ?? 'bg-gray-100 text-gray-500'}`}
-                    >
-                      {formatStatus(company.verification_status)}
-                    </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-600 capitalize">
-                      {company.role}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Arrow */}
-                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
-              </div>
-            </button>
+                  {/* Arrow */}
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
+                </div>
+              </button>
+
+              {/* Deactivate — only for admins on non-deactivated companies */}
+              {company.is_admin && company.company_status !== 'deactivated' && (
+                <div className="px-5 pb-4">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeactivate(company); }}
+                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    <PowerOff className="w-3.5 h-3.5" />
+                    Deactivate company
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
+
+        {/* Deactivate confirmation modal */}
+        {confirmDeactivate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                  <PowerOff className="w-5 h-5 text-red-600" />
+                </div>
+                <button onClick={() => { setConfirmDeactivate(null); setDeactivateError(null); }} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <h2 className="text-lg font-semibold mb-1">Deactivate Company?</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                <strong>{confirmDeactivate.name}</strong> will be deactivated. Members will lose access and the company will no longer be operational. This action cannot be undone.
+              </p>
+              {deactivateError && (
+                <p className="text-xs text-red-600 mb-3 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />{deactivateError}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setConfirmDeactivate(null); setDeactivateError(null); }}
+                  disabled={deactivating}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeactivate}
+                  disabled={deactivating}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {deactivating ? <><Loader2 className="w-4 h-4 animate-spin" />Deactivating…</> : 'Yes, Deactivate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { SentryModule, SentryExceptionFilter } from './common/sentry';
 import { envValidationSchema, envValidationOptions } from './config';
 import { IdentityModule } from './identity/identity.module';
 import { PropertyModule } from './property/property.module';
+import { SalesModule } from './sales/sales.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { PropertyModule } from './property/property.module';
     MetricsModule,
     IdentityModule,
     PropertyModule,
+    SalesModule,
   ],
   providers: [
     {

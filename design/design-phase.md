@@ -571,123 +571,117 @@
 ## PHASE 11: Risk & Analytics Engine (Weeks 61-68)
 
 ### 11.1 Data Collection Infrastructure
-- Historical transaction data
-- User behavior tracking
-- Project performance data
-- Supplier/contractor performance data
-- Material price data
+- Historical transaction data aggregation and normalization
+- User behavior event tracking (clickstream, session data)
+- Project performance data pipeline (milestones, overruns, disputes)
+- Supplier/contractor performance data warehouse
+- Material price history and market comparables ingestion
 
-### 11.2 Contractor Risk Scoring
-- Completion rate
-- Budget overrun history
-- Dispute count
-- Timeline adherence
-- Payment behavior
-- Risk score (0-100)
+### 11.2 Contractor Risk Scoring (XGBoost)
+**Model inputs (weighted):** completion rate (25%), budget adherence rate (20%), on-time rate (20%), dispute rate (15%), avg rating (15%), KYC verified (5%)
+- Risk score 0–100 (higher = riskier)
+- Computed nightly via Celery cron; forced recompute on trigger events
+- Tracked in `analytics.risk_scores` with `score_components` JSONB breakdown
+- See sprint-11 for full `contractorRiskScore()` TypeScript implementation
 
 ### 11.3 Property Risk Scoring
-- Title verification status
-- Ownership history (number of past owners)
-- Fraud reports count
-- Location risk (high-fraud areas)
-- Documentation completeness
-- Risk score (0-100)
+**Weighted factors:** title verification (30%), fraud reports (25%), location risk (20%), ownership history changes (15%), documentation completeness (10%)
+- Risk score stored per property with `valid_until` expiry for recalculation
 
 ### 11.4 Project Health Scoring
-- Budget variance
-- Timeline variance
-- Milestone completion rate
-- Inspection failure rate
-- Communication activity
-- Health score (0-100)
+- Budget variance, timeline variance, milestone completion rate, inspection failure rate
+- Health score 0–100; drives project dashboard status badges
 
-### 11.5 Anomaly Detection
-- Transaction anomalies (unusual amounts, patterns)
-- Login anomalies (new device, location)
-- Price anomalies (material prices vs market)
-- Activity anomalies (unusual behavior patterns)
+### 11.5 Anomaly Detection (Prophet)
+- Daily aggregated transaction volumes modelled with Prophet (95% confidence intervals)
+- Points outside `yhat_upper` / `yhat_lower` trigger `analytics.anomaly_alerts`
+- Alert severity auto-classified; fires within 5 minutes of detection
+- See sprint-11 for `detect_transaction_anomalies()` Python implementation
 
-### 11.6 Predictive Analytics
-- Project cost overrun prediction
-- Project delay prediction
-- Contractor performance prediction
-- Material price trend prediction
+### 11.6 Predictive Analytics (XGBoost + LightGBM)
+- Project cost overrun prediction (classification: >10% over budget likely/unlikely)
+- Project delay prediction (days to completion regression)
+- Contractor performance prediction (future rating score)
+- Material price trend prediction (30/60/90 day windows)
+- All models tracked in **MLflow** — experiment tracking, metric logging, model registry
 
 ### 11.7 Analytics Dashboards
-- Platform-level analytics (admin)
-- User-specific analytics (project owners)
-- Contractor performance dashboards
-- Supplier performance dashboards
-- Market intelligence dashboards
+- Platform-level analytics (admin): transaction volume, user growth, escrow flows
+- User-specific analytics: project owners, portfolio views
+- Contractor performance dashboards: bid win rate, completion rate, ratings trend
+- Supplier performance dashboards: order volume, delivery success
+- Market intelligence: Material Price Index (real-time from supplier catalog)
 
 ### 11.8 Reporting & Insights
-- Automated reports (weekly, monthly)
-- Custom report builder
-- Data export (CSV, PDF, API)
-- Insight notifications (alerts, recommendations)
+- Automated weekly/monthly reports (PDF auto-generated, delivered by email)
+- Custom report builder with data export (CSV, PDF, REST API)
+- Insight notifications: cost overrun alerts, risk level changes, market price spikes
 
-**Deliverables:** Risk scoring system, predictive analytics, comprehensive dashboards
-**Dependencies:** Phase 5 (project data), Phase 6 (contractor/supplier data)
+**Deliverables:** Risk scoring system (all entity types), anomaly detection, predictive models in MLflow registry, comprehensive dashboards  
+**Dependencies:** Phase 5 (project data), Phase 6 (contractor/supplier data), Sprint 01 (infrastructure)  
 **Critical for:** Trust, fraud prevention, lender integrations
 
 ---
 
 ## PHASE 12: AI Engine & Legal Intelligence (Weeks 69-80)
 
+> **Data principle:** AI modules for pricing, maintenance prediction, and churn need 3–6 months of real platform data before meaningful models can be trained. Phases 1–11 must complete data collection first.
+
 ### 12.1 AI Infrastructure Foundation
-- LLM gateway (OpenAI, Anthropic, Google)
-- Vector database (Pinecone, Weaviate, Qdrant)
-- Model registry & versioning
-- GPU compute cluster (AWS SageMaker, GCP AI Platform)
+- **LLM Gateway:** Unified service over OpenAI GPT-4o, Anthropic Claude (`claude-opus-4-6`), Google Gemini — provider fallback within 2 seconds, all requests logged to `ai_engine.llm_requests` with token counts and cost
+- **Vector Database:** pgvector extension on PostgreSQL (1536-dim embeddings); migrate to Pinecone at scale
+- **Model Registry:** MLflow model versioning — staging → production promotion workflow
+- **Background Workers:** Celery + Redis for async AI tasks, model retraining jobs
+- **AI Observability:** MLflow metrics + Prometheus exporters — inference latency, model drift, cost per use-case
 
-### 12.2 Document AI
-- OCR for document extraction (title deeds, contracts, certificates)
-- Document classification (automated categorization)
-- Information extraction (key-value pairs from documents)
-- Document verification (detect forgeries, inconsistencies)
+### 12.2 Document AI (Claude API)
+- **PDF extraction:** Claude API with base64-encoded document input — structured JSON output for title deeds, contracts, ID documents, inspection certificates
+- **OCR pipeline:** AWS Textract / Google Document AI for image-based documents; Claude for structured extraction
+- **Confidence scoring:** Flag low-confidence extractions for human review
+- Document classification, red-flag detection, and forgery indicators
+- See sprint-11 for `extract_document_data()` Python implementation with schema map
 
-### 12.3 Computer Vision for Construction
-- Floor plan recognition (extract dimensions, rooms)
-- Progress verification (compare photos to plans)
-- Quality issue detection (cracks, defects)
-- Material verification (identify materials in photos)
+### 12.3 Computer Vision for Construction (YOLOv8)
+- **Framework:** YOLOv8 (Ultralytics) — fine-tuned on construction site dataset
+- **Edge deployment:** NVIDIA Jetson Orin Nano for on-site inference (minimizes latency and bandwidth)
+- Floor plan recognition: extract room dimensions and layout from uploaded images
+- Progress verification: compare site photos to plan stages, detect missing work
+- Safety monitoring: detect PPE compliance, restricted area breaches, hazards
+- Photo tampering detection: EXIF metadata validation + visual anomaly checks
 
 ### 12.4 Legislation Corpus & RAG System
-- Legal document ingestion (building codes, regulations)
-- Document chunking & embedding
-- Vector search for legal queries
-- RAG pipeline (retrieve relevant law + generate answer)
-- Regional legislation databases (per country/region)
+- Legal document ingestion: building codes, land acts, property laws, tax laws, zoning regulations
+- Document chunking (512-token chunks with 50-token overlap) + embedding (text-embedding-ada-002)
+- Stored in `ai_engine.legislation_corpus` with `VECTOR(1536)` column + IVFFlat cosine index
+- RAG pipeline: embed query → cosine search (top 5, similarity > 0.75) → Claude generation with citations
+- Regional legislation databases indexed per country code (`jurisdiction CHAR(2)`)
+- See sprint-11 for full RAG pipeline specification
 
-### 12.5 AI-Powered Legal Compliance Engine
-- Compliance checking (project plans vs regulations)
-- Real-time compliance alerts
-- Regulation change notifications
-- Legal Q&A chatbot (RAG-powered)
-- Document compliance scoring
+### 12.5 Natural Language Analytics (LangChain + Claude)
+- **NL-to-SQL:** LangChain `create_sql_agent` + `ChatAnthropic` over `analytics.*` schema
+- Users query in plain language: "Which contractors have risk score above 60?"
+- Query results returned as structured JSON + rendered chart/table in UI
+- See sprint-11 for `build_analytics_agent()` Python implementation
 
-### 12.6 Natural Language Interface
-- Voice-to-text (Whisper API)
-- Text-to-speech (for responses)
-- Conversational AI for queries (powered by LLM + RAG)
-- Multi-language support
+### 12.6 AI Legal Compliance Engine
+- Compliance check: project plans vs building codes (via RAG)
+- Real-time compliance alerts on stage progression
+- Legal Q&A chatbot with source citations and confidence level
+- Multi-jurisdiction support (per country/region)
 
-### 12.7 AI Model Training & Fine-Tuning
-- Custom model training on platform data
-- Fine-tuning for domain-specific tasks
-- Fraud detection model training
-- Price prediction model training
-- Model evaluation & monitoring
+### 12.7 Voice Interface (Whisper)
+- Voice-to-text (OpenAI Whisper API) for AI Design Assistant input
+- Transcription stored with design session conversation history
+- Multi-language transcription support
 
-### 12.8 AI Observability
-- Model performance monitoring
-- Inference latency tracking
-- Model drift detection
-- Accuracy monitoring
-- Cost tracking (API usage)
+### 12.8 AI Model Retraining Pipeline
+- Nightly Celery tasks refresh risk models with last 90 days of completed project data
+- MLflow tracks each training run; automatic promotion if evaluation metric improves
+- Model drift alerts if prediction accuracy drops below threshold
 
-**Deliverables:** AI infrastructure powering document processing, legal compliance, and NLP
-**Dependencies:** Phase 5 (construction data), Phase 3 (legal documents)
+**Deliverables:** LLM Gateway operational, Document AI pipeline, RAG legal engine, NL-to-SQL analytics, YOLOv8 vision models deployed  
+**Dependencies:** Phases 1–11 (all platform data), Sprint 01 (GPU compute / ML infrastructure)  
+**Critical for:** Sprint 13 (AI Design Assistant requires all Phase 12 components)
 **Critical for:** AI Design Assistant (Phase 13), compliance automation
 
 ---

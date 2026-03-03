@@ -195,3 +195,15 @@ export function saveSelectedContextTokens(tokens: AuthTokens): void {
   sessionStorage.removeItem(PENDING_COMPANIES_KEY);
   window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
 }
+
+/** Persist a fresh companies list (e.g. after re-fetching from the API). */
+export function saveUserCompanies(companies: CompanyContext[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(USER_COMPANIES_KEY, JSON.stringify(companies));
+}
+
+/** Update the pending companies in sessionStorage (e.g. after a fresh getContexts call refreshes logos). */
+export function savePendingCompanies(companies: CompanyContext[]): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(PENDING_COMPANIES_KEY, JSON.stringify(companies));
+}

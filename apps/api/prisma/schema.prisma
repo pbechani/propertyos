@@ -461,10 +461,181 @@ model PropertyAuditLog {
 }
 
 // ============================================
-// SALES SCHEMA - Purchase Pipeline
+// SALES SCHEMA - Purchase Pipeline (Sprint 04)
 // ============================================
 
-// Note: Sales progression models will be added in Sprint 04
+model SaleStageConfig {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  country              String   @db.Char(2)
+  stageNumber          Int      @map("stage_number") @db.SmallInt
+  stageName            String   @map("stage_name") @db.VarChar(100)
+  description          String?  @db.Text
+  responsibleRole      String?  @map("responsible_role") @db.VarChar(50)
+  isBlocker            Boolean  @default(false) @map("is_blocker")
+  governmentDept       String?  @map("government_dept") @db.VarChar(100)
+  typicalDurationDays  Int?     @map("typical_duration_days") @db.SmallInt
+  requiredDocuments    Json     @default("[]") @map("required_documents") @db.JsonB
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([country, stageNumber], name: "uq_stage_config_country_stage")
+  @@index([country], name: "idx_stage_configs_country")
+  @@schema("sales")
+  @@map("stage_configs")
+}
+
+model PropertySale {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId           String    @map("property_id") @db.Uuid
+  saleReference        String    @unique @map("sale_reference") @db.VarChar(50)
+  sellerId             String    @map("seller_id") @db.Uuid
+  buyerId              String?   @map("buyer_id") @db.Uuid
+  agentId              String?   @map("agent_id") @db.Uuid
+  buyerConveyancerId   String?   @map("buyer_conveyancer_id") @db.Uuid
+  sellerConveyancerId  String?   @map("seller_conveyancer_id") @db.Uuid
+  agreedPrice          Decimal   @map("agreed_price") @db.Decimal(18, 2)
+  currency             String    @default("ZAR") @db.Char(3)
+  depositAmount        Decimal?  @map("deposit_amount") @db.Decimal(18, 2)
+  status               String    @default("active") @db.VarChar(30)
+  currentStage         Int       @default(1) @map("current_stage") @db.SmallInt
+  country              String    @default("ZA") @db.Char(2)
+  companyId            String?   @map("company_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  stageProgress        SaleStageProgress[]
+  documents            SaleStageDocument[]
+  governmentInteractions GovernmentInteraction[]
+  issues               SaleIssue[]
+  messages             SaleMessage[]
+
+  @@index([propertyId], name: "idx_property_sales_property")
+  @@index([sellerId],   name: "idx_property_sales_seller")
+  @@index([buyerId],    name: "idx_property_sales_buyer")
+  @@index([agentId],    name: "idx_property_sales_agent")
+  @@index([status],     name: "idx_property_sales_status")
+  @@index([companyId],  name: "idx_property_sales_company")
+  @@schema("sales")
+  @@map("property_sales")
+}
+
+model SaleStageProgress {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId       String    @map("sale_id") @db.Uuid
+  stageNumber  Int       @map("stage_number") @db.SmallInt
+  status       String    @default("not_started") @db.VarChar(20)
+  startedAt    DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(6)
+  completedBy  String?   @map("completed_by") @db.Uuid
+  daysInStage  Int?      @map("days_in_stage")
+  notes        String?   @db.Text
+
+  sale         PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([saleId, stageNumber], name: "uq_stage_progress_sale_stage")
+  @@index([saleId],  name: "idx_stage_progress_sale")
+  @@index([status],  name: "idx_stage_progress_status")
+  @@schema("sales")
+  @@map("sale_stage_progress")
+}
+
+model SaleStageDocument {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId        String   @map("sale_id") @db.Uuid
+  stageNumber   Int      @map("stage_number") @db.SmallInt
+  documentName  String   @map("document_name") @db.VarChar(255)
+  documentType  String?  @map("document_type") @db.VarChar(100)
+  url           String?  @db.Text
+  version       Int      @default(1) @db.SmallInt
+  uploadedBy    String?  @map("uploaded_by") @db.Uuid
+  status        String   @default("pending") @db.VarChar(20)
+  isRequired    Boolean  @default(false) @map("is_required")
+  uploadedAt    DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  sale          PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId],                   name: "idx_stage_documents_sale")
+  @@index([saleId, stageNumber],      name: "idx_stage_documents_stage")
+  @@schema("sales")
+  @@map("stage_documents")
+}
+
+model GovernmentInteraction {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId                  String    @map("sale_id") @db.Uuid
+  stageNumber             Int       @map("stage_number") @db.SmallInt
+  departmentName          String    @map("department_name") @db.VarChar(100)
+  applicationReference    String?   @map("application_reference") @db.VarChar(100)
+  submissionDate          DateTime? @map("submission_date") @db.Date
+  expectedCompletionDate  DateTime? @map("expected_completion_date") @db.Date
+  actualCompletionDate    DateTime? @map("actual_completion_date") @db.Date
+  status                  String    @default("pending") @db.VarChar(30)
+  notes                   String?   @db.Text
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sale                    PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId], name: "idx_gov_interactions_sale")
+  @@schema("sales")
+  @@map("government_interactions")
+}
+
+model SaleIssue {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId       String    @map("sale_id") @db.Uuid
+  stageNumber  Int?      @map("stage_number") @db.SmallInt
+  reportedBy   String?   @map("reported_by") @db.Uuid
+  issueType    String?   @map("issue_type") @db.VarChar(50)
+  description  String    @db.Text
+  status       String    @default("open") @db.VarChar(20)
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sale         PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId],  name: "idx_sale_issues_sale")
+  @@index([status],  name: "idx_sale_issues_status")
+  @@schema("sales")
+  @@map("sale_issues")
+}
+
+model SaleMessage {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId          String   @map("sale_id") @db.Uuid
+  senderId        String   @map("sender_id") @db.Uuid
+  message         String   @db.Text
+  attachments     Json     @default("[]") @db.JsonB
+  visibleToRoles  Json     @default("[\"buyer\",\"seller\",\"agent\",\"conveyancer\"]") @map("visible_to_roles") @db.JsonB
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sale            PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId],    name: "idx_sale_messages_sale")
+  @@index([senderId],  name: "idx_sale_messages_sender")
+  @@schema("sales")
+  @@map("sale_messages")
+}
+
+model SalesAuditLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId      String   @unique @default(dbgenerated("gen_random_uuid()")) @map("event_id") @db.Uuid
+  actorId      String?  @map("actor_id") @db.Uuid
+  actorRole    String?  @map("actor_role") @db.VarChar(50)
+  companyId    String?  @map("company_id") @db.Uuid
+  action       String   @db.VarChar(100)
+  resourceType String?  @map("resource_type") @db.VarChar(100)
+  resourceId   String?  @map("resource_id") @db.Uuid
+  payload      Json?    @db.JsonB
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([resourceType, resourceId], name: "idx_sales_audit_resource")
+  @@index([actorId],                  name: "idx_sales_audit_actor")
+  @@index([action],                   name: "idx_sales_audit_action")
+  @@schema("sales")
+  @@map("audit_logs")
+}
 
 // ============================================
 // FINANCIAL SCHEMA - Escrow, Ledger (Event-Sourced)

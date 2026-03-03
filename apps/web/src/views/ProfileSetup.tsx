@@ -8,7 +8,6 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
-  Camera,
   MapPin,
   Briefcase,
 } from "lucide-react";

@@ -1,10 +1,10 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Layout } from '@/components/Layout';
 import { getAccessToken, getSessionUpdatedEventName } from '@/lib/auth-session';
-import { isAuthExemptRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
+import { isAuthExemptRoute, isPublicShellRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
 
 interface AuthenticatedShellProps {
   children: ReactNode;
@@ -12,7 +12,9 @@ interface AuthenticatedShellProps {
 
 export default function AuthenticatedShell({ children }: AuthenticatedShellProps) {
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
+  // null = not yet read from storage (hydrating), true/false = known auth state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     const sessionUpdatedEventName = getSessionUpdatedEventName();
@@ -25,6 +27,27 @@ export default function AuthenticatedShell({ children }: AuthenticatedShellProps
       window.removeEventListener(sessionUpdatedEventName, syncAuth);
     };
   }, [pathname]);
+
+  // Redirect unauthenticated users away from protected routes (including after logout).
+  // Public shell routes (e.g. /app/listings) are exempt — they are browseable anonymously.
+  useEffect(() => {
+    if (
+      isAuthenticated === false &&
+      shouldUseAuthenticatedShell(pathname) &&
+      !isAuthExemptRoute(pathname) &&
+      !isPublicShellRoute(pathname)
+    ) {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [isAuthenticated, pathname, router]);
+
+  // Still hydrating — render nothing on protected routes to prevent content flash.
+  // Public shell routes are shown immediately (no token needed).
+  if (isAuthenticated === null) {
+    return shouldUseAuthenticatedShell(pathname) && !isPublicShellRoute(pathname)
+      ? null
+      : <>{children}</>;
+  }
 
   if (!isAuthenticated || isAuthExemptRoute(pathname) || !shouldUseAuthenticatedShell(pathname)) {
     return <>{children}</>;

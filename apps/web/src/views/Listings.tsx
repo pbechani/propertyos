@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { MapPin, Filter, Grid3x3, List, Bookmark, BookmarkCheck, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper } from "lucide-react";
+import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +139,7 @@ type ListingCard = {
   garage: number;
   sqm: number;
   propertyType: string;
+  listingType: 'for_sale' | 'to_rent' | 'development' | null;
   status: 'draft' | 'active' | 'under_offer' | 'sold' | 'withdrawn';
   features: string[];
   verified: boolean;
@@ -147,6 +148,7 @@ type ListingCard = {
   agentCompany: string;
   agentAvatarUrl: string | null;
   agentCompanyLogoUrl: string | null;
+  isPrivateListing: boolean;
   image: string;
   createdAt: string;
   latitude: number | null;
@@ -334,6 +336,7 @@ function mapPropertyToListingCard(
     garage: property.parking_spaces ?? 0,
     sqm: property.area_sqm ? Number(property.area_sqm) : 0,
     propertyType: propertyTypeMap[property.property_type] ?? "house",
+    listingType: property.listing_type ?? null,
     status: property.status,
     features,
     verified: property.verification_status === "verified",
@@ -342,6 +345,7 @@ function mapPropertyToListingCard(
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
+    isPrivateListing: agentProfile ? !agentProfile.primaryCompanySlug : false,
     image: primaryImage || DEFAULT_PROPERTY_IMAGE,
     createdAt: property.created_at,
     latitude: Number.isFinite(latitude) ? latitude : null,
@@ -607,6 +611,8 @@ export default function Listings() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
+  const [geocodedLocationCache, setGeocodedLocationCache] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const [isGeocodingMap, setIsGeocodingMap] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showDesktopFilters, setShowDesktopFilters] = useState(false);
   const [showTopMoreFilters, setShowTopMoreFilters] = useState(false);
@@ -1398,6 +1404,14 @@ export default function Listings() {
       const isFarm = titleLower.includes('farm') || propertyFeaturesLower.includes('farm');
       const isIndustrial = titleLower.includes('industrial') || propertyFeaturesLower.includes('industrial');
 
+      // Filter by listing category (For Sale vs To Rent)
+      if (listingCategory === 'To Rent' && property.listingType !== 'to_rent') {
+        return false;
+      }
+      if (listingCategory === 'For Sale' && property.listingType === 'to_rent') {
+        return false;
+      }
+
       if (appliedFilters.verifiedOnly && !property.verified) {
         return false;
       }
@@ -1495,7 +1509,7 @@ export default function Listings() {
 
       return true;
     });
-  }, [appliedFilters, properties]);
+  }, [appliedFilters, properties, listingCategory]);
 
   const sortedProperties = useMemo(() => {
     if (sortBy === 'relevance') {
@@ -1530,21 +1544,75 @@ export default function Listings() {
     return sortedProperties;
   }, [listingCategory, sortedProperties]);
 
+  // Geocode unique location strings for properties that lack stored coordinates
+  useEffect(() => {
+    const propertiesWithoutCoords = displayedProperties.filter(
+      (p) => p.latitude === null || p.longitude === null,
+    );
+    const uniqueLocations = [...new Set(
+      propertiesWithoutCoords
+        .map((p) => p.location)
+        .filter((loc) => loc && loc !== 'Location unavailable'),
+    )];
+    const uncached = uniqueLocations.filter((loc) => !(loc in geocodedLocationCache));
+    if (uncached.length === 0) return;
+
+    let cancelled = false;
+    setIsGeocodingMap(true);
+
+    const nominatimSearch = async (query: string): Promise<Array<{ lat: string; lon: string }>> => {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+        { headers: { 'Accept-Language': 'en', 'User-Agent': 'pribec-property-platform/1.0' } },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json() as Promise<Array<{ lat: string; lon: string }>>;
+    };
+
+    void (async () => {
+      const results: Record<string, { lat: number; lng: number } | null> = {};
+      for (const loc of uncached) {
+        if (cancelled) break;
+        try {
+          // Deduplicate consecutive parts e.g. "Harare, Harare, ZW" → "Harare, ZW"
+          const deduped = loc.split(', ').filter((p, i, a) => p !== a[i - 1]).join(', ');
+          let data = await nominatimSearch(deduped);
+          if (data.length === 0) {
+            const parts = deduped.split(', ');
+            const shortQuery = parts.slice(-2).join(', ');
+            if (shortQuery !== deduped) data = await nominatimSearch(shortQuery);
+          }
+          const first = data[0];
+          results[loc] = first ? { lat: parseFloat(first.lat), lng: parseFloat(first.lon) } : null;
+        } catch {
+          results[loc] = null;
+        }
+      }
+      if (!cancelled) {
+        setGeocodedLocationCache((prev) => ({ ...prev, ...results }));
+        setIsGeocodingMap(false);
+      }
+    })();
+    return () => { cancelled = true; setIsGeocodingMap(false); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayedProperties]);
+
   const mapPoints = useMemo<MapPoint[]>(() => {
     return displayedProperties
-      .filter(
-        (property) =>
-          property.latitude !== null
-          && property.longitude !== null,
-      )
-      .map((property) => ({
-        id: property.id,
-        title: property.title,
-        price: property.price,
-        latitude: property.latitude as number,
-        longitude: property.longitude as number,
-      }));
-  }, [displayedProperties]);
+      .map((property) => {
+        const lat = property.latitude ?? geocodedLocationCache[property.location]?.lat ?? null;
+        const lng = property.longitude ?? geocodedLocationCache[property.location]?.lng ?? null;
+        if (lat === null || lng === null) return null;
+        return {
+          id: property.id,
+          title: property.title,
+          price: property.price,
+          latitude: lat,
+          longitude: lng,
+        };
+      })
+      .filter((p): p is MapPoint => p !== null);
+  }, [displayedProperties, geocodedLocationCache]);
 
   const mapViewport = useMemo(() => {
     return buildMapViewport(mapPoints);
@@ -1625,24 +1693,6 @@ export default function Listings() {
 
     return badges;
   }, [appliedFilters]);
-
-  const insightsLocation = useMemo(() => {
-    if (appliedFilters.locations.length > 0) {
-      return appliedFilters.locations[0];
-    }
-
-    const locationCounts = new Map<string, number>();
-    sortedProperties.forEach((property) => {
-      const primary = property.location.split(',')[0]?.trim();
-      if (!primary) {
-        return;
-      }
-      locationCounts.set(primary, (locationCounts.get(primary) ?? 0) + 1);
-    });
-
-    const ranked = Array.from(locationCounts.entries()).sort((a, b) => b[1] - a[1]);
-    return ranked[0]?.[0] ?? 'Selected Area';
-  }, [appliedFilters.locations, sortedProperties]);
 
   const insightsSingleLocation = useMemo(() => {
     const selectedLocations = appliedFilters.locations.filter((location) => location.trim().length > 0);
@@ -3149,9 +3199,17 @@ export default function Listings() {
                     referrerPolicy="no-referrer-when-downgrade"
                   />
                 )
+              ) : isGeocodingMap ? (
+                <div className="w-full h-full flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Locating properties on map…
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-gray-600 px-6 text-center">
-                  Map view is available for listings with location coordinates.
+                  Map unavailable — no recognisable location data for the displayed listings.
                 </div>
               )}
               {/* Property pins on map */}
@@ -3213,6 +3271,7 @@ export default function Listings() {
                           src={property.image}
                           alt={property.title}
                           className={`w-full object-cover ${viewMode === "list" ? "h-48 md:h-full" : "h-48 md:h-64"}`}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_PROPERTY_IMAGE; }}
                         />
                         <div className="absolute top-3 left-3 flex flex-col gap-2">
                           <Badge className={verificationBadge.className}>
@@ -3220,12 +3279,15 @@ export default function Listings() {
                             {verificationBadge.label}
                           </Badge>
                           <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+                          {property.isPrivateListing && (
+                            <Badge className="bg-purple-600 text-white">🔒 Privately Listed</Badge>
+                          )}
                         </div>
                         <button
                           className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${
                             savedPropertyIds.has(property.id)
-                              ? 'bg-primary/10 hover:bg-primary/20'
-                              : 'bg-white hover:bg-gray-50'
+                              ? 'bg-red-50 hover:bg-red-100'
+                              : 'bg-white hover:bg-red-50'
                           }`}
                           aria-label={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
                           title={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
@@ -3237,8 +3299,8 @@ export default function Listings() {
                           }}
                         >
                           {savedPropertyIds.has(property.id)
-                            ? <BookmarkCheck className="w-4 h-4 text-primary fill-primary" />
-                            : <Bookmark className="w-4 h-4 text-gray-600" />}
+                            ? <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                            : <Heart className="w-4 h-4 text-gray-400" />}
                         </button>
                       </div>
                       <div className="p-4 md:p-5 flex-1">
@@ -3273,13 +3335,15 @@ export default function Listings() {
                           </span>
                         </div>
                         <div className="pt-4 border-t border-gray-200 flex items-start justify-between gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0" title={property.agentCompany}>
-                            <UserAvatarContent
-                              avatarUrl={property.agentCompanyLogoUrl}
-                              initials={companyInitials}
-                              alt={property.agentCompany}
-                            />
-                          </div>
+                          {!property.isPrivateListing && (
+                            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0" title={property.agentCompany}>
+                              <UserAvatarContent
+                                avatarUrl={property.agentCompanyLogoUrl}
+                                initials={companyInitials}
+                                alt={property.agentCompany}
+                              />
+                            </div>
+                          )}
                           <div className="ml-auto flex flex-col items-center text-center shrink-0">
                             <div className="w-8 h-8 bg-gray-200 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center text-[10px] font-semibold text-gray-700">
                               <UserAvatarContent

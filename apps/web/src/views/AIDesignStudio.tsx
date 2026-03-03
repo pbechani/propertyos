@@ -333,7 +333,21 @@ export default function AIDesignStudio() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">AI Design Studio</h1>
-                <p className="text-xs text-gray-400">Powered by Advanced Intelligence</p>
+                <p className="text-xs text-gray-400">Powered by Claude (claude-opus-4-6) · Whisper · pgvector RAG</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Claude opus-4-6
+                  </Badge>
+                  <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
+                    <Mic className="w-3 h-3 mr-1" />
+                    Whisper
+                  </Badge>
+                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+                    <Shield className="w-3 h-3 mr-1" />
+                    pgvector RAG
+                  </Badge>
+                </div>
               </div>
             </div>
 
@@ -375,7 +389,7 @@ export default function AIDesignStudio() {
               </div>
               <div>
                 <div className="font-semibold text-sm">AI Assistant</div>
-                <div className="text-xs text-gray-400">Design & Legal Expert</div>
+                <div className="text-xs text-gray-400">Claude claude-opus-4-6 · Legal RAG</div>
               </div>
             </div>
             <div className="flex gap-2">
