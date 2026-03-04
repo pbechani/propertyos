@@ -2,6 +2,27 @@
 
 ## Unreleased (Post v0.3.0 patches)
 
+### Added — 2026-03-04 (Invitation flow hardening + SMTP email)
+- **Invitation acceptance — complete role & company enrolment**
+  - `registerAndAccept` (new user): grants `buyer_seller` default role + Self company membership in addition to the invited company role — mirrors normal registration. Previously only the invited role was set and Self company enrolment was skipped.
+  - `accept` (existing user): now calls `usersService.assignRole()` after `linkUserToCompany` so the invited role appears in `identity.user_roles` and is reflected in the next JWT. Previously only the `company_members` row was inserted.
+  - Both paths now send a welcome email to the invitee via `notifyInviteeOfAcceptance()` (company name, role, login link).
+  - `auth.service.ts`: `addUserToSelfCompany` → renamed to public `enrolInSelfCompany` for reuse.
+  - New standalone `invitations.controller.ts` extracted from `companies.controller.ts`: `GET /invitations/:token` (public preview), `POST /invitations/:token/accept` (auth), `POST /invitations/:token/register-and-accept` (public).
+  - `companies.controller.ts`: corrected — now exposes `GET /companies/:id/invitations` (list) instead of the since-moved preview/accept routes.
+  - api-client: `invitationsApi.preview/accept/registerAndAccept` + `companiesApi.listInvitations/revokeInvitation`; new types `InvitationPreview`, `InviteAcceptResult`, `InviteRegisterResult`.
+  - `AcceptInvitation.tsx`: enriched `accepted` screen with contextual heading ("Account Created!" vs "Invitation Accepted!"), company/role summary card, welcome-email confirmation, and dual CTAs (Dashboard / Home).
+  - `CompanyUserManagement.tsx`: parallel-loads members + invitations; renders pending invitations table with expiry, inviter name, and per-row revoke button.
+
+- **SMTP email provider + Mailpit local catcher**
+  - New `email.smtp.provider.ts` (`SmtpEmailProvider` via `nodemailer`).
+  - `notification.service.ts`: `EMAIL_PROVIDER=smtp|sendgrid|none` selector; Mailpit-compatible defaults for local dev.
+  - `docker-compose.yml`: `mailpit` service on SMTP `:1025` / Web UI `:8025`.
+  - `.env.example` / `apps/api/.env.example`: SMTP vars added; SendGrid vars moved to commented production block.
+
+- **DB migration `202603040012_refresh_token_company_context`**
+  - Adds `active_company_id UUID` FK to `identity.refresh_tokens`; fixes company context loss on JWT rotation.
+
 ### Added — 2026-03-04 (Company Management — Phase 2)
 - **Company Verification Documents**
   - DB: migration `202603040011_company_documents` — `identity.company_documents` table (upload lifecycle: pending → approved/rejected, indexed on `company_id`).

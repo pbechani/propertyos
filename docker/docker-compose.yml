@@ -209,6 +209,26 @@ services:
     networks:
       - pribec-network
 
+  # Mailpit - Local email catcher (SMTP + Web UI)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pribec-mailpit
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI → http://localhost:8025
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit_data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8025']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - pribec-network
+
   # PostgreSQL Exporter for Prometheus
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -248,6 +268,7 @@ volumes:
   prometheus_data:
   grafana_data:
   vault_data:
+  mailpit_data:
 
 networks:
   pribec-network:

@@ -329,20 +329,10 @@ export class CompaniesController {
   // Invitations
   // ----------------------------------------------------------------
 
-  @Get('invitations/:token')
-  previewInvitation(@Param('token') token: string) {
-    return this.invitationsService.preview(token);
-  }
-
-  @Post('invitations/:token/accept')
-  acceptInvitation(
-    @Req() req: RequestWithUser,
-    @Param('token') token: string,
-  ) {
-    return this.invitationsService.accept(token, req.user.sub, {
-      ip: req.ip,
-      userAgent: req.headers['user-agent'] ?? null,
-    });
+  @Get('companies/:id/invitations')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  listInvitations(@Param('id') id: string) {
+    return this.invitationsService.listInvitations(id);
   }
 
   @Delete('companies/:id/invitations/:inviteId')

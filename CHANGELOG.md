@@ -13,6 +13,45 @@ Related docs:
 ## [Unreleased]
 
 ### Added
+- **Invitation acceptance flow — complete role & company enrolment** (2026-03-04)
+  - **Backend — `apps/api/src/identity/companies/company-invitations.service.ts`**
+    - `registerAndAccept` (new user path): new users now receive **both** `buyer_seller` (system default role) and the company-specific invited role in `identity.user_roles`, plus automatic enrolment in the Self system company — exactly matching the normal registration path. Previously only the invited role was assigned and the Self company membership was never created.
+    - `accept` (existing user path): after `linkUserToCompany` creates the `company_members` row, `usersService.assignRole()` is now called to reflect the invited role in `identity.user_roles` so it is included in the user's next JWT. Previously only the company membership record was inserted.
+    - Both acceptance paths now send a welcome email to the invitee containing the company name, role, and a login link (`notifyInviteeOfAcceptance` private helper).
+  - **Backend — `apps/api/src/identity/auth/auth.service.ts`**
+    - `addUserToSelfCompany` renamed to **`enrolInSelfCompany`** and changed from `private` to `public` so the invitations service can call it without duplicating the PostgreSQL query.
+  - **Backend — `apps/api/src/identity/companies/invitations.controller.ts`** (new file)
+    - Standalone `InvitationsController` extracted to its own file; handles `GET /invitations/:token` (public preview), `POST /invitations/:token/accept` (authenticated), and `POST /invitations/:token/register-and-accept` (public registration + accept).
+  - **Frontend — `apps/web/src/views/AcceptInvitation.tsx`**
+    - Added `newAccount` state flag set on the register-and-accept path.
+    - `accepted` screen overhauled: heading adapts to **"Account Created!"** (new user) vs **"Invitation Accepted!"** (existing user); green summary card shows company name, role/admin badge, and "A welcome email has been sent to [email]" confirmation; primary **Go to Company Dashboard** + secondary **Go to Home** CTAs.
+  - **Frontend — `apps/web/src/views/CompanyUserManagement.tsx`**
+    - Members and pending invitations now loaded in parallel (`Promise.all`); invitations list rendered with status, expiry, inviter, and per-invitation revoke button.
+    - `handleRevokeInvitation` wired to `DELETE /companies/:id/invitations/:inviteId`; optimistic UI update removes revoked row.
+  - **Frontend — `apps/web/src/lib/api-client.ts`**
+    - `companiesApi.listInvitations(token, companyId)` — `GET /companies/:id/invitations`.
+    - `companiesApi.revokeInvitation(token, companyId, inviteId)` — `DELETE /companies/:id/invitations/:inviteId`.
+    - New `invitationsApi` namespace: `preview(token)`, `accept(authToken, token)`, `registerAndAccept(token, payload)` — typed with `InvitationPreview`, `InviteAcceptResult`, `InviteRegisterResult`.
+
+- **Email provider — SMTP support + Mailpit local catcher** (2026-03-04)
+  - **Backend — `apps/api/src/identity/notifications/email.smtp.provider.ts`** (new file)
+    - `SmtpEmailProvider` implements `EmailProvider`; uses `nodemailer` to send via any SMTP server.
+  - **Backend — `apps/api/src/identity/notification.service.ts`**
+    - `resolveEmailProvider()` now reads `EMAIL_PROVIDER` env var (`smtp` | `sendgrid` | `none`). Defaults to `none` (log-only). Selects `SmtpEmailProvider` or `SendGridEmailProvider` based on the value; missing SendGrid credentials now emit a warning instead of a silent `null` return.
+  - **Docker — `docker/docker-compose.yml`**
+    - Added `mailpit` service (`axllent/mailpit:latest`): catches all outbound SMTP on port `1025`; web inbox UI at `http://localhost:8025`. Persisted via `mailpit_data` volume.
+  - **Env — `.env.example` / `apps/api/.env.example`**
+    - Added `EMAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASS` entries pre-configured for local Mailpit.
+    - SendGrid vars moved to commented-out "production" block.
+
+- **DB migration — refresh token company context** (2026-03-04)
+  - Migration `202603040012_refresh_token_company_context`: adds `active_company_id UUID` (FK → `identity.companies`) to `identity.refresh_tokens`.
+  - Fixes the "No active company context" error on JWT rotation by carrying the selected company through token refresh.
+
+- **Company Users — `GET /companies/:id/invitations` endpoint** (2026-03-04)
+  - `companies.controller.ts`: `GET /companies/:id/invitations` endpoint added (previously missing; invitation preview/accept routes were incorrectly placed in `companies.controller.ts` and have been moved to the standalone `InvitationsController`).
+
+### Added
 - **Company Documents — upload & review workflow** (2026-03-04)
   - **DB layer** — migration `202603040011_company_documents` creates `identity.company_documents` table:
     - Columns: `id`, `company_id`, `uploaded_by`, `document_type` (business_licence, registration_certificate, tax_clearance, professional_indemnity, id_document, other), `document_name`, `file_name`, `storage_path`, `public_url`, `mime_type`, `file_size_bytes`, `status` (pending/approved/rejected), `review_notes`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`.

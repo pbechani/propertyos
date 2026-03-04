@@ -21,6 +21,7 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
 // Sprint 01-b: Companies
 import { CompaniesController } from './companies/companies.controller';
 import { OrphanedTasksController } from './companies/orphaned-tasks.controller';
+import { InvitationsController } from './companies/invitations.controller';
 import { CompaniesService } from './companies/companies.service';
 import { CompanyMembersService } from './companies/company-members.service';
 import { CompanyInvitationsService } from './companies/company-invitations.service';
@@ -53,6 +54,7 @@ import { CompanyPermissionGuard } from './companies/guards/company-permission.gu
     // Sprint 01-b
     CompaniesController,
     OrphanedTasksController,
+    InvitationsController,
   ],
   providers: [
     AuthService,

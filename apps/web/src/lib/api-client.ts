@@ -1292,6 +1292,74 @@ export const companiesApi = {
       `/companies/${companyId}/audit-logs?limit=${limit}&offset=${offset}`,
       { method: 'GET', authToken },
     ),
+
+  listInvitations: (authToken: string, companyId: string) =>
+    apiRequest<CompanyInvitation[]>(`/companies/${companyId}/invitations`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  revokeInvitation: (authToken: string, companyId: string, inviteId: string) =>
+    apiRequest<{ success: boolean }>(`/companies/${companyId}/invitations/${inviteId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+};
+
+// ---------------------------------------------------------------------------
+// Invitations (public + authenticated flows)
+// ---------------------------------------------------------------------------
+
+export type InvitationPreview = {
+  id: string;
+  invited_email: string;
+  role: string;
+  is_admin: boolean;
+  expires_at: string;
+  company_id: string;
+  company_name: string;
+  company_category: string;
+  invited_by: string | null;
+};
+
+export type InviteAcceptResult = {
+  success: boolean;
+  company_id: string;
+};
+
+export type InviteRegisterResult = {
+  user: AuthUser;
+  tokens: AuthTokens;
+  company_id: string;
+};
+
+export const invitationsApi = {
+  /** Public — fetch invitation details before the user authenticates */
+  preview: (token: string) =>
+    apiRequest<InvitationPreview>(`/invitations/${token}`, { method: 'GET' }),
+
+  /** Authenticated — existing user accepts an invitation */
+  accept: (authToken: string, token: string) =>
+    apiRequest<InviteAcceptResult>(`/invitations/${token}/accept`, {
+      method: 'POST',
+      authToken,
+    }),
+
+  /** Public — new user registers and accepts in one step, returns auth tokens */
+  registerAndAccept: (
+    token: string,
+    payload: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      password: string;
+    },
+  ) =>
+    apiRequest<InviteRegisterResult>(`/invitations/${token}/register-and-accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const orphanedTasksApi = {
@@ -1322,6 +1390,21 @@ export const orphanedTasksApi = {
 };
 
 export type CompanyMemberPermission = { resource: string; action: string };
+
+export type CompanyInvitation = {
+  id: string;
+  invited_email: string;
+  role: string;
+  is_admin: boolean;
+  status: 'pending' | 'revoked' | 'accepted' | 'expired';
+  expires_at: string;
+  created_at: string;
+  revoked_at: string | null;
+  accepted_at: string | null;
+  invited_by_first_name: string | null;
+  invited_by_last_name: string | null;
+  invited_by_email: string | null;
+};
 
 export type CompanyMember = {
   id: string;

@@ -6,6 +6,8 @@ import { PrismaService } from '../../database';
 import { AuditService } from '../audit.service';
 import { NotificationService } from '../notification.service';
 import { CompanyMembersService } from './company-members.service';
+import { AuthService } from '../auth/auth.service';
+import { UsersService } from '../users.service';
 
 const COMPANY_ID = 'company-uuid-0001';
 const INVITER_ID = 'user-uuid-0001';
@@ -15,7 +17,7 @@ const RAW_TOKEN = 'abc123rawtoken';
 const baseInvitation = {
   id: 'invite-uuid-0001',
   company_id: COMPANY_ID,
-  invitee_email: INVITEE_EMAIL,
+  invited_email: INVITEE_EMAIL,
   role: 'agent',
   is_admin: false,
   permissions: [],
@@ -23,6 +25,10 @@ const baseInvitation = {
   token_hash: 'some-sha256-hash',
   expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000),
   created_by: INVITER_ID,
+  company_name: 'Test Co',
+  company_category: 'agent',
+  inviter_first_name: 'Alice',
+  inviter_last_name: 'Smith',
 };
 
 const requestCtx = { ip: '127.0.0.1', userAgent: 'test' };
@@ -41,7 +47,18 @@ describe('CompanyInvitationsService', () => {
     sendSms: jest.fn().mockResolvedValue(undefined),
   };
   const mockConfig = { get: jest.fn().mockReturnValue('http://localhost:3000') };
-  const mockMembers = { linkUserToCompany: jest.fn().mockResolvedValue(undefined) };
+  const mockMembers = {
+    linkUserToCompany: jest.fn().mockResolvedValue(undefined),
+    getRolePermissions: jest.fn().mockResolvedValue([]),
+  };
+  const mockAuth = { issueTokensForUser: jest.fn().mockResolvedValue({ accessToken: 'tok', refreshToken: 'ref', accessTokenExpiresIn: '15m', refreshTokenExpiresIn: '7d' }) };
+  const mockUsers = {
+    findByEmail: jest.fn().mockResolvedValue(null),
+    create: jest.fn().mockResolvedValue({ id: 'new-user-id', email: INVITEE_EMAIL }),
+    assignRole: jest.fn().mockResolvedValue(undefined),
+    markEmailVerified: jest.fn().mockResolvedValue(undefined),
+    sanitizeUser: jest.fn().mockReturnValue({ id: 'new-user-id', email: INVITEE_EMAIL }),
+  };
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
@@ -52,6 +69,8 @@ describe('CompanyInvitationsService', () => {
         { provide: NotificationService, useValue: mockNotification },
         { provide: ConfigService, useValue: mockConfig },
         { provide: CompanyMembersService, useValue: mockMembers },
+        { provide: AuthService, useValue: mockAuth },
+        { provide: UsersService, useValue: mockUsers },
       ],
     }).compile();
 
@@ -121,7 +140,8 @@ describe('CompanyInvitationsService', () => {
     it('returns invitation data for valid token', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseInvitation]);
       const result = await service.preview(RAW_TOKEN);
-      expect(result).toHaveProperty('invitee_email', INVITEE_EMAIL);
+      expect(result).toHaveProperty('invited_email', INVITEE_EMAIL);
+      expect(result).toHaveProperty('company_name', 'Test Co');
     });
 
     it('throws NotFoundException for invalid or expired token', async () => {
@@ -139,7 +159,7 @@ describe('CompanyInvitationsService', () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseInvitation]);
       mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // UPDATE invitation to accepted
 
-      await service.accept(RAW_TOKEN, USER_ID, requestCtx);
+      await service.accept(RAW_TOKEN, USER_ID, INVITEE_EMAIL, requestCtx);
 
       expect(mockMembers.linkUserToCompany).toHaveBeenCalledWith(
         COMPANY_ID,
@@ -157,7 +177,7 @@ describe('CompanyInvitationsService', () => {
 
     it('throws NotFoundException if invitation no longer valid', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-      await expect(service.accept(RAW_TOKEN, USER_ID, requestCtx)).rejects.toThrow(NotFoundException);
+      await expect(service.accept(RAW_TOKEN, USER_ID, INVITEE_EMAIL, requestCtx)).rejects.toThrow(NotFoundException);
     });
   });
 

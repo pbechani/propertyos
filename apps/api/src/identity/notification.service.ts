@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SendGridEmailProvider } from './notifications/email.sendgrid.provider';
+import { SmtpEmailProvider } from './notifications/email.smtp.provider';
 import { TwilioSmsProvider } from './notifications/sms.twilio.provider';
 import { EmailProvider, SmsProvider } from './notifications/types';
 
@@ -70,14 +71,35 @@ export class NotificationService {
   }
 
   private resolveEmailProvider(): EmailProvider | null {
-    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
-    const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL');
+    const provider = this.configService.get<string>('EMAIL_PROVIDER') ?? 'none';
 
-    if (!apiKey || !fromEmail) {
-      return null;
+    if (provider === 'smtp') {
+      const host = this.configService.get<string>('SMTP_HOST') ?? 'localhost';
+      const port = parseInt(
+        this.configService.get<string>('SMTP_PORT') ?? '1025',
+        10,
+      );
+      const from =
+        this.configService.get<string>('SMTP_FROM') ??
+        'noreply@pribec.local';
+      const user = this.configService.get<string>('SMTP_USER');
+      const pass = this.configService.get<string>('SMTP_PASS');
+      return new SmtpEmailProvider(host, port, from, from, user, pass);
     }
 
-    return new SendGridEmailProvider(apiKey, fromEmail);
+    if (provider === 'sendgrid') {
+      const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
+      const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL');
+      if (!apiKey || !fromEmail) {
+        this.logger.warn(
+          'EMAIL_PROVIDER=sendgrid but SENDGRID_API_KEY or SENDGRID_FROM_EMAIL is missing — falling back to log-only mode',
+        );
+        return null;
+      }
+      return new SendGridEmailProvider(apiKey, fromEmail);
+    }
+
+    return null;
   }
 
   private resolveSmsProvider(): SmsProvider | null {
