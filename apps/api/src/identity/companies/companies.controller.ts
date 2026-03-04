@@ -76,6 +76,16 @@ export class CompaniesController {
     return this.companiesService.getDashboard(id);
   }
 
+  @Get('companies/:id/audit-logs')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  getAuditLogs(
+    @Param('id') id: string,
+    @Query('limit') limit = '50',
+    @Query('offset') offset = '0',
+  ) {
+    return this.companiesService.getAuditLogs(id, Number(limit), Number(offset));
+  }
+
   @Post('companies/:id/logo')
   @UseGuards(CompanyContextGuard, CompanyAdminGuard)
   @UseInterceptors(FileInterceptor('logo'))
@@ -103,6 +113,46 @@ export class CompaniesController {
     );
 
     return { url: uploaded.publicUrl };
+  }
+
+  @Get('companies/:id/documents')
+  @UseGuards(CompanyContextGuard)
+  listDocuments(@Param('id') id: string) {
+    return this.companiesService.listDocuments(id);
+  }
+
+  @Post('companies/:id/documents')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadDocument(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+    @Body('document_type') documentType?: string,
+    @Body('document_name') documentName?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const uploaded = await this.documentStorageService.upload({
+      context: 'company-documents',
+      userId: req.user.sub,
+      documentType: documentType ?? 'other',
+      file,
+    });
+
+    return this.companiesService.addDocument({
+      companyId: id,
+      uploadedBy: req.user.sub,
+      documentType: documentType ?? 'other',
+      documentName: documentName ?? file.originalname,
+      fileName: file.originalname,
+      storagePath: uploaded.storagePath,
+      publicUrl: uploaded.publicUrl,
+      mimeType: file.mimetype,
+      fileSizeBytes: file.size,
+    });
   }
 
   @Patch('companies/:id')
@@ -200,6 +250,20 @@ export class CompaniesController {
   @UseGuards(CompanyContextGuard, CompanyAdminGuard)
   listMembers(@Param('id') id: string) {
     return this.membersService.listMembers(id);
+  }
+
+  /** Returns the canonical permission ceiling for a role. No admin guard — read-only config. */
+  @Get('companies/:id/roles/:role/permissions')
+  @UseGuards(CompanyContextGuard)
+  getRolePermissions(@Param('role') role: string) {
+    return this.membersService.getRolePermissions(role);
+  }
+
+  /** Returns the non-admin roles that may be invited into this company. */
+  @Get('companies/:id/allowed-roles')
+  @UseGuards(CompanyContextGuard)
+  async getAllowedRoles(@Param('id') id: string) {
+    return this.companiesService.getAllowedRoles(id);
   }
 
   @Post('companies/:id/members/invite')

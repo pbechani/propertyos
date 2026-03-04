@@ -67,6 +67,12 @@ export class CompanyInvitationsService {
     );
     const inviteId = randomBytes(16).toString('hex');
 
+    // Default to role's canonical permissions when caller omits them
+    const permissions =
+      dto.permissions && dto.permissions.length > 0
+        ? dto.permissions
+        : await this.membersService.getRolePermissions(dto.role);
+
     await this.prisma.$executeRaw`
       INSERT INTO identity.company_invitations (
         company_id, invited_email, role, is_admin, permissions,
@@ -76,7 +82,7 @@ export class CompanyInvitationsService {
         ${dto.email},
         ${dto.role},
         ${dto.is_admin ?? false},
-        ${JSON.stringify(dto.permissions ?? [])}::jsonb,
+        ${JSON.stringify(permissions)}::jsonb,
         ${tokenHash},
         ${invitedBy}::uuid,
         ${expiresAt}

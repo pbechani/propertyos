@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Activity, Filter, Download, Search, Calendar } from "lucide-react";
+import { Activity, Filter, Download, Search, Calendar, Loader2 } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";
-import { getActiveCompanyContext } from "@/lib/auth-session";
+import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
+import { companiesApi, type CompanyAuditLogEntry } from "@/lib/api-client";
 
 type AuditEvent =
   | "company.created"
@@ -29,17 +30,6 @@ type LogEntry = {
   metadata?: Record<string, unknown>;
 };
 
-// Stub — replace with GET /api/v1/companies/:id/members/../activity or audit logs
-const STUB_LOGS: LogEntry[] = [
-  { id: "1", userId: "u4", userName: "Tom Williams", event: "company_member.invited", description: "Invited lisa@eliteprops.co.ke as agent", timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "2", userId: "u1", userName: "Sarah Johnson", event: "company_context.selected", description: "Logged in under Elite Properties Ltd. as agent", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "3", userId: "u3", userName: "Lisa Patel", event: "company_member.joined", description: "Accepted invitation and joined company", timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "4", userId: "u4", userName: "Tom Williams", event: "company_member.permissions_updated", description: "Updated permissions for Mike Chen", timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "5", userId: "u2", userName: "Mike Chen", event: "company_context.selected", description: "Logged in under Elite Properties Ltd. as agent", timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "6", userId: "u4", userName: "Tom Williams", event: "company_member.promoted_to_admin", description: "Promoted Jane Kamau to administrator", timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "7", userId: "u4", userName: "Tom Williams", event: "company.submitted_for_verification", description: "Submitted company profile for platform verification", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-  { id: "8", userId: "system", userName: "System", event: "company.verified", description: "Company verified by platform admin", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), companyId: "c1" },
-];
 
 const EVENT_COLORS: Record<string, string> = {
   "company_member.invited": "bg-blue-100 text-blue-700",
@@ -72,24 +62,51 @@ function formatEvent(event: string): string {
     .join(" › ");
 }
 
+function mapEntry(entry: CompanyAuditLogEntry, companyId: string): LogEntry {
+  const fullName = [entry.first_name, entry.last_name].filter(Boolean).join(' ').trim();
+  const eventKey = (entry.event_id ?? entry.action) as AuditEvent;
+  return {
+    id: entry.id,
+    userId: entry.actor_id ?? 'system',
+    userName: fullName || entry.email || 'System',
+    event: eventKey,
+    description: formatEvent(eventKey),
+    timestamp: entry.created_at,
+    companyId,
+    metadata: entry.payload ?? undefined,
+  };
+}
+
 export default function CompanyActivityLogs() {
   const navigate = useNavigate();
   const activeCompany = getActiveCompanyContext();
 
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterEvent, setFilterEvent] = useState("all");
+
   useEffect(() => {
     if (!activeCompany || activeCompany.slug === 'self') {
       navigate('/app/my-dashboard');
+      return;
     }
+    const token = getAccessToken();
+    if (!token) { navigate('/login'); return; }
+
+    companiesApi
+      .getActivityLogs(token, activeCompany.id)
+      .then((entries) => setLogs(entries.map((e) => mapEntry(e, activeCompany.id))))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load logs'))
+      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const companyName = activeCompany?.name ?? 'Company';
 
-  const [search, setSearch] = useState("");
-  const [filterEvent, setFilterEvent] = useState("all");
+  const uniqueEvents = ["all", ...new Set(logs.map((l) => l.event))];
 
-  const uniqueEvents = ["all", ...new Set(STUB_LOGS.map((l) => l.event))];
-
-  const filtered = STUB_LOGS.filter((log) => {
+  const filtered = logs.filter((log) => {
     const matchSearch =
       log.description.toLowerCase().includes(search.toLowerCase()) ||
       log.userName.toLowerCase().includes(search.toLowerCase());
@@ -98,15 +115,27 @@ export default function CompanyActivityLogs() {
   });
 
   // Simple date-based stats
-  const todayCount = STUB_LOGS.filter(
+  const todayCount = logs.filter(
     (l) => new Date(l.timestamp).toDateString() === new Date().toDateString()
   ).length;
 
-  const uniqueActors = [...new Set(STUB_LOGS.map((l) => l.userName))];
+  const uniqueActors = [...new Set(logs.map((l) => l.userName))];
   const mostActive = uniqueActors[0] ?? "—";
 
   return (
     <div className="p-8">
+      {/* Loading / Error */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      )}
+      {!loading && error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-6">
+          {error}
+        </div>
+      )}
+      {!loading && !error && (<>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -121,7 +150,7 @@ export default function CompanyActivityLogs() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-6 mb-6">
-        <StatsCard label="Total Events" value={STUB_LOGS.length} icon={Activity} color="bg-indigo-100 text-indigo-600" />
+        <StatsCard label="Total Events" value={logs.length} icon={Activity} color="bg-indigo-100 text-indigo-600" />
         <StatsCard label="Today" value={todayCount} icon={Calendar} color="bg-green-100 text-green-600" />
         <StatsCard label="Active Members" value={uniqueActors.length} icon={Activity} color="bg-blue-100 text-blue-600" />
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -224,6 +253,7 @@ export default function CompanyActivityLogs() {
           </tbody>
         </table>
       </div>
+      </>)}
     </div>
   );
 }

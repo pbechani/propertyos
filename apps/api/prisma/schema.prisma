@@ -210,12 +210,39 @@ model Company {
   members     CompanyMember[]
   invitations CompanyInvitation[]
   orphanedTasks CompanyOrphanedTask[]
+  documents   CompanyDocument[]
 
   @@index([category], name: "idx_companies_category")
   @@index([status], name: "idx_companies_status")
   @@index([verificationStatus], name: "idx_companies_verification_status")
   @@schema("identity")
   @@map("companies")
+}
+
+model CompanyDocument {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId      String    @map("company_id") @db.Uuid
+  uploadedBy     String    @map("uploaded_by") @db.Uuid
+  documentType   String    @default("other") @map("document_type") @db.VarChar(100)
+  documentName   String    @map("document_name") @db.VarChar(255)
+  fileName       String    @map("file_name") @db.VarChar(255)
+  storagePath    String    @map("storage_path") @db.Text
+  publicUrl      String    @map("public_url") @db.Text
+  mimeType       String?   @map("mime_type") @db.VarChar(100)
+  fileSizeBytes  Int?      @map("file_size_bytes")
+  status         String    @default("pending") @db.VarChar(30)
+  reviewNotes    String?   @map("review_notes") @db.Text
+  reviewedBy     String?   @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId], name: "idx_company_documents_company")
+  @@index([companyId, status], name: "idx_company_documents_status")
+  @@schema("identity")
+  @@map("company_documents")
 }
 
 model CompanyMember {

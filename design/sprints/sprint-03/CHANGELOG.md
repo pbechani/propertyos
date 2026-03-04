@@ -2,6 +2,38 @@
 
 ## Unreleased (Post v0.3.0 patches)
 
+### Added — 2026-03-04 (Company Management — Phase 2)
+- **Company Verification Documents**
+  - DB: migration `202603040011_company_documents` — `identity.company_documents` table (upload lifecycle: pending → approved/rejected, indexed on `company_id`).
+  - Prisma: `CompanyDocument` model added to schema.
+  - API: `GET /companies/:id/documents`, `POST /companies/:id/documents` (multipart file upload via `DocumentStorageService`).
+  - Web: `CompanyProfile` view — "Verification Documents" section with type selector, name field, file picker (admin-only upload), status badges, and download links per document.
+  - api-client: `CompanyDocument` type + `companiesApi.getDocuments()` / `uploadDocument()`.
+
+- **Company Audit Logs — live data**
+  - API: `GET /companies/:id/audit-logs?limit&offset` — paginated, joins `audit.shared_audit_logs` with `identity.users` for actor name/email.
+  - Web: `CompanyActivityLogs` view replaced static mock with live API call; `mapEntry()` normalises raw rows; filter/search/paginate wired to real data.
+  - api-client: `CompanyAuditLogEntry` type + `companiesApi.getAuditLogs()`.
+
+- **Company Members — role permissions & invitation roles endpoints**
+  - `GET /companies/:id/roles/:role/permissions` — canonical permission list for a role (read-only, no admin required).
+  - `GET /companies/:id/allowed-roles` — roles available for invitation (excludes `admin`).
+  - `company-members.service.ts`: `getRolePermissions(role)` queries `identity.role_permissions → permissions → roles`.
+
+- **Auth — registration seeds permissions from DB**
+  - `auth.service.ts`: new user's initial company member record now seeds `permissions` JSONB from `getRolePermissions('buyer_seller')` instead of an empty array.
+
+### Changed — 2026-03-04
+- **Company management UI fully wired to API**
+  - `CompanyInviteUser` — role selector dynamically populated from `GET /allowed-roles`.
+  - `CompanyPermissions` — permissions grid live from `GET /roles/:role/permissions`; save wired to `PATCH /members/:id`.
+  - `CompanyRevokedPool` — real data fetch; restore/remove actions wired; typed `RevokedEntry` in api-client.
+  - `CompanyUserManagement` — member list, role change, deactivate all use typed api-client methods with optimistic UI.
+- **next.config.js** — added `/api/v1/**` rewrite to `http://localhost:3001` eliminating CORS for local dev.
+- **auth-session.ts** — `getAccessToken()` helper + typed `getActiveCompanyContext()` return added.
+- **AppSidebar** — navigation arrays (`selfNavigation`, `companyNavigation`) extended with full sprint-03 route set; active-route highlight covers nested paths.
+- **MyDashboard** — quick-action links aligned to current route structure.
+
 ### Added
 - `POST /api/v1/auth/resend-verification-email` endpoint for authenticated verification resend flow.
 - Migration `202602250003_identity_business_profile` adding `identity.user_business_profiles` for persisted business details.
@@ -11,6 +43,7 @@
 - Profile dashboard verification cards are now data-driven (documents verified, trust score, response rate).
 - Role setup profile/business/KYC tabs now persist real data (including avatar upload and business details).
 - Activity timeline rendering now handles missing/variant timestamp fields without invalid relative-time output.
+
 
 ## v0.3.0 — 2026-02-21
 

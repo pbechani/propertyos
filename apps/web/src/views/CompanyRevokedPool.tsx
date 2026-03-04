@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   UserX,
   AlertTriangle,
@@ -8,69 +8,18 @@ import {
   CheckCircle,
   Users,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";
-import { getActiveCompanyContext } from "@/lib/auth-session";
-
-type OrphanedTask = {
-  id: string;
-  taskType: string;
-  resourceType: string;
-  resourceId: string;
-  description: string;
-  requiresNotification: boolean;
-  status: "unassigned" | "assigned" | "closed";
-  assignedTo?: string;
-  notificationParties: string[];
-};
-
-type RevokedMember = {
-  userId: string;
-  userName: string;
-  role: string;
-  revokedAt: string;
-  reason?: string;
-  tasks: OrphanedTask[];
-  requiresNotification: boolean;
-  affectedParties: string[];
-};
+import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
+import {
+  companiesApi,
+  orphanedTasksApi,
+  type CompanyMember,
+  type OrphanedTaskEntry,
+} from "@/lib/api-client";
 
 type ActiveMember = { id: string; name: string };
-
-// Stub — replace with GET /api/v1/companies/:id/orphaned-tasks
-const STUB_REVOKED: RevokedMember[] = [
-  {
-    userId: "u7",
-    userName: "James Mwangi",
-    role: "agent",
-    revokedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    reason: "Misconduct — property listing fraud",
-    requiresNotification: true,
-    affectedParties: ["Buyer: Alice Otieno (alice@mail.com)", "Seller: Patrick Wanjiku"],
-    tasks: [
-      { id: "t1", taskType: "property_listing", resourceType: "property.listing", resourceId: "prop-001", description: "Active listing: Westlands 3BR apartment", requiresNotification: true, status: "unassigned", notificationParties: ["Buyer: Alice Otieno"] },
-      { id: "t2", taskType: "inquiry", resourceType: "property.inquiry", resourceId: "inq-007", description: "Open buyer inquiry from David Kariuki", requiresNotification: false, status: "unassigned", notificationParties: [] },
-    ],
-  },
-  {
-    userId: "u8",
-    userName: "Grace Njeri",
-    role: "agent",
-    revokedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    reason: "Resigned",
-    requiresNotification: false,
-    affectedParties: [],
-    tasks: [
-      { id: "t3", taskType: "property_listing", resourceType: "property.listing", resourceId: "prop-004", description: "Active listing: Karen 4BR townhouse", requiresNotification: false, status: "assigned", assignedTo: "Sarah Johnson", notificationParties: [] },
-    ],
-  },
-];
-
-const STUB_ACTIVE_MEMBERS: ActiveMember[] = [
-  { id: "u1", name: "Sarah Johnson" },
-  { id: "u2", name: "Mike Chen" },
-  { id: "u4", name: "Tom Williams" },
-];
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -84,28 +33,111 @@ export default function CompanyRevokedPool() {
   const navigate = useNavigate();
   const activeCompany = getActiveCompanyContext();
 
-  useEffect(() => {
+  const [allMembers, setAllMembers] = useState<CompanyMember[]>([]);
+  const [tasks, setTasks] = useState<OrphanedTaskEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [assignModalTask, setAssignModalTask] = useState<OrphanedTaskEntry | null>(null);
+  const [selectedAssignee, setSelectedAssignee] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  const fetchData = useCallback(() => {
     if (!activeCompany || activeCompany.slug === 'self') {
       navigate('/app/my-dashboard');
+      return;
     }
+    const token = getAccessToken();
+    if (!token) { navigate('/login'); return; }
+
+    setLoading(true);
+    Promise.all([
+      companiesApi.listMembers(token, activeCompany.id),
+      orphanedTasksApi.list(token, activeCompany.id),
+    ])
+      .then(([members, orphaned]) => {
+        setAllMembers(members);
+        setTasks(orphaned);
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load data'))
+      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const companyName = activeCompany?.name ?? 'Company';
 
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [assignModalTask, setAssignModalTask] = useState<OrphanedTask | null>(null);
-  const [selectedAssignee, setSelectedAssignee] = useState("");
+  const revokedMembers = allMembers.filter((m) => m.status === 'revoked');
+  const activeMembers: ActiveMember[] = allMembers
+    .filter((m) => m.status === 'active')
+    .map((m) => ({
+      id: m.user_id,
+      name: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email,
+    }));
 
-  const allTasks = STUB_REVOKED.flatMap((r) => r.tasks);
-  const totalPending = allTasks.filter((t) => t.status !== "closed").length;
-  const notificationPending = STUB_REVOKED.filter((r) => r.requiresNotification).length;
+  // Derive per-revoked-member view
+  type RevokedItem = {
+    userId: string;
+    userName: string;
+    role: string;
+    revokedAt: string;
+    tasks: OrphanedTaskEntry[];
+    requiresNotification: boolean;
+  };
 
-  const selected = STUB_REVOKED.find((r) => r.userId === selectedUserId);
+  const revokedItems: RevokedItem[] = revokedMembers.map((m) => {
+    const memberTasks = tasks.filter((t) => t.original_user_id === m.user_id);
+    return {
+      userId: m.user_id,
+      userName: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email,
+      role: m.role,
+      revokedAt: m.updated_at,
+      tasks: memberTasks,
+      requiresNotification: memberTasks.some((t) => t.requires_notification && t.status !== 'closed'),
+    };
+  });
 
-  const handleAssign = () => {
-    // PATCH /api/v1/companies/:id/orphaned-tasks/:taskId/assign { assignee_id }
-    setAssignModalTask(null);
-    setSelectedAssignee("");
+  const totalPending = tasks.filter((t) => t.status !== 'closed').length;
+  const notificationPending = revokedItems.filter((r) => r.requiresNotification).length;
+  const selected = revokedItems.find((r) => r.userId === selectedUserId);
+
+  const token = getAccessToken();
+
+  const handleAssign = async () => {
+    if (!assignModalTask || !selectedAssignee || !token || !activeCompany) return;
+    setAssigning(true);
+    try {
+      await orphanedTasksApi.assign(token, activeCompany.id, assignModalTask.id, selectedAssignee);
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === assignModalTask.id
+            ? { ...t, status: 'assigned', assignee_id: selectedAssignee,
+                assignee_email: activeMembers.find((m) => m.id === selectedAssignee)?.name ?? null }
+            : t,
+        ),
+      );
+    } catch { /* silently ignore; could show toast */ }
+    finally {
+      setAssigning(false);
+      setAssignModalTask(null);
+      setSelectedAssignee('');
+    }
+  };
+
+  const handleCloseTask = async (taskId: string) => {
+    if (!token || !activeCompany) return;
+    try {
+      await orphanedTasksApi.close(token, activeCompany.id, taskId);
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: 'closed' } : t));
+    } catch { /* silently ignore */ }
+  };
+
+  const handleCloseAll = async () => {
+    if (!selected || !token || !activeCompany) return;
+    const open = selected.tasks.filter((t) => t.status !== 'closed');
+    for (const task of open) {
+      await handleCloseTask(task.id);
+    }
   };
 
   return (
@@ -118,8 +150,21 @@ export default function CompanyRevokedPool() {
         </p>
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      )}
+      {!loading && error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-6">
+          {error}
+        </div>
+      )}
+      {!loading && !error && (<>
+
       {/* Alert */}
-      {STUB_REVOKED.some((r) => r.requiresNotification) && (
+      {revokedItems.some((r) => r.requiresNotification) && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
@@ -136,7 +181,7 @@ export default function CompanyRevokedPool() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-6 mb-6">
-        <StatCard label="Revoked Members" value={STUB_REVOKED.length} icon={UserX} color="bg-red-100 text-red-600" />
+        <StatCard label="Revoked Members" value={revokedItems.length} icon={UserX} color="bg-red-100 text-red-600" />
         <StatCard label="Pending Tasks" value={totalPending} icon={AlertTriangle} color="bg-amber-100 text-amber-600" />
         <StatCard label="Notifications Needed" value={notificationPending} icon={Send} color="bg-blue-100 text-blue-600" />
       </div>
@@ -146,7 +191,7 @@ export default function CompanyRevokedPool() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-base font-medium mb-4">Revoked Members</h2>
           <div className="space-y-3">
-            {STUB_REVOKED.map((r) => {
+            {revokedItems.map((r) => {
               const isSelected = selectedUserId === r.userId;
               const pending = r.tasks.filter((t) => t.status !== "closed").length;
               return (
@@ -194,10 +239,7 @@ export default function CompanyRevokedPool() {
                 <div>
                   <h2 className="text-xl mb-0.5">{selected.userName}</h2>
                   <p className="text-sm text-gray-600">
-                    Access revoked {timeAgo(selected.revokedAt)} ·{" "}
-                    {selected.reason && (
-                      <span className="text-gray-500">Reason: {selected.reason}</span>
-                    )}
+                    Access revoked {timeAgo(selected.revokedAt)}
                   </p>
                 </div>
                 <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm">
@@ -206,24 +248,15 @@ export default function CompanyRevokedPool() {
               </div>
 
               {/* Notification Banner */}
-              {selected.requiresNotification && selected.affectedParties.length > 0 && (
+              {selected.requiresNotification && (
                 <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-amber-900 font-medium mb-2">Parties Requiring Notification</p>
-                      <ul className="space-y-1 mb-3">
-                        {selected.affectedParties.map((party, i) => (
-                          <li key={i} className="text-sm text-amber-800 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-amber-600 rounded-full flex-shrink-0" />
-                            {party}
-                          </li>
-                        ))}
-                      </ul>
-                      <button className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition flex items-center gap-2 text-sm">
-                        <Send className="w-4 h-4" />
-                        Send Notifications
-                      </button>
+                      <p className="text-amber-900 font-medium mb-1">Notification Required</p>
+                      <p className="text-sm text-amber-800">
+                        This member had open tasks that may involve third parties. Review each task and notify affected parties as needed.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -238,10 +271,10 @@ export default function CompanyRevokedPool() {
                   <div key={task.id} className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <p className="text-sm font-medium mb-0.5">{task.description}</p>
+                        <p className="text-sm font-medium mb-0.5">{task.description ?? task.resource_type}</p>
                         <div className="flex items-center gap-2">
                           <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                            {task.taskType.replace(/_/g, " ")}
+                            {task.resource_type.replace(/_/g, " ")}
                           </span>
                           <span
                             className={`text-xs px-2 py-0.5 rounded ${
@@ -255,9 +288,9 @@ export default function CompanyRevokedPool() {
                             {task.status}
                           </span>
                         </div>
-                        {task.assignedTo && (
+                        {task.assignee_email && (
                           <p className="text-xs text-gray-500 mt-1">
-                            Assigned to: {task.assignedTo}
+                            Assigned to: {task.assignee_email}
                           </p>
                         )}
                       </div>
@@ -283,7 +316,7 @@ export default function CompanyRevokedPool() {
 
               {/* Resolve All */}
               <div className="flex gap-3 pt-4 border-t border-gray-200 mt-4">
-                <button className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 text-sm">
+                <button onClick={handleCloseAll} className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 text-sm">
                   <CheckCircle className="w-5 h-5" />
                   Close All Tasks
                 </button>
@@ -304,12 +337,13 @@ export default function CompanyRevokedPool() {
         </div>
       </div>
 
+      </>)}
       {/* Assign Modal */}
       {assignModalTask && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-semibold mb-2">Assign Task</h3>
-            <p className="text-sm text-gray-600 mb-4">{assignModalTask.description}</p>
+            <p className="text-sm text-gray-600 mb-4">{assignModalTask.description ?? assignModalTask.resource_type}</p>
             <label className="block text-sm mb-2 text-gray-700">Assign to *</label>
             <select
               value={selectedAssignee}
@@ -317,21 +351,21 @@ export default function CompanyRevokedPool() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-4 text-sm"
             >
               <option value="">Select a member…</option>
-              {STUB_ACTIVE_MEMBERS.map((m) => (
+              {activeMembers.map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
             <div className="flex gap-3">
               <button
-                onClick={handleAssign}
-                disabled={!selectedAssignee}
+                onClick={() => void handleAssign()}
+                disabled={!selectedAssignee || assigning}
                 className={`flex-1 py-2.5 rounded-lg text-sm transition ${
-                  selectedAssignee
+                  selectedAssignee && !assigning
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                Assign
+                {assigning ? 'Assigning…' : 'Assign'}
               </button>
               <button
                 onClick={() => { setAssignModalTask(null); setSelectedAssignee(""); }}

@@ -2,6 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@pribec/ui', '@pribec/shared-types'],
+  images: {
+    remotePatterns: [
+      // Company logos stored in S3-compatible object storage
+      { protocol: 'https', hostname: '**' },
+      // Local API server (development)
+      { protocol: 'http', hostname: 'localhost' },
+    ],
+  },
   async redirects() {
     return [
       {

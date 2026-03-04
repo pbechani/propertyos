@@ -15,6 +15,10 @@ type JwtPayload = {
   roles?: string[];
   email?: string;
   kyc_status?: string | null;
+  /** Company context embedded by the backend at selectContext time */
+  active_company_id?: string | null;
+  active_company_role?: string | null;
+  active_company_is_admin?: boolean;
 };
 
 function decodeJwtPayload(token: string): JwtPayload | null {
@@ -99,6 +103,17 @@ export function getActiveCompanyContext(): CompanyContext | null {
   }
 }
 
+/**
+ * Update only the access/refresh tokens in storage after a silent token rotation.
+ * Does NOT touch user data or company context.
+ */
+export function rotateTokens(tokens: AuthTokens): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
 export function updateStoredUser(user: AuthUser): void {
   if (typeof window === 'undefined') {
     return;
@@ -152,6 +167,21 @@ export function getSessionClaims(): JwtPayload | null {
   }
 
   return decodeJwtPayload(token);
+}
+
+/**
+ * Returns whether the current JWT token indicates the user is a company admin.
+ * This is the authoritative source — set by the backend at context-selection time.
+ */
+export function getIsAdminFromToken(): boolean {
+  return getSessionClaims()?.active_company_is_admin === true;
+}
+
+/**
+ * Returns the active company ID embedded in the current JWT token.
+ */
+export function getActiveCompanyIdFromToken(): string | null {
+  return getSessionClaims()?.active_company_id ?? null;
 }
 
 export function getPrimaryRole(): string | null {

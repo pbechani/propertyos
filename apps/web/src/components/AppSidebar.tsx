@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
+import { getIsAdminFromToken } from '@/lib/auth-session';
 
 interface AppSidebarProps {
   pathname: string;
@@ -31,7 +33,7 @@ const selfNavigation = [
 
 /** Navigation shown when the user is operating under a real company context (non-admin). */
 const companyNavigation = [
-  { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
+  { name: 'Company Overview', href: '/app/my-dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Home', href: '/app', icon: Home },
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
@@ -83,11 +85,22 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const router = useRouter();
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  const [showAdminGroup, setShowAdminGroup] = useState(true);
 
   const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
   const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
-  const isAdmin = activeCompany?.is_admin ?? false;
-  const isSelfCompany = activeCompany?.slug === 'self' || (!activeCompany && !hasMultipleCompanies);
+  // JWT is the authoritative source — set by the backend at context-selection
+  // time and resistant to stale localStorage values. Also cross-check against
+  // the stored company context (covers single-company logins where activeCompany
+  // is set) and guard against self-company which is always non-admin.
+  const isAdmin =
+    getIsAdminFromToken() ||
+    (activeCompany?.slug !== 'self' && (activeCompany?.is_admin ?? false));
+  const companyLogoUrl = activeCompany?.logo_url ?? null;
+  // Only show role badge when the role is not 'admin' — the amber Admin badge already covers that case
+  const showRoleBadge = companyRole && companyRole.toLowerCase() !== 'admin';
+  // An admin is *never* in the self-company context (the self company always has is_admin=false).
+  const isSelfCompany = !isAdmin && (activeCompany?.slug === 'self' || (!activeCompany && !hasMultipleCompanies));
   const navigation = isSelfCompany
     ? selfNavigation
     : isAdmin
@@ -110,9 +123,9 @@ export function AppSidebar({
         {/* Logo row */}
         <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
           <Link
-            href="/app/my-dashboard"
+            href={isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
             className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2'} text-foreground`}
-            aria-label="Go to My Dashboard"
+            aria-label={isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
             title="PropertyOS"
           >
             <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
@@ -147,12 +160,20 @@ export function AppSidebar({
                 aria-expanded={showCompanyMenu}
                 aria-haspopup="true"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  {/* Company logo or fallback icon */}
+                  <div className="shrink-0 w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                    {companyLogoUrl ? (
+                      <Image src={companyLogoUrl} alt={companyName ?? 'Company'} width={32} height={32} className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Current Company</p>
                     <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      {companyRole && (
+                      {showRoleBadge && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
                           {companyRole}
                         </span>
@@ -185,23 +206,61 @@ export function AppSidebar({
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2" aria-label="Main navigation">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-              className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
-                isActive(pathname, item.href)
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-muted-foreground hover:bg-accent'
-              }`}
-              title={item.name}
-            >
-              <item.icon className="w-5 h-5" />
-              {!isSidebarCollapsed && <span className="font-medium">{item.name}</span>}
-            </Link>
-          ))}
+        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
+          {isAdmin && !isSelfCompany ? (
+            <div>
+              <button
+                onClick={() => setShowAdminGroup((v) => !v)}
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent`}
+                title="Company Administration"
+              >
+                <Settings className="w-5 h-5 shrink-0" />
+                {!isSidebarCollapsed && (
+                  <>
+                    <span className="font-medium flex-1 text-left">Company Administration</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showAdminGroup ? 'rotate-180' : ''}`} />
+                  </>
+                )}
+              </button>
+              {showAdminGroup && (
+                <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                  {adminCompanyNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        isActive(pathname, item.href)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
+                  isActive(pathname, item.href)
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-muted-foreground hover:bg-accent'
+                }`}
+                title={item.name}
+              >
+                <item.icon className="w-5 h-5" />
+                {!isSidebarCollapsed && <span className="font-medium">{item.name}</span>}
+              </Link>
+            ))
+          )}
         </nav>
 
         {/* Quick links */}
@@ -231,10 +290,10 @@ export function AppSidebar({
             {/* Logo row */}
             <div className="p-6 border-b border-border flex items-center justify-between gap-2">
               <Link
-                href="/app/my-dashboard"
+                href={isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
                 onClick={() => setShowMobileMenu(false)}
                 className="flex items-center gap-2 text-foreground"
-                aria-label="Go to My Dashboard"
+                aria-label={isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
               >
                 <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
                   <Home className="w-4 h-4 text-white" />
@@ -258,12 +317,20 @@ export function AppSidebar({
                   className="w-full rounded-lg bg-muted/50 hover:bg-accent transition-colors text-left p-3"
                   aria-expanded={showCompanyMenu}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {/* Company logo or fallback icon */}
+                    <div className="shrink-0 w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                      {companyLogoUrl ? (
+                        <Image src={companyLogoUrl} alt={companyName ?? 'Company'} width={32} height={32} className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Current Company</p>
                       <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {companyRole && (
+                        {showRoleBadge && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
                             {companyRole}
                           </span>
@@ -293,23 +360,56 @@ export function AppSidebar({
             )}
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto" aria-label="Mobile main navigation">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setShowMobileMenu(false)}
-                  aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive(pathname, item.href)
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-muted-foreground hover:bg-accent'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              ))}
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto" aria-label="Mobile main navigation">
+              {isAdmin && !isSelfCompany ? (
+                <div>
+                  <button
+                    onClick={() => setShowAdminGroup((v) => !v)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent"
+                  >
+                    <Settings className="w-5 h-5 shrink-0" />
+                    <span className="font-medium flex-1 text-left">Company Administration</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showAdminGroup ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showAdminGroup && (
+                    <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                      {adminCompanyNavigation.map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive(pathname, item.href)
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setShowMobileMenu(false)}
+                    aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive(pathname, item.href)
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                ))
+              )}
             </nav>
 
             <div className="p-4 border-t border-border">

@@ -12,6 +12,68 @@ Related docs:
 
 ## [Unreleased]
 
+### Added
+- **Company Documents — upload & review workflow** (2026-03-04)
+  - **DB layer** — migration `202603040011_company_documents` creates `identity.company_documents` table:
+    - Columns: `id`, `company_id`, `uploaded_by`, `document_type` (business_licence, registration_certificate, tax_clearance, professional_indemnity, id_document, other), `document_name`, `file_name`, `storage_path`, `public_url`, `mime_type`, `file_size_bytes`, `status` (pending/approved/rejected), `review_notes`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`.
+    - Indexes on `(company_id)` and `(company_id, status)` for fast per-company queries.
+  - **Prisma schema** — `apps/api/prisma/schema.prisma`
+    - Added `CompanyDocument` model mapping to `identity.company_documents`.
+  - **API — `apps/api/src/identity/companies/companies.controller.ts`**
+    - `GET  /companies/:id/documents` — lists all documents for the company (requires `CompanyContextGuard`).
+    - `POST /companies/:id/documents` — multipart file upload; stores file via `DocumentStorageService`, inserts record in `company_documents`, returns updated document list (requires `CompanyContextGuard` + `CompanyAdminGuard`).
+  - **API — `apps/api/src/identity/companies/companies.service.ts`**
+    - `listDocuments(companyId)` — raw SQL with uploaded-by user join.
+    - `addDocument(params)` — inserts document metadata and returns updated list.
+  - **Web — `apps/web/src/lib/api-client.ts`**
+    - Added `CompanyDocument` type with all DB columns and optional uploader name fields.
+    - `companiesApi.getDocuments(token, companyId)` — `GET /companies/:id/documents`.
+    - `companiesApi.uploadDocument(token, companyId, file, type?, name?)` — multipart `POST`.
+  - **Web — `apps/web/src/views/CompanyProfile.tsx`**
+    - New "Verification Documents" section rendered for all company members; upload form (type selector, name field, file picker) shown only to `isAdmin` users.
+    - `DOC_TYPE_LABELS` map provides human-readable labels for each document type.
+    - Documents fetched on mount alongside company detail; non-fatal failure (section simply shows empty state).
+    - Per-document status badge (Pending / Approved / Rejected) and public-URL download link.
+
+- **Company Audit Logs — live data feed** (2026-03-04)
+  - **API — `apps/api/src/identity/companies/companies.controller.ts`**
+    - `GET /companies/:id/audit-logs?limit=50&offset=0` — paginated audit log query (requires `CompanyContextGuard` + `CompanyAdminGuard`).
+  - **API — `apps/api/src/identity/companies/companies.service.ts`**
+    - `getAuditLogs(companyId, limit, offset)` — raw SQL query joining `audit.shared_audit_logs` with `identity.users` for actor name/email; returns enriched `CompanyAuditLogEntry` rows.
+  - **Web — `apps/web/src/lib/api-client.ts`**
+    - Added `CompanyAuditLogEntry` type (id, event_id, actor_id, actor_role, action, resource_type, resource_id, payload, created_at, first_name, last_name, email).
+    - `companiesApi.getAuditLogs(token, companyId, limit?, offset?)`.
+  - **Web — `apps/web/src/views/CompanyActivityLogs.tsx`**
+    - Replaced static mock data with live API call via `companiesApi.getAuditLogs`.
+    - `mapEntry()` function translates raw log rows into typed `LogEntry` display objects; falls back to `entry.action` when `event_id` is null.
+    - Filter, search, and pagination wired to real data set.
+
+- **Company Members — role permissions & allowed-roles endpoints** (2026-03-04)
+  - **API — `apps/api/src/identity/companies/companies.controller.ts`**
+    - `GET /companies/:id/roles/:role/permissions` — returns the canonical permission list for a named role; `CompanyContextGuard` only (read-only, no admin required).
+    - `GET /companies/:id/allowed-roles` — returns the non-admin roles available for invitation into this company.
+  - **API — `apps/api/src/identity/companies/companies.service.ts`**
+    - `getAllowedRoles(companyId)` — queries `identity.company_member_roles` and filters out `admin` from the result set.
+  - **API — `apps/api/src/identity/companies/company-members.service.ts`**
+    - `getRolePermissions(role)` — raw SQL joining `identity.role_permissions → identity.permissions → identity.roles`; returns `{ resource, action }` array.
+
+- **Auth — registration seeds `buyer_seller` permissions from DB** (2026-03-04)
+  - `apps/api/src/identity/auth/auth.service.ts`
+    - On new user registration, the initial company member record previously used a hardcoded empty permissions array.
+    - Now calls `getRolePermissions('buyer_seller')` (fetched from `identity.role_permissions`) and passes the result as the seed `permissions` JSONB value so new users start with proper read access.
+
+- **Company management UI — full API integration** (2026-03-04)
+  - `apps/web/src/views/CompanyInviteUser.tsx` — invite form fetches `getAllowedRoles` to dynamically populate the role selector; errors and loading states added.
+  - `apps/web/src/views/CompanyPermissions.tsx` — permissions grid fetches live data per role via `getRolePermissions`; edit/save flow wired to `PATCH /companies/:id/members/:memberId`.
+  - `apps/web/src/views/CompanyRevokedPool.tsx` — revoked-access list fetches real data; restore/permanent-remove actions wired to API; typed `RevokedEntry` model added to api-client.
+  - `apps/web/src/views/CompanyUserManagement.tsx` — member list, role change, and deactivate actions all use typed API client methods; optimistic UI updates on success.
+
+- **Web infrastructure** (2026-03-04)
+  - `apps/web/next.config.js` — added `rewrites` rule to proxy `/api/v1/**` to the NestJS API at `http://localhost:3001`; enables relative API calls from Next.js pages without CORS issues.
+  - `apps/web/src/lib/auth-session.ts` — added `getAccessToken()` helper and `getActiveCompanyContext()` typed return; simplifies token retrieval across all view components.
+  - `apps/web/src/components/AppSidebar.tsx` — navigation split refined: `selfNavigation` and `companyNavigation` arrays now cover full sprint-03 route set; active-route highlight logic extended for nested paths.
+  - `apps/web/src/views/MyDashboard.tsx` — quick-action links updated to match current route structure.
+
 ### Fixed
 - **Prisma schema out of sync with applied DB migrations** (2026-03-03)
   - `apps/api/prisma/schema.prisma`

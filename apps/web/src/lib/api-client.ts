@@ -1,6 +1,6 @@
 'use client';
 
-import { clearAuthSession, getRefreshToken, saveAuthSession } from './auth-session';
+import { clearAuthSession, getRefreshToken, rotateTokens } from './auth-session';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:3001/api/v1';
 
@@ -59,9 +59,15 @@ async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    const data = (await response.json()) as AuthResponse;
-    saveAuthSession(data);
-    return data.tokens.accessToken;
+    // POST /auth/refresh returns AuthTokens directly (flat), NOT an AuthResponse wrapper.
+    const data = (await response.json()) as AuthTokens;
+    const accessToken = data?.accessToken;
+    if (!accessToken) {
+      clearAuthSession();
+      return null;
+    }
+    rotateTokens(data);
+    return accessToken;
   })().finally(() => {
     inFlightTokenRefresh = null;
   });
@@ -999,6 +1005,27 @@ export type UserCompany = {
   logo_url?: string | null;
 };
 
+export type CompanyDocument = {
+  id: string;
+  company_id: string;
+  uploaded_by: string;
+  document_type: string;
+  document_name: string;
+  file_name: string;
+  storage_path: string;
+  public_url: string;
+  mime_type?: string | null;
+  file_size_bytes?: number | null;
+  status: 'pending' | 'approved' | 'rejected';
+  review_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  first_name?: string | null;
+  last_name?: string | null;
+};
+
 export type CompanyDetail = {
   id: string;
   name: string;
@@ -1008,6 +1035,7 @@ export type CompanyDetail = {
   phone?: string | null;
   website?: string | null;
   description?: string | null;
+  logo_url?: string | null;
   status: string;
   verification_status: string;
   is_system: boolean;
@@ -1048,6 +1076,40 @@ export type CompanyDashboardData = {
     todayActivities: number;
   };
   recentActivity: CompanyDashboardActivityEntry[];
+};
+
+export type CompanyAuditLogEntry = {
+  id: string;
+  event_id: string | null;
+  actor_id: string | null;
+  actor_role: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+};
+
+export type OrphanedTaskEntry = {
+  id: string;
+  company_id: string;
+  original_user_id: string;
+  original_user_email: string | null;
+  assignee_id: string | null;
+  assignee_email: string | null;
+  resource_type: string;
+  resource_id: string | null;
+  description: string | null;
+  requires_notification: boolean;
+  notification_notes: string | null;
+  status: 'unassigned' | 'assigned' | 'closed';
+  assigned_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export const companiesApi = {
@@ -1149,4 +1211,132 @@ export const companiesApi = {
       body: formData,
     });
   },
+
+  getDocuments: (authToken: string, companyId: string) =>
+    apiRequest<CompanyDocument[]>(`/companies/${companyId}/documents`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  uploadDocument: (
+    authToken: string,
+    companyId: string,
+    file: File,
+    documentType: string,
+    documentName: string,
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', documentType);
+    formData.append('document_name', documentName);
+    return apiRequest<CompanyDocument[]>(`/companies/${companyId}/documents`, {
+      method: 'POST',
+      authToken,
+      body: formData,
+    });
+  },
+
+  listMembers: (authToken: string, companyId: string) =>
+    apiRequest<CompanyMember[]>(`/companies/${companyId}/members`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getRolePermissions: (authToken: string, companyId: string, role: string) =>
+    apiRequest<CompanyMemberPermission[]>(
+      `/companies/${companyId}/roles/${role}/permissions`,
+      { method: 'GET', authToken },
+    ),
+
+  getAllowedRoles: (authToken: string, companyId: string) =>
+    apiRequest<string[]>(`/companies/${companyId}/allowed-roles`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  updateMemberPermissions: (
+    authToken: string,
+    companyId: string,
+    memberId: string,
+    permissions: CompanyMemberPermission[],
+  ) =>
+    apiRequest<CompanyMember>(
+      `/companies/${companyId}/members/${memberId}/permissions`,
+      {
+        method: 'PATCH',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions }),
+      },
+    ),
+
+  inviteMember: (
+    authToken: string,
+    companyId: string,
+    payload: {
+      email: string;
+      role: string;
+      is_admin?: boolean;
+      permissions?: CompanyMemberPermission[];
+    },
+  ) =>
+    apiRequest<{ id: string }>(`/companies/${companyId}/members/invite`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getActivityLogs: (authToken: string, companyId: string, limit = 50, offset = 0) =>
+    apiRequest<CompanyAuditLogEntry[]>(
+      `/companies/${companyId}/audit-logs?limit=${limit}&offset=${offset}`,
+      { method: 'GET', authToken },
+    ),
+};
+
+export const orphanedTasksApi = {
+  list: (authToken: string, companyId: string, status?: string) => {
+    const qs = status ? `?status=${status}` : '';
+    return apiRequest<OrphanedTaskEntry[]>(
+      `/companies/${companyId}/orphaned-tasks${qs}`,
+      { method: 'GET', authToken },
+    );
+  },
+
+  assign: (authToken: string, companyId: string, taskId: string, assigneeId: string) =>
+    apiRequest<OrphanedTaskEntry>(
+      `/companies/${companyId}/orphaned-tasks/${taskId}/assign`,
+      {
+        method: 'PATCH',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee_id: assigneeId }),
+      },
+    ),
+
+  close: (authToken: string, companyId: string, taskId: string) =>
+    apiRequest<OrphanedTaskEntry>(
+      `/companies/${companyId}/orphaned-tasks/${taskId}/close`,
+      { method: 'POST', authToken },
+    ),
+};
+
+export type CompanyMemberPermission = { resource: string; action: string };
+
+export type CompanyMember = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  role: string;
+  is_admin: boolean;
+  status: 'active' | 'suspended' | 'revoked';
+  permissions: CompanyMemberPermission[];
+  invited_by: string | null;
+  joined_at: string;
+  created_at: string;
+  updated_at: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
 };

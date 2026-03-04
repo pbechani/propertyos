@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { getActiveCompanyContext } from "@/lib/auth-session";
+import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
+import { companiesApi, type CompanyMember } from "@/lib/api-client";
 import {
   Users,
   Search,
@@ -15,29 +16,10 @@ import {
   Shield,
 } from "lucide-react";
 
-type MemberStatus = "active" | "suspended" | "revoked";
-
-type Member = {
-  id: string;
-  userId: string;
-  name: string;
-  email: string;
-  role: string;
-  isAdmin: boolean;
-  status: MemberStatus;
-  invitationAccepted: boolean;
-  permissionsCount: number;
-  joinedAt: string;
-};
-
-// Stub data — replace with GET /api/v1/companies/:id/members
-const STUB_MEMBERS: Member[] = [
-  { id: "1", userId: "u1", name: "Sarah Johnson", email: "sarah@eliteprops.co.ke", role: "agent", isAdmin: false, status: "active", invitationAccepted: true, permissionsCount: 4, joinedAt: "2025-12-01T09:00:00Z" },
-  { id: "2", userId: "u2", name: "Mike Chen", email: "mike@eliteprops.co.ke", role: "agent", isAdmin: false, status: "active", invitationAccepted: true, permissionsCount: 3, joinedAt: "2025-12-10T09:00:00Z" },
-  { id: "3", userId: "u3", name: "Lisa Patel", email: "lisa@eliteprops.co.ke", role: "agent", isAdmin: false, status: "active", invitationAccepted: false, permissionsCount: 2, joinedAt: "2026-01-05T09:00:00Z" },
-  { id: "4", userId: "u4", name: "Tom Williams", email: "tom@eliteprops.co.ke", role: "admin", isAdmin: true, status: "active", invitationAccepted: true, permissionsCount: 10, joinedAt: "2025-11-15T09:00:00Z" },
-  { id: "5", userId: "u5", name: "Anna Brooks", email: "anna@eliteprops.co.ke", role: "agent", isAdmin: false, status: "suspended", invitationAccepted: true, permissionsCount: 1, joinedAt: "2026-01-20T09:00:00Z" },
-];
+function memberName(m: CompanyMember): string {
+  const full = [m.first_name, m.last_name].filter(Boolean).join(' ');
+  return full || m.email;
+}
 
 function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("");
@@ -47,30 +29,43 @@ export default function CompanyUserManagement() {
   const navigate = useNavigate();
   const activeCompany = getActiveCompanyContext();
 
+  const [members, setMembers] = useState<CompanyMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "suspended" | "revoked">("all");
+
   useEffect(() => {
     if (!activeCompany || activeCompany.slug === 'self') {
       navigate('/app/my-dashboard');
+      return;
     }
+    const token = getAccessToken();
+    if (!token) return;
+    setLoading(true);
+    companiesApi
+      .listMembers(token, activeCompany.id)
+      .then((data) => setMembers(data))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load members'))
+      .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const companyName = activeCompany?.name ?? 'Company';
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "suspended" | "revoked">("all");
-
-  const filtered = STUB_MEMBERS.filter((m) => {
+  const filtered = members.filter((m) => {
+    const name = memberName(m);
     const matchSearch =
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      name.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || m.status === filter;
     return matchSearch && matchFilter;
   });
 
   const counts = {
-    total: STUB_MEMBERS.length,
-    active: STUB_MEMBERS.filter((m) => m.status === "active").length,
-    suspended: STUB_MEMBERS.filter((m) => m.status === "suspended").length,
-    revoked: STUB_MEMBERS.filter((m) => m.status === "revoked").length,
+    total: members.length,
+    active: members.filter((m) => m.status === "active").length,
+    suspended: members.filter((m) => m.status === "suspended").length,
+    revoked: members.filter((m) => m.status === "revoked").length,
   };
 
   return (
@@ -97,6 +92,12 @@ export default function CompanyUserManagement() {
         <StatCard label="Suspended" value={counts.suspended} icon={Clock} color="bg-amber-100 text-amber-600" />
         <StatCard label="Revoked" value={counts.revoked} icon={UserX} color="bg-red-100 text-red-600" />
       </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Search + Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
@@ -144,77 +145,81 @@ export default function CompanyUserManagement() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center text-gray-500 text-sm">
+                  Loading members…
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-gray-500 text-sm">
                   No members found
                 </td>
               </tr>
             ) : (
-              filtered.map((member) => (
-                <tr key={member.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-full flex-shrink-0">
-                        <span className="text-sm text-indigo-600">{initials(member.name)}</span>
+              filtered.map((member) => {
+                const name = memberName(member);
+                const permCount = Array.isArray(member.permissions) ? member.permissions.length : 0;
+                return (
+                  <tr key={member.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-full flex-shrink-0">
+                          <span className="text-sm text-indigo-600">{initials(name)}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{name}</p>
+                          <p className="text-xs text-gray-500">{member.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{member.name}</p>
-                        <p className="text-xs text-gray-500">{member.email}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-indigo-100 text-indigo-700">
+                          {member.role.toUpperCase()}
+                        </span>
+                        {member.is_admin && (
+                          <Shield className="w-4 h-4 text-amber-500" aria-label="Admin" />
+                        )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-indigo-100 text-indigo-700">
-                        {member.role.toUpperCase()}
-                      </span>
-                      {member.isAdmin && (
-                        <Shield className="w-4 h-4 text-amber-500" aria-label="Admin" />
+                    </td>
+                    <td className="px-6 py-4">
+                      {member.status === "active" ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
+                          <CheckCircle className="w-4 h-4" /> Active
+                        </span>
+                      ) : member.status === "suspended" ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+                          <Clock className="w-4 h-4" /> Suspended
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-red-500">
+                          <XCircle className="w-4 h-4" /> Revoked
+                        </span>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {member.status === "active" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
-                        <CheckCircle className="w-4 h-4" /> Active
-                      </span>
-                    ) : member.status === "suspended" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <Clock className="w-4 h-4" /> Suspended
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-red-500">
-                        <XCircle className="w-4 h-4" /> Revoked
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {member.invitationAccepted ? (
+                    </td>
+                    <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
                         <CheckCircle className="w-4 h-4" /> Accepted
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <Clock className="w-4 h-4" /> Pending
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-600">{permCount} permissions</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-600">
+                        {new Date(member.joined_at).toLocaleDateString()}
                       </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600">{member.permissionsCount} permissions</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600">
-                      {new Date(member.joinedAt).toLocaleDateString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                      <MoreVertical className="w-5 h-5 text-gray-500" />
-                    </button>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                        <MoreVertical className="w-5 h-5 text-gray-500" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Link } from "@/lib/router-compat";
 import {
   TrendingUp, Eye,
@@ -17,7 +18,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAccessToken } from "@/lib/auth-session";
+import { getAccessToken, getIsAdminFromToken, getActiveCompanyContext } from "@/lib/auth-session";
 import { propertiesApi, auditApi, usersApi, type PropertyListing, type AuditLogEntry, type AuthUser } from "@/lib/api-client";
 import { CreateListing } from "@/components/CreateListing";
 import { EditListing } from "@/components/EditListing";
@@ -74,6 +75,18 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 }
 
 export default function MyDashboard() {
+  const router = useRouter();
+
+  // Company admins should never land on this personal dashboard — redirect them.
+  useEffect(() => {
+    const activeCompany = getActiveCompanyContext();
+    const isAdmin =
+      getIsAdminFromToken() ||
+      (activeCompany?.slug !== 'self' && (activeCompany?.is_admin ?? false));
+    if (isAdmin) {
+      router.replace('/company/dashboard');
+    }
+  }, [router]);
   const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "favourites" | "my-properties" | "my-projects" | "my-orders">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "@/lib/router-compat";
 import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
-import { companiesApi, type CompanyDetail } from "@/lib/api-client";
+import { companiesApi, type CompanyDetail, type CompanyDocument } from "@/lib/api-client";
 import {
   Building2,
   Mail,
@@ -23,6 +23,8 @@ import {
   Save,
   X,
   Camera,
+  ExternalLink,
+  Plus,
 } from "lucide-react";
 
 type EditFormData = {
@@ -50,6 +52,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   inspector: "Building Inspector",
   logistics: "Logistics / Transport Operator",
   developing: "Property Developer",
+};
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  business_licence: "Business Licence",
+  registration_certificate: "Company Registration Certificate",
+  tax_clearance: "Tax Clearance Certificate",
+  professional_indemnity: "Professional Indemnity Insurance",
+  id_document: "Identity Document",
+  other: "Other",
 };
 
 function VerificationBadge({ status }: { status: VerificationStatus }) {
@@ -82,6 +93,17 @@ export default function CompanyProfile() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Documents state
+  const [documents, setDocuments] = useState<CompanyDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [docUploadType, setDocUploadType] = useState('business_licence');
+  const [docUploadName, setDocUploadName] = useState('');
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [docUploadError, setDocUploadError] = useState<string | null>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const [pendingDocFile, setPendingDocFile] = useState<File | null>(null);
 
   const isAdmin = activeCompany?.is_admin ?? false;
 
@@ -198,6 +220,12 @@ export default function CompanyProfile() {
       .getCompany(token, activeCompany.id)
       .then((data) => {
         setCompany(data);
+        // Fetch documents
+        void companiesApi.getDocuments(token, data.id)
+          .then(setDocuments)
+          .catch(() => { /* non-fatal */ })
+          .finally(() => setDocsLoading(false));
+        setDocsLoading(true);
         // Auto-open edit mode when ?edit=true is in the URL
         if (searchParams.get('edit') === 'true') {
           setEditForm({
@@ -446,42 +474,165 @@ export default function CompanyProfile() {
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg">Verification Documents</h3>
-            <button className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700">
-              <Upload className="w-4 h-4" />
-              Upload New
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => { setShowUploadForm((v) => !v); setDocUploadError(null); setPendingDocFile(null); }}
+                className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700"
+              >
+                <Plus className="w-4 h-4" />
+                Upload New
+              </button>
+            )}
           </div>
 
-          <div className="space-y-3">
-            {[
-              { name: "Business Licence", status: verificationStatus === "verified" ? "approved" : "pending" },
-              { name: "Company Registration Certificate", status: verificationStatus === "verified" ? "approved" : "pending" },
-            ].map((doc) => (
-              <div
-                key={doc.name}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="text-sm">{doc.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Uploaded {new Date(company.created_at).toLocaleDateString()}
-                    </p>
+          {/* Inline upload form */}
+          {showUploadForm && isAdmin && (
+            <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
+              <p className="text-sm font-medium text-indigo-800">Upload Verification Document</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Document Type</label>
+                  <select
+                    value={docUploadType}
+                    onChange={(e) => setDocUploadType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="business_licence">Business Licence</option>
+                    <option value="registration_certificate">Company Registration Certificate</option>
+                    <option value="tax_clearance">Tax Clearance Certificate</option>
+                    <option value="professional_indemnity">Professional Indemnity Insurance</option>
+                    <option value="id_document">Identity Document</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Document Name (optional)</label>
+                  <input
+                    type="text"
+                    value={docUploadName}
+                    onChange={(e) => setDocUploadName(e.target.value)}
+                    placeholder="e.g. Business Licence 2025"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => docInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-400 rounded-lg text-sm text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  {pendingDocFile ? pendingDocFile.name : 'Choose file (PDF, JPG, PNG)'}
+                </button>
+                <input
+                  ref={docInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.heic"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setPendingDocFile(f);
+                    if (docInputRef.current) docInputRef.current.value = '';
+                  }}
+                />
+                {pendingDocFile && (
+                  <button
+                    disabled={isUploadingDoc}
+                    onClick={async () => {
+                      if (!pendingDocFile || !company) return;
+                      const token = getAccessToken();
+                      if (!token) { navigate('/login'); return; }
+                      setIsUploadingDoc(true);
+                      setDocUploadError(null);
+                      try {
+                        const name = docUploadName.trim() || pendingDocFile.name;
+                        const updated = await companiesApi.uploadDocument(token, company.id, pendingDocFile, docUploadType, name);
+                        setDocuments(updated);
+                        setShowUploadForm(false);
+                        setPendingDocFile(null);
+                        setDocUploadName('');
+                      } catch (err: unknown) {
+                        setDocUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+                      } finally {
+                        setIsUploadingDoc(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-60"
+                  >
+                    {isUploadingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {isUploadingDoc ? 'Uploading…' : 'Submit'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { setShowUploadForm(false); setPendingDocFile(null); setDocUploadError(null); }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {docUploadError && (
+                <p className="text-xs text-red-600">{docUploadError}</p>
+              )}
+            </div>
+          )}
+
+          {docsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            </div>
+          ) : documents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+              <FileText className="w-8 h-8 mb-2" />
+              <p className="text-sm">No documents uploaded yet.</p>
+              {isAdmin && (
+                <p className="text-xs mt-1">
+                  Use &ldquo;Upload New&rdquo; to add verification documents.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm truncate">{doc.document_name}</p>
+                      <p className="text-xs text-gray-500">
+                        {DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} &middot;{' '}
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full ${
+                        doc.status === 'approved'
+                          ? 'bg-green-100 text-green-700'
+                          : doc.status === 'rejected'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {doc.status === 'approved' ? 'Approved' : doc.status === 'rejected' ? 'Rejected' : 'Under Review'}
+                    </span>
+                    <a
+                      href={doc.public_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:text-indigo-800"
+                      title="View document"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
-                <span
-                  className={`text-xs px-3 py-1 rounded-full ${
-                    doc.status === "approved"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {doc.status === "approved" ? "Approved" : "Under Review"}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

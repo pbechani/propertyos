@@ -35,6 +35,16 @@ export class CompaniesService {
   // Public API
   // ----------------------------------------------------------------
 
+  /** Returns the non-admin roles that can be invited into a company based on its category. */
+  async getAllowedRoles(companyId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ category: string }>>`
+      SELECT category FROM identity.companies WHERE id = ${companyId}::uuid LIMIT 1
+    `;
+    if (!rows[0]) return [];
+    const all = COMPANY_CATEGORY_ROLES[rows[0].category] ?? [];
+    return all.filter((r) => r !== 'admin');
+  }
+
   async create(
     dto: CreateCompanyDto,
     createdBy: string,
@@ -434,6 +444,21 @@ export class CompaniesService {
     };
   }
 
+  async getAuditLogs(companyId: string, limit: number = 50, offset: number = 0) {
+    const safeLimit = Math.min(limit, 200);
+    const safeOffset = Math.max(offset, 0);
+    return this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT al.id, al.event_id, al.actor_id, al.actor_role, al.action,
+             al.resource_type, al.resource_id, al.payload, al.created_at,
+             u.first_name, u.last_name, u.email
+      FROM identity.audit_logs al
+      LEFT JOIN identity.users u ON u.id = al.actor_id
+      WHERE al.company_id = ${companyId}::uuid
+      ORDER BY al.created_at DESC
+      LIMIT ${safeLimit} OFFSET ${safeOffset}
+    `;
+  }
+
   // ----------------------------------------------------------------
   // Helpers
   // ----------------------------------------------------------------
@@ -457,6 +482,58 @@ export class CompaniesService {
       slug = `${base}-${counter}`;
     }
     return slug;
+  }
+
+  // ----------------------------------------------------------------
+  // Verification Documents
+  // ----------------------------------------------------------------
+
+  async listDocuments(companyId: string) {
+    await this.findById(companyId); // 404 guard
+    return this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT
+        cd.id, cd.company_id, cd.uploaded_by, cd.document_type,
+        cd.document_name, cd.file_name, cd.storage_path, cd.public_url,
+        cd.mime_type, cd.file_size_bytes, cd.status,
+        cd.review_notes, cd.reviewed_by, cd.reviewed_at,
+        cd.created_at, cd.updated_at,
+        u.first_name, u.last_name
+      FROM identity.company_documents cd
+      LEFT JOIN identity.users u ON u.id = cd.uploaded_by
+      WHERE cd.company_id = ${companyId}::uuid
+      ORDER BY cd.created_at DESC
+    `;
+  }
+
+  async addDocument(params: {
+    companyId: string;
+    uploadedBy: string;
+    documentType: string;
+    documentName: string;
+    fileName: string;
+    storagePath: string;
+    publicUrl: string;
+    mimeType: string;
+    fileSizeBytes: number;
+  }) {
+    await this.findById(params.companyId); // 404 guard
+    await this.prisma.$executeRaw`
+      INSERT INTO identity.company_documents (
+        company_id, uploaded_by, document_type, document_name,
+        file_name, storage_path, public_url, mime_type, file_size_bytes
+      ) VALUES (
+        ${params.companyId}::uuid,
+        ${params.uploadedBy}::uuid,
+        ${params.documentType},
+        ${params.documentName},
+        ${params.fileName},
+        ${params.storagePath},
+        ${params.publicUrl},
+        ${params.mimeType},
+        ${params.fileSizeBytes}
+      )
+    `;
+    return this.listDocuments(params.companyId);
   }
 
   private async notifyCompanyAdmin(

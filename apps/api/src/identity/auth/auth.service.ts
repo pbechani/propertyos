@@ -735,12 +735,26 @@ export class AuthService {
       );
       return;
     }
+    const permissions = await this.getRolePermissions('buyer_seller');
     await this.prisma.$executeRaw`
       INSERT INTO identity.company_members
         (company_id, user_id, role, is_admin, status, permissions)
       VALUES
-        (${rows[0].id}::uuid, ${userId}::uuid, 'buyer_seller', false, 'active', '[]'::jsonb)
+        (${rows[0].id}::uuid, ${userId}::uuid, 'buyer_seller', false, 'active', ${JSON.stringify(permissions)}::jsonb)
       ON CONFLICT (company_id, user_id) DO NOTHING
+    `;
+  }
+
+  /** Fetches the canonical permission set for a role from identity.role_permissions. */
+  private async getRolePermissions(
+    role: string,
+  ): Promise<Array<{ resource: string; action: string }>> {
+    return this.prisma.$queryRaw<Array<{ resource: string; action: string }>>`
+      SELECT p.resource, p.action
+      FROM identity.role_permissions rp
+      JOIN identity.permissions p ON p.id = rp.permission_id
+      JOIN identity.roles r ON r.id = rp.role_id
+      WHERE r.name = ${role}
     `;
   }
 

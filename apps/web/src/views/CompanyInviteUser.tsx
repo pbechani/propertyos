@@ -1,100 +1,139 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@/lib/router-compat";
-import { UserPlus, Mail, ArrowLeft, Send, CheckCircle, Shield } from "lucide-react";
+import { UserPlus, Mail, ArrowLeft, Send, CheckCircle, Shield, Loader2 } from "lucide-react";
+import { getActiveCompanyContext, getAccessToken } from "@/lib/auth-session";
+import { companiesApi, type CompanyMemberPermission } from "@/lib/api-client";
 
-type Permission = { id: string; name: string; description: string; category: string };
-
-// Permissions matrix for agent role (adapted to PRIBEC resources)
-// In production, load from GET /api/v1/roles/:role/permissions
-const AGENT_PERMISSIONS: Permission[] = [
-  { id: "property.create", name: "Create Listing", description: "Create new property listings", category: "Property" },
-  { id: "property.update", name: "Update Listing", description: "Edit existing property listings", category: "Property" },
-  { id: "property.delete", name: "Delete Listing", description: "Remove property listings", category: "Property" },
-  { id: "property.read", name: "View Listings", description: "View all company listings", category: "Property" },
-  { id: "inquiry.read", name: "View Inquiries", description: "Read buyer inquiries", category: "Inquiries" },
-  { id: "inquiry.respond", name: "Respond to Inquiries", description: "Reply to buyer inquiries", category: "Inquiries" },
-  { id: "sales.read", name: "View Sales Pipeline", description: "View purchase stage progress", category: "Sales" },
-  { id: "sales.update", name: "Update Sales Stage", description: "Progress purchase stages", category: "Sales" },
-];
-
-const ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  agent: AGENT_PERMISSIONS,
-  contractor: [
-    { id: "project.read", name: "View Projects", description: "View construction projects", category: "Projects" },
-    { id: "project.update", name: "Update Projects", description: "Update project progress", category: "Projects" },
-    { id: "milestone.submit", name: "Submit Milestones", description: "Submit milestone completions", category: "Milestones" },
-    { id: "bid.create", name: "Submit Bids", description: "Submit bids on projects", category: "Bidding" },
-  ],
-  supplier: [
-    { id: "catalog.manage", name: "Manage Catalogue", description: "Add/update product listings", category: "Catalogue" },
-    { id: "rfq.respond", name: "Respond to RFQs", description: "Submit quotes for RFQs", category: "Quotes" },
-    { id: "order.manage", name: "Manage Orders", description: "Process and track orders", category: "Orders" },
-  ],
+// ─── Display metadata (same table as CompanyPermissions) ──────────────────────
+const PERM_DISPLAY: Record<string, { name: string; description: string; category: string }> = {
+  'property:read':   { name: 'View Listings',        description: 'View all company property listings',     category: 'Property'  },
+  'property:create': { name: 'Create Listing',       description: 'Create new property listings',           category: 'Property'  },
+  'property:update': { name: 'Update Listing',       description: 'Edit existing property listings',        category: 'Property'  },
+  'property:full':   { name: 'Full Property Access', description: 'Complete control over property module',  category: 'Property'  },
+  'project:read':    { name: 'View Projects',        description: 'View construction projects',             category: 'Projects'  },
+  'project:create':  { name: 'Create Projects',      description: 'Create new construction projects',       category: 'Projects'  },
+  'project:update':  { name: 'Update Projects',      description: 'Update project progress and details',    category: 'Projects'  },
+  'project:full':    { name: 'Full Project Access',  description: 'Complete control over project module',   category: 'Projects'  },
+  'escrow:read':     { name: 'View Escrow',          description: 'View escrow accounts and transactions',  category: 'Financial' },
+  'escrow:deposit':  { name: 'Deposit to Escrow',    description: 'Initiate escrow deposits',               category: 'Financial' },
+  'escrow:full':     { name: 'Full Escrow Access',   description: 'Complete control over escrow module',   category: 'Financial' },
+  'users:self':      { name: 'Manage Own Profile',   description: 'Update own user profile and settings',   category: 'Identity'  },
+  'users:full':      { name: 'Full User Management', description: 'Manage all users and roles',             category: 'Identity'  },
+  'kyc:submit':      { name: 'Submit KYC',           description: 'Submit identity verification documents', category: 'Identity'  },
+  'kyc:approve':     { name: 'Approve KYC',          description: 'Review and approve KYC submissions',     category: 'Identity'  },
 };
 
-const ALLOWED_ROLES: Record<string, string[]> = {
-  agent: ["agent"],
-  contractor: ["contractor"],
-  supplier: ["supplier"],
-  conveyancer: ["conveyancer"],
-  inspector: ["inspector"],
-  logistics: ["truck_operator"],
-  developing: ["buyer_seller", "contractor", "agent"],
-};
+function permKey(p: CompanyMemberPermission) { return `${p.resource}:${p.action}`; }
 
-// Stub: current company category
-const COMPANY_CATEGORY = "agent";
+function resolveDisplay(p: CompanyMemberPermission) {
+  const d = PERM_DISPLAY[permKey(p)];
+  if (d) return d;
+  const name = `${p.action.charAt(0).toUpperCase() + p.action.slice(1)} ${p.resource.charAt(0).toUpperCase() + p.resource.slice(1)}`;
+  return { name, description: `${p.action} access for ${p.resource}`, category: p.resource.charAt(0).toUpperCase() + p.resource.slice(1) };
+}
 
-function groupBy<T>(arr: T[], key: (item: T) => string): Record<string, T[]> {
-  return arr.reduce((acc, item) => {
-    const k = key(item);
-    (acc[k] = acc[k] || []).push(item);
+function groupPerms(perms: CompanyMemberPermission[]): Record<string, CompanyMemberPermission[]> {
+  return perms.reduce((acc, p) => {
+    const { category } = resolveDisplay(p);
+    (acc[category] = acc[category] || []).push(p);
     return acc;
-  }, {} as Record<string, T[]>);
+  }, {} as Record<string, CompanyMemberPermission[]>);
 }
 
 export default function CompanyInviteUser() {
+  const activeCompany = getActiveCompanyContext();
+  const companyId = activeCompany?.id ?? null;
+
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<CompanyMemberPermission[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
+  const [loadingPerms, setLoadingPerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
-    email: "",
-    role: "",
+    email: '',
+    role: '',
     isAdmin: false,
-    selectedPermissions: [] as string[],
+    selectedPermissions: [] as CompanyMemberPermission[],
   });
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const allowedRoles = ALLOWED_ROLES[COMPANY_CATEGORY] ?? [];
-  const rolePermissions = formData.role ? (ROLE_PERMISSIONS[formData.role] ?? []) : [];
-  const grouped = groupBy(rolePermissions, (p) => p.category);
+  // Load allowed roles for this company
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token || !companyId) return;
+    setLoadingRoles(true);
+    companiesApi
+      .getAllowedRoles(token, companyId)
+      .then(setAllowedRoles)
+      .catch(() => setAllowedRoles([]))
+      .finally(() => setLoadingRoles(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const togglePermission = (id: string) =>
+  // Load ceiling permissions when role changes
+  useEffect(() => {
+    if (!formData.role || !companyId) {
+      setRolePermissions([]);
+      return;
+    }
+    const token = getAccessToken();
+    if (!token) return;
+    setLoadingPerms(true);
+    companiesApi
+      .getRolePermissions(token, companyId, formData.role)
+      .then((perms) => {
+        setRolePermissions(perms);
+        // Pre-select all ceiling permissions by default
+        setFormData((prev) => ({ ...prev, selectedPermissions: perms }));
+      })
+      .catch(() => setRolePermissions([]))
+      .finally(() => setLoadingPerms(false));
+  }, [formData.role]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const grouped = groupPerms(rolePermissions);
+
+  const hasPermission = (p: CompanyMemberPermission) =>
+    formData.selectedPermissions.some((s) => s.resource === p.resource && s.action === p.action);
+
+  const togglePermission = (p: CompanyMemberPermission) =>
     setFormData((prev) => ({
       ...prev,
-      selectedPermissions: prev.selectedPermissions.includes(id)
-        ? prev.selectedPermissions.filter((x) => x !== id)
-        : [...prev.selectedPermissions, id],
+      selectedPermissions: hasPermission(p)
+        ? prev.selectedPermissions.filter((s) => !(s.resource === p.resource && s.action === p.action))
+        : [...prev.selectedPermissions, p],
     }));
 
   const toggleAll = (category: string) => {
-    const ids = (grouped[category] ?? []).map((p) => p.id);
-    const allSelected = ids.every((id) => formData.selectedPermissions.includes(id));
+    const catPerms = grouped[category] ?? [];
+    const allSelected = catPerms.every(hasPermission);
     setFormData((prev) => ({
       ...prev,
       selectedPermissions: allSelected
-        ? prev.selectedPermissions.filter((id) => !ids.includes(id))
-        : [...new Set([...prev.selectedPermissions, ...ids])],
+        ? prev.selectedPermissions.filter((s) => !catPerms.some((c) => c.resource === s.resource && c.action === s.action))
+        : [...new Set([...prev.selectedPermissions, ...catPerms])],
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!companyId) return;
+    const token = getAccessToken();
+    if (!token) return;
     setIsLoading(true);
+    setError(null);
     try {
-      // POST /api/v1/companies/:id/members/invite
-      // { email, role, is_admin, permissions: selectedPermissions.map(id => ({resource, action})) }
+      await companiesApi.inviteMember(token, companyId, {
+        email: formData.email,
+        role: formData.role,
+        is_admin: formData.isAdmin,
+        permissions: formData.selectedPermissions,
+      });
       setIsSent(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to send invitation');
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +186,10 @@ export default function CompanyInviteUser() {
         </div>
       </div>
 
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
+      )}
+
       <div className="max-w-3xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
@@ -187,12 +230,14 @@ export default function CompanyInviteUser() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   required
                 >
-                  <option value="">Select a role</option>
-                  {allowedRoles.map((r) => (
-                    <option key={r} value={r}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </option>
-                  ))}
+                  <option value="">Select a role…</option>
+                  {loadingRoles ? (
+                    <option disabled>Loading…</option>
+                  ) : (
+                    allowedRoles.map((r) => (
+                      <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -220,7 +265,7 @@ export default function CompanyInviteUser() {
           </div>
 
           {/* Permissions */}
-          {formData.role && rolePermissions.length > 0 && (
+          {formData.role && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg flex items-center gap-2">
@@ -232,58 +277,61 @@ export default function CompanyInviteUser() {
                 </span>
               </div>
 
-              <div className="space-y-5">
-                {Object.entries(grouped).map(([category, perms]) => {
-                  const allSelected = perms.every((p) =>
-                    formData.selectedPermissions.includes(p.id)
-                  );
-                  return (
-                    <div key={category}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-gray-700">{category}</h3>
-                        <button
-                          type="button"
-                          onClick={() => toggleAll(category)}
-                          className="text-xs text-indigo-600 hover:underline"
-                        >
-                          {allSelected ? "Deselect all" : "Select all"}
-                        </button>
+              {loadingPerms ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+              ) : rolePermissions.length === 0 ? (
+                <p className="text-sm text-gray-500">No permissions defined for this role.</p>
+              ) : (
+                <div className="space-y-5">
+                  {Object.entries(grouped).map(([category, perms]) => {
+                    const allSelected = perms.every(hasPermission);
+                    return (
+                      <div key={category}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-medium text-gray-700">{category}</h3>
+                          <button
+                            type="button"
+                            onClick={() => toggleAll(category)}
+                            className="text-xs text-indigo-600 hover:underline"
+                          >
+                            {allSelected ? 'Deselect all' : 'Select all'}
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {perms.map((perm) => {
+                            const { name, description } = resolveDisplay(perm);
+                            const has = hasPermission(perm);
+                            return (
+                              <label
+                                key={permKey(perm)}
+                                className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition ${
+                                  has ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                <div className="relative mt-0.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={has}
+                                    onChange={() => togglePermission(perm)}
+                                    className="w-4 h-4 text-indigo-600"
+                                  />
+                                  {has && (
+                                    <CheckCircle className="absolute -top-1 -right-1 w-3 h-3 text-indigo-600 bg-white rounded-full" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{name}</p>
+                                  <p className="text-xs text-gray-500">{description}</p>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {perms.map((perm) => {
-                          const has = formData.selectedPermissions.includes(perm.id);
-                          return (
-                            <label
-                              key={perm.id}
-                              className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition ${
-                                has
-                                  ? "border-indigo-200 bg-indigo-50"
-                                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              <div className="relative mt-0.5">
-                                <input
-                                  type="checkbox"
-                                  checked={has}
-                                  onChange={() => togglePermission(perm.id)}
-                                  className="w-4 h-4 text-indigo-600"
-                                />
-                                {has && (
-                                  <CheckCircle className="absolute -top-1 -right-1 w-3 h-3 text-indigo-600 bg-white rounded-full" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">{perm.name}</p>
-                                <p className="text-xs text-gray-500">{perm.description}</p>
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

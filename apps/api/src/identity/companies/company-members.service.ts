@@ -48,10 +48,21 @@ export class CompanyMembersService {
     actorId: string,
     requestContext: { ip: string; userAgent?: string | null },
   ) {
-    await this.getMemberRaw(memberId, companyId);
+    const member = await this.getMemberRaw(memberId, companyId);
 
-    // Enforce ceiling: a company admin cannot grant beyond the role's allowed permissions
-    // (simplified: we trust the DTO here; the guard enforces the caller is a company admin)
+    // Enforce ceiling: no permission may be granted beyond what the member's role allows
+    const allowed = await this.getRolePermissions(member.role);
+    const allowedSet = new Set(allowed.map((p) => `${p.resource}:${p.action}`));
+    const invalid = dto.permissions.filter(
+      (p) => !allowedSet.has(`${p.resource}:${p.action}`),
+    );
+    if (invalid.length > 0) {
+      throw new ForbiddenException(
+        `Permissions exceed ceiling for role '${member.role}': ` +
+          invalid.map((p) => `${p.resource}:${p.action}`).join(', '),
+      );
+    }
+
     await this.prisma.$executeRaw`
       UPDATE identity.company_members
       SET permissions = ${JSON.stringify(dto.permissions)}::jsonb, updated_at = NOW()
@@ -232,6 +243,19 @@ export class CompanyMembersService {
     `;
     if (!rows[0]) throw new NotFoundException('Member not found');
     return rows[0];
+  }
+
+  /** Returns the canonical permission set for a role from identity.role_permissions. */
+  async getRolePermissions(
+    role: string,
+  ): Promise<Array<{ resource: string; action: string }>> {
+    return this.prisma.$queryRaw<Array<{ resource: string; action: string }>>`
+      SELECT p.resource, p.action
+      FROM identity.role_permissions rp
+      JOIN identity.permissions p ON p.id = rp.permission_id
+      JOIN identity.roles r ON r.id = rp.role_id
+      WHERE r.name = ${role}
+    `;
   }
 
   private async countActiveAdmins(companyId: string): Promise<number> {

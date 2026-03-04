@@ -345,7 +345,7 @@ function mapPropertyToListingCard(
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
-    isPrivateListing: property.company_is_system !== false,
+    isPrivateListing: agentProfile ? !agentProfile.primaryCompanySlug : false,
     image: primaryImage || DEFAULT_PROPERTY_IMAGE,
     createdAt: property.created_at,
     latitude: Number.isFinite(latitude) ? latitude : null,
