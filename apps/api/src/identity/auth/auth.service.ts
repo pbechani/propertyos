@@ -89,7 +89,7 @@ export class AuthService {
     );
 
     // Automatically enrol the new user in the Self company as a buyer
-    await this.addUserToSelfCompany(user.id);
+    await this.enrolInSelfCompany(user.id);
 
     const verifyToken = randomUUID();
     const verifyKey = `auth:verify-email:${verifyToken}`;
@@ -214,9 +214,10 @@ export class AuthService {
         user_id: string;
         expires_at: Date;
         revoked_at: Date | null;
+        active_company_id: string | null;
       }>
     >`
-      SELECT id, user_id, expires_at, revoked_at
+      SELECT id, user_id, expires_at, revoked_at, active_company_id
       FROM identity.refresh_tokens
       WHERE token_hash = ${refreshHash}
       LIMIT 1
@@ -243,7 +244,55 @@ export class AuthService {
     }
 
     const roles = await this.usersService.getUserRoleNames(user.id);
-    const tokens = await this.issueTokens(user.id, user.email, roles);
+
+    // Re-embed the exact company context that was active when the token was issued.
+    // For multi-company users this preserves the specific company they selected;
+    // single-company users are auto-resolved as a fallback.
+    let companyCtx: {
+      active_company_id: string | null;
+      active_company_role: string | null;
+      active_company_is_admin: boolean;
+    };
+
+    if (tokenRow.active_company_id) {
+      // Re-validate membership is still active (role/admin may have changed)
+      const memberRows = await this.prisma.$queryRaw<
+        Array<{ role: string; is_admin: boolean }>
+      >`
+        SELECT cm.role, cm.is_admin
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = ${user.id}::uuid
+          AND cm.company_id = ${tokenRow.active_company_id}::uuid
+          AND cm.status = 'active'
+          AND c.status != 'deactivated'
+        LIMIT 1
+      `;
+      if (memberRows[0]) {
+        companyCtx = {
+          active_company_id: tokenRow.active_company_id,
+          active_company_role: memberRows[0].role,
+          active_company_is_admin: memberRows[0].is_admin,
+        };
+      } else {
+        // Membership revoked or company deactivated — drop context
+        companyCtx = { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+      }
+    } else {
+      // No stored context (token predates this column or user has no company).
+      // Auto-select for single-company users so they don't hit the guard.
+      const memberships = await this.getUserActiveMemberships(user.id);
+      companyCtx =
+        memberships.length === 1
+          ? {
+              active_company_id: memberships[0].id,
+              active_company_role: memberships[0].role,
+              active_company_is_admin: memberships[0].is_admin,
+            }
+          : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
 
     await this.auditService.log({
       eventId: 'user.refresh',
@@ -573,7 +622,7 @@ export class AuthService {
         lastName: verifiedIdentity.lastName ?? dto.lastName ?? 'user',
       });
       await this.usersService.assignRole(created.id, DEFAULT_ROLE, created.id);
-      await this.addUserToSelfCompany(created.id);
+      await this.enrolInSelfCompany(created.id);
       if (verifiedIdentity.emailVerified) {
         await this.usersService.markEmailVerified(created.id);
       }
@@ -720,10 +769,11 @@ export class AuthService {
 
   /**
    * Enrols a user in the built-in "Self" system company as a buyer_seller.
-   * Called automatically on every registration path (password + OAuth).
+   * Called automatically on every registration path (password + OAuth + invite).
    * Safe to call multiple times — INSERT is idempotent via ON CONFLICT DO NOTHING.
+   * Public so that InvitationsService can reuse the same logic without duplication.
    */
-  private async addUserToSelfCompany(userId: string): Promise<void> {
+  async enrolInSelfCompany(userId: string): Promise<void> {
     const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM identity.companies
       WHERE slug = ${SELF_COMPANY_SLUG} AND is_system = true
@@ -758,6 +808,20 @@ export class AuthService {
     `;
   }
 
+  /** Public wrapper so companion services (e.g. InvitationsService) can issue
+   *  tokens without duplicating the JwtService plumbing. */
+  async issueTokensForUser(
+    userId: string,
+    email: string,
+    companyCtx?: {
+      active_company_id: string | null;
+      active_company_role: string | null;
+      active_company_is_admin: boolean;
+    },
+  ): Promise<AuthTokens> {
+    return this.issueTokens(userId, email, undefined, companyCtx);
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -790,9 +854,10 @@ export class AuthService {
     const refreshHash = this.hashToken(refreshToken);
     const refreshExpiresAt = this.resolveExpiryDate(this.refreshTokenExpiry);
 
+    const activeCompanyId = companyCtx?.active_company_id ?? null;
     const refreshRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
-      INSERT INTO identity.refresh_tokens (user_id, token_hash, expires_at)
-      VALUES (${userId}::uuid, ${refreshHash}, ${refreshExpiresAt})
+      INSERT INTO identity.refresh_tokens (user_id, token_hash, expires_at, active_company_id)
+      VALUES (${userId}::uuid, ${refreshHash}, ${refreshExpiresAt}, ${activeCompanyId}::uuid)
       RETURNING id
     `;
 

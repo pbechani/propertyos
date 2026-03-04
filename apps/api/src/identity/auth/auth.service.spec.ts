@@ -153,9 +153,9 @@ describe('AuthService', () => {
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockUsers.assignRole.mockResolvedValueOnce(undefined);
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // addUserToSelfCompany → find Self
+        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
         .mockResolvedValueOnce([{ id: 'refresh-id' }]);     // insert refresh token
-      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // addUserToSelfCompany → enrol member
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 
       const result = await service.register(dto, requestCtx);
 
@@ -558,10 +558,10 @@ describe('AuthService', () => {
 
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // addUserToSelfCompany → find Self
+        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
         .mockResolvedValueOnce([])                          // getUserActiveMemberships → no companies
         .mockResolvedValueOnce([{ id: 'rt-id' }]);          // refresh token
-      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // addUserToSelfCompany → enrol member
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
 
