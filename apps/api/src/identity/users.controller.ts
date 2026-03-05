@@ -68,6 +68,37 @@ export class UsersController {
     };
   }
 
+  /** Self-service: list own roles */
+  @Get('me/roles')
+  @Permissions({ resource: 'users', action: 'self' })
+  async myRoles(@Req() req: { user: RequestUser }) {
+    return this.usersService.listUserRoles(req.user.sub);
+  }
+
+  /** Self-service: add a role to own account (subject to exclusion rules) */
+  @Post('me/roles')
+  @Permissions({ resource: 'users', action: 'self' })
+  async addMyRole(
+    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Body() body: AssignRoleDto,
+  ): Promise<{ success: boolean }> {
+    await this.usersService.selfAddRole(req.user.sub, body.role);
+
+    await this.auditService.log({
+      eventId: 'user.self_role_added',
+      actorId: req.user.sub,
+      actorRole: req.user.roles[0] ?? null,
+      action: 'self_add_role',
+      resourceType: 'user',
+      resourceId: req.user.sub,
+      payload: { role: body.role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
+    return { success: true };
+  }
+
   @Patch('me')
   @Permissions({ resource: 'users', action: 'self' })
   async updateMe(

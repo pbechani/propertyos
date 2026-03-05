@@ -8,7 +8,39 @@ export const IDENTITY_ROLES = [
   'inspector',
   'admin',
   'truck_operator',
+  // Sprint 02 Enhanced — additional professional roles
+  'valuer',
+  'developer',
+  'mortgage_broker',
+  'quantity_surveyor',
+  'brokerage_admin',
+  'bank_officer',
 ] as const;
+
+/**
+ * Roles that require professional licence verification before they can
+ * be self-assigned. The user's KYC must also be at 'Professional' tier.
+ */
+export const PROFESSIONAL_ROLES = [
+  'valuer',
+  'conveyancer',
+  'inspector',
+  'mortgage_broker',
+  'quantity_surveyor',
+] as const;
+
+/**
+ * Role pairs (role_a, role_b) that cannot be held simultaneously.
+ * Enforced at the application layer in addition to DB constraints.
+ * role_b is forbidden when role_a is already held.
+ */
+export const ROLE_EXCLUSION_PAIRS: Array<[string, string]> = [
+  ['admin', 'agent'],
+  ['admin', 'contractor'],
+  ['admin', 'supplier'],
+  ['admin', 'mortgage_broker'],
+  ['admin', 'brokerage_admin'],
+];
 
 export type IdentityRole = (typeof IDENTITY_ROLES)[number];
 

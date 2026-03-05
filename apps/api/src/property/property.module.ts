@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PropertyService } from './property.service';
-import { PropertyController, AgentDashboardController } from './property.controller';
+import { PropertyController, AgentDashboardController, SellerDashboardController } from './property.controller';
 import { VerificationService } from './verification.service';
 import { VerificationController, AdminVerificationController } from './verification.controller';
 import { InquiryService } from './inquiry.service';
@@ -11,21 +11,50 @@ import { SavedPropertiesService } from './saved-properties.service';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
 import { VerificationStorageService } from './verification-storage.service';
+import { MandateService } from './mandate.service';
+import { MandateController, AgentMandateController } from './mandate.controller';
+import { ValuationService } from './valuation.service';
+import { ValuationController, ValuerController, ValuersController } from './valuation.controller';
+import { ViewingService } from './viewing.service';
+import { ViewingController, ViewingActionController, AgentViewingCalendarController, OpenHouseController } from './viewing.controller';
+import { NeighbourhoodService, SyndicationService } from './neighbourhood.service';
+import {
+  PropertyNeighbourhoodController,
+  NeighbourhoodController,
+  SyndicationController,
+  SyndicationStatusController,
+} from './neighbourhood.controller';
+import { ComparisonService } from './comparison.service';
+import { SellerDashboardService } from './seller-dashboard.service';
 
 @Module({
   controllers: [
-    // BuyerController must be registered BEFORE PropertyController so that
-    // GET /properties/my-listings is matched by its static handler BEFORE
-    // PropertyController's parameterised @Get(':id') route intercepts it.
+    // Static-route controllers must be registered BEFORE parameterised-route
+    // controllers to avoid route interception (e.g. GET /properties/compare
+    // being swallowed by GET /properties/:id).
     BuyerController,
     InquiryResponseController,
     SavedPropertiesController,
     PropertyController,
     AgentDashboardController,
+    SellerDashboardController,
     VerificationController,
     AdminVerificationController,
     FraudController,
     AdminFraudController,
+    MandateController,
+    AgentMandateController,
+    ValuationController,
+    ValuerController,
+    ValuersController,
+    ViewingController,
+    ViewingActionController,
+    AgentViewingCalendarController,
+    OpenHouseController,
+    PropertyNeighbourhoodController,
+    NeighbourhoodController,
+    SyndicationController,
+    SyndicationStatusController,
   ],
   providers: [
     PropertyService,
@@ -36,6 +65,13 @@ import { VerificationStorageService } from './verification-storage.service';
     MediaStorageService,
     PropertyAuditService,
     VerificationStorageService,
+    MandateService,
+    ValuationService,
+    ViewingService,
+    NeighbourhoodService,
+    SyndicationService,
+    ComparisonService,
+    SellerDashboardService,
   ],
   exports: [PropertyService, PropertyAuditService],
 })

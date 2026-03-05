@@ -28,13 +28,13 @@ export default function Navbar() {
         {/* Right actions */}
         <div className="hidden md:flex items-center gap-3">
           <Link
-            href="/auth/login"
+            href="/login"
             className="text-white/80 hover:text-white text-sm font-medium transition-colors"
           >
             Sign In
           </Link>
           <Link
-            href="/auth/register"
+            href="/register"
             className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#FBBF47] transition-colors"
           >
             Get Started
@@ -61,8 +61,8 @@ export default function Navbar() {
           <Link href="/properties/search" className="text-white/80 hover:text-white text-sm">Search</Link>
           <Link href="/buyer" className="text-white/80 hover:text-white text-sm">Property Hub</Link>
           <Link href="/agent" className="text-white/80 hover:text-white text-sm">Agents</Link>
-          <Link href="/auth/login" className="text-white/80 hover:text-white text-sm">Sign In</Link>
-          <Link href="/auth/register" className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg text-center">Get Started</Link>
+          <Link href="/login" className="text-white/80 hover:text-white text-sm">Sign In</Link>
+          <Link href="/register" className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg text-center">Get Started</Link>
         </div>
       )}
     </nav>

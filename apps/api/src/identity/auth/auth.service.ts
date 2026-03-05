@@ -22,6 +22,7 @@ import { DEFAULT_ROLE, SELF_COMPANY_SLUG } from '../identity.constants';
 import { OAuthLoginDto } from './dto/oauth.dto';
 import { AuditService } from '../audit.service';
 import { OAuthVerificationService } from './oauth-verification.service';
+import { SessionsService } from '../sessions/sessions.service';
 
 @Injectable()
 export class AuthService {
@@ -42,6 +43,7 @@ export class AuthService {
     private readonly notificationService: NotificationService,
     private readonly auditService: AuditService,
     private readonly oauthVerificationService: OAuthVerificationService,
+    private readonly sessionsService: SessionsService,
   ) {
     this.accessTokenExpiry =
       this.configService.get<string>('JWT_EXPIRY') ?? '15m';
@@ -212,7 +214,7 @@ export class AuthService {
       userAgent: requestContext.userAgent ?? null,
     });
 
-    const tokens = await this.issueTokens(user.id, user.email, undefined, companyCtx);
+    const tokens = await this.issueTokens(user.id, user.email, undefined, companyCtx, requestContext);
     return { user: this.usersService.sanitizeUser(user), tokens };
   }
 
@@ -271,7 +273,7 @@ export class AuthService {
         active_company_id: null,
         active_company_role: null,
         active_company_is_admin: false,
-      });
+      }, requestContext);
       return {
         requires_context_selection: true,
         user: this.usersService.sanitizeUser(user),
@@ -292,7 +294,7 @@ export class AuthService {
           }
         : await this.resolveSelfCompanyCtx(user.id);
 
-    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
+    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx, requestContext);
 
     return {
       user: this.usersService.sanitizeUser(user),
@@ -390,7 +392,7 @@ export class AuthService {
           : await this.resolveSelfCompanyCtx(user.id);
     }
 
-    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
+    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx, requestContext);
 
     await this.auditService.log({
       eventId: 'user.refresh',
@@ -759,7 +761,7 @@ export class AuthService {
             active_company_is_admin: memberships[0].is_admin,
           }
         : await this.resolveSelfCompanyCtx(user.id);
-    const tokens = await this.issueTokens(user.id, user.email, roles, singleCtx);
+    const tokens = await this.issueTokens(user.id, user.email, roles, singleCtx, requestContext);
 
     await this.auditService.log({
       eventId: `user.oauth.${provider}`,
@@ -982,6 +984,7 @@ export class AuthService {
       active_company_role: string | null;
       active_company_is_admin: boolean;
     },
+    requestContext?: { ip?: string | null; userAgent?: string | null },
   ): Promise<AuthTokens> {
     const roles =
       prefetchedRoles ?? (await this.usersService.getUserRoleNames(userId));
@@ -1013,8 +1016,21 @@ export class AuthService {
     `;
 
     const refreshTokenId = refreshRows[0].id;
+
+    // Persist device session record for session management UI
+    await this.sessionsService.create({
+      userId,
+      sessionTokenHash: refreshHash,
+      ipAddress: requestContext?.ip ?? null,
+      deviceName: requestContext?.userAgent
+        ? requestContext.userAgent.slice(0, 100)
+        : null,
+      expiresAt: refreshExpiresAt,
+    });
+
     await this.redisService.setJson(
       `session:${userId}:${refreshTokenId}`,
+
       {
         userId,
         issuedAt: new Date().toISOString(),

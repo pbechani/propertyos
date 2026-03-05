@@ -702,6 +702,146 @@ export class PropertyService {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Extended agent dashboard (Sprint 03 Enhanced)
+  // ---------------------------------------------------------------------------
+
+  async getAgentDashboardSummary(agentId: string) {
+    const [listing, mandate, viewRows, commissionRows] = await Promise.all([
+      this.prisma.$queryRaw<
+        { status: string; count: string; total_value: string }[]
+      >`
+        SELECT status, COUNT(*)::text AS count, COALESCE(SUM(price),0)::text AS total_value
+        FROM property.properties
+        WHERE agent_id = ${agentId}::uuid
+        GROUP BY status
+      `,
+      this.prisma.$queryRaw<[{ active: string; pending: string }]>`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'active')::text AS active,
+          COUNT(*) FILTER (WHERE status = 'pending')::text AS pending
+        FROM property.mandates
+        WHERE agent_id = ${agentId}::uuid
+      `,
+      this.prisma.$queryRaw<[{ upcoming: string; today: string }]>`
+        SELECT
+          COUNT(*) FILTER (WHERE v.scheduled_at >= NOW() AND v.status = 'confirmed')::text AS upcoming,
+          COUNT(*) FILTER (
+            WHERE DATE(v.scheduled_at) = CURRENT_DATE AND v.status IN ('confirmed','pending')
+          )::text AS today
+        FROM property.property_viewings v
+        WHERE v.agent_id = ${agentId}::uuid
+      `,
+      this.prisma.$queryRaw<
+        { property_id: string; title: string; price: string; stage_name: string }[]
+      >`
+        SELECT p.id AS property_id, p.title, p.price::text, ts.stage_name
+        FROM property.properties p
+        JOIN sales.transaction_stages ts ON ts.property_id = p.id
+        WHERE p.agent_id = ${agentId}::uuid
+          AND ts.status = 'in_progress'
+        ORDER BY p.price DESC
+        LIMIT 10
+      `,
+    ]);
+
+    const byStatus: Record<string, { count: number; totalValue: number }> = {};
+    let totalListings = 0;
+    let pipelineValue = 0;
+    for (const r of listing) {
+      const count = parseInt(r.count, 10);
+      const tv = parseFloat(r.total_value);
+      byStatus[r.status] = { count, totalValue: tv };
+      totalListings += count;
+      if (r.status === 'active') pipelineValue += tv;
+    }
+
+    return {
+      totalListings,
+      byStatus,
+      activeMandates: parseInt(mandate[0]?.active ?? '0', 10),
+      pendingMandates: parseInt(mandate[0]?.pending ?? '0', 10),
+      upcomingViewings: parseInt(viewRows[0]?.upcoming ?? '0', 10),
+      viewingsToday: parseInt(viewRows[0]?.today ?? '0', 10),
+      pipelineValue,
+      recentDeals: commissionRows,
+    };
+  }
+
+  async getAgentListingsPerformance(agentId: string) {
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT
+        p.id, p.title, p.status, p.price, p.currency,
+        p.created_at,
+        EXTRACT(DAY FROM NOW() - p.created_at)::int AS days_on_market,
+        (SELECT COUNT(*) FROM property.property_audit_logs al
+         WHERE al.resource_id = p.id AND al.action = 'property.viewed')::int AS views,
+        (SELECT COUNT(*) FROM property.saved_properties s
+         WHERE s.property_id = p.id)::int AS saves,
+        (SELECT COUNT(*) FROM property.property_inquiries i
+         WHERE i.property_id = p.id)::int AS inquiries,
+        (SELECT COUNT(*) FROM property.property_viewings v
+         WHERE v.property_id = p.id AND v.status = 'completed')::int AS completed_viewings,
+        pl.city, pl.suburb
+      FROM property.properties p
+      LEFT JOIN property.property_locations pl ON pl.property_id = p.id
+      WHERE p.agent_id = ${agentId}::uuid
+      ORDER BY p.created_at DESC
+    `;
+  }
+
+  async getAgentActivityFeed(agentId: string) {
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT al.id, al.action, al.changes, al.created_at, al.user_id,
+             p.id AS property_id, p.title AS property_title
+      FROM property.property_audit_logs al
+      JOIN property.properties p ON p.id = al.resource_id
+      WHERE p.agent_id = ${agentId}::uuid
+      ORDER BY al.created_at DESC
+      LIMIT 50
+    `;
+  }
+
+  async getAgentCommissionPipeline(agentId: string) {
+    const rows = await this.prisma.$queryRaw<
+      {
+        property_id: string;
+        title: string;
+        price: string;
+        mandate_type: string;
+        commission_rate: string | null;
+        stage_name: string;
+      }[]
+    >`
+      SELECT
+        p.id AS property_id, p.title, p.price::text,
+        m.mandate_type, m.commission_rate::text,
+        ts.stage_name
+      FROM property.properties p
+      JOIN property.mandates m ON m.property_id = p.id AND m.status = 'active'
+      LEFT JOIN sales.transaction_stages ts
+        ON ts.property_id = p.id AND ts.status = 'in_progress'
+      WHERE m.agent_id = ${agentId}::uuid
+      ORDER BY p.price DESC
+    `;
+
+    const deals = rows.map((r) => {
+      const price = parseFloat(r.price);
+      const rate = r.commission_rate ? parseFloat(r.commission_rate) : null;
+      return {
+        ...r,
+        estimatedCommission: rate ? Math.round(price * (rate / 100)) : null,
+      };
+    });
+
+    const totalEstimated = deals.reduce(
+      (sum, d) => sum + (d.estimatedCommission ?? 0),
+      0,
+    );
+
+    return { deals, totalEstimated };
+  }
+
   async getFeaturedAgents(limit = 8): Promise<FeaturedAgent[]> {
     const rows = await this.prisma.$queryRawUnsafe<
       {

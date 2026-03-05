@@ -364,7 +364,7 @@ export default async function PropertyMarketplace() {
             Join 12,000+ buyers and investors using PRIBEC to make fraud-free property transactions.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/register" className="bg-[#0A1628] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#0F2040] transition-colors">
+            <Link href="/register" className="bg-[#0A1628] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#0F2040] transition-colors">
               Create Free Account
             </Link>
             <Link href="/properties/search" className="bg-white text-[#0A1628] font-bold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors">

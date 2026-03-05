@@ -31,6 +31,13 @@ export class IdentityBootstrapService implements OnModuleInit {
       inspector: 'Inspector',
       admin: 'Admin',
       truck_operator: 'Truck Operator',
+      // Sprint 02 Enhanced
+      valuer: 'Licensed Property Valuer',
+      developer: 'Property Developer',
+      mortgage_broker: 'Mortgage Broker / Bond Originator',
+      quantity_surveyor: 'Quantity Surveyor',
+      brokerage_admin: 'Brokerage Administrator',
+      bank_officer: 'Bank / Lender Officer',
     };
 
     for (const role of IDENTITY_ROLES) {
@@ -113,6 +120,46 @@ export class IdentityBootstrapService implements OnModuleInit {
         { resource: 'escrow', action: 'full' },
         { resource: 'users', action: 'full' },
         { resource: 'kyc', action: 'approve' },
+      ],
+      // Sprint 02 Enhanced — new professional roles
+      valuer: [
+        { resource: 'property', action: 'read' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
+      ],
+      developer: [
+        { resource: 'property', action: 'create' },
+        { resource: 'property', action: 'read' },
+        { resource: 'property', action: 'update' },
+        { resource: 'project', action: 'create' },
+        { resource: 'project', action: 'read' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
+      ],
+      mortgage_broker: [
+        { resource: 'property', action: 'read' },
+        { resource: 'escrow', action: 'read' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
+      ],
+      quantity_surveyor: [
+        { resource: 'project', action: 'read' },
+        { resource: 'property', action: 'read' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
+      ],
+      brokerage_admin: [
+        { resource: 'property', action: 'create' },
+        { resource: 'property', action: 'read' },
+        { resource: 'property', action: 'update' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
+      ],
+      bank_officer: [
+        { resource: 'escrow', action: 'read' },
+        { resource: 'property', action: 'read' },
+        { resource: 'users', action: 'self' },
+        { resource: 'kyc', action: 'submit' },
       ],
     };
 

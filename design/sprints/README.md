@@ -22,6 +22,21 @@ Always read `00-project-overview.md` before reading any sprint file.
 | `sprint-10-logistics.md` | 10 | Phase 10 | 56–60 | Truck marketplace, GPS tracking, delivery escrow |
 | `sprint-11-risk-analytics-ai.md` | 11 | Phases 11–12 | 61–80 | Risk scores, anomaly detection, LLM gateway, RAG |
 | `sprint-12-ai-design-advanced.md` | 12 | Phases 13–18 | 81–130 | AI design, lifecycle, security, gov integrations, scale |
+| `sprint-13-valuation-mandate.md` | 13 | Phase 2B | 13–17 | Valuer profiles, formal valuations, CMA, mandate enforcement, listing approval |
+| `sprint-14-mortgage-financing.md` | 14 | Phase 3B | 18–23 | Bond applications, multi-bank submission, affordability calculator, interest rates |
+| `sprint-15-property-development.md` | 15 | Phase 3C | 20–26 | Off-plan sales, developer unit mix, snagging, municipality approvals, NHBRC |
+| `sprint-16-rental-lifecycle.md` | 16 | Phase 3D | 22–30 | Rental listings, tenancy, digital leases, rent collection, AI dynamic pricing |
+| `sprint-17-market-intelligence.md` | 17 | Phase 4A | 28–34 | Price indices, AVM, comparable sales, NL-to-SQL, investment yield calculator |
+
+### Enhanced Sprint Files (Addenda — read the base sprint first)
+
+| File | Extends | New Additions | Status |
+|------|---------|---------------|--------|
+| `sprint-02-identity-auth_enhanced.md` | Sprint 02 | Multi-role users, org accounts, professional licences, enhanced KYC, agent CRM | ✅ 2026-03-05 |
+| `sprint-03-property-marketplace_enhanced.md` | Sprint 03 | Mandate system, valuations integration, viewing scheduler, syndication engine | ✅ 2026-03-06 |
+| `sprint-04-sales-progression_enhanced.md` | Sprint 04 | 16-stage pipeline, digital OTP, negotiation versioning, deal room, disbursements | — |
+| `sprint-11-risk-analytics-ai_enhanced.md` | Sprint 11 | NL-to-SQL (LangChain), dynamic pricing XGBoost, churn prediction, PEF fraud | — |
+| `sprint-12-ai-design-advanced_enhanced.md` | Sprint 12 | IoT safety monitoring (YOLOv8/Jetson), predictive maintenance (Prophet/TimescaleDB), tenant chatbot | — |
 
 ---
 
@@ -69,6 +84,13 @@ Sprint 10 (Logistics)
 Sprint 11 (Risk Analytics + AI Engine)
   ↓
 Sprint 12 (AI Design + Advanced Features)
+
+Parallel tracks (can begin once base sprints are stable):
+  Sprint 13 (Valuation & Mandate)         → after Sprint 03
+  Sprint 14 (Mortgage & Financing)         → after Sprint 04 + 05
+  Sprint 15 (Property Development)         → after Sprint 03 + 06
+  Sprint 16 (Rental Lifecycle)             → after Sprint 05 + 07 + 11
+  Sprint 17 (Market Intelligence)          → after Sprint 11 + 13 + 16
 ```
 
 ## MVP Completion Marker

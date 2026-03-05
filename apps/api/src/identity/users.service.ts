@@ -1,10 +1,11 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database';
-import { IDENTITY_ROLES } from './identity.constants';
+import { IDENTITY_ROLES, PROFESSIONAL_ROLES, ROLE_EXCLUSION_PAIRS } from './identity.constants';
 
 type UserRecord = {
   id: string;
@@ -231,6 +232,49 @@ export class UsersService {
       DELETE FROM identity.user_roles
       WHERE user_id = ${userId}::uuid AND role_id = ${roleId}::uuid
     `;
+  }
+
+  /**
+   * Self-service role addition — users can add allowed roles to themselves.
+   * Enforces role-exclusion constraints before inserting.
+   * 'admin' can never be self-assigned.
+   */
+  async selfAddRole(userId: string, roleName: string): Promise<void> {
+    if (roleName === 'admin') {
+      throw new ForbiddenException('The admin role cannot be self-assigned.');
+    }
+
+    if (!(IDENTITY_ROLES as readonly string[]).includes(roleName)) {
+      throw new BadRequestException('Invalid role');
+    }
+
+    const currentRoles = await this.getUserRoleNames(userId);
+
+    // Check exclusions: if the user holds role_a, they cannot add role_b;
+    // and if they already hold role_b, they cannot add role_a.
+    for (const [roleA, roleB] of ROLE_EXCLUSION_PAIRS) {
+      if (currentRoles.includes(roleA) && roleName === roleB) {
+        throw new ForbiddenException(
+          `Cannot add role '${roleName}' — conflicts with your existing '${roleA}' role.`,
+        );
+      }
+      if (currentRoles.includes(roleB) && roleName === roleA) {
+        throw new ForbiddenException(
+          `Cannot add role '${roleName}' — conflicts with your existing '${roleB}' role.`,
+        );
+      }
+    }
+
+    if ((PROFESSIONAL_ROLES as readonly string[]).includes(roleName)) {
+      const kycStatus = await this.getLatestKycStatus(userId);
+      if (kycStatus !== 'approved') {
+        throw new ForbiddenException(
+          `The '${roleName}' role requires approved KYC (Identity tier). Please complete identity verification first.`,
+        );
+      }
+    }
+
+    await this.assignRole(userId, roleName, userId);
   }
 
   async getUserRoleNames(userId: string): Promise<string[]> {

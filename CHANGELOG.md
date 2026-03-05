@@ -12,7 +12,108 @@ Related docs:
 
 ## [Unreleased]
 
+### Fixed
+- **Sprint 02 Enhanced — post-audit bug fixes** (2026-03-05)
+  - **[HIGH] Sessions never populated** — `AuthService.issueTokens()` now calls `SessionsService.create()` after every successful login, register, refresh, and OAuth flow. Sessions are persisted to `identity.user_sessions` with IP address and device name (first 100 chars of `User-Agent`).
+  - **[MEDIUM] Licence document upload endpoint missing** — `PATCH /api/v1/users/me/licences/:id/document` is now functional. `DocumentStorageService` is properly injected into `ProfessionalLicencesController`; the class closing brace was also corrected.
+  - **[MEDIUM] No KYC gate on professional role self-assignment** — `UsersService.selfAddRole()` now checks `getLatestKycStatus()` before assigning any `PROFESSIONAL_ROLES` (`valuer`, `conveyancer`, `inspector`, `mortgage_broker`, `quantity_surveyor`). Throws `ForbiddenException` if KYC is not `approved`.
+
 ### Added
+- **Sprint 03 Enhanced — Property Marketplace (addendum)** (2026-03-06)
+  - **Extended property attributes** — 15 new columns on `property.properties`: `property_subtype`, `erf_size_sqm`, `floor_area_sqm`, `garages`, `carports`, `monthly_levy`, `monthly_rates`, `monthly_utilities`, `title_type`, `zoning`, `body_corporate_name`, `pet_policy`, `occupational_date`, `seller_approved_at`, `listing_reference` (unique human-readable ref).
+  - **Listing lifecycle state machine** — `property.listing_state_transitions` table seeded with 10 valid transitions covering all 7 states (`draft` → `active` → `under_offer` → `sold` / `withdrawn` / `back_to_market`).
+  - **Mandate Management** (`src/property/mandate.{service,controller,dto}.ts`):
+    - Sole mandate enforcement — only one active sole mandate per property allowed; conflict check prevents duplicates.
+    - `POST /api/v1/properties/:id/mandate` — create mandate (sole or open).
+    - `GET  /api/v1/properties/:id/mandate` — fetch current mandate.
+    - `POST /api/v1/properties/:propertyId/mandate/:mandateId/sign` — digital signature acceptance.
+    - `PATCH /api/v1/properties/:propertyId/mandate/:mandateId/cancel` — cancel mandate.
+    - `GET  /api/v1/agent/mandates` — agent's full mandate portfolio.
+  - **Property Valuation** (`src/property/valuation.{service,controller}.ts`):
+    - `property.valuations` + `property.comparable_sales` tables.
+    - `POST /api/v1/properties/:id/valuations` — request new valuation (CMA / formal).
+    - `GET  /api/v1/properties/:id/valuations` — list valuations for a property.
+    - `POST /api/v1/valuations/:id/report` — submit valuation report (valuers only).
+    - `GET  /api/v1/valuers` — list accredited valuers.
+  - **Viewing & Appointment Scheduler** (`src/property/viewing.{service,controller}.ts`):
+    - `property.property_viewings` + `property.open_houses` + `property.open_house_registrations` tables.
+    - `POST /api/v1/properties/:id/viewings` — schedule a private viewing.
+    - `GET  /api/v1/properties/:id/viewings` — list viewings for a property.
+    - `POST /api/v1/viewings/:id/confirm|cancel|complete` — lifecycle transitions.
+    - `POST /api/v1/viewings/:id/feedback` — buyer feedback after viewing.
+    - `GET  /api/v1/agent/calendar` — agent's daily viewing appointments.
+    - `POST /api/v1/properties/:id/open-houses` — schedule open house.
+    - `GET  /api/v1/properties/:id/open-houses` — list open houses.
+    - `POST /api/v1/open-houses/:id/register` — buyer RSVP for open house.
+  - **Neighbourhood Insights** (`src/property/neighbourhood.{service,controller}.ts`):
+    - `property.neighbourhood_stats` table (crime rate, school rating, transport score, hospital distance).
+    - `GET /api/v1/properties/:id/neighbourhood` — neighbourhood profile for a property.
+    - `GET /api/v1/neighbourhood?suburb=&city=` — standalone suburb lookup.
+  - **Listing Syndication Engine** (embedded in `neighbourhood.service.ts` as `SyndicationService`):
+    - `property.syndication_configs` + `property.syndication_records` tables.
+    - `POST /api/v1/properties/:id/syndicate` — push listing to external portal (Property24, etc.).
+    - `GET  /api/v1/properties/:id/syndication-records` — syndication history and status per portal.
+  - **Property Comparison Tool** (`src/property/comparison.service.ts`):
+    - `GET /api/v1/properties/compare?ids=uuid1,uuid2,...` — side-by-side comparison of up to 4 properties; includes winner fields per numeric attribute.
+  - **Extended Agent Dashboard** (added to `property.service.ts` + `property.controller.ts`):
+    - `GET /api/v1/agent/dashboard/summary` — aggregate counts (active listings, active mandates, viewings this week, open leads).
+    - `GET /api/v1/agent/listings/performance` — per-listing view count, enquiries, days on market.
+    - `GET /api/v1/agent/listings/activity-feed` — paginated cross-listing activity stream.
+    - `GET /api/v1/agent/commission-pipeline` — all mandates with projected commission totals.
+  - **Seller Dashboard** (`src/property/seller-dashboard.service.ts`):
+    - `GET  /api/v1/seller/properties` — all properties owned by the authenticated seller.
+    - `GET  /api/v1/seller/properties/:id/activity` — combined activity timeline (viewings, offers, valuations).
+    - `GET  /api/v1/seller/properties/:id/viewings` — viewing requests and statuses.
+    - `GET  /api/v1/seller/properties/:id/offers` — pending and accepted offers.
+  - **DB migration** — `202603050014_sprint03_enhanced` applied to `pribec_dev`; 10 new tables + 15 new property columns.
+  - **Test coverage** — `mandate.service.spec.ts` (7 tests), `valuation.service.spec.ts` (5 tests), `viewing.service.spec.ts` (13 tests); 25/25 passing; TypeScript clean build.
+
+- **Sprint 02 Enhanced — Identity, Auth, RBAC & KYC (addendum)** (2026-03-05)
+  - **6 new RBAC roles**: `valuer`, `developer`, `mortgage_broker`, `quantity_surveyor`, `brokerage_admin`, `bank_officer` — seeded into `identity.roles` with display names and granular permissions via `IdentityBootstrapService`.
+  - **Role exclusion enforcement** — `identity.role_exclusions` table + `ROLE_EXCLUSION_PAIRS` constant prevents conflicting role combinations (e.g., `platform_admin` vs `agent`/`contractor`). Applied at API layer in `selfAddRole()`.
+  - **Self-service role management** (`users.controller.ts`, `users.service.ts`):
+    - `GET  /api/v1/users/me/roles` — list user's current roles.
+    - `POST /api/v1/users/me/roles` — add a role with exclusion checking; blocks self-assigning `admin`.
+  - **Professional Licences module** (`src/identity/professional-licences/`):
+    - `POST /api/v1/users/me/licences` — submit a new licence (types: `eaab_agent`, `conveyancer`, `inspector`, `valuer`, `quantity_surveyor`, `mortgage_broker`).
+    - `GET  /api/v1/users/me/licences` — list own licences.
+    - `GET  /api/v1/admin/licences` — admin: list all licences (filterable by status).
+    - `PATCH /api/v1/admin/licences/:id/verify` — admin: approve or reject a licence.
+    - `GET  /api/v1/admin/licences/expiring?days=90` — admin: licences expiring within N days.
+    - `GET  /api/v1/admin/licences/user/:userId` — admin: licences for a specific user.
+  - **Session & Device Management** (`src/identity/sessions/`):
+    - `identity.user_sessions` table — stores device fingerprint, name, IP, country, last-active, expiry.
+    - `GET    /api/v1/users/me/sessions` — list non-expired, non-revoked sessions.
+    - `DELETE /api/v1/users/me/sessions/:id` — revoke a specific session.
+    - `DELETE /api/v1/users/me/sessions` — revoke all other sessions (keeps current).
+  - **Enhanced MFA** (`src/identity/mfa/`):
+    - `identity.mfa_configs` table — TOTP secret (AES-256-GCM encrypted), FIDO2 credentials (JSONB), backup codes (bcrypt-hashed), SMS flag.
+    - Native RFC 6238 TOTP — implemented via Node.js `crypto` (no external library); ±30 s tolerance window.
+    - `GET  /api/v1/mfa/status` — current MFA configuration.
+    - `POST /api/v1/mfa/totp/setup` — generate secret + `otpauth://` URI for QR code.
+    - `POST /api/v1/mfa/totp/verify` — verify token and enable TOTP.
+    - `DELETE /api/v1/mfa/totp` — disable TOTP.
+    - `POST /api/v1/mfa/backup-codes/generate` — regenerate 10 backup codes.
+    - `PUT  /api/v1/mfa/channels` — toggle SMS channel.
+    - `POST /api/v1/mfa/fido2/credentials` — register a FIDO2/WebAuthn credential.
+    - `DELETE /api/v1/mfa/fido2/credentials/:credentialId` — remove a credential.
+  - **Agent CRM Foundation** (`src/identity/agent-crm/`):
+    - `identity.leads` + `identity.lead_activities` tables.
+    - `GET  /api/v1/agent/dashboard` — total leads, by-status breakdown, activities this week.
+    - `POST /api/v1/agent/leads` — create lead manually.
+    - `GET  /api/v1/agent/leads?status=&page=&limit=` — paginated lead pipeline.
+    - `PATCH /api/v1/agent/leads/:id/status` — FSM status transitions (enforced valid paths).
+    - `POST /api/v1/agent/leads/:id/activities` — log call, email, viewing, note.
+    - `GET  /api/v1/agent/leads/:id/activities` — activity history for a lead.
+  - **Notification Preferences** (`src/identity/notification-preferences/`):
+    - `identity.notification_preferences` table — email, SMS, push, WhatsApp toggles + per-topic JSONB.
+    - `GET /api/v1/users/me/notification-preferences` — returns defaults if not yet set.
+    - `PUT /api/v1/users/me/notification-preferences` — upsert with deep merge on `topics`.
+  - **Enhanced KYC biometric fields** — `identity.kyc_verifications` extended with 9 new columns: `liveness_check_passed`, `liveness_score`, `face_match_score`, `biometric_provider`, `biometric_reference`, `risk_level`, `pep_check_passed`, `sanctions_check_passed`, `aml_check_passed`.
+  - **Commission split** — `identity.company_members.commission_split_pct DECIMAL(5,2)` added for agent–brokerage commission configuration.
+  - **DB migration** — `202603050013_sprint02_enhanced` applies all DDL above.
+  - **Organisation accounts** — covered by existing `identity.companies` table (no separate `organisations` table needed; `category` field maps to org type). `commission_split_pct` added to `company_members`.
+
 - **Invitation acceptance flow — complete role & company enrolment** (2026-03-04)
   - **Backend — `apps/api/src/identity/companies/company-invitations.service.ts`**
     - `registerAndAccept` (new user path): new users now receive **both** `buyer_seller` (system default role) and the company-specific invited role in `identity.user_roles`, plus automatic enrolment in the Self system company — exactly matching the normal registration path. Previously only the invited role was assigned and the Self company membership was never created.

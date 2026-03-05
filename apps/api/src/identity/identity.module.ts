@@ -29,6 +29,24 @@ import { OrphanedTasksService } from './companies/orphaned-tasks.service';
 import { CompanyContextGuard } from './companies/guards/company-context.guard';
 import { CompanyAdminGuard } from './companies/guards/company-admin.guard';
 import { CompanyPermissionGuard } from './companies/guards/company-permission.guard';
+// Sprint 02 Enhanced: Professional Licences
+import {
+  ProfessionalLicencesController,
+  AdminProfessionalLicencesController,
+} from './professional-licences/professional-licences.controller';
+import { ProfessionalLicencesService } from './professional-licences/professional-licences.service';
+// Sprint 02 Enhanced: Sessions
+import { SessionsController } from './sessions/sessions.controller';
+import { SessionsService } from './sessions/sessions.service';
+// Sprint 02 Enhanced: MFA
+import { MfaConfigController } from './mfa/mfa-config.controller';
+import { MfaConfigService } from './mfa/mfa-config.service';
+// Sprint 02 Enhanced: Agent CRM
+import { AgentCrmController } from './agent-crm/agent-crm.controller';
+import { AgentCrmService } from './agent-crm/agent-crm.service';
+// Sprint 02 Enhanced: Notification Preferences
+import { NotificationPreferencesController } from './notification-preferences/notification-preferences.controller';
+import { NotificationPreferencesService } from './notification-preferences/notification-preferences.service';
 
 @Module({
   imports: [
@@ -55,6 +73,13 @@ import { CompanyPermissionGuard } from './companies/guards/company-permission.gu
     CompaniesController,
     OrphanedTasksController,
     InvitationsController,
+    // Sprint 02 Enhanced
+    ProfessionalLicencesController,
+    AdminProfessionalLicencesController,
+    SessionsController,
+    MfaConfigController,
+    AgentCrmController,
+    NotificationPreferencesController,
   ],
   providers: [
     AuthService,
@@ -77,6 +102,12 @@ import { CompanyPermissionGuard } from './companies/guards/company-permission.gu
     CompanyContextGuard,
     CompanyAdminGuard,
     CompanyPermissionGuard,
+    // Sprint 02 Enhanced
+    ProfessionalLicencesService,
+    SessionsService,
+    MfaConfigService,
+    AgentCrmService,
+    NotificationPreferencesService,
   ],
   exports: [
     CompanyContextGuard,

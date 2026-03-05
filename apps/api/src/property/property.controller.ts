@@ -18,6 +18,8 @@ import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { PropertyService } from './property.service';
+import { ComparisonService } from './comparison.service';
+import { SellerDashboardService } from './seller-dashboard.service';
 import {
   CreatePropertyDto,
   UpdatePropertyDto,
@@ -41,7 +43,24 @@ type PublicRequest = {
 
 @Controller('properties')
 export class PropertyController {
-  constructor(private readonly propertyService: PropertyService) {}
+  constructor(
+    private readonly propertyService: PropertyService,
+    private readonly comparisonService: ComparisonService,
+  ) {}
+
+  /**
+   * GET /api/v1/properties/compare?ids=uuid1,uuid2,uuid3
+   * Compare up to 4 properties side-by-side. [public]
+   * Must appear BEFORE @Get(':id') to avoid UUID route interception.
+   */
+  @Get('compare')
+  async compare(@Query('ids') ids: string) {
+    const idList = (ids ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return this.comparisonService.compare(idList);
+  }
 
   /**
    * POST /api/v1/properties
@@ -306,5 +325,96 @@ export class AgentDashboardController {
     @Query('status') status?: string,
   ) {
     return this.propertyService.getMyListings(req.user.sub, status);
+  }
+
+  /**
+   * GET /api/v1/agent/dashboard/summary
+   * Enhanced summary: listing counts, mandates, viewings, pipeline value.
+   */
+  @Get('dashboard/summary')
+  async getDashboardSummary(@Request() req: AuthRequest) {
+    return this.propertyService.getAgentDashboardSummary(req.user.sub);
+  }
+
+  /**
+   * GET /api/v1/agent/listings/performance
+   * Per-listing views, saves, enquiries, days on market.
+   */
+  @Get('listings/performance')
+  async getListingsPerformance(@Request() req: AuthRequest) {
+    return this.propertyService.getAgentListingsPerformance(req.user.sub);
+  }
+
+  /**
+   * GET /api/v1/agent/listings/activity-feed
+   * Recent audit activity across all agent listings.
+   */
+  @Get('listings/activity-feed')
+  async getActivityFeed(@Request() req: AuthRequest) {
+    return this.propertyService.getAgentActivityFeed(req.user.sub);
+  }
+
+  /**
+   * GET /api/v1/agent/commission-pipeline
+   * Expected commission from active mandates and in-progress deals.
+   */
+  @Get('commission-pipeline')
+  async getCommissionPipeline(@Request() req: AuthRequest) {
+    return this.propertyService.getAgentCommissionPipeline(req.user.sub);
+  }
+}
+
+/**
+ * Seller-facing dashboard: property performance and buyer activity for sellers.
+ */
+@Controller('seller')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('buyer_seller', 'investor', 'admin')
+export class SellerDashboardController {
+  constructor(private readonly sellerService: SellerDashboardService) {}
+
+  /**
+   * GET /api/v1/seller/properties
+   * All properties owned by this seller with activity summarised.
+   */
+  @Get('properties')
+  async getProperties(@Request() req: AuthRequest) {
+    return this.sellerService.getSellerProperties(req.user.sub);
+  }
+
+  /**
+   * GET /api/v1/seller/properties/:id/activity
+   * Full audit timeline for a single property.
+   */
+  @Get('properties/:id/activity')
+  async getActivity(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.sellerService.getSellerPropertyActivity(req.user.sub, id);
+  }
+
+  /**
+   * GET /api/v1/seller/properties/:id/viewings
+   * All viewings for a property owned by this seller.
+   */
+  @Get('properties/:id/viewings')
+  async getViewings(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.sellerService.getSellerPropertyViewings(req.user.sub, id);
+  }
+
+  /**
+   * GET /api/v1/seller/properties/:id/offers
+   * Sales-stage progression (offers/deals) for a property.
+   */
+  @Get('properties/:id/offers')
+  async getOffers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.sellerService.getSellerPropertyOffers(req.user.sub, id);
   }
 }

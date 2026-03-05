@@ -79,6 +79,11 @@ A **financial-grade ledger platform** combining:
 | 10 | AI Engine | LLM, RAG, legal compliance, document AI |
 | 11 | AI Design | Voice/text → floor plans → BOQ |
 | 12 | Lifecycle Management | Warranty, maintenance, rental |
+| 13 | Valuation & Mandate | Licensed valuers, formal valuations, CMA, mandate enforcement |
+| 14 | Mortgage & Financing | Bond applications, affordability calculator, multi-bank submission |
+| 15 | Property Development | Off-plan sales, developer unit mix, snagging, municipality approvals |
+| 16 | Rental Lifecycle | Full tenancy management, AI dynamic pricing, lease AI, IoT maintenance |
+| 17 | Market Intelligence | Price indices, AVM, comparable sales engine, NL-to-SQL analytics |
 
 ---
 
@@ -95,6 +100,14 @@ A **financial-grade ledger platform** combining:
 | Inspector | Government & independent inspections |
 | Admin | Platform administration |
 | Truck Operator | Logistics & delivery |
+| Valuer | Licensed property valuations, CMA reports (SACPVP registered) |
+| Developer | Off-plan property development, unit mix, municipality approvals |
+| Mortgage Broker | Bond originator, multi-bank application submission (FSP licensed) |
+| Quantity Surveyor | BOQ, cost estimation, milestone certification for off-plan payment |
+| Bank Officer | Review and process bond applications within bank's portal |
+| Landlord | Create rental listings, screen tenants, manage lease portfolio |
+| Tenant | Apply, sign lease, pay rent, log maintenance requests |
+| Brokerage Admin | Manage agents within an estate agency organisation account |
 
 ---
 

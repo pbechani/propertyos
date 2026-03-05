@@ -13,6 +13,7 @@ import { NotificationService } from '../notification.service';
 import { RedisService } from '../../cache';
 import { PrismaService } from '../../database';
 import { OAuthVerificationService } from './oauth-verification.service';
+import { SessionsService } from '../sessions/sessions.service';
 
 import * as bcrypt from 'bcrypt';
 
@@ -103,6 +104,10 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockSessions = {
+    create: jest.fn().mockResolvedValue(undefined),
+  };
+
   const requestCtx = { ip: '127.0.0.1', userAgent: 'jest' };
 
   let module: TestingModule;
@@ -119,6 +124,7 @@ describe('AuthService', () => {
         { provide: AuditService, useValue: mockAudit },
         { provide: NotificationService, useValue: mockNotification },
         { provide: OAuthVerificationService, useValue: mockOAuthVerification },
+        { provide: SessionsService, useValue: mockSessions },
       ],
     }).compile();
 

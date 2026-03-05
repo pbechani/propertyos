@@ -139,6 +139,16 @@ model IdentityKycVerification {
   reviewedAt              DateTime? @map("reviewed_at") @db.Timestamptz(6)
   submittedAt             DateTime  @default(now()) @map("submitted_at") @db.Timestamptz(6)
   createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Sprint 02 Enhanced — biometric & AML fields
+  livenessCheckPassed     Boolean?  @map("liveness_check_passed")
+  livenessScore           Decimal?  @map("liveness_score") @db.Decimal(5, 4)
+  faceMatchScore          Decimal?  @map("face_match_score") @db.Decimal(5, 4)
+  biometricProvider       String?   @map("biometric_provider") @db.VarChar(50)
+  biometricReference      String?   @map("biometric_reference") @db.VarChar(255)
+  riskLevel               String?   @map("risk_level") @db.VarChar(20)
+  pepCheckPassed          Boolean?  @map("pep_check_passed")
+  sanctionsCheckPassed    Boolean?  @map("sanctions_check_passed")
+  amlCheckPassed          Boolean?  @map("aml_check_passed")
 
   @@index([userId], name: "idx_kyc_user")
   @@index([status, submittedAt], name: "idx_kyc_status_submitted")
@@ -254,12 +264,13 @@ model CompanyMember {
   isAdmin     Boolean   @default(false) @map("is_admin")
   status      String    @default("active") @db.VarChar(30)
   permissions Json      @default("[]") @db.JsonB
-  invitedBy   String?   @map("invited_by") @db.Uuid
-  joinedAt    DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
-  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
-  revokedBy   String?   @map("revoked_by") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  invitedBy          String?   @map("invited_by") @db.Uuid
+  joinedAt           DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  revokedAt          DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedBy          String?   @map("revoked_by") @db.Uuid
+  commissionSplitPct Decimal?  @map("commission_split_pct") @db.Decimal(5, 2)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -321,6 +332,129 @@ model CompanyOrphanedTask {
 }
 
 // ============================================
+// IDENTITY SCHEMA - Sprint 02 Enhanced Models
+// ============================================
+
+model IdentityRoleExclusion {
+  roleAId String  @map("role_a_id") @db.Uuid
+  roleBId String  @map("role_b_id") @db.Uuid
+  reason  String? @db.Text
+
+  @@id([roleAId, roleBId])
+  @@schema("identity")
+  @@map("role_exclusions")
+}
+
+model IdentityProfessionalLicence {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  licenceType        String    @map("licence_type") @db.VarChar(50)
+  licenceNumber      String    @map("licence_number") @db.VarChar(100)
+  issuingBody        String    @map("issuing_body") @db.VarChar(255)
+  issueDate          DateTime? @map("issue_date") @db.Date
+  expiryDate         DateTime? @map("expiry_date") @db.Date
+  licenceDocumentUrl String?   @map("licence_document_url") @db.Text
+  status             String    @default("unverified") @db.VarChar(20)
+  verifiedBy         String?   @map("verified_by") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(6)
+  autoCheckUrl       String?   @map("auto_check_url") @db.Text
+  autoCheckedAt      DateTime? @map("auto_checked_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([userId, licenceType], name: "idx_professional_licences_user")
+  @@index([status], name: "idx_professional_licences_status")
+  @@index([expiryDate], name: "idx_professional_licences_expiry")
+  @@schema("identity")
+  @@map("professional_licences")
+}
+
+model IdentityUserSession {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  sessionTokenHash  String    @unique @map("session_token_hash") @db.VarChar(255)
+  deviceFingerprint String?   @map("device_fingerprint") @db.VarChar(255)
+  deviceName        String?   @map("device_name") @db.VarChar(100)
+  ipAddress         String?   @map("ip_address") @db.Inet
+  countryCode       String?   @map("country_code") @db.Char(2)
+  lastActiveAt      DateTime  @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId, expiresAt], name: "idx_user_sessions_user_expires")
+  @@schema("identity")
+  @@map("user_sessions")
+}
+
+model IdentityMfaConfig {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String   @unique @map("user_id") @db.Uuid
+  totpSecretEncrypted String?  @map("totp_secret_encrypted") @db.Text
+  totpEnabled         Boolean  @default(false) @map("totp_enabled")
+  smsEnabled          Boolean  @default(false) @map("sms_enabled")
+  fido2Enabled        Boolean  @default(false) @map("fido2_enabled")
+  fido2Credentials    Json     @default("[]") @map("fido2_credentials") @db.JsonB
+  backupCodesHash     Json     @default("[]") @map("backup_codes_hash") @db.JsonB
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@schema("identity")
+  @@map("mfa_configs")
+}
+
+model IdentityLead {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId            String   @map("agent_id") @db.Uuid
+  contactName        String   @map("contact_name") @db.VarChar(255)
+  contactEmail       String?  @map("contact_email") @db.VarChar(255)
+  contactPhone       String?  @map("contact_phone") @db.VarChar(30)
+  leadSource         String?  @map("lead_source") @db.VarChar(50)
+  buyerRequirements  Json?    @map("buyer_requirements") @db.JsonB
+  status             String   @default("new") @db.VarChar(20)
+  notes              String?  @db.Text
+  assignedPropertyId String?  @map("assigned_property_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  activities IdentityLeadActivity[]
+
+  @@index([agentId, status], name: "idx_leads_agent_status")
+  @@schema("identity")
+  @@map("leads")
+}
+
+model IdentityLeadActivity {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId       String    @map("lead_id") @db.Uuid
+  agentId      String    @map("agent_id") @db.Uuid
+  activityType String?   @map("activity_type") @db.VarChar(50)
+  notes        String?   @db.Text
+  scheduledAt  DateTime? @map("scheduled_at") @db.Timestamptz(6)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  lead IdentityLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId], name: "idx_lead_activities_lead")
+  @@schema("identity")
+  @@map("lead_activities")
+}
+
+model IdentityNotificationPreference {
+  userId          String   @id @map("user_id") @db.Uuid
+  emailEnabled    Boolean  @default(true) @map("email_enabled")
+  smsEnabled      Boolean  @default(true) @map("sms_enabled")
+  pushEnabled     Boolean  @default(true) @map("push_enabled")
+  whatsappEnabled Boolean  @default(false) @map("whatsapp_enabled")
+  topics          Json     @default("{}") @db.JsonB
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@schema("identity")
+  @@map("notification_preferences")
+}
+
+// ============================================
 // PROPERTY SCHEMA - Listings, Ownership
 // ============================================
 
@@ -347,6 +481,22 @@ model Property {
   verifiedBy         String?   @map("verified_by") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  // Sprint 03 Enhanced — extended attributes
+  propertySubtype    String?   @map("property_subtype") @db.VarChar(50)
+  erfSizeSqm         Decimal?  @map("erf_size_sqm") @db.Decimal(10, 2)
+  floorAreaSqm       Decimal?  @map("floor_area_sqm") @db.Decimal(10, 2)
+  garages            Int?      @default(0) @db.SmallInt
+  carports           Int?      @default(0) @db.SmallInt
+  monthlyLevy        Decimal?  @map("monthly_levy") @db.Decimal(10, 2)
+  monthlyRates       Decimal?  @map("monthly_rates") @db.Decimal(10, 2)
+  monthlyUtilities   Decimal?  @map("monthly_utilities") @db.Decimal(10, 2)
+  titleType          String?   @map("title_type") @db.VarChar(30)
+  zoning             String?   @db.VarChar(50)
+  bodyCorporateName  String?   @map("body_corporate_name") @db.VarChar(255)
+  petPolicy          String?   @map("pet_policy") @db.VarChar(20)
+  occupationalDate   DateTime? @map("occupational_date") @db.Date
+  sellerApprovedAt   DateTime? @map("seller_approved_at") @db.Timestamptz(6)
+  listingReference   String?   @unique @map("listing_reference") @db.VarChar(30)
 
   @@index([agentId], name: "idx_properties_agent")
   @@index([status], name: "idx_properties_status")
@@ -500,6 +650,212 @@ model PropertyAuditLog {
   @@index([companyId], name: "idx_property_audit_company")
   @@schema("property")
   @@map("audit_logs")
+}
+
+// ============================================
+// PROPERTY SCHEMA - Sprint 03 Enhanced Models
+// ============================================
+
+model ListingStateTransition {
+  id            String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fromState     String  @map("from_state") @db.VarChar(30)
+  toState       String  @map("to_state") @db.VarChar(30)
+  allowedRoles  Json    @default("[]") @map("allowed_roles") @db.JsonB
+  requiresEvent String? @map("requires_event") @db.VarChar(100)
+
+  @@unique([fromState, toState], name: "uq_state_transition")
+  @@schema("property")
+  @@map("listing_state_transitions")
+}
+
+model PropertyMandate {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId             String    @map("property_id") @db.Uuid
+  agentId                String    @map("agent_id") @db.Uuid
+  brokerageId            String?   @map("brokerage_id") @db.Uuid
+  mandateType            String    @map("mandate_type") @db.VarChar(20)
+  commissionRate         Decimal   @map("commission_rate") @db.Decimal(5, 2)
+  commissionVatInclusive Boolean   @default(false) @map("commission_vat_inclusive")
+  startDate              DateTime  @map("start_date") @db.Date
+  endDate                DateTime  @map("end_date") @db.Date
+  autoRenewal            Boolean   @default(false) @map("auto_renewal")
+  termsDocumentUrl       String?   @map("terms_document_url") @db.Text
+  signedBySellerAt       DateTime? @map("signed_by_seller_at") @db.Timestamptz(6)
+  signedByAgentAt        DateTime? @map("signed_by_agent_at") @db.Timestamptz(6)
+  status                 String    @default("pending_signature") @db.VarChar(20)
+  cancellationReason     String?   @map("cancellation_reason") @db.Text
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([propertyId, status], name: "idx_mandates_property_status")
+  @@index([agentId, status], name: "idx_mandates_agent_status")
+  @@schema("property")
+  @@map("mandates")
+}
+
+model PropertyValuation {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId         String   @map("property_id") @db.Uuid
+  valuationType      String   @map("valuation_type") @db.VarChar(20)
+  valuerId           String?  @map("valuer_id") @db.Uuid
+  estimatedValue     Decimal  @map("estimated_value") @db.Decimal(18, 2)
+  marketLow          Decimal? @map("market_low") @db.Decimal(18, 2)
+  marketHigh         Decimal? @map("market_high") @db.Decimal(18, 2)
+  currency           String   @default("ZAR") @db.Char(3)
+  valuationDate      DateTime @map("valuation_date") @db.Date
+  methodology        String?  @db.Text
+  comparables        Json     @default("[]") @db.JsonB
+  reportDocumentUrl  String?  @map("report_document_url") @db.Text
+  isBankAccepted     Boolean  @default(false) @map("is_bank_accepted")
+  requestingPurpose  String?  @map("requesting_purpose") @db.VarChar(50)
+  notes              String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([propertyId, valuationType], name: "idx_valuations_property_type")
+  @@schema("property")
+  @@map("valuations")
+}
+
+model ComparableSale {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  address         String   @db.Text
+  city            String?  @db.VarChar(100)
+  region          String?  @db.VarChar(100)
+  country         String   @db.Char(2)
+  propertyType    String?  @map("property_type") @db.VarChar(30)
+  propertySubtype String?  @map("property_subtype") @db.VarChar(50)
+  bedrooms        Int?     @db.SmallInt
+  bathrooms       Int?     @db.SmallInt
+  floorAreaSqm    Decimal? @map("floor_area_sqm") @db.Decimal(10, 2)
+  erfSizeSqm      Decimal? @map("erf_size_sqm") @db.Decimal(10, 2)
+  salePrice       Decimal  @map("sale_price") @db.Decimal(18, 2)
+  currency        String   @db.Char(3)
+  saleDate        DateTime @map("sale_date") @db.Date
+  daysOnMarket    Int?     @map("days_on_market") @db.SmallInt
+  lat             Decimal? @db.Decimal(9, 6)
+  lng             Decimal? @db.Decimal(9, 6)
+  dataSource      String?  @map("data_source") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([country, region, saleDate], name: "idx_comparable_sales_location")
+  @@schema("property")
+  @@map("comparable_sales")
+}
+
+model PropertyViewing {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId      String    @map("property_id") @db.Uuid
+  agentId         String    @map("agent_id") @db.Uuid
+  buyerId         String    @map("buyer_id") @db.Uuid
+  viewingType     String    @map("viewing_type") @db.VarChar(20)
+  scheduledAt     DateTime  @map("scheduled_at") @db.Timestamptz(6)
+  durationMinutes Int       @default(30) @map("duration_minutes") @db.SmallInt
+  status          String    @default("requested") @db.VarChar(20)
+  virtualLink     String?   @map("virtual_link") @db.Text
+  agentNotes      String?   @map("agent_notes") @db.Text
+  buyerFeedback   Json?     @map("buyer_feedback") @db.JsonB
+  noShowReason    String?   @map("no_show_reason") @db.Text
+  confirmedAt     DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([propertyId, scheduledAt], name: "idx_viewings_property_scheduled")
+  @@index([agentId, scheduledAt], name: "idx_viewings_agent_scheduled")
+  @@index([buyerId], name: "idx_viewings_buyer")
+  @@schema("property")
+  @@map("viewings")
+}
+
+model OpenHouse {
+  id            String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId    String                    @map("property_id") @db.Uuid
+  agentId       String                    @map("agent_id") @db.Uuid
+  scheduledAt   DateTime                  @map("scheduled_at") @db.Timestamptz(6)
+  endAt         DateTime                  @map("end_at") @db.Timestamptz(6)
+  maxAttendees  Int?                      @map("max_attendees") @db.SmallInt
+  description   String?                   @db.Text
+  status        String                    @default("scheduled") @db.VarChar(20)
+  createdAt     DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  registrations OpenHouseRegistration[]
+
+  @@index([propertyId, scheduledAt], name: "idx_open_houses_property")
+  @@schema("property")
+  @@map("open_houses")
+}
+
+model OpenHouseRegistration {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  openHouseId  String    @map("open_house_id") @db.Uuid
+  buyerId      String    @map("buyer_id") @db.Uuid
+  registeredAt DateTime  @default(now()) @map("registered_at") @db.Timestamptz(6)
+  attended     Boolean?
+  feedback     Json?     @db.JsonB
+
+  openHouse    OpenHouse @relation(fields: [openHouseId], references: [id], onDelete: Cascade)
+
+  @@unique([openHouseId, buyerId], name: "uq_open_house_registration")
+  @@index([openHouseId], name: "idx_open_house_regs_oh")
+  @@schema("property")
+  @@map("open_house_registrations")
+}
+
+model NeighbourhoodStat {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  suburb               String    @db.VarChar(100)
+  city                 String    @db.VarChar(100)
+  region               String    @db.VarChar(100)
+  country              String    @db.Char(2)
+  avgPricePerSqm       Decimal?  @map("avg_price_per_sqm") @db.Decimal(10, 2)
+  medianSalePrice      Decimal?  @map("median_sale_price") @db.Decimal(18, 2)
+  avgDaysOnMarket      Int?      @map("avg_days_on_market") @db.SmallInt
+  yoyPriceChangePct    Decimal?  @map("yoy_price_change_pct") @db.Decimal(5, 2)
+  demandScore          Int?      @map("demand_score") @db.SmallInt
+  schoolRating         Int?      @map("school_rating") @db.SmallInt
+  infrastructureScore  Int?      @map("infrastructure_score") @db.SmallInt
+  crimeIndex           Int?      @map("crime_index") @db.SmallInt
+  walkabilityScore     Int?      @map("walkability_score") @db.SmallInt
+  lastCalculatedAt     DateTime? @map("last_calculated_at") @db.Timestamptz(6)
+  dataSources          Json      @default("[]") @map("data_sources") @db.JsonB
+
+  @@unique([suburb, city, country], name: "uq_neighbourhood_stats")
+  @@index([country, region, city], name: "idx_neighbourhood_stats_location")
+  @@schema("property")
+  @@map("neighbourhood_stats")
+}
+
+model SyndicationConfig {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  portalName           String   @map("portal_name") @db.VarChar(100)
+  portalApiEndpoint    String?  @map("portal_api_endpoint") @db.Text
+  authType             String?  @map("auth_type") @db.VarChar(20)
+  credentialsSecretRef String?  @map("credentials_secret_ref") @db.Text
+  supportedCountries   Json     @default("[]") @map("supported_countries") @db.JsonB
+  isActive             Boolean  @default(true) @map("is_active")
+  lastSyncAt           DateTime? @map("last_sync_at") @db.Timestamptz(6)
+
+  records              SyndicationRecord[]
+
+  @@schema("property")
+  @@map("syndication_configs")
+}
+
+model SyndicationRecord {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId         String    @map("property_id") @db.Uuid
+  portalId           String    @map("portal_id") @db.Uuid
+  externalListingId  String?   @map("external_listing_id") @db.VarChar(255)
+  externalUrl        String?   @map("external_url") @db.Text
+  syncStatus         String    @default("pending") @map("sync_status") @db.VarChar(20)
+  lastSyncedAt       DateTime? @map("last_synced_at") @db.Timestamptz(6)
+  errorMessage       String?   @map("error_message") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  portal             SyndicationConfig @relation(fields: [portalId], references: [id])
+
+  @@unique([propertyId, portalId], name: "uq_syndication_record")
+  @@index([propertyId, syncStatus], name: "idx_syndication_records_property")
+  @@schema("property")
+  @@map("syndication_records")
 }
 
 // ============================================
