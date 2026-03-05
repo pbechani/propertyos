@@ -896,10 +896,13 @@ export default function PropertyDetailEnhanced() {
           createdAt: listing.created_at,
           updatedAt: listing.updated_at,
         }));
+        // Normalize null listing_type to 'for_sale' — legacy records without an
+        // explicit type default to for-sale and should be treated as equivalent.
+        const normaliseListingType = (t: string | null | undefined) => t ?? 'for_sale';
         const similar = relatedListings
           .filter((item) => item.id !== listing.id)
           .filter((item) => item.status === 'active')
-          .filter((item) => item.listing_type === listing.listing_type)
+          .filter((item) => normaliseListingType(item.listing_type) === normaliseListingType(listing.listing_type))
           .map((item) => ({
             listing: item,
             score: computeSimilarityScore(listing, item),
