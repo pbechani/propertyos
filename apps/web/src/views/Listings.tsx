@@ -314,16 +314,16 @@ function mapPropertyToListingCard(
   );
 
   const agentCompanyLogoUrl = pickFirstString(
+    looseProperty.company_logo_url,
     looseProperty.agent?.companyLogoUrl,
     looseProperty.agent?.company_logo_url,
     looseProperty.agent_company_logo_url,
-    looseProperty.company_logo_url,
   );
 
   const agentCompany = pickFirstString(
+    looseProperty.company_name,
     looseProperty.agent?.companyName,
     looseProperty.agent?.company_name,
-    looseProperty.company_name,
   ) ?? "PRIBEC Agent Network";
 
   return {
@@ -345,7 +345,9 @@ function mapPropertyToListingCard(
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
-    isPrivateListing: agentProfile ? !agentProfile.primaryCompanySlug : false,
+    // company_is_system=true  → created under the Self system company (private individual)
+    // company_is_system=null  → legacy record with no company_id (also private — see PropertyRecord comment)
+    isPrivateListing: property.company_is_system !== false,
     image: primaryImage || DEFAULT_PROPERTY_IMAGE,
     createdAt: property.created_at,
     latitude: Number.isFinite(latitude) ? latitude : null,

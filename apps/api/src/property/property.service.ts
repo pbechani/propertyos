@@ -17,6 +17,7 @@ import {
   DEFAULT_RADIUS_KM,
   MAX_MEDIA_PER_PROPERTY,
 } from './property.constants';
+import { SELF_COMPANY_SLUG } from '../identity/identity.constants';
 
 export type PropertyRecord = {
   id: string;
@@ -38,6 +39,10 @@ export type PropertyRecord = {
   company_id: string | null;
   /** Whether the listing's company is a system (Self) company. Null means no company was set (also treated as private). */
   company_is_system: boolean | null;
+  /** Display name of the company the listing was created under. */
+  company_name: string | null;
+  /** Logo URL of the company the listing was created under. */
+  company_logo_url: string | null;
   verification_status: string;
   verified_at: Date | null;
   created_at: Date;
@@ -102,6 +107,10 @@ export type AgentProfile = {
   primaryCity: string;
   /** Slug of the agent's primary non-system company, or null when they only belong to "Self". */
   primaryCompanySlug: string | null;
+  /** Display name of the agent's primary non-system company. */
+  primaryCompanyName: string | null;
+  /** Logo URL of the agent's primary non-system company. */
+  primaryCompanyLogoUrl: string | null;
   createdAt: Date | null;
   listings: AgentProfileListing[];
 };
@@ -139,6 +148,25 @@ export class PropertyService {
   ): Promise<PropertyRecord> {
     const normalized = this.normalizeCreateDto(dto);
 
+    // Every listing must be attached to a company so that company_is_system is
+    // reliably set. When the caller has no explicit company context (JWT carries
+    // null active_company_id) fall back to the user's own Self system company so
+    // the listing is correctly flagged as privately listed.
+    let resolvedCompanyId = companyId ?? null;
+    if (!resolvedCompanyId) {
+      const selfRows = await this.prisma.$queryRaw<Array<{ company_id: string }>>`
+        SELECT cm.company_id
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = ${agentId}::uuid
+          AND c.is_system = true
+          AND c.slug = ${SELF_COMPANY_SLUG}
+          AND cm.status = 'active'
+        LIMIT 1
+      `;
+      resolvedCompanyId = selfRows[0]?.company_id ?? null;
+    }
+
     const property = await this.prisma.$queryRaw<PropertyRecord[]>`
       INSERT INTO property.properties (
         title, description, property_type, listing_type, price, currency,
@@ -157,7 +185,7 @@ export class PropertyService {
         ${JSON.stringify(normalized.features ?? [])}::jsonb,
         ${agentId}::uuid,
         ${agentId}::uuid,
-        ${companyId ?? null}::uuid
+        ${resolvedCompanyId}::uuid
       )
       RETURNING *
     `;
@@ -171,7 +199,7 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
-      companyId,
+      companyId: resolvedCompanyId,
       action: 'property.created',
       resourceType: 'property',
       resourceId: created.id,
@@ -193,7 +221,7 @@ export class PropertyService {
     },
   ): Promise<PropertyWithLocation> {
     const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
-      SELECT p.*, c.is_system AS company_is_system
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       WHERE p.id = ${id}::uuid LIMIT 1
@@ -368,7 +396,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
@@ -410,7 +438,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT DISTINCT p.*, c.is_system AS company_is_system
+      SELECT DISTINCT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
@@ -545,7 +573,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
@@ -736,6 +764,8 @@ export class PropertyService {
         verified_listings: string;
         primary_city: string | null;
         primary_company_slug: string | null;
+        primary_company_name: string | null;
+        primary_company_logo_url: string | null;
       }[]
     >(
       `
@@ -752,21 +782,25 @@ export class PropertyService {
         COUNT(*) FILTER (WHERE p.status = 'active')::text AS active_listings,
         COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings,
         MAX(loc.city) AS primary_city,
-        (
-          SELECT c.slug
-          FROM identity.company_members cm
-          JOIN identity.companies c ON c.id = cm.company_id
-          WHERE cm.user_id = u.id
-            AND c.is_system = false
-            AND cm.status = 'active'
-          ORDER BY c.name
-          LIMIT 1
-        ) AS primary_company_slug
+        primary_co.slug AS primary_company_slug,
+        primary_co.name AS primary_company_name,
+        primary_co.logo_url AS primary_company_logo_url
       FROM identity.users u
       LEFT JOIN property.properties p ON p.agent_id = u.id
       LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT c.slug, c.name, c.logo_url
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = u.id
+          AND c.is_system = false
+          AND cm.status = 'active'
+        ORDER BY c.name
+        LIMIT 1
+      ) AS primary_co ON true
       WHERE u.id = $1::uuid
-      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status, u.created_at
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status, u.created_at,
+               primary_co.slug, primary_co.name, primary_co.logo_url
       LIMIT 1
       `,
       agentId,
@@ -838,6 +872,8 @@ export class PropertyService {
       verifiedListings: parseInt(profile.verified_listings, 10) || 0,
       primaryCity: profile.primary_city ?? 'Location unavailable',
       primaryCompanySlug: profile.primary_company_slug ?? null,
+      primaryCompanyName: profile.primary_company_name ?? null,
+      primaryCompanyLogoUrl: profile.primary_company_logo_url ?? null,
       createdAt: profile.created_at ?? null,
       listings: listings.map((listing) => ({
         id: listing.id,

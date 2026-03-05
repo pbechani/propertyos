@@ -17,7 +17,7 @@ import { getAccessToken, getStoredUser } from "@/lib/auth-session";
 import { propertiesApi, usersApi, type AgentProfileResponse, type AuthUser, type PropertyListing } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
-const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop";
+
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 const SHOW_SIMILARITY_SCORE = process.env.NODE_ENV === 'development';
@@ -316,7 +316,7 @@ type PropertyDetailState = {
     title: string;
     verified: boolean;
     trustScore: number;
-    image: string;
+    image: string | null;
     companyName: string;
     companyLogoUrl: string | null;
   };
@@ -348,7 +348,7 @@ function getEmptyPropertyDetail(): PropertyDetailState {
       title: "",
       verified: false,
       trustScore: 0,
-      image: DEFAULT_AGENT_IMAGE,
+      image: null,
       companyName: "PRIBEC Agent Network",
       companyLogoUrl: null,
     },
@@ -806,20 +806,22 @@ export default function PropertyDetailEnhanced() {
 
             const companyName =
               pickFirstString(
-                looseProfile.companyName,
-                looseProfile.company_name,
+                looseListing.company_name,
                 looseListing.agent?.companyName,
                 looseListing.agent?.company_name,
-                looseListing.company_name,
+                profile.primaryCompanyName,
+                looseProfile.companyName,
+                looseProfile.company_name,
               ) ?? "PRIBEC Agent Network";
 
             const companyLogoUrl = pickFirstString(
-              looseProfile.companyLogoUrl,
-              looseProfile.company_logo_url,
+              looseListing.company_logo_url,
               looseListing.agent?.companyLogoUrl,
               looseListing.agent?.company_logo_url,
               looseListing.agent_company_logo_url,
-              looseListing.company_logo_url,
+              profile.primaryCompanyLogoUrl,
+              looseProfile.companyLogoUrl,
+              looseProfile.company_logo_url,
             );
 
             mappedAgent = {
@@ -828,7 +830,7 @@ export default function PropertyDetailEnhanced() {
               title: profile.primaryCity,
               verified: profile.status === "active",
               trustScore,
-              image: profile.avatarUrl || DEFAULT_AGENT_IMAGE,
+              image: profile.avatarUrl || null,
               companyName,
               companyLogoUrl,
             };
@@ -837,16 +839,16 @@ export default function PropertyDetailEnhanced() {
           } catch {
             const companyName =
               pickFirstString(
+                looseListing.company_name,
                 looseListing.agent?.companyName,
                 looseListing.agent?.company_name,
-                looseListing.company_name,
               ) ?? "PRIBEC Agent Network";
 
             const companyLogoUrl = pickFirstString(
+              looseListing.company_logo_url,
               looseListing.agent?.companyLogoUrl,
               looseListing.agent?.company_logo_url,
               looseListing.agent_company_logo_url,
-              looseListing.company_logo_url,
             );
 
             mappedAgent = {

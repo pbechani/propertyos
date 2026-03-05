@@ -674,6 +674,10 @@ export type PropertyListing = {
   verification_status: PropertyVerificationStatus;
   /** True = system (Self) company, false = real company, null/undefined = no company set. All non-false values mean privately listed. */
   company_is_system?: boolean | null;
+  /** Display name of the company the listing was created under. */
+  company_name?: string | null;
+  /** Logo URL of the company the listing was created under. */
+  company_logo_url?: string | null;
   created_at: string;
   updated_at: string;
   location?: {
@@ -715,6 +719,10 @@ export type AgentProfileResponse = {
   primaryCity: string;
   /** Slug of the agent's primary non-system company. Null means they only belong to the "Self" personal company. */
   primaryCompanySlug?: string | null;
+  /** Display name of the agent's primary non-system company. */
+  primaryCompanyName?: string | null;
+  /** Logo URL of the agent's primary non-system company. */
+  primaryCompanyLogoUrl?: string | null;
   /** UTC timestamp of when the agent's account was created. */
   createdAt?: string | null;
   listings: Array<{
@@ -1325,6 +1333,8 @@ export type InvitationPreview = {
 export type InviteAcceptResult = {
   success: boolean;
   company_id: string;
+  user: AuthUser | null;
+  tokens: AuthTokens;
 };
 
 export type InviteRegisterResult = {
@@ -1334,6 +1344,10 @@ export type InviteRegisterResult = {
 };
 
 export const invitationsApi = {
+  /** Public — check if an email already has an account (used to auto-route login vs register) */
+  checkEmail: (email: string) =>
+    apiRequest<{ exists: boolean }>(`/invitations/check-email?email=${encodeURIComponent(email)}`, { method: 'GET' }),
+
   /** Public — fetch invitation details before the user authenticates */
   preview: (token: string) =>
     apiRequest<InvitationPreview>(`/invitations/${token}`, { method: 'GET' }),

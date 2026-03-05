@@ -145,73 +145,94 @@ A financial-grade digital infrastructure for property buying, construction manag
 
 3. **Configure environment variables**
    ```bash
-   cp .env.example .env
-   # Edit .env with your local configuration
+   # API environment
+   cp apps/api/.env.example apps/api/.env
+   # Edit apps/api/.env — key variables: PORT=3001, DATABASE_URL, REDIS_URL, etc.
    ```
 
-4. **Generate local SSL certificates (optional)**
+4. **Generate local SSL certificates (optional — HTTPS only)**
    ```bash
-   # Install mkcert first if not already installed
    # macOS: brew install mkcert
-   # Linux: https://github.com/FiloSottile/mkcert#installation
-   
    ./scripts/generate-local-certs.sh
    ```
 
-5. **Start infrastructure services**
+5. **Start all infrastructure services (Docker)**
    ```bash
-   npm run docker:up
-   
-   # Wait for all services to be healthy (30-60 seconds)
-   # You can monitor logs with: npm run docker:logs
+   docker compose -f docker/docker-compose.yml up -d
+   # Wait 30–60 seconds for health checks to pass
    ```
 
-6. **Verify all services are healthy**
+6. **Run database migrations**
    ```bash
-   # Check PostgreSQL
-   docker exec -it pribec-postgres psql -U pribec -d pribec_dev -c "\dn"
-   
-   # Check Redis
-   docker exec -it pribec-redis redis-cli ping
-   
-   # Check RabbitMQ Management UI
-   open http://localhost:15672  # user: pribec, password: pribec_dev_password
-   
-   # Check MinIO Console
-   open http://localhost:9001  # user: pribec_access_key, password: pribec_secret_key
-   
-   # Check Kibana
-   open http://localhost:5601
-   
-   # Check Grafana
-   open http://localhost:3002  # user: admin, password: admin
-   
-   # Check Prometheus
-   open http://localhost:9090
+   npm run migrate --workspace=apps/api
    ```
 
-7. **Run database migrations**
+7. **Start the API (NestJS — watch mode)**
    ```bash
-   npm run db:migrate
+   cd apps/api && npm run dev
+   # Runs on http://localhost:3001
    ```
 
-8. **Start development servers**
+8. **Start the Web app (Next.js — in a separate terminal)**
    ```bash
-   # Start all apps (API + Web)
-   npm run dev
-   
-   # Or start individual apps
-   npm run dev --workspace=apps/api
-   npm run dev --workspace=apps/web
+   cd apps/web && npm run dev
+   # Runs on http://localhost:3000
    ```
 
-9. **Verify API is running**
+9. **Verify everything is running**
    ```bash
-   curl http://localhost:3001/api/v1/health
-   
-   # Check Swagger documentation
+   # API responds
+   curl http://localhost:3001/api/v1/auth/me
+
+   # Swagger docs
    open http://localhost:3001/api/docs
+
+   # Web app
+   open http://localhost:3000
    ```
+
+---
+
+### Running Services Reference
+
+#### Application Processes (started manually)
+
+| Process | Command | URL |
+|---------|---------|-----|
+| **NestJS API** | `cd apps/api && npm run dev` | http://localhost:3001 |
+| **Next.js Web** | `cd apps/web && npm run dev` | http://localhost:3000 |
+
+#### Docker Containers (started via `docker compose`)
+
+| Container | Description | Port(s) | Credentials |
+|-----------|-------------|---------|-------------|
+| `pribec-postgres` | PostgreSQL 15 + PostGIS | `5432` | user: `pribec` / pw: `pribec_dev_password` / db: `pribec_dev` |
+| `pribec-redis` | Redis 7 cache & session store | `6379` | — |
+| `pribec-rabbitmq` | RabbitMQ message broker | `5672` (AMQP), `15672` (UI) | user: `pribec` / pw: `pribec_dev_password` |
+| `pribec-minio` | MinIO S3-compatible object storage | `9000` (API), `9001` (Console) | access key: `pribec_access_key` / secret: `pribec_secret_key` |
+| `pribec-mailpit` | Local email catcher (SMTP + UI) | `1025` (SMTP), `8025` (UI) | — |
+| `pribec-vault` | HashiCorp Vault secrets management | `8200` | dev token: `pribec-dev-token` |
+| `pribec-elasticsearch` | Elasticsearch 8 log store | `9200` | — |
+| `pribec-kibana` | Kibana log visualisation | `5601` | — |
+| `pribec-filebeat` | Filebeat log shipper (Docker → ES) | — | — |
+| `pribec-prometheus` | Prometheus metrics scraper | `9090` | — |
+| `pribec-grafana` | Grafana metrics dashboards | `3002` | user: `admin` / pw: `admin` |
+| `pribec-postgres-exporter` | PostgreSQL metrics for Prometheus | `9187` | — |
+| `pribec-redis-exporter` | Redis metrics for Prometheus | `9121` | — |
+
+> **Note:** The `nginx` container (`pribec-nginx`) is optional and only starts when you pass `--profile https`. Run `./scripts/generate-local-certs.sh` first.
+
+#### Quick Health Check
+
+```bash
+# Check all container statuses at once
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Individual checks
+docker exec pribec-postgres psql -U pribec -d pribec_dev -c "SELECT 1"
+docker exec pribec-redis redis-cli ping
+curl -s http://localhost:9200/_cluster/health | python3 -m json.tool
+```
 
 ### Development Workflow
 
@@ -328,20 +349,29 @@ Troubleshooting:
 ### Docker Commands
 
 ```bash
-# Start all services
-npm run docker:up
+# Start all infrastructure services (detached)
+docker compose -f docker/docker-compose.yml up -d
 
 # Stop all services
-npm run docker:down
+docker compose -f docker/docker-compose.yml down
 
-# View logs
-npm run docker:logs
+# Stop services and remove volumes (full reset)
+docker compose -f docker/docker-compose.yml down -v
+
+# View logs for all services
+docker compose -f docker/docker-compose.yml logs -f
+
+# View logs for a specific service
+docker compose -f docker/docker-compose.yml logs -f postgres
 
 # Restart a specific service
-docker-compose -f docker/docker-compose.yml restart postgres
+docker compose -f docker/docker-compose.yml restart postgres
 
-# Run with HTTPS proxy
-docker-compose -f docker/docker-compose.yml --profile https up
+# Check container health status
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Start with optional HTTPS proxy (requires local certs)
+docker compose -f docker/docker-compose.yml --profile https up -d
 ```
 
 ---
