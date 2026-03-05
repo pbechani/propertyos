@@ -21,7 +21,6 @@ import {
 } from "@/lib/api-client";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
 
-const DEFAULT_AGENT_IMAGE = "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop";
 const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=300&h=200&fit=crop";
 
 function formatMoney(price: string, currency: string): string {
@@ -517,7 +516,7 @@ export default function AgentProfile() {
             <div className="shrink-0">
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-100 bg-blue-50 flex items-center justify-center text-3xl font-semibold text-blue-700">
                 <UserAvatarContent
-                  avatarUrl={agentProfile.avatarUrl || DEFAULT_AGENT_IMAGE}
+                  avatarUrl={agentProfile.avatarUrl}
                   initials={profileInitials}
                   alt={profileName}
                 />

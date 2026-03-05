@@ -5,6 +5,7 @@
 export const NO_NAVBAR_ROUTES = [
   '/login',
   '/company-context-select',
+  '/invitations',
 ] as const;
 
 export function isNoNavbarRoute(pathname: string): boolean {
@@ -24,6 +25,7 @@ export const AUTH_EXEMPT_ROUTES = [
   '/mfa-verify',
   '/auth-flow',
   '/session-expired',
+  '/invitations',
 ] as const;
 
 const AUTH_SHELL_ROUTE_PREFIXES = [
@@ -47,7 +49,6 @@ const AUTH_SHELL_ROUTE_PREFIXES = [
   '/escrow',
   '/fraud-report',
   '/inspection-verification',
-  '/invitations',
   '/kyc-upload',
   '/logistics-delivery-marketplace',
   '/profile-dashboard',

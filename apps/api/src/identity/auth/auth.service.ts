@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -70,7 +71,7 @@ export class AuthService {
 
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
-      throw new BadRequestException('Email already registered');
+      throw new ConflictException('Email already registered');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds);
@@ -90,6 +91,100 @@ export class AuthService {
 
     // Automatically enrol the new user in the Self company as a buyer
     await this.enrolInSelfCompany(user.id);
+
+    // Auto-accept any pending invitations for this email address.
+    // This handles the case where a user registers via the normal /register
+    // page instead of clicking the invitation link directly.
+    const pendingInvitations = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        company_id: string;
+        role: string;
+        is_admin: boolean;
+        permissions: unknown;
+        token_hash: string;
+      }>
+    >`
+      SELECT id, company_id, role, is_admin, permissions, token_hash
+      FROM identity.company_invitations
+      WHERE invited_email = LOWER(${dto.email})
+        AND status = 'pending'
+        AND expires_at > NOW()
+    `;
+
+    for (const inv of pendingInvitations) {
+      // Get role permissions if none were stored on the invitation
+      const perms =
+        inv.permissions && Array.isArray(inv.permissions) && inv.permissions.length > 0
+          ? (inv.permissions as Array<{ resource: string; action: string }>)
+          : await this.prisma.$queryRaw<Array<{ resource: string; action: string }>>`
+              SELECT p.resource, p.action
+              FROM identity.role_permissions rp
+              JOIN identity.permissions p ON p.id = rp.permission_id
+              JOIN identity.roles r ON r.id = rp.role_id
+              WHERE r.name = ${inv.role}
+            `;
+
+      // Add the user as a company member
+      const existing = await this.prisma.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status FROM identity.company_members
+        WHERE company_id = ${inv.company_id}::uuid AND user_id = ${user.id}::uuid
+        LIMIT 1
+      `;
+      if (existing[0]) {
+        if (existing[0].status !== 'active') {
+          await this.prisma.$executeRaw`
+            UPDATE identity.company_members
+            SET status = 'active', role = ${inv.role}, is_admin = ${inv.is_admin},
+                permissions = ${JSON.stringify(perms)}::jsonb,
+                revoked_at = NULL, revoked_by = NULL, joined_at = NOW(), updated_at = NOW()
+            WHERE id = ${existing[0].id}::uuid
+          `;
+        }
+      } else {
+        await this.prisma.$executeRaw`
+          INSERT INTO identity.company_members (company_id, user_id, role, is_admin, permissions, invited_by)
+          VALUES (${inv.company_id}::uuid, ${user.id}::uuid, ${inv.role}, ${inv.is_admin},
+                  ${JSON.stringify(perms)}::jsonb, ${user.id}::uuid)
+        `;
+      }
+
+      // Assign the invited role to the user's system profile
+      if (inv.role !== DEFAULT_ROLE) {
+        await this.usersService.assignRole(user.id, inv.role, user.id);
+      }
+
+      // Mark the invitation as accepted
+      await this.prisma.$executeRaw`
+        UPDATE identity.company_invitations
+        SET status = 'accepted', accepted_by = ${user.id}::uuid, accepted_at = NOW()
+        WHERE id = ${inv.id}::uuid
+      `;
+
+      await this.auditService.log({
+        eventId: 'company_invitation.accepted',
+        actorId: user.id,
+        actorRole: inv.role,
+        action: 'accept_invitation',
+        resourceType: 'company_member',
+        resourceId: inv.company_id,
+        payload: { company_id: inv.company_id, invitation_id: inv.id, via: 'auto_on_register' },
+        ipAddress: requestContext.ip,
+        userAgent: requestContext.userAgent ?? null,
+      });
+    }
+
+    // If there is exactly one pending invitation, issue the token with that
+    // company pre-selected so the user lands in the right context immediately.
+    const firstInvite = pendingInvitations[0];
+    const companyCtx =
+      firstInvite
+        ? {
+            active_company_id: firstInvite.company_id,
+            active_company_role: firstInvite.role,
+            active_company_is_admin: firstInvite.is_admin,
+          }
+        : undefined;
 
     const verifyToken = randomUUID();
     const verifyKey = `auth:verify-email:${verifyToken}`;
@@ -117,7 +212,7 @@ export class AuthService {
       userAgent: requestContext.userAgent ?? null,
     });
 
-    const tokens = await this.issueTokens(user.id, user.email);
+    const tokens = await this.issueTokens(user.id, user.email, undefined, companyCtx);
     return { user: this.usersService.sanitizeUser(user), tokens };
   }
 
@@ -185,15 +280,17 @@ export class AuthService {
       };
     }
 
-    // Single company: embed context automatically
+    // Single company: embed context automatically.
+    // memberships always includes Self, so length 0 is a data-integrity edge case —
+    // fall back to Self to guarantee active_company_id is never null.
     const companyCtx =
-      memberships.length === 1
+      memberships.length >= 1
         ? {
             active_company_id: memberships[0].id,
             active_company_role: memberships[0].role,
             active_company_is_admin: memberships[0].is_admin,
           }
-        : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+        : await this.resolveSelfCompanyCtx(user.id);
 
     const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
 
@@ -275,21 +372,22 @@ export class AuthService {
           active_company_is_admin: memberRows[0].is_admin,
         };
       } else {
-        // Membership revoked or company deactivated — drop context
-        companyCtx = { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+        // Membership revoked or company deactivated — fall back to Self so the
+        // refreshed token always has a valid company context.
+        companyCtx = await this.resolveSelfCompanyCtx(user.id);
       }
     } else {
-      // No stored context (token predates this column or user has no company).
-      // Auto-select for single-company users so they don't hit the guard.
+      // No stored context (token predates this column or was an interim multi-company
+      // token). Resolve the best available context — always at least Self.
       const memberships = await this.getUserActiveMemberships(user.id);
       companyCtx =
-        memberships.length === 1
+        memberships.length >= 1
           ? {
               active_company_id: memberships[0].id,
               active_company_role: memberships[0].role,
               active_company_is_admin: memberships[0].is_admin,
             }
-          : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+          : await this.resolveSelfCompanyCtx(user.id);
     }
 
     const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx);
@@ -587,7 +685,7 @@ export class AuthService {
     provider: 'google' | 'apple' | 'facebook',
     dto: OAuthLoginDto,
     requestContext: { ip: string; userAgent?: string | null },
-  ): Promise<{ user: Record<string, unknown>; tokens: AuthTokens }> {
+  ): Promise<{ user: Record<string, unknown>; tokens: AuthTokens } | ContextSelectorResponse> {
     if (!dto.providerToken) {
       throw new UnauthorizedException('OAuth token is required');
     }
@@ -639,6 +737,20 @@ export class AuthService {
 
     const roles = await this.usersService.getUserRoleNames(user.id);
     const memberships = await this.getUserActiveMemberships(user.id);
+    // Multi-company OAuth users must select context just like regular login.
+    if (memberships.length > 1) {
+      const interimTokens = await this.issueTokens(user.id, user.email, roles, {
+        active_company_id: null,
+        active_company_role: null,
+        active_company_is_admin: false,
+      });
+      return {
+        requires_context_selection: true,
+        user: this.usersService.sanitizeUser(user),
+        tokens: interimTokens,
+        companies: memberships,
+      };
+    }
     const singleCtx =
       memberships.length === 1
         ? {
@@ -646,7 +758,7 @@ export class AuthService {
             active_company_role: memberships[0].role,
             active_company_is_admin: memberships[0].is_admin,
           }
-        : { active_company_id: null, active_company_role: null, active_company_is_admin: false };
+        : await this.resolveSelfCompanyCtx(user.id);
     const tokens = await this.issueTokens(user.id, user.email, roles, singleCtx);
 
     await this.auditService.log({
@@ -767,8 +879,7 @@ export class AuthService {
     `;
   }
 
-  /**
-   * Enrols a user in the built-in "Self" system company as a buyer_seller.
+  /** Enrols a user in the built-in "Self" system company as a buyer_seller.
    * Called automatically on every registration path (password + OAuth + invite).
    * Safe to call multiple times — INSERT is idempotent via ON CONFLICT DO NOTHING.
    * Public so that InvitationsService can reuse the same logic without duplication.
@@ -793,6 +904,46 @@ export class AuthService {
         (${rows[0].id}::uuid, ${userId}::uuid, 'buyer_seller', false, 'active', ${JSON.stringify(permissions)}::jsonb)
       ON CONFLICT (company_id, user_id) DO NOTHING
     `;
+  }
+
+  /**
+   * Looks up the user's membership in the built-in Self system company and
+   * returns a company context object suitable for `issueTokens`.
+   * Falls back to a context-less (null) object if the membership is missing
+   * due to a data-integrity edge-case.
+   */
+  private async resolveSelfCompanyCtx(userId: string): Promise<{
+    active_company_id: string | null;
+    active_company_role: string | null;
+    active_company_is_admin: boolean;
+  }> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; role: string; is_admin: boolean }>
+    >`
+      SELECT c.id, cm.role, cm.is_admin
+      FROM identity.company_members cm
+      JOIN identity.companies c ON c.id = cm.company_id
+      WHERE cm.user_id = ${userId}::uuid
+        AND c.is_system = true
+        AND c.slug = ${SELF_COMPANY_SLUG}
+        AND cm.status = 'active'
+      LIMIT 1
+    `;
+    if (rows[0]) {
+      return {
+        active_company_id: rows[0].id,
+        active_company_role: rows[0].role,
+        active_company_is_admin: rows[0].is_admin,
+      };
+    }
+    this.logger.warn(
+      `Self company membership not found for user ${userId} — issuing context-less token`,
+    );
+    return {
+      active_company_id: null,
+      active_company_role: null,
+      active_company_is_admin: false,
+    };
   }
 
   /** Fetches the canonical permission set for a role from identity.role_permissions. */

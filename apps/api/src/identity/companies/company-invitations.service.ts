@@ -133,7 +133,7 @@ export class CompanyInvitationsService {
       userAgent: requestContext.userAgent,
     });
 
-    const inviteLink = `${this.frontendUrl}/invitations/${rawToken}/accept`;
+    const inviteLink = `${this.frontendUrl}/invitations/${rawToken}`;
     void this.notificationService.sendEmail(
       dto.email,
       `You're invited to join ${company[0].name} on PRIBEC`,
@@ -262,7 +262,22 @@ export class CompanyInvitationsService {
     void this.notifyAdminsOfJoin(invitation.company_id, invitation.invited_email, invitation.role);
     void this.notifyInviteeOfAcceptance(invitation.company_id, invitation.invited_email, invitation.role);
 
-    return { success: true, company_id: invitation.company_id };
+    // Issue fresh tokens so the caller gets a JWT that already includes the
+    // new company context and the invited role — no extra login round-trip needed.
+    const tokens = await this.authService.issueTokensForUser(userId, userEmail, {
+      active_company_id: invitation.company_id,
+      active_company_role: invitation.role,
+      active_company_is_admin: invitation.is_admin,
+    });
+
+    const user = await this.usersService.findByEmail(userEmail);
+
+    return {
+      success: true,
+      company_id: invitation.company_id,
+      user: user ? this.usersService.sanitizeUser(user) : null,
+      tokens,
+    };
   }
 
   /**

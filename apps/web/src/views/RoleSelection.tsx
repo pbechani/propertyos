@@ -12,11 +12,11 @@ export default function RoleSelection() {
 
   const roles = [
     {
-      id: "buyer",
-      name: "Buyer",
+      id: "buyer_seller",
+      name: "Buyer / Seller",
       icon: User,
       color: "blue",
-      description: "Looking to buy or rent a property",
+      description: "Looking to buy, sell or rent a property",
       features: [
         "Browse verified listings",
         "Save favorite properties",
@@ -51,15 +51,15 @@ export default function RoleSelection() {
       ],
     },
     {
-      id: "property_manager",
-      name: "Property Manager",
+      id: "investor",
+      name: "Investor / Property Manager",
       icon: Building2,
       color: "green",
-      description: "Manage properties for owners",
+      description: "Invest in or manage properties",
       features: [
         "Manage multiple properties",
-        "Tenant relationship tools",
-        "Maintenance tracking",
+        "Portfolio tracking & analytics",
+        "Maintenance & tenant tools",
         "Financial reporting",
       ],
     },

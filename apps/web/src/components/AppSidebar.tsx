@@ -31,12 +31,19 @@ const selfNavigation = [
   { name: 'Company Registration', href: '/app/my-companies', icon: Briefcase },
 ];
 
-/** Navigation shown when the user is operating under a real company context (non-admin). */
+/** Navigation shown when the active user's role is 'agent'. */
+const agentNavigation = [
+  { name: 'Agent Dashboard', href: '/app/agent', icon: User },
+  { name: 'Listings', href: '/app/listings', icon: Building2 },
+  { name: 'Safety', href: '/app/safety', icon: Shield },
+  { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+];
+
+/** Navigation shown when the user is operating under a real company context (non-admin, non-agent). */
 const companyNavigation = [
   { name: 'Company Overview', href: '/app/my-dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Home', href: '/app', icon: Home },
-  { name: 'Agent Dashboard', href: '/app/agent', icon: User },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
 ];
@@ -101,10 +108,13 @@ export function AppSidebar({
   const showRoleBadge = companyRole && companyRole.toLowerCase() !== 'admin';
   // An admin is *never* in the self-company context (the self company always has is_admin=false).
   const isSelfCompany = !isAdmin && (activeCompany?.slug === 'self' || (!activeCompany && !hasMultipleCompanies));
-  const navigation = isSelfCompany
-    ? selfNavigation
-    : isAdmin
+  const isAgentRole = !isAdmin && companyRole?.toLowerCase() === 'agent';
+  const navigation = isAdmin
     ? adminCompanyNavigation
+    : isAgentRole
+    ? agentNavigation
+    : isSelfCompany
+    ? selfNavigation
     : companyNavigation;
 
   const handleSwitchCompany = () => {

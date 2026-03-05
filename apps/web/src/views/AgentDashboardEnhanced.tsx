@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
   TrendingUp, Eye,
-  MessageSquare, Plus, X, Upload,
+  MessageSquare, Plus,
   Home, DollarSign, Users
 } from "lucide-react";
 import {
@@ -14,20 +14,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAccessToken, getSessionClaims } from "@/lib/auth-session";
+import { CreateListing } from "@/components/CreateListing";
+import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
 import { propertiesApi, type AgentDashboardResponse, type PropertyListing } from "@/lib/api-client";
-
-type ListingFormState = {
-  title: string;
-  price: string;
-  address: string;
-  bedrooms: string;
-  bathrooms: string;
-  parkingSpaces: string;
-  areaSqm: string;
-  propertyType: 'residential' | 'commercial' | 'land' | 'off_plan';
-  description: string;
-};
 
 type DashboardListing = {
   id: string;
@@ -45,18 +34,6 @@ type DashboardListing = {
 };
 
 const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
-
-const INITIAL_FORM_STATE: ListingFormState = {
-  title: "",
-  price: "",
-  address: "",
-  bedrooms: "",
-  bathrooms: "",
-  parkingSpaces: "",
-  areaSqm: "",
-  propertyType: "residential",
-  description: "",
-};
 
 function formatMoney(price: string, currency: string): string {
   const value = Number(price);
@@ -98,9 +75,6 @@ export default function AgentDashboardEnhanced() {
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState("");
-  const [createError, setCreateError] = useState("");
-  const [isCreatingListing, setIsCreatingListing] = useState(false);
-  const [listingForm, setListingForm] = useState<ListingFormState>(INITIAL_FORM_STATE);
   const [dashboardMetrics, setDashboardMetrics] = useState<AgentDashboardResponse>({
     totalListings: 0,
     byStatus: {},
@@ -112,23 +86,34 @@ export default function AgentDashboardEnhanced() {
     inquiryResponseRatePct: 0,
   });
 
-  // Analytics Data
-  const viewsData = [
-    { month: "Jan", views: 1200, inquiries: 180 },
-    { month: "Feb", views: 1900, inquiries: 220 },
-    { month: "Mar", views: 2400, inquiries: 290 },
-    { month: "Apr", views: 2100, inquiries: 250 },
-    { month: "May", views: 2800, inquiries: 340 },
-    { month: "Jun", views: 3200, inquiries: 420 },
-  ];
+  // Agent name from stored session user
+  const agentName = useMemo(() => {
+    const user = getStoredUser();
+    if (!user) return 'Agent';
+    return `${user.firstName} ${user.lastName}`.trim() || 'Agent';
+  }, []);
 
-  const listingPerformance = [
-    { name: "Sunset Blvd", views: 850, inquiries: 42 },
-    { name: "Sky View", views: 620, inquiries: 28 },
-    { name: "Ocean Drive", views: 920, inquiries: 58 },
-    { name: "Green Oaks", views: 540, inquiries: 22 },
-    { name: "Harbor Rd", views: 760, inquiries: 35 },
-  ];
+  // Views comparison built from API metrics (previous 7d vs last 7d)
+  const viewsData = useMemo(() => [
+    { period: 'Previous 7d', views: dashboardMetrics.listingViewsPrevious7d, inquiries: 0 },
+    { period: 'Last 7d', views: dashboardMetrics.listingViewsLast7d, inquiries: dashboardMetrics.newInquiries7d },
+  ], [dashboardMetrics]);
+
+  // Top listings for performance chart, derived from real listing data
+  const listingPerformance = useMemo(() =>
+    activeListings.slice(0, 5).map((l) => ({
+      name: l.address.split(',')[0]?.trim().substring(0, 16) || 'Listing',
+      views: l.views,
+      inquiries: l.inquiries,
+    })),
+  [activeListings]);
+
+  // 4 most recently listed properties for activity feed
+  const recentListings = useMemo(() =>
+    [...activeListings]
+      .sort((a, b) => a.daysOnMarket - b.daysOnMarket)
+      .slice(0, 4),
+  [activeListings]);
 
   const loadAgentListings = async () => {
     const claims = getSessionClaims();
@@ -174,51 +159,6 @@ export default function AgentDashboardEnhanced() {
     [activeListings],
   );
 
-  const handleCreateListing = async () => {
-    const token = getAccessToken();
-    if (!token) {
-      setCreateError("You must be logged in to create a listing.");
-      return;
-    }
-
-    const numericPrice = Number(listingForm.price.replace(/[^\d.]/g, ""));
-    if (!listingForm.title.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setCreateError("Please provide a valid title and price.");
-      return;
-    }
-
-    setIsCreatingListing(true);
-    setCreateError("");
-
-    try {
-      const city = listingForm.address.split(",")[0]?.trim();
-      await propertiesApi.create(token, {
-        title: listingForm.title.trim(),
-        description: listingForm.description.trim() || undefined,
-        propertyType: listingForm.propertyType,
-        price: numericPrice,
-        currency: "ZAR",
-        bedrooms: listingForm.bedrooms ? Number(listingForm.bedrooms) : undefined,
-        bathrooms: listingForm.bathrooms ? Number(listingForm.bathrooms) : undefined,
-        parkingSpaces: listingForm.parkingSpaces ? Number(listingForm.parkingSpaces) : undefined,
-        areaSqm: listingForm.areaSqm ? Number(listingForm.areaSqm) : undefined,
-        location: {
-          city: city || undefined,
-          region: listingForm.address.trim() || undefined,
-          country: "ZA",
-        },
-      });
-
-      setShowAddListing(false);
-      setListingForm(INITIAL_FORM_STATE);
-      await loadAgentListings();
-    } catch {
-      setCreateError("Unable to create listing. Please check your inputs and try again.");
-    } finally {
-      setIsCreatingListing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -226,7 +166,7 @@ export default function AgentDashboardEnhanced() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">Agent Dashboard</h1>
-            <p className="text-gray-600">Welcome back, Alex Johnson</p>
+            <p className="text-gray-600">Welcome back, {agentName}</p>
           </div>
           <Button 
             onClick={() => setShowAddListing(true)}
@@ -349,7 +289,7 @@ export default function AgentDashboardEnhanced() {
               <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={viewsData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
+                  <XAxis dataKey="period" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
@@ -363,22 +303,26 @@ export default function AgentDashboardEnhanced() {
             <Card className="p-6">
               <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
               <div className="space-y-4">
-                {[
-                  { icon: Eye, text: "New inquiry on Sunset Boulevard", time: "2 hours ago", color: "blue" },
-                  { icon: Users, text: "Viewing scheduled for Ocean Drive", time: "4 hours ago", color: "green" },
-                  { icon: MessageSquare, text: "3 new messages from potential buyers", time: "5 hours ago", color: "purple" },
-                  { icon: TrendingUp, text: "Sky View listing reached 500 views", time: "1 day ago", color: "orange" },
-                ].map((activity, idx) => (
-                  <div key={idx} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
-                    <div className={`w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center shrink-0`}>
-                      <activity.icon className={`w-5 h-5 text-${activity.color}-600`} />
+                {recentListings.length === 0 ? (
+                  <p className="text-sm text-gray-500">No recent activity. Add your first listing to get started.</p>
+                ) : (
+                  recentListings.map((listing) => (
+                    <div key={listing.id} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                        <Home className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{listing.address}</div>
+                        <div className="text-xs text-gray-500">
+                          {listing.daysOnMarket === 0
+                            ? 'Listed today'
+                            : `${listing.daysOnMarket} day${listing.daysOnMarket === 1 ? '' : 's'} on market`}
+                          {' · '}{listing.status}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{activity.text}</div>
-                      <div className="text-xs text-gray-500">{activity.time}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Card>
           </>
@@ -394,7 +338,7 @@ export default function AgentDashboardEnhanced() {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={viewsData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
+                    <XAxis dataKey="period" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -434,11 +378,11 @@ export default function AgentDashboardEnhanced() {
                   <div className="text-sm text-gray-600">Inquiry Response Rate</div>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">32.1%</div>
+                  <div className="text-3xl font-bold text-purple-600 mb-1">—</div>
                   <div className="text-sm text-gray-600">Viewing to Offer</div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-3xl font-bold text-orange-600 mb-1">65.3%</div>
+                  <div className="text-3xl font-bold text-orange-600 mb-1">—</div>
                   <div className="text-sm text-gray-600">Offer to Close</div>
                 </div>
               </div>
@@ -540,202 +484,14 @@ export default function AgentDashboardEnhanced() {
         )}
       </div>
 
-      {/* Add Listing Modal */}
       {showAddListing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <Card className="max-w-2xl w-full my-8">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="font-bold text-xl">Add New Listing</h3>
-              <button 
-                onClick={() => setShowAddListing(false)} 
-                className="text-gray-400 hover:text-gray-600"
-                aria-label="Close add listing dialog"
-                title="Close"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Property Images */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Property Images</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <div className="text-sm text-gray-600">Click to upload or drag and drop</div>
-                  <div className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</div>
-                </div>
-              </div>
-
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Property Title</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Modern Villa in Camps Bay"
-                    value={listingForm.title}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, title: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Price (R)</label>
-                  <input
-                    type="text"
-                    placeholder="12,500,000"
-                    value={listingForm.price}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, price: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Address</label>
-                <input
-                  type="text"
-                  placeholder="Full property address"
-                  value={listingForm.address}
-                  onChange={(event) =>
-                    setListingForm((prev) => ({ ...prev, address: event.target.value }))
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Property Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bedrooms</label>
-                  <input
-                    type="number"
-                    placeholder="4"
-                    value={listingForm.bedrooms}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, bedrooms: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bathrooms</label>
-                  <input
-                    type="number"
-                    placeholder="3"
-                    value={listingForm.bathrooms}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, bathrooms: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Parking</label>
-                  <input
-                    type="number"
-                    placeholder="2"
-                    value={listingForm.parkingSpaces}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, parkingSpaces: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Size (m²)</label>
-                  <input
-                    type="number"
-                    placeholder="340"
-                    value={listingForm.areaSqm}
-                    onChange={(event) =>
-                      setListingForm((prev) => ({ ...prev, areaSqm: event.target.value }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              {/* Property Type */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Property Type</label>
-                <select
-                  value={listingForm.propertyType}
-                  onChange={(event) =>
-                    setListingForm((prev) => ({
-                      ...prev,
-                      propertyType: event.target.value as ListingFormState['propertyType'],
-                    }))
-                  }
-                  title="Property Type"
-                  aria-label="Property Type"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="residential">Residential</option>
-                  <option value="off_plan">Off Plan</option>
-                  <option value="land">Land</option>
-                  <option value="commercial">Commercial</option>
-                </select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
-                <textarea
-                  rows={4}
-                  placeholder="Describe the property features, location highlights, and unique selling points..."
-                  value={listingForm.description}
-                  onChange={(event) =>
-                    setListingForm((prev) => ({ ...prev, description: event.target.value }))
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-
-              {createError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {createError}
-                </div>
-              )}
-
-              {/* Features */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Features & Amenities</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {["Pool", "Garden", "Security", "Fiber", "Air Con", "Pet Friendly", "Gym", "Ocean View"].map((feature) => (
-                    <label key={feature} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm">{feature}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 flex gap-3 sticky bottom-0 bg-white">
-              <Button 
-                onClick={() => setShowAddListing(false)} 
-                variant="outline" 
-                className="flex-1"
-                disabled={isCreatingListing}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-                onClick={handleCreateListing}
-                disabled={isCreatingListing}
-              >
-                {isCreatingListing ? "Creating..." : "Create Listing"}
-              </Button>
-            </div>
-          </Card>
-        </div>
+        <CreateListing
+          onClose={() => setShowAddListing(false)}
+          onSuccess={() => {
+            setShowAddListing(false);
+            void loadAgentListings();
+          }}
+        />
       )}
     </div>
   );

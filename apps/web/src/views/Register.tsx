@@ -51,10 +51,9 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const pendingRole =
-        typeof window !== "undefined"
-          ? (sessionStorage.getItem("pribec.pending_role") ?? undefined)
-          : undefined;
+      const VALID_ROLES = ['buyer_seller','investor','contractor','supplier','agent','conveyancer','inspector','truck_operator'];
+      const storedRole = typeof window !== "undefined" ? sessionStorage.getItem("pribec.pending_role") : null;
+      const pendingRole = storedRole && VALID_ROLES.includes(storedRole) ? storedRole : undefined;
 
       const response = await authApi.register({
         email: formData.email,
@@ -77,8 +76,10 @@ export default function Register() {
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 400 || err.status === 409) {
-          setError("An account with this email already exists.");
+        if (err.status === 409) {
+          setError("An account with this email already exists. Try signing in instead.");
+        } else if (err.status === 400) {
+          setError("Unable to create account. Please check your details and try again.");
         } else if (err.status >= 500) {
           setError("Server error while creating your account. Please try again shortly.");
         } else {

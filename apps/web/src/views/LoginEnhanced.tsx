@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, KeyboardEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Home, Mail, Lock, Eye, EyeOff, Shield, Chrome, AlertCircle, Building2, User } from "lucide-react";
+import { Home, Mail, Lock, Eye, EyeOff, Shield, Chrome, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -10,11 +10,18 @@ import { authApi, ApiError } from "@/lib/api-client";
 import { saveAuthSession } from "@/lib/auth-session";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginEnhanced() {
+export default function LoginEnhanced({
+  initialEmail,
+  onLoginSuccess,
+}: {
+  initialEmail?: string;
+  /** When provided, called with the access token instead of navigating. */
+  onLoginSuccess?: (accessToken: string) => Promise<void>;
+} = {}) {
   const navigate = useNavigate();
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +46,13 @@ export default function LoginEnhanced() {
       // Always save the session first — for multi-company logins this persists
       // the interim tokens that the context-select screen needs.
       saveAuthSession(response);
+
+      // If a post-login callback is provided (e.g. invitation acceptance),
+      // delegate navigation entirely to the caller.
+      if (onLoginSuccess) {
+        await onLoginSuccess(response.tokens.accessToken);
+        return;
+      }
 
       if (response.requires_context_selection) {
         // User belongs to multiple companies — let them pick a context.
@@ -229,24 +243,16 @@ export default function LoginEnhanced() {
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="text-sm text-center text-gray-500 mb-3">Don't have an account?</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                to="/company-registration"
-                className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-              >
-                <Building2 className="w-4 h-4 shrink-0" />
-                Business Partner
-              </Link>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              Don't have an account?{" "}
               <Link
                 to={nextPath ? `/register?next=${encodeURIComponent(nextPath)}` : "/register"}
-                className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                className="text-primary font-medium hover:underline"
               >
-                <User className="w-4 h-4 shrink-0" />
-                Individual
+                Register
               </Link>
-            </div>
+            </p>
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">

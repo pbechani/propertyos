@@ -8,22 +8,21 @@ import {
   CheckCircle,
   Building2,
   Shield,
-  Lock,
   AlertCircle,
-  Eye,
-  EyeOff,
   Loader2,
   UserPlus,
-  LogIn,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   invitationsApi,
-  authApi,
   ApiError,
   type InvitationPreview,
   type AuthResponse,
 } from '@/lib/api-client';
-import { saveAuthSession, getAccessToken } from '@/lib/auth-session';
+import { saveAuthSession, getAccessToken, getSessionClaims } from '@/lib/auth-session';
+import LoginEnhanced from '@/views/LoginEnhanced';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -134,9 +133,6 @@ export default function AcceptInvitation() {
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
 
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
 
   // Register form state
   const [firstName, setFirstName] = useState('');
@@ -152,10 +148,34 @@ export default function AcceptInvitation() {
     if (!token) { setStep('not_found'); return; }
 
     invitationsApi.preview(token)
-      .then((inv) => {
+      .then(async (inv) => {
         setInvitation(inv);
-        setLoginEmail(inv.invited_email); // pre-fill login email hint
-        setStep('preview');
+
+        // If the user is already logged in but with a different email, skip
+        // straight to the login step so they're never shown an accept button
+        // that will always fail with a confusing 403 error.
+        const claims = getSessionClaims();
+        if (claims?.email && claims.email.toLowerCase() !== inv.invited_email.toLowerCase()) {
+          setError(`This invitation is for ${inv.invited_email}. Please log in with that account.`);
+          setStep('login');
+          return;
+        }
+
+        // If already logged in with the right account, show the accept button.
+        if (claims?.email) {
+          setStep('preview');
+          return;
+        }
+
+        // No session — auto-detect whether the invited email has an account
+        // so we can skip the "choose login or register" screen entirely.
+        try {
+          const { exists } = await invitationsApi.checkEmail(inv.invited_email);
+          setStep(exists ? 'login' : 'register');
+        } catch {
+          // Fallback to preview so the user can choose manually
+          setStep('preview');
+        }
       })
       .catch((err: unknown) => {
         if (err instanceof ApiError) {
@@ -176,7 +196,13 @@ export default function AcceptInvitation() {
     setBusy(true);
     setError('');
     try {
-      await invitationsApi.accept(existingToken, token);
+      const result = await invitationsApi.accept(existingToken, token);
+      // Save the fresh tokens — they include the new company role in the JWT
+      saveAuthSession({
+        user: result.user as AuthResponse['user'],
+        tokens: result.tokens,
+        requires_context_selection: false,
+      });
       setStep('accepted');
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
@@ -189,32 +215,25 @@ export default function AcceptInvitation() {
     }
   };
 
-  // ── Existing user: login then accept ──────────────────────────────────────
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setBusy(true);
+  // ── Login-then-accept callback passed into LoginEnhanced ─────────────────────
+  const handleLoginSuccess = async (accessToken: string) => {
     try {
-      const auth = await authApi.login({ email: loginEmail, password: loginPassword });
-      saveAuthSession(auth as AuthResponse);
-      const accessToken = (auth as AuthResponse).tokens.accessToken;
-
-      await invitationsApi.accept(accessToken, token);
+      const result = await invitationsApi.accept(accessToken, token);
+      // Overwrite the just-saved login session with the richer tokens that
+      // include the new company role so no second login is required.
+      saveAuthSession({
+        user: result.user as AuthResponse['user'],
+        tokens: result.tokens,
+        requires_context_selection: false,
+      });
       setStep('accepted');
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        if (err.status === 401 || (err.status === 400 && !err.message.toLowerCase().includes('email'))) {
-          setError('Invalid email or password. Please try again.');
-        } else if (err.status === 403 || err.message.toLowerCase().includes('different email')) {
-          setError(`This invitation was sent to ${invitation?.invited_email}. Please log in with that account.`);
-        } else {
-          setError('Something went wrong. Please try again.');
-        }
+      if (err instanceof ApiError && err.status === 403) {
+        setError(`This invitation is for ${invitation?.invited_email}. Please log in with that account.`);
       } else {
-        setError('Something went wrong. Please try again.');
+        setError('Failed to accept invitation after login. Please try again.');
       }
-    } finally {
-      setBusy(false);
+      setStep('login');
     }
   };
 
@@ -385,10 +404,10 @@ export default function AcceptInvitation() {
         )}
 
         <button
-          onClick={() => navigate('/company/dashboard')}
+          onClick={() => navigate('/app/listings')}
           className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium mb-3"
         >
-          Go to Company Dashboard
+          Go to Dashboard
         </button>
         <button
           onClick={() => navigate('/')}
@@ -441,7 +460,7 @@ export default function AcceptInvitation() {
                 onClick={() => { setError(''); setStep('login'); }}
                 className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
               >
-                <LogIn className="w-5 h-5" /> I already have an account
+                <CheckCircle className="w-5 h-5" /> I already have an account
               </button>
               <button
                 onClick={() => { setError(''); setStep('register'); }}
@@ -464,75 +483,10 @@ export default function AcceptInvitation() {
   // ── LOGIN ──────────────────────────────────────────────────────────────────
   if (step === 'login' && invitation) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-          <button onClick={() => { setError(''); setStep('preview'); }} className="text-sm text-gray-500 hover:text-gray-700 mb-5 flex items-center gap-1">
-            ← Back
-          </button>
-
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-100 rounded-2xl mb-3">
-              <LogIn className="w-7 h-7 text-indigo-600" />
-            </div>
-            <h1 className="text-xl font-bold">Log in to accept</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Joining <strong className="text-gray-800">{invitation.company_name}</strong>
-            </p>
-          </div>
-
-          <div className="mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-indigo-700">
-            Log in with the account for <strong>{invitation.invited_email}</strong>
-          </div>
-
-          {error && <ErrorBanner message={error} />}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                required
-                autoComplete="email"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                />
-                <button type="button" onClick={() => setShowPw((p) => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" tabIndex={-1}>
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-              {busy ? 'Signing in…' : 'Sign in & Accept'}
-            </button>
-          </form>
-
-          <p className="text-center mt-4">
-            <Link to="/forgot-password" className="text-indigo-600 hover:underline text-xs">
-              Forgot password?
-            </Link>
-          </p>
-        </div>
-      </div>
+      <LoginEnhanced
+        initialEmail={invitation.invited_email}
+        onLoginSuccess={handleLoginSuccess}
+      />
     );
   }
 
