@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord } from "@/lib/api-client";
+import { propertiesApi, agentApi, viewingActionsApi, crmApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord, type LeadRecord, type LeadActivityRecord, type CrmDashboardResponse, type CreateLeadPayload, LEAD_STATUSES, ACTIVITY_TYPES, LEAD_SOURCES } from "@/lib/api-client";
 import { EditListing } from "@/components/EditListing";
 
 type DashboardListing = {
@@ -78,7 +78,7 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
 export default function AgentDashboardEnhanced() {
   const [showAddListing, setShowAddListing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -101,6 +101,24 @@ export default function AgentDashboardEnhanced() {
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
+  // CRM state
+  const [crmDashboard, setCrmDashboard] = useState<CrmDashboardResponse>({ totalLeads: 0, byStatus: {}, activitiesThisWeek: 0 });
+  const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [leadTotal, setLeadTotal] = useState(0);
+  const [leadPage, setLeadPage] = useState(1);
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>("all");
+  const [isLoadingCrm, setIsLoadingCrm] = useState(false);
+  const [crmError, setCrmError] = useState("");
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [leadActivities, setLeadActivities] = useState<LeadActivityRecord[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [showCreateLead, setShowCreateLead] = useState(false);
+  const [createLeadForm, setCreateLeadForm] = useState<CreateLeadPayload>({ contactName: "", contactEmail: "", contactPhone: "", leadSource: "", notes: "" });
+  const [isCreatingLead, setIsCreatingLead] = useState(false);
+  const [createLeadError, setCreateLeadError] = useState("");
+  const [logActivityForm, setLogActivityForm] = useState({ activityType: "note", notes: "" });
+  const [isLoggingActivity, setIsLoggingActivity] = useState(false);
+  const [leadStatusUpdating, setLeadStatusUpdating] = useState<string | null>(null);
 
   // Mandates
   const [agentMandates, setAgentMandates] = useState<MandateRecord[]>([]);
@@ -267,6 +285,26 @@ export default function AgentDashboardEnhanced() {
     void loadAgentListings();
     void loadOverviewData();
   }, []);
+
+  useEffect(() => {
+    if (selectedTab !== "crm") return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingCrm(true);
+    setCrmError("");
+    const statusParam = leadStatusFilter === "all" ? undefined : leadStatusFilter;
+    Promise.all([
+      crmApi.getDashboard(token),
+      crmApi.getLeads(token, { status: statusParam, page: leadPage, limit: 20 }),
+    ])
+      .then(([dash, leadsRes]) => {
+        setCrmDashboard(dash);
+        setLeads(leadsRes.data);
+        setLeadTotal(leadsRes.total);
+      })
+      .catch(() => setCrmError("Failed to load CRM data"))
+      .finally(() => setIsLoadingCrm(false));
+  }, [selectedTab, leadStatusFilter, leadPage]);
 
   useEffect(() => {
     if (selectedTab !== "mandates") return;
@@ -486,6 +524,16 @@ export default function AgentDashboardEnhanced() {
             }`}
           >
             Mandates
+          </button>
+          <button
+            onClick={() => setSelectedTab("crm")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              selectedTab === "crm"
+                ? "bg-blue-100 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            CRM
           </button>
         </div>
       </div>
@@ -1048,6 +1096,182 @@ export default function AgentDashboardEnhanced() {
           </div>
         )}
 
+        {/* CRM Tab */}
+        {selectedTab === "crm" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h2 className="text-xl font-bold">Lead Pipeline</h2>
+              <Button
+                onClick={() => setShowCreateLead(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> New Lead
+              </Button>
+            </div>
+
+            {/* CRM Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <Card className="p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600">{crmDashboard.totalLeads}</div>
+                <div className="text-xs text-gray-500 mt-1">Total Leads</div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-3xl font-bold text-green-600">{crmDashboard.byStatus?.active ?? crmDashboard.byStatus?.qualified ?? 0}</div>
+                <div className="text-xs text-gray-500 mt-1">Qualified</div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-3xl font-bold text-yellow-600">{crmDashboard.byStatus?.offer ?? 0}</div>
+                <div className="text-xs text-gray-500 mt-1">At Offer Stage</div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600">{crmDashboard.activitiesThisWeek}</div>
+                <div className="text-xs text-gray-500 mt-1">Activities This Week</div>
+              </Card>
+            </div>
+
+            {/* Status breakdown pills */}
+            {Object.keys(crmDashboard.byStatus ?? {}).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(crmDashboard.byStatus ?? {}).map(([status, count]) => (
+                  <div key={status} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1 text-xs font-medium text-gray-700 capitalize">
+                    <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    {status.replace(/_/g, " ")} <span className="text-gray-400">({count})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Status filter */}
+            <div className="flex flex-wrap gap-2">
+              {["all", ...LEAD_STATUSES].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setLeadStatusFilter(s); setLeadPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+                    leadStatusFilter === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.replace(/_/g, " ")}
+                </button>
+              ))}
+            </div>
+
+            {/* Leads table */}
+            {isLoadingCrm ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            ) : crmError ? (
+              <Card className="p-6 text-center text-red-600">
+                <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+                <p>{crmError}</p>
+              </Card>
+            ) : leads.length === 0 ? (
+              <Card className="py-16 text-center text-gray-400">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No leads yet</p>
+                <p className="text-sm mt-1">Create your first lead to start tracking your pipeline</p>
+              </Card>
+            ) : (
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gray-50">
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Source</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Notes</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Updated</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {leads.map((lead) => {
+                        const statusColours: Record<string, string> = {
+                          new: "bg-gray-100 text-gray-700",
+                          contacted: "bg-blue-100 text-blue-700",
+                          qualified: "bg-cyan-100 text-cyan-700",
+                          showing: "bg-yellow-100 text-yellow-700",
+                          offer: "bg-orange-100 text-orange-700",
+                          closed: "bg-green-100 text-green-700",
+                          inactive: "bg-red-100 text-red-600",
+                        };
+                        return (
+                          <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3">
+                              <p className="font-medium">{lead.contact_name}</p>
+                              {lead.contact_email && <p className="text-xs text-gray-500 truncate max-w-[160px]">{lead.contact_email}</p>}
+                              {lead.contact_phone && <p className="text-xs text-gray-400">{lead.contact_phone}</p>}
+                            </td>
+                            <td className="px-4 py-3 hidden sm:table-cell">
+                              <span className="capitalize text-gray-600">{lead.lead_source?.replace(/_/g, " ") ?? "—"}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${statusColours[lead.status] ?? "bg-gray-100 text-gray-700"}`}>
+                                {lead.status.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 hidden md:table-cell max-w-[200px]">
+                              <p className="text-gray-500 truncate">{lead.notes ?? "—"}</p>
+                            </td>
+                            <td className="px-4 py-3 hidden lg:table-cell text-gray-500">
+                              {new Date(lead.updated_at).toLocaleDateString("en-ZA")}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 px-2"
+                                onClick={() => {
+                                  setSelectedLead(lead);
+                                  const token = getAccessToken();
+                                  if (!token) return;
+                                  setIsLoadingActivities(true);
+                                  crmApi.getActivities(token, lead.id)
+                                    .then(setLeadActivities)
+                                    .finally(() => setIsLoadingActivities(false));
+                                }}
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {leadTotal > 20 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-500">
+                      Showing {(leadPage - 1) * 20 + 1}–{Math.min(leadPage * 20, leadTotal)} of {leadTotal}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={leadPage === 1}
+                        onClick={() => setLeadPage((p) => p - 1)}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={leadPage * 20 >= leadTotal}
+                        onClick={() => setLeadPage((p) => p + 1)}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
+          </div>
+        )}
+
         {/* Viewings Tab */}
         {selectedTab === "viewings" && (
           <div className="space-y-6">
@@ -1546,6 +1770,266 @@ export default function AgentDashboardEnhanced() {
             void loadAgentListings();
           }}
         />
+      )}
+
+      {/* Create Lead Modal */}
+      {showCreateLead && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">New Lead</h3>
+              <button onClick={() => { setShowCreateLead(false); setCreateLeadError(""); }} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {createLeadError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{createLeadError}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium block mb-1">Contact Name *</label>
+                <input
+                  type="text"
+                  value={createLeadForm.contactName}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactName: e.target.value }))}
+                  placeholder="Full name"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={createLeadForm.contactEmail ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                  placeholder="email@example.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={createLeadForm.contactPhone ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                  placeholder="+27..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Source</label>
+                <select
+                  value={createLeadForm.leadSource ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, leadSource: e.target.value }))}
+                  title="Lead source"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Select source…</option>
+                  {LEAD_SOURCES.map((s) => (
+                    <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Assign to Listing</label>
+                <select
+                  value={createLeadForm.assignedPropertyId ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, assignedPropertyId: e.target.value || undefined }))}
+                  title="Assign to a listing"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">None</option>
+                  {activeListings.map((l) => (
+                    <option key={l.id} value={l.id}>{l.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-sm font-medium block mb-1">Notes</label>
+                <textarea
+                  value={createLeadForm.notes ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={3}
+                  placeholder="Initial notes..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowCreateLead(false)} className="flex-1">Cancel</Button>
+              <Button
+                disabled={isCreatingLead || !createLeadForm.contactName.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  const token = getAccessToken();
+                  if (!token) return;
+                  setIsCreatingLead(true);
+                  setCreateLeadError("");
+                  crmApi.createLead(token, { ...createLeadForm, contactName: createLeadForm.contactName.trim() })
+                    .then(() => {
+                      setShowCreateLead(false);
+                      setCreateLeadForm({ contactName: "", contactEmail: "", contactPhone: "", leadSource: "", notes: "" });
+                      setLeadPage(1);
+                      // re-trigger load
+                      setLeadStatusFilter((f) => f);
+                    })
+                    .catch((err: unknown) => setCreateLeadError(err instanceof Error ? err.message : "Failed to create lead"))
+                    .finally(() => setIsCreatingLead(false));
+                }}
+              >
+                {isCreatingLead ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Lead"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Lead Detail Drawer */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/30" onClick={() => setSelectedLead(null)} />
+          <div className="w-full max-w-lg bg-white shadow-2xl flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div>
+                <h3 className="font-bold text-lg">{selectedLead.contact_name}</h3>
+                <p className="text-sm text-gray-500 capitalize">{selectedLead.status.replace(/_/g, " ")} · {selectedLead.lead_source?.replace(/_/g, " ") ?? "No source"}</p>
+              </div>
+              <button onClick={() => setSelectedLead(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Contact info */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {selectedLead.contact_email && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Email</p>
+                    <p className="font-medium truncate">{selectedLead.contact_email}</p>
+                  </div>
+                )}
+                {selectedLead.contact_phone && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Phone</p>
+                    <p className="font-medium">{selectedLead.contact_phone}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Added</p>
+                  <p className="font-medium">{new Date(selectedLead.created_at).toLocaleDateString("en-ZA")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Last updated</p>
+                  <p className="font-medium">{new Date(selectedLead.updated_at).toLocaleDateString("en-ZA")}</p>
+                </div>
+              </div>
+
+              {selectedLead.notes && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Notes</p>
+                  <p className="text-sm bg-gray-50 rounded-lg p-3">{selectedLead.notes}</p>
+                </div>
+              )}
+
+              {/* Status transition */}
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Update Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {LEAD_STATUSES.filter((s) => s !== selectedLead.status).map((s) => (
+                    <button
+                      key={s}
+                      disabled={!!leadStatusUpdating}
+                      onClick={() => {
+                        const token = getAccessToken();
+                        if (!token) return;
+                        setLeadStatusUpdating(s);
+                        crmApi.updateLeadStatus(token, selectedLead.id, s)
+                          .then((updated) => {
+                            setSelectedLead(updated);
+                            setLeads((prev) => prev.map((l) => l.id === updated.id ? updated : l));
+                          })
+                          .catch(() => {})
+                          .finally(() => setLeadStatusUpdating(null));
+                      }}
+                      className="px-3 py-1 rounded-full text-xs font-medium border border-gray-300 hover:bg-gray-100 disabled:opacity-50 capitalize"
+                    >
+                      {leadStatusUpdating === s ? <Loader2 className="w-3 h-3 animate-spin inline" /> : s.replace(/_/g, " ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Log activity */}
+              <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold">Log Activity</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={logActivityForm.activityType}
+                    onChange={(e) => setLogActivityForm((f) => ({ ...f, activityType: e.target.value }))}
+                    title="Activity type"
+                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                  >
+                    {ACTIVITY_TYPES.map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>
+                  <Button
+                    disabled={isLoggingActivity}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      const token = getAccessToken();
+                      if (!token) return;
+                      setIsLoggingActivity(true);
+                      crmApi.logActivity(token, selectedLead.id, logActivityForm)
+                        .then(() => {
+                          setLogActivityForm({ activityType: "note", notes: "" });
+                          const t2 = getAccessToken();
+                          if (t2) {
+                            setIsLoadingActivities(true);
+                            crmApi.getActivities(t2, selectedLead.id)
+                              .then(setLeadActivities)
+                              .finally(() => setIsLoadingActivities(false));
+                          }
+                        })
+                        .catch(() => {})
+                        .finally(() => setIsLoggingActivity(false));
+                    }}
+                  >
+                    {isLoggingActivity ? <Loader2 className="w-3 h-3 animate-spin" /> : "Log"}
+                  </Button>
+                </div>
+                <textarea
+                  value={logActivityForm.notes}
+                  onChange={(e) => setLogActivityForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Notes..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+
+              {/* Activity timeline */}
+              <div>
+                <p className="text-sm font-semibold mb-3">Activity Timeline</p>
+                {isLoadingActivities ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+                ) : leadActivities.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">No activities yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {leadActivities.map((act) => (
+                      <div key={act.id} className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                          <Activity className="w-3.5 h-3.5 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium capitalize">{(act.activity_type ?? "note").replace(/_/g, " ")}</p>
+                          {act.notes && <p className="text-sm text-gray-600 mt-0.5">{act.notes}</p>}
+                          <p className="text-xs text-gray-400 mt-1">{new Date(act.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

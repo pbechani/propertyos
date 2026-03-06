@@ -1296,6 +1296,132 @@ export const mandateApi = {
     }),
 };
 
+// ─── Agent CRM ────────────────────────────────────────────────────────────────
+
+export const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'showing', 'offer', 'closed', 'inactive'] as const;
+export type LeadStatus = typeof LEAD_STATUSES[number];
+
+export const ACTIVITY_TYPES = ['call', 'email', 'viewing_scheduled', 'offer_submitted', 'note'] as const;
+export type ActivityType = typeof ACTIVITY_TYPES[number];
+
+export const LEAD_SOURCES = ['portal_enquiry', 'referral', 'walk_in', 'social_media', 'open_house'] as const;
+export type LeadSource = typeof LEAD_SOURCES[number];
+
+export type LeadRecord = {
+  id: string;
+  agent_id: string;
+  contact_name: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  lead_source: string | null;
+  buyer_requirements: {
+    minPrice?: number;
+    maxPrice?: number;
+    bedrooms?: number;
+    areas?: string[];
+    propertyTypes?: string[];
+  } | null;
+  status: string;
+  notes: string | null;
+  assigned_property_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeadActivityRecord = {
+  id: string;
+  lead_id: string;
+  agent_id: string;
+  activity_type: string | null;
+  notes: string | null;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type CrmDashboardResponse = {
+  totalLeads: number;
+  byStatus: Record<string, number>;
+  activitiesThisWeek: number;
+};
+
+export type CreateLeadPayload = {
+  contactName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  leadSource?: string;
+  notes?: string;
+  assignedPropertyId?: string;
+  buyerRequirements?: {
+    minPrice?: number;
+    maxPrice?: number;
+    bedrooms?: number;
+    areas?: string[];
+    propertyTypes?: string[];
+  };
+};
+
+export type LogActivityPayload = {
+  activityType: string;
+  notes?: string;
+};
+
+export const crmApi = {
+  getDashboard: (authToken: string) =>
+    apiRequest<CrmDashboardResponse>('/agent/dashboard', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getLeads: (authToken: string, params?: { status?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<{ data: LeadRecord[]; total: number }>(`/agent/leads${query}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
+
+  getLeadById: (authToken: string, leadId: string) =>
+    apiRequest<LeadRecord>(`/agent/leads/${leadId}`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  createLead: (authToken: string, payload: CreateLeadPayload) =>
+    apiRequest<LeadRecord>('/agent/leads', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateLeadStatus: (authToken: string, leadId: string, status: string) =>
+    apiRequest<LeadRecord>(`/agent/leads/${leadId}/status`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }),
+
+  logActivity: (authToken: string, leadId: string, payload: LogActivityPayload) =>
+    apiRequest<LeadActivityRecord>(`/agent/leads/${leadId}/activities`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getActivities: (authToken: string, leadId: string) =>
+    apiRequest<LeadActivityRecord[]>(`/agent/leads/${leadId}/activities`, {
+      method: 'GET',
+      authToken,
+    }),
+};
+
 // ─── Companies ────────────────────────────────────────────────────────────────
 
 export type UserCompany = {
