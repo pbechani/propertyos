@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, agentApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 
@@ -439,6 +439,8 @@ export default function PropertyDetailEnhanced() {
   const [propertyOpenHouses, setPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [registeringOpenHouseId, setRegisteringOpenHouseId] = useState<string | null>(null);
   const [openHouseRegisterSuccess, setOpenHouseRegisterSuccess] = useState<string | null>(null);
+
+  const handleAddToFavourites = async () => {
     const token = getAccessToken();
     if (!token) {
       const query = searchParams.toString();
@@ -1047,7 +1049,7 @@ export default function PropertyDetailEnhanced() {
     setRegisteringOpenHouseId(openHouseId);
     setOpenHouseRegisterSuccess(null);
     try {
-      await agentApi.registerForOpenHouse(token, openHouseId);
+      await viewingActionsApi.registerForOpenHouse(token, openHouseId);
       setOpenHouseRegisterSuccess(openHouseId);
     } catch {
       // non-critical — silently ignore duplicate registration errors

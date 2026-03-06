@@ -7,7 +7,7 @@ import {
   MessageSquare, Plus,
   Home, DollarSign, Copy,
   Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity, Users,
-  ChevronLeft, ChevronRight, List as ListIcon
+  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, BarChart3, AlertCircle
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem } from "@/lib/api-client";
+import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord } from "@/lib/api-client";
+import { EditListing } from "@/components/EditListing";
 
 type DashboardListing = {
   id: string;
@@ -77,7 +78,7 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
 export default function AgentDashboardEnhanced() {
   const [showAddListing, setShowAddListing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -99,6 +100,12 @@ export default function AgentDashboardEnhanced() {
   const [agentOpenHouses, setAgentOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
+  const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
+
+  // Mandates
+  const [agentMandates, setAgentMandates] = useState<MandateRecord[]>([]);
+  const [isLoadingMandates, setIsLoadingMandates] = useState(false);
+  const [mandatesError, setMandatesError] = useState("");
   const [commissionPipeline, setCommissionPipeline] = useState<CommissionPipelineItem[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -260,6 +267,18 @@ export default function AgentDashboardEnhanced() {
     void loadAgentListings();
     void loadOverviewData();
   }, []);
+
+  useEffect(() => {
+    if (selectedTab !== "mandates") return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingMandates(true);
+    setMandatesError("");
+    agentApi.getMandates(token)
+      .then(setAgentMandates)
+      .catch(() => setMandatesError("Unable to load mandates."))
+      .finally(() => setIsLoadingMandates(false));
+  }, [selectedTab]);
 
   useEffect(() => {
     if (selectedTab !== "viewings") return;
@@ -458,6 +477,16 @@ export default function AgentDashboardEnhanced() {
           >
             Viewings
           </button>
+          <button
+            onClick={() => setSelectedTab("mandates")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              selectedTab === "mandates"
+                ? "bg-blue-100 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Mandates
+          </button>
         </div>
       </div>
 
@@ -547,6 +576,62 @@ export default function AgentDashboardEnhanced() {
                 </AreaChart>
               </ResponsiveContainer>
             </Card>
+
+            {/* Listing Status Breakdown */}
+            {Object.keys(dashboardMetrics.byStatus).length > 0 && (
+              <Card className="p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-lg">Listings by Status</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {Object.entries(dashboardMetrics.byStatus).map(([status, count]) => {
+                    const colours: Record<string, string> = {
+                      active: 'bg-green-50 border-green-200 text-green-700',
+                      draft: 'bg-gray-50 border-gray-200 text-gray-600',
+                      under_offer: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                      sold: 'bg-blue-50 border-blue-200 text-blue-700',
+                      withdrawn: 'bg-red-50 border-red-200 text-red-600',
+                      back_to_market: 'bg-purple-50 border-purple-200 text-purple-700',
+                    };
+                    const colourClass = colours[status] ?? 'bg-gray-50 border-gray-200 text-gray-600';
+                    return (
+                      <div key={status} className={`border rounded-xl p-4 text-center ${colourClass}`}>
+                        <div className="text-2xl font-bold">{count}</div>
+                        <div className="text-xs mt-1 capitalize">{status.replace(/_/g, ' ')}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Verification Summary */}
+            {Object.keys(dashboardMetrics.verificationSummary).length > 0 && (
+              <Card className="p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-lg">Verification Summary</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {Object.entries(dashboardMetrics.verificationSummary).map(([level, count]) => {
+                    const colours: Record<string, string> = {
+                      verified: 'bg-green-50 border-green-200 text-green-700',
+                      partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                      unverified: 'bg-red-50 border-red-200 text-red-600',
+                      pending: 'bg-blue-50 border-blue-200 text-blue-700',
+                    };
+                    const colourClass = colours[level] ?? 'bg-gray-50 border-gray-200 text-gray-600';
+                    return (
+                      <div key={level} className={`border rounded-xl p-4 text-center ${colourClass}`}>
+                        <div className="text-2xl font-bold">{count}</div>
+                        <div className="text-xs mt-1 capitalize">{level}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
 
             {/* Commission Pipeline */}
             {commissionPipeline.length > 0 && (
@@ -639,27 +724,89 @@ export default function AgentDashboardEnhanced() {
             </div>
 
             {/* Conversion Metrics */}
-            <Card className="p-6">
+            <Card className="p-6 mb-6">
               <h3 className="font-semibold text-lg mb-4">Conversion Metrics</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">{dashboardMetrics.listingViewsTrendPct}%</div>
+                  <div className="text-3xl font-bold text-blue-600 mb-1">{dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%</div>
                   <div className="text-sm text-gray-600">Views Trend (7d)</div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-3xl font-bold text-green-600 mb-1">{dashboardMetrics.inquiryResponseRatePct}%</div>
                   <div className="text-sm text-gray-600">Inquiry Response Rate</div>
                 </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">—</div>
-                  <div className="text-sm text-gray-600">Viewing to Offer</div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <div className="text-3xl font-bold text-yellow-600 mb-1">{dashboardMetrics.byStatus['under_offer'] ?? 0}</div>
+                  <div className="text-sm text-gray-600">Under Offer</div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-3xl font-bold text-orange-600 mb-1">—</div>
-                  <div className="text-sm text-gray-600">Offer to Close</div>
+                  <div className="text-3xl font-bold text-orange-600 mb-1">{dashboardMetrics.byStatus['sold'] ?? 0}</div>
+                  <div className="text-sm text-gray-600">Sold</div>
                 </div>
               </div>
             </Card>
+
+            {/* Listing Status Breakdown */}
+            {Object.keys(dashboardMetrics.byStatus).length > 0 && (
+              <Card className="p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-lg">Portfolio by Status</h3>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(dashboardMetrics.byStatus).map(([status, count]) => {
+                    const total = activeListings.length || 1;
+                    const pct = Math.round((count / total) * 100);
+                    const barColours: Record<string, string> = {
+                      active: 'bg-green-500',
+                      draft: 'bg-gray-400',
+                      under_offer: 'bg-yellow-500',
+                      sold: 'bg-blue-500',
+                      withdrawn: 'bg-red-400',
+                      back_to_market: 'bg-purple-500',
+                    };
+                    return (
+                      <div key={status} className="flex items-center gap-3">
+                        <div className="w-24 text-xs text-gray-600 capitalize shrink-0">{status.replace(/_/g, ' ')}</div>
+                        <div className="flex-1 bg-gray-100 rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full ${barColours[status] ?? 'bg-gray-400'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="text-xs font-semibold w-10 text-right">{count}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Verification Breakdown */}
+            {Object.keys(dashboardMetrics.verificationSummary).length > 0 && (
+              <Card className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-lg">Verification Breakdown</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {Object.entries(dashboardMetrics.verificationSummary).map(([level, count]) => {
+                    const colours: Record<string, string> = {
+                      verified: 'bg-green-50 border-green-200 text-green-700',
+                      partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                      unverified: 'bg-red-50 border-red-200 text-red-600',
+                      pending: 'bg-blue-50 border-blue-200 text-blue-700',
+                    };
+                    return (
+                      <div key={level} className={`border rounded-xl p-4 text-center ${colours[level] ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
+                        <div className="text-2xl font-bold">{count}</div>
+                        <div className="text-xs mt-1 capitalize">{level}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
           </>
         )}
 
@@ -765,7 +912,10 @@ export default function AgentDashboardEnhanced() {
                           <Button size="sm" variant="outline" asChild>
                             <Link to={`/app/property/${listing.id}`}>View</Link>
                           </Button>
-                          <Button size="sm" variant="outline">Edit</Button>
+                          <Button size="sm" variant="outline" onClick={() => { const raw = rawListings.find((r) => r.id === listing.id); if (raw) setEditingListing(raw); }}>
+                            <PenLine className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -783,6 +933,118 @@ export default function AgentDashboardEnhanced() {
                 </tbody>
               </table>
             </Card>
+          </div>
+        )}
+
+        {/* Mandates Tab */}
+        {selectedTab === "mandates" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Mandate Portfolio</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <FileText className="w-4 h-4" />
+                {agentMandates.length} mandate{agentMandates.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {mandatesError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{mandatesError}
+              </div>
+            )}
+
+            {isLoadingMandates ? (
+              <Card className="py-12 text-center text-gray-400">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+                <p className="text-sm">Loading mandates…</p>
+              </Card>
+            ) : agentMandates.length === 0 ? (
+              <Card className="py-12 text-center text-gray-400">
+                <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No mandates found. Mandates are created from individual property listings.</p>
+              </Card>
+            ) : (
+              <>
+                {/* Summary grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(['pending_signature', 'active', 'expired', 'cancelled'] as const).map((s) => {
+                    const count = agentMandates.filter((m) => m.status === s).length;
+                    const colours: Record<string, string> = {
+                      pending_signature: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                      active: 'bg-green-50 border-green-200 text-green-700',
+                      expired: 'bg-gray-50 border-gray-200 text-gray-500',
+                      cancelled: 'bg-red-50 border-red-200 text-red-600',
+                    };
+                    return (
+                      <div key={s} className={`border rounded-xl p-4 text-center ${colours[s]}`}>
+                        <div className="text-2xl font-bold">{count}</div>
+                        <div className="text-xs mt-1 capitalize">{s.replace(/_/g, ' ')}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Mandate table */}
+                <Card className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Property</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Commission</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Period</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Signatures</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {agentMandates.map((m) => (
+                        <tr key={m.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <Link to={`/app/property/${m.property_id}`} className="text-sm font-medium text-blue-600 hover:underline">
+                              {m.property_id.slice(0, 8)}…
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm capitalize">{m.mandate_type.replace('_', ' ')}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm font-semibold text-green-700">{m.commission_rate}%</span>
+                            {m.commission_vat_inclusive && <span className="text-xs text-gray-400 ml-1">incl. VAT</span>}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-xs text-gray-600">
+                              <div>{new Date(m.start_date).toLocaleDateString('en-ZA')}</div>
+                              <div className="text-gray-400">↓ {new Date(m.end_date).toLocaleDateString('en-ZA')}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-1 text-xs">
+                              <div className={m.agent_signed_at ? 'text-green-600' : 'text-gray-400'}>
+                                {m.agent_signed_at ? '✓ Agent' : '○ Agent unsigned'}
+                              </div>
+                              <div className={m.seller_signed_at ? 'text-green-600' : 'text-gray-400'}>
+                                {m.seller_signed_at ? '✓ Seller' : '○ Seller unsigned'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge className={
+                              m.status === 'active' ? 'bg-green-100 text-green-700' :
+                              m.status === 'pending_signature' ? 'bg-yellow-100 text-yellow-700' :
+                              m.status === 'expired' ? 'bg-gray-100 text-gray-500' :
+                              'bg-red-100 text-red-600'
+                            }>
+                              {m.status.replace('_', ' ')}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              </>
+            )}
           </div>
         )}
 
@@ -1270,6 +1532,17 @@ export default function AgentDashboardEnhanced() {
           onClose={() => setShowAddListing(false)}
           onSuccess={() => {
             setShowAddListing(false);
+            void loadAgentListings();
+          }}
+        />
+      )}
+
+      {editingListing && (
+        <EditListing
+          listing={editingListing}
+          onClose={() => setEditingListing(null)}
+          onSuccess={() => {
+            setEditingListing(null);
             void loadAgentListings();
           }}
         />
