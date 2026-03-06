@@ -23,6 +23,14 @@ Related docs:
   - **Analytics tab**: replaced static `—` placeholders with real `byStatus.under_offer` and `byStatus.sold` values; added *Portfolio by Status* horizontal bar chart with percentage bars; added *Verification Breakdown* grid.
   - **Listings tab**: *Edit* button now opens the `EditListing` modal (previously inert); `EditListing` component imported and wired at the bottom of the view.
   - **Mandates tab** (new): status summary grid (pending_signature / active / expired / cancelled counts) plus a full mandate table showing property link, mandate type, commission %, start/end period, seller & agent signature status, and status badge. Data loaded lazily on tab focus via `agentApi.getMandates()`.
+  - **CRM tab** (new): full lead pipeline UI wired to the Agent CRM backend (`src/identity/agent-crm/`):
+    - Summary cards: total leads, qualified count, at-offer count, activities this week (sourced from `GET /agent/dashboard`).
+    - Status breakdown pill row showing per-status counts.
+    - Status filter bar (All + every `LEAD_STATUS`) with page reset on change.
+    - Paginated leads table (20/page) — contact name/email/phone, source, status badge, notes preview, last-updated date; pagination controls shown when total > 20.
+    - *New Lead* modal — contact name, email, phone, source, assign-to-listing select, notes; calls `POST /agent/leads`.
+    - *Lead Detail* right-side drawer — full contact info, status transition buttons (calls `PATCH /agent/leads/:id/status`); *Log Activity* form (type selector + notes, calls `POST /agent/leads/:id/activities`); full activity timeline loaded from `GET /agent/leads/:id/activities`.
+  - `api-client.ts`: added `LeadRecord`, `LeadActivityRecord`, `CrmDashboardResponse`, `CreateLeadPayload`, `LogActivityPayload` types; `LEAD_STATUSES`, `ACTIVITY_TYPES`, `LEAD_SOURCES` constants; `crmApi` object with all 7 CRM methods.
 
 ### Fixed
 - **Identity suite — 10 pre-existing test failures resolved** (2026-03-06)
