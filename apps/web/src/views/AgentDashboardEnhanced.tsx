@@ -578,14 +578,14 @@ export default function AgentDashboardEnhanced() {
             </Card>
 
             {/* Listing Status Breakdown */}
-            {Object.keys(dashboardMetrics.byStatus).length > 0 && (
+            {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
               <Card className="p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
                   <h3 className="font-semibold text-lg">Listings by Status</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {Object.entries(dashboardMetrics.byStatus).map(([status, count]) => {
+                  {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
                     const colours: Record<string, string> = {
                       active: 'bg-green-50 border-green-200 text-green-700',
                       draft: 'bg-gray-50 border-gray-200 text-gray-600',
@@ -607,14 +607,14 @@ export default function AgentDashboardEnhanced() {
             )}
 
             {/* Verification Summary */}
-            {Object.keys(dashboardMetrics.verificationSummary).length > 0 && (
+            {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
               <Card className="p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <h3 className="font-semibold text-lg">Verification Summary</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {Object.entries(dashboardMetrics.verificationSummary).map(([level, count]) => {
+                  {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
                     const colours: Record<string, string> = {
                       verified: 'bg-green-50 border-green-200 text-green-700',
                       partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
@@ -747,14 +747,14 @@ export default function AgentDashboardEnhanced() {
             </Card>
 
             {/* Listing Status Breakdown */}
-            {Object.keys(dashboardMetrics.byStatus).length > 0 && (
+            {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
               <Card className="p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-5 h-5 text-blue-600" />
                   <h3 className="font-semibold text-lg">Portfolio by Status</h3>
                 </div>
                 <div className="space-y-3">
-                  {Object.entries(dashboardMetrics.byStatus).map(([status, count]) => {
+                  {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
                     const total = activeListings.length || 1;
                     const pct = Math.round((count / total) * 100);
                     const barColours: Record<string, string> = {
@@ -783,14 +783,14 @@ export default function AgentDashboardEnhanced() {
             )}
 
             {/* Verification Breakdown */}
-            {Object.keys(dashboardMetrics.verificationSummary).length > 0 && (
+            {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <h3 className="font-semibold text-lg">Verification Breakdown</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(dashboardMetrics.verificationSummary).map(([level, count]) => {
+                  {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
                     const colours: Record<string, string> = {
                       verified: 'bg-green-50 border-green-200 text-green-700',
                       partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
