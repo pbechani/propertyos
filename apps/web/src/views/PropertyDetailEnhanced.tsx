@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, type AgentProfileResponse, type AuthUser, type PropertyListing } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 
@@ -406,6 +406,35 @@ export default function PropertyDetailEnhanced() {
   const [scheduleSuccess, setScheduleSuccess] = useState("");
   const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
   const [similarProperties, setSimilarProperties] = useState<SimilarProperty[]>([]);
+  const [neighbourhood, setNeighbourhood] = useState<NeighbourhoodStats | null>(null);
+  const [showValuationModal, setShowValuationModal] = useState(false);
+  const [valuationForm, setValuationForm] = useState({
+    valuationType: "cma" as "formal" | "cma",
+    estimatedValue: "",
+    valuationDate: "",
+    requestingPurpose: "" as "" | "listing" | "bond_application" | "insurance" | "legal",
+    notes: "",
+  });
+  const [isSubmittingValuation, setIsSubmittingValuation] = useState(false);
+  const [valuationError, setValuationError] = useState("");
+  const [valuationSuccess, setValuationSuccess] = useState("");
+  const [comparableSales, setComparableSales] = useState<ComparableSale[]>([]);
+  const [isLoadingComparables, setIsLoadingComparables] = useState(false);
+  const [showComparables, setShowComparables] = useState(false);
+  const [mandates, setMandates] = useState<MandateRecord[]>([]);
+  const [isLoadingMandates, setIsLoadingMandates] = useState(false);
+  const [showCreateMandateForm, setShowCreateMandateForm] = useState(false);
+  const [mandateForm, setMandateForm] = useState<CreateMandatePayload>({
+    mandateType: 'sole',
+    commissionRate: 5,
+    startDate: '',
+    endDate: '',
+  });
+  const [isSubmittingMandate, setIsSubmittingMandate] = useState(false);
+  const [mandateError, setMandateError] = useState("");
+  const [mandateSuccess, setMandateSuccess] = useState("");
+  const [cancellingMandateId, setCancellingMandateId] = useState<string | null>(null);
+  const [signingMandateId, setSigningMandateId] = useState<string | null>(null);
 
   const handleAddToFavourites = async () => {
     const token = getAccessToken();
@@ -539,6 +568,35 @@ export default function PropertyDetailEnhanced() {
     }
   };
 
+  const handleSubmitValuation = async () => {
+    if (!propertyId || !valuationForm.estimatedValue || !valuationForm.valuationDate) return;
+    const token = getActionToken();
+    if (!token) return;
+    setIsSubmittingValuation(true);
+    setValuationError("");
+    setValuationSuccess("");
+    try {
+      await propertiesApi.requestValuation(token, propertyId, {
+        valuationType: valuationForm.valuationType,
+        estimatedValue: Number(valuationForm.estimatedValue),
+        valuationDate: new Date(valuationForm.valuationDate).toISOString(),
+        currency: "ZAR",
+        requestingPurpose: valuationForm.requestingPurpose || undefined,
+        notes: valuationForm.notes || undefined,
+      });
+      setValuationSuccess("Valuation request submitted successfully.");
+      setTimeout(() => {
+        setShowValuationModal(false);
+        setValuationSuccess("");
+        setValuationForm({ valuationType: "cma", estimatedValue: "", valuationDate: "", requestingPurpose: "", notes: "" });
+      }, 1500);
+    } catch (err) {
+      setValuationError(err instanceof Error ? err.message : "Unable to submit valuation request.");
+    } finally {
+      setIsSubmittingValuation(false);
+    }
+  };
+
   const handleSubmitFraudReport = async () => {
     if (!propertyId) {
       setFraudError("Unable to identify this listing.");
@@ -601,11 +659,10 @@ export default function PropertyDetailEnhanced() {
     setScheduleSuccess("");
 
     try {
-      await propertiesApi.createInquiry(token, propertyId, {
-        inquiryType: 'viewing',
-        preferredDate: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
-        message: [
-          `Viewing Type: ${viewingType === 'inPerson' ? 'In-Person' : 'Virtual'}`,
+      await viewingsApi.request(token, propertyId, {
+        viewingType: viewingType === 'inPerson' ? 'in_person' : 'virtual',
+        scheduledAt: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
+        notes: [
           `Name: ${viewerName}`,
           `Email: ${viewerEmail}`,
           `Phone: ${viewerPhone}`,
@@ -922,6 +979,14 @@ export default function PropertyDetailEnhanced() {
         setSimilarProperties(similar);
         setSelectedImage(0);
         setCarouselOffset(0);
+
+        // Load neighbourhood insights (non-blocking)
+        try {
+          const nbhd = await neighbourhoodApi.getByProperty(propertyId);
+          setNeighbourhood(nbhd);
+        } catch {
+          // silently ignore — neighbourhood section simply won't render
+        }
       } catch {
         setPropertyError("Unable to load property from database right now.");
         setSimilarProperties([]);
@@ -932,6 +997,84 @@ export default function PropertyDetailEnhanced() {
 
     void loadProperty();
   }, [propertyId]);
+
+  // Load comparable sales for agents/valuers/admins
+  useEffect(() => {
+    if (!propertyId || !currentUser) return;
+    const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
+    if (!userRoles.some((r) => ['agent', 'admin', 'valuer'].includes(r))) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingComparables(true);
+    propertiesApi.getComparableSales(token, propertyId, 2)
+      .then(setComparableSales)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingComparables(false));
+  }, [propertyId, currentUser]);
+
+  // Load mandates for own listings
+  useEffect(() => {
+    if (!propertyId || !currentUser) return;
+    const isAgent = (currentUser.roles ?? (currentUser.role ? [currentUser.role] : [])).includes('agent');
+    if (!isAgent) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingMandates(true);
+    mandateApi.getByProperty(token, propertyId)
+      .then(setMandates)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingMandates(false));
+  }, [propertyId, currentUser]);
+
+  const handleCreateMandate = async () => {
+    const token = getAccessToken();
+    if (!token || !propertyId) return;
+    setIsSubmittingMandate(true);
+    setMandateError("");
+    setMandateSuccess("");
+    try {
+      const created = await mandateApi.create(token, propertyId, mandateForm);
+      setMandates((prev) => [...prev, created]);
+      setShowCreateMandateForm(false);
+      setMandateSuccess("Mandate created successfully.");
+    } catch (err) {
+      setMandateError(err instanceof Error ? err.message : "Failed to create mandate.");
+    } finally {
+      setIsSubmittingMandate(false);
+    }
+  };
+
+  const handleSignMandate = async (mandateId: string, party: 'seller' | 'agent') => {
+    const token = getAccessToken();
+    if (!token || !propertyId) return;
+    setSigningMandateId(mandateId);
+    setMandateError("");
+    try {
+      const updated = await mandateApi.sign(token, propertyId, mandateId, party);
+      setMandates((prev) => prev.map((m) => m.id === mandateId ? updated : m));
+      setMandateSuccess("Mandate signed.");
+    } catch (err) {
+      setMandateError(err instanceof Error ? err.message : "Failed to sign mandate.");
+    } finally {
+      setSigningMandateId(null);
+    }
+  };
+
+  const handleCancelMandate = async (mandateId: string) => {
+    const token = getAccessToken();
+    if (!token || !propertyId) return;
+    setCancellingMandateId(mandateId);
+    setMandateError("");
+    try {
+      const updated = await mandateApi.cancel(token, propertyId, mandateId);
+      setMandates((prev) => prev.map((m) => m.id === mandateId ? updated : m));
+      setMandateSuccess("Mandate cancelled.");
+    } catch (err) {
+      setMandateError(err instanceof Error ? err.message : "Failed to cancel mandate.");
+    } finally {
+      setCancellingMandateId(null);
+    }
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -1306,6 +1449,209 @@ export default function PropertyDetailEnhanced() {
               </Card>
             )}
 
+            {/* Mandate Panel — agents who own this listing */}
+            {isOwnListing && (
+              <Card className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">Mandate</h3>
+                  {!isLoadingMandates && mandates.length === 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={() => setShowCreateMandateForm((v) => !v)}
+                    >
+                      {showCreateMandateForm ? "Cancel" : "+ Create"}
+                    </Button>
+                  )}
+                </div>
+
+                {mandateError && (
+                  <p className="text-sm text-red-600 mb-2">{mandateError}</p>
+                )}
+                {mandateSuccess && (
+                  <p className="text-sm text-green-600 mb-2">{mandateSuccess}</p>
+                )}
+
+                {isLoadingMandates ? (
+                  <p className="text-sm text-gray-400">Loading mandates…</p>
+                ) : mandates.length === 0 && !showCreateMandateForm ? (
+                  <p className="text-sm text-gray-500">No mandate on record. Create one to formalise your listing agreement.</p>
+                ) : mandates.length > 0 ? (
+                  <div className="space-y-3">
+                    {mandates.map((m) => (
+                      <div key={m.id} className="border border-gray-200 rounded-lg p-3 text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium capitalize">{m.mandate_type?.replace('_', ' ')} Mandate</span>
+                          <Badge className={m.status === 'active' ? 'bg-green-100 text-green-700' : m.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}>
+                            {m.status}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600">{m.commission_rate}% commission</p>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {new Date(m.start_date).toLocaleDateString('en-ZA')} – {new Date(m.end_date).toLocaleDateString('en-ZA')}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                          <span>{m.agent_signed_at ? '✓ Agent signed' : '○ Agent unsigned'}</span>
+                          <span>{m.seller_signed_at ? '✓ Seller signed' : '○ Seller unsigned'}</span>
+                        </div>
+                        {m.status === 'active' && (
+                          <div className="flex gap-2 mt-2">
+                            {!m.agent_signed_at && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7"
+                                disabled={signingMandateId === m.id}
+                                onClick={() => void handleSignMandate(m.id, 'agent')}
+                              >
+                                Sign as Agent
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-7 text-red-600 border-red-200 hover:bg-red-50"
+                              disabled={cancellingMandateId === m.id}
+                              onClick={() => void handleCancelMandate(m.id)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {showCreateMandateForm && mandates.length === 0 && (
+                  <div className="space-y-3 mt-3 border-t border-gray-100 pt-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Mandate Type</label>
+                      <select
+                        title="Mandate Type"
+                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                        value={mandateForm.mandateType}
+                        onChange={(e) => setMandateForm((f) => ({ ...f, mandateType: e.target.value as 'sole' | 'open' }))}
+                      >
+                        <option value="sole">Sole Mandate</option>
+                        <option value="open">Open Mandate</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Commission Rate (%)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        step={0.5}
+                        title="Commission rate percentage"
+                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                        value={mandateForm.commissionRate}
+                        onChange={(e) => setMandateForm((f) => ({ ...f, commissionRate: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">Start Date</label>
+                        <input
+                          type="date"
+                          title="Mandate start date"
+                          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                          value={mandateForm.startDate}
+                          onChange={(e) => setMandateForm((f) => ({ ...f, startDate: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">End Date</label>
+                        <input
+                          type="date"
+                          title="Mandate end date"
+                          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                          value={mandateForm.endDate}
+                          onChange={(e) => setMandateForm((f) => ({ ...f, endDate: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      disabled={isSubmittingMandate || !mandateForm.startDate || !mandateForm.endDate}
+                      onClick={() => void handleCreateMandate()}
+                    >
+                      {isSubmittingMandate ? "Creating…" : "Create Mandate"}
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Request Valuation — visible to agents, valuers, and property owners */}
+            {currentUser && (() => {
+              const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
+              const canRequestValuation = userRoles.some((r) =>
+                ["agent", "admin", "valuer", "buyer_seller"].includes(r),
+              );
+              return canRequestValuation ? (
+                <Card className="p-5">
+                  <h3 className="font-semibold mb-2">Property Valuation</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Request a formal or comparative market analysis for this property.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                    onClick={() => setShowValuationModal(true)}
+                  >
+                    Request Valuation
+                  </Button>
+                </Card>
+              ) : null;
+            })()}
+
+            {/* Comparable Sales — agents, valuers, admins */}
+            {currentUser && (() => {
+              const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
+              if (!userRoles.some((r) => ['agent', 'admin', 'valuer'].includes(r))) return null;
+              return (
+                <Card className="p-5">
+                  <button
+                    className="w-full flex items-center justify-between"
+                    onClick={() => setShowComparables((v) => !v)}
+                  >
+                    <h3 className="font-semibold">Comparable Sales</h3>
+                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showComparables ? 'rotate-90' : ''}`} />
+                  </button>
+                  {showComparables && (
+                    <div className="mt-3">
+                      {isLoadingComparables ? (
+                        <p className="text-sm text-gray-400">Loading…</p>
+                      ) : comparableSales.length === 0 ? (
+                        <p className="text-sm text-gray-500">No comparable sales found within 2 km.</p>
+                      ) : (
+                        <div className="space-y-2 mt-1">
+                          {comparableSales.slice(0, 5).map((cs) => (
+                            <div key={cs.id} className="border border-gray-100 rounded-lg p-2 text-xs">
+                              <p className="font-medium truncate">{cs.title}</p>
+                              <div className="flex items-center justify-between mt-0.5 text-gray-500">
+                                <span>{new Intl.NumberFormat('en-ZA', { style: 'currency', currency: cs.currency || 'ZAR', maximumFractionDigits: 0 }).format(Number(cs.price))}</span>
+                                <span>{cs.distance_km?.toFixed(1)} km away</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 text-gray-400">
+                                {cs.bedrooms != null && <span>{cs.bedrooms} bd</span>}
+                                {cs.area_sqm != null && <span>{cs.area_sqm} m²</span>}
+                                {cs.sold_at && <span>sold {new Date(cs.sold_at).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              );
+            })()}
+
             {!property.isPrivateListing && (
               <Card className="p-5 text-center">
                 <div className="flex justify-center mb-2">
@@ -1452,6 +1798,61 @@ export default function PropertyDetailEnhanced() {
               )}
             </Card>
 
+            {/* Neighbourhood Insights */}
+            {neighbourhood && (
+              <Card className="p-6">
+                <h3 className="font-semibold mb-4">Neighbourhood Insights</h3>
+                <div className="space-y-3">
+                  {neighbourhood.crime_label != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Crime Level</span>
+                      <span className={`font-medium ${
+                        neighbourhood.crime_label === 'Low' ? 'text-green-600' :
+                        neighbourhood.crime_label === 'Medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>{neighbourhood.crime_label}</span>
+                    </div>
+                  )}
+                  {neighbourhood.school_rating != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">School Rating</span>
+                      <span className="font-medium">{neighbourhood.school_rating}/10</span>
+                    </div>
+                  )}
+                  {neighbourhood.avg_price_per_sqm != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Avg Price/m²</span>
+                      <span className="font-medium">
+                        {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(neighbourhood.avg_price_per_sqm)}
+                      </span>
+                    </div>
+                  )}
+                  {neighbourhood.price_yoy_change_pct != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Price Change (YoY)</span>
+                      <span className={`font-medium ${
+                        neighbourhood.price_yoy_change_pct >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {neighbourhood.price_yoy_change_pct > 0 ? '+' : ''}{neighbourhood.price_yoy_change_pct.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                  {neighbourhood.demand_score != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Demand Score</span>
+                      <span className="font-medium">{neighbourhood.demand_score}/100</span>
+                    </div>
+                  )}
+                  {neighbourhood.walkability_score != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Walkability</span>
+                      <span className="font-medium">{neighbourhood.walkability_score}/100</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
             {/* Similar Properties */}
             <Card className="p-6">
               <h3 className="font-semibold mb-4">Similar Properties</h3>
@@ -1550,6 +1951,118 @@ export default function PropertyDetailEnhanced() {
                   {isSubmittingFraud ? "Submitting..." : "Submit Report"}
                 </Button>
               </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Valuation Request Modal */}
+      {showValuationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Request Property Valuation</h3>
+              <button
+                onClick={() => setShowValuationModal(false)}
+                aria-label="Close valuation modal"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-2">Valuation Type *</label>
+              <div className="flex gap-4">
+                {(["cma", "formal"] as const).map((type) => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="valuationType"
+                      value={type}
+                      checked={valuationForm.valuationType === type}
+                      onChange={() => setValuationForm((f) => ({ ...f, valuationType: type }))}
+                      className="accent-blue-500"
+                    />
+                    <span className="text-sm capitalize">
+                      {type === "cma" ? "Comparative Market Analysis" : "Formal Valuation"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">Estimated Value (ZAR) *</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={valuationForm.estimatedValue}
+                  onChange={(e) => setValuationForm((f) => ({ ...f, estimatedValue: e.target.value }))}
+                  placeholder="e.g. 1200000"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Valuation Date *</label>
+                <input
+                  type="date"
+                  value={valuationForm.valuationDate}
+                  title="Valuation date"
+                  aria-label="Valuation date"
+                  onChange={(e) => setValuationForm((f) => ({ ...f, valuationDate: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-1">Purpose</label>
+              <select
+                value={valuationForm.requestingPurpose}
+                title="Requesting purpose"
+                aria-label="Requesting purpose"
+                onChange={(e) => setValuationForm((f) => ({ ...f, requestingPurpose: e.target.value as typeof f.requestingPurpose }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Select purpose (optional)</option>
+                <option value="listing">Listing</option>
+                <option value="bond_application">Bond Application</option>
+                <option value="insurance">Insurance</option>
+                <option value="legal">Legal</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-1">Notes</label>
+              <textarea
+                value={valuationForm.notes}
+                onChange={(e) => setValuationForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={3}
+                placeholder="Any additional context for the valuer…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+
+            {valuationError && (
+              <div className="text-sm text-red-600">{valuationError}</div>
+            )}
+            {valuationSuccess && (
+              <div className="text-sm text-green-600">{valuationSuccess}</div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button onClick={() => setShowValuationModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => { void handleSubmitValuation(); }}
+                disabled={isSubmittingValuation || !valuationForm.estimatedValue || !valuationForm.valuationDate}
+              >
+                {isSubmittingValuation ? "Submitting…" : "Submit Request"}
+              </Button>
             </div>
           </Card>
         </div>

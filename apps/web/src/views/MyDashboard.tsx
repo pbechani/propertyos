@@ -9,7 +9,8 @@ import {
   Home, DollarSign, Users,
   Heart, Building2, HardHat, ShoppingBag,
   MapPin, Bed, Bath, ArrowRight,
-  Package, AlertTriangle, Copy
+  Package, AlertTriangle, Copy,
+  Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, UserCircle
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -19,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken, getIsAdminFromToken, getActiveCompanyContext } from "@/lib/auth-session";
-import { propertiesApi, auditApi, usersApi, type PropertyListing, type AuditLogEntry, type AuthUser } from "@/lib/api-client";
+import { propertiesApi, auditApi, usersApi, sellerApi, type PropertyListing, type AuditLogEntry, type AuthUser, type SellerProperty, type SellerPropertyViewing } from "@/lib/api-client";
 import { CreateListing } from "@/components/CreateListing";
 import { EditListing } from "@/components/EditListing";
 
@@ -112,6 +113,14 @@ export default function MyDashboard() {
 
   // Saved/favourite properties count (overview card)
   const [savedCount, setSavedCount] = useState<number | null>(null);
+
+  // Seller / my-properties state
+  const [sellerProperties, setSellerProperties] = useState<SellerProperty[]>([]);
+  const [isLoadingSellerProperties, setIsLoadingSellerProperties] = useState(false);
+  const [sellerPropertiesError, setSellerPropertiesError] = useState("");
+  const [expandedSellerPropertyId, setExpandedSellerPropertyId] = useState<string | null>(null);
+  const [sellerPropertyViewings, setSellerPropertyViewings] = useState<Record<string, SellerPropertyViewing[]>>({});
+  const [isLoadingViewingsFor, setIsLoadingViewingsFor] = useState<string | null>(null);
 
   // Status counts derived from the full (unfiltered) listing set
   const listingsByStatus = useMemo(() => {
@@ -324,7 +333,48 @@ export default function MyDashboard() {
     if (selectedTab === "favourites") {
       void loadSavedProperties();
     }
+    if (selectedTab === "my-properties") {
+      void loadSellerProperties();
+    }
   }, [selectedTab]);
+
+  const loadSellerProperties = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setSellerPropertiesError("Please log in to view your properties.");
+      return;
+    }
+    setIsLoadingSellerProperties(true);
+    setSellerPropertiesError("");
+    try {
+      const data = await sellerApi.getMyProperties(token);
+      setSellerProperties(data);
+    } catch {
+      setSellerPropertiesError("Unable to load your properties.");
+    } finally {
+      setIsLoadingSellerProperties(false);
+    }
+  };
+
+  const toggleSellerPropertyViewings = async (propertyId: string) => {
+    if (expandedSellerPropertyId === propertyId) {
+      setExpandedSellerPropertyId(null);
+      return;
+    }
+    setExpandedSellerPropertyId(propertyId);
+    if (sellerPropertyViewings[propertyId]) return; // already loaded
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingViewingsFor(propertyId);
+    try {
+      const viewings = await sellerApi.getPropertyViewings(token, propertyId);
+      setSellerPropertyViewings((prev) => ({ ...prev, [propertyId]: viewings }));
+    } catch {
+      setSellerPropertyViewings((prev) => ({ ...prev, [propertyId]: [] }));
+    } finally {
+      setIsLoadingViewingsFor(null);
+    }
+  };
 
   const totalPortfolioValue = useMemo(
     () => activeListings.reduce((sum, listing) => sum + Number(listing.price.replace(/[^\d]/g, "")), 0),
@@ -935,24 +985,199 @@ export default function MyDashboard() {
         </div>
       )}
 
-      {/* My Properties Tab */}
+      {/* My Properties Tab — Seller view */}
       {selectedTab === "my-properties" && (
         <div className="p-4 md:p-8 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">My Properties</h2>
-            <Button className="bg-blue-500 hover:bg-blue-600 text-white" size="sm">
-              <Plus className="w-4 h-4 mr-2" /> Add Property
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white" size="sm" onClick={() => setShowAddListing(true)}>
+              <Plus className="w-4 h-4 mr-2" /> List a Property
             </Button>
           </div>
-          {/* Sprint 7: owned-property portfolio endpoints not yet built */}
-          <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-            <span className="font-medium">Coming in Sprint 7 —</span> Your owned properties will appear here once the property portfolio API is available.
-          </div>
-          <Card className="text-center py-16 text-gray-400">
-            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-25" />
-            <p className="font-medium text-gray-500 mb-1">No owned properties yet</p>
-            <p className="text-sm">Properties you purchase or register will appear here</p>
-          </Card>
+
+          {isLoadingSellerProperties && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              Loading your properties…
+            </div>
+          )}
+
+          {!isLoadingSellerProperties && sellerPropertiesError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {sellerPropertiesError}
+            </div>
+          )}
+
+          {!isLoadingSellerProperties && !sellerPropertiesError && sellerProperties.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <Building2 className="w-12 h-12 mx-auto mb-3 opacity-25" />
+              <p className="font-medium text-gray-500 mb-1">No listed properties yet</p>
+              <p className="text-sm mb-4">Properties you list for sale or rent will appear here with full activity tracking</p>
+              <Button variant="outline" onClick={() => setShowAddListing(true)}>
+                <Plus className="w-4 h-4 mr-2" /> Create Your First Listing
+              </Button>
+            </div>
+          )}
+
+          {!isLoadingSellerProperties && sellerProperties.map((prop) => {
+            const isExpanded = expandedSellerPropertyId === prop.id;
+            const viewings = sellerPropertyViewings[prop.id] ?? [];
+            const isLoadingV = isLoadingViewingsFor === prop.id;
+            const agentName = prop.agent_first_name
+              ? `${prop.agent_first_name} ${prop.agent_last_name ?? ""}`.trim()
+              : null;
+
+            return (
+              <Card key={prop.id} className="overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-start gap-4">
+                    {/* Thumbnail */}
+                    <div className="shrink-0 w-20 h-16 rounded overflow-hidden bg-gray-100">
+                      <img
+                        src={prop.media_url ?? "/placeholder-property.jpg"}
+                        alt={prop.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm truncate">{prop.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {[prop.suburb, prop.city].filter(Boolean).join(", ") || "Location unavailable"}
+                          </div>
+                          {prop.listing_reference && (
+                            <div className="text-xs text-gray-400 mt-0.5">Ref: {prop.listing_reference}</div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="font-bold text-blue-600 text-sm">
+                            {new Intl.NumberFormat("en-ZA", { style: "currency", currency: prop.currency ?? "ZAR", maximumFractionDigits: 0 }).format(Number(prop.price))}
+                          </div>
+                          <Badge className={`mt-1 text-xs ${
+                            prop.status === "active" ? "bg-green-100 text-green-700" :
+                            prop.status === "draft" ? "bg-gray-100 text-gray-600" :
+                            prop.status === "under_offer" ? "bg-yellow-100 text-yellow-700" :
+                            prop.status === "sold" ? "bg-blue-100 text-blue-700" :
+                            "bg-red-100 text-red-600"
+                          }`}>
+                            {prop.status === "under_offer" ? "Under Offer" : (prop.status.charAt(0).toUpperCase() + prop.status.slice(1))}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Stats row */}
+                      <div className="flex flex-wrap gap-4 mt-3">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                          <span>{prop.completed_viewings} completed viewings</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <Clock className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{prop.upcoming_viewings} upcoming viewings</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
+                          <span>{prop.total_inquiries} inquiries</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <Heart className="w-3.5 h-3.5 text-pink-400" />
+                          <span>{prop.save_count} saves</span>
+                        </div>
+                      </div>
+
+                      {/* Mandate + agent info */}
+                      <div className="flex flex-wrap items-center gap-3 mt-3">
+                        {prop.mandate_type && (
+                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                            prop.mandate_status === "active" ? "bg-green-50 text-green-700 border border-green-200" :
+                            "bg-gray-50 text-gray-600 border border-gray-200"
+                          }`}>
+                            {prop.mandate_type === "sole" ? "Sole Mandate" : "Open Mandate"}
+                            {prop.mandate_expiry && (
+                              <span className="text-gray-400 font-normal"> · expires {new Date(prop.mandate_expiry).toLocaleDateString()}</span>
+                            )}
+                          </span>
+                        )}
+                        {agentName && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <UserCircle className="w-3.5 h-3.5" /> Agent: {agentName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link to={`/app/property/${prop.id}`}>View Listing</Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { void toggleSellerPropertyViewings(prop.id); }}
+                        className="flex items-center gap-1"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Viewings
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded viewings panel */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" /> Viewing Schedule
+                    </h4>
+                    {isLoadingV && (
+                      <p className="text-sm text-gray-500">Loading viewings…</p>
+                    )}
+                    {!isLoadingV && viewings.length === 0 && (
+                      <p className="text-sm text-gray-400">No viewings booked for this property yet.</p>
+                    )}
+                    {!isLoadingV && viewings.length > 0 && (
+                      <div className="space-y-2">
+                        {viewings.map((v) => {
+                          const buyerName = v.buyer_first_name
+                            ? `${v.buyer_first_name} ${v.buyer_last_name ?? ""}`.trim()
+                            : "Unknown buyer";
+                          const agentNameV = v.agent_first_name
+                            ? `${v.agent_first_name} ${v.agent_last_name ?? ""}`.trim()
+                            : null;
+                          return (
+                            <div key={v.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-gray-100 shadow-sm">
+                              <div>
+                                <div className="text-sm font-medium">{buyerName}</div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(v.scheduled_at).toLocaleString()} ·{" "}
+                                  {v.viewing_type === "in_person" ? "In-Person" : "Virtual"}
+                                  {agentNameV && <span> · Agent: {agentNameV}</span>}
+                                </div>
+                              </div>
+                              <Badge className={`text-xs ${
+                                v.status === "completed" ? "bg-green-100 text-green-700" :
+                                v.status === "confirmed" ? "bg-blue-100 text-blue-700" :
+                                v.status === "pending" ? "bg-yellow-100 text-yellow-700" :
+                                "bg-gray-100 text-gray-600"
+                              }`}>
+                                {v.status.charAt(0).toUpperCase() + v.status.slice(1)}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 

@@ -994,6 +994,280 @@ export const propertiesApi = {
       method: 'GET',
       authToken,
     }),
+
+  compare: (ids: string[]) =>
+    apiRequest<PropertyComparison>(`/properties/compare?ids=${ids.map(encodeURIComponent).join(',')}`, {
+      method: 'GET',
+    }),
+
+  requestValuation: (
+    authToken: string,
+    propertyId: string,
+    payload: ValuationRequestPayload,
+  ) =>
+    apiRequest<{ id: string }>(`/properties/${propertyId}/valuation-request`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getPropertyValuations: (authToken: string, propertyId: string) =>
+    apiRequest<ValuationRecord[]>(`/properties/${propertyId}/valuations`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getComparableSales: (authToken: string, propertyId: string, radius?: number) =>
+    apiRequest<ComparableSale[]>(
+      `/properties/${propertyId}/comparable-sales${radius !== undefined ? `?radius=${radius}` : ''}`,
+      { method: 'GET', authToken }
+    ),
+};
+
+// ─── Compare & Valuation types ───────────────────────────────────────────────
+
+export type ComparisonProperty = {
+  id: string;
+  title: string;
+  price: string;
+  currency: string;
+  area_sqm: string | null;
+  floor_area_sqm: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  monthly_levy: string | null;
+  verification_status: string;
+  status: string;
+  property_type: string;
+  city: string | null;
+  created_at: string;
+  media_url: string | null;
+};
+
+export type PropertyComparison = {
+  properties: ComparisonProperty[];
+  comparison: {
+    price: { values: Array<{ propertyId: string; value: number }>; winner: string | null };
+    pricePerSqm: { values: Array<{ propertyId: string; value: number | null }>; winner: string | null };
+    size: { values: Array<{ propertyId: string; value: number | null }>; winner: string | null };
+    bedrooms: { values: Array<{ propertyId: string; value: number | null }> };
+    monthlyLevy: { values: Array<{ propertyId: string; value: number | null }> };
+    verificationStatus: { values: Array<{ propertyId: string; value: string }> };
+    daysOnMarket: { values: Array<{ propertyId: string; value: number | null }>; winner: string | null };
+  };
+};
+
+export type ValuationRequestPayload = {
+  valuationType: 'formal' | 'cma';
+  estimatedValue: number;
+  currency?: string;
+  valuationDate: string;
+  marketLow?: number;
+  marketHigh?: number;
+  methodology?: string;
+  requestingPurpose?: 'listing' | 'bond_application' | 'insurance' | 'legal';
+  notes?: string;
+};
+
+export type ValuationRecord = {
+  id: string;
+  property_id: string;
+  requested_by: string;
+  valuer_id: string | null;
+  valuation_type: string;
+  estimated_value: string;
+  market_low: string | null;
+  market_high: string | null;
+  currency: string;
+  valuation_date: string;
+  status: string;
+  methodology: string | null;
+  requesting_purpose: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type CreateOpenHousePayload = {
+  scheduledAt: string;
+  endAt: string;
+  maxAttendees?: number;
+  description?: string;
+};
+
+// ─── Mandate types ────────────────────────────────────────────────────────────
+
+export type MandateRecord = {
+  id: string;
+  property_id: string;
+  agent_id: string;
+  brokerage_id: string | null;
+  mandate_type: 'sole' | 'open';
+  commission_rate: string;
+  commission_vat_inclusive: boolean;
+  start_date: string;
+  end_date: string;
+  auto_renewal: boolean;
+  status: 'pending_signature' | 'active' | 'expired' | 'cancelled';
+  seller_signed_at: string | null;
+  agent_signed_at: string | null;
+  cancelled_at: string | null;
+  cancellation_reason: string | null;
+  terms_document_url: string | null;
+  created_at: string;
+};
+
+export type CreateMandatePayload = {
+  mandateType: 'sole' | 'open';
+  commissionRate: number;
+  commissionVatInclusive?: boolean;
+  startDate: string;
+  endDate: string;
+  autoRenewal?: boolean;
+  termsDocumentUrl?: string;
+  brokerageId?: string;
+};
+
+// ─── Comparable sales type ─────────────────────────────────────────────────────
+
+export type ComparableSale = {
+  id: string;
+  title: string;
+  price: string;
+  currency: string;
+  area_sqm: string | null;
+  floor_area_sqm: string | null;
+  bedrooms: number | null;
+  property_type: string;
+  city: string | null;
+  distance_km: number;
+  sold_at: string | null;
+  created_at: string;
+  price_per_sqm: number | null;
+};
+
+// ─── Commission pipeline type ──────────────────────────────────────────────────
+
+export type CommissionPipelineItem = {
+  property_id: string;
+  property_title: string;
+  mandate_id: string;
+  mandate_type: string;
+  commission_rate: string;
+  listing_price: string;
+  currency: string;
+  estimated_commission: number;
+  status: string;
+  listing_status: string;
+};
+
+// ─── Activity feed type ────────────────────────────────────────────────────────
+
+export type ActivityFeedItem = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  actor_id: string | null;
+  actor_role: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  property_title?: string;
+};
+
+export const agentApi = {
+  getViewings: (authToken: string, from?: string, to?: string) => {
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<ViewingResponse[]>(`/agent/viewings${query}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
+
+  createOpenHouse: (authToken: string, propertyId: string, payload: CreateOpenHousePayload) =>
+    apiRequest<{ id: string }>(`/properties/${propertyId}/open-houses`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getMandates: (authToken: string) =>
+    apiRequest<MandateRecord[]>('/agent/mandates', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getCommissionPipeline: (authToken: string) =>
+    apiRequest<CommissionPipelineItem[]>('/agent/commission-pipeline', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getActivityFeed: (authToken: string) =>
+    apiRequest<ActivityFeedItem[]>('/agent/listings/activity-feed', {
+      method: 'GET',
+      authToken,
+    }),
+};
+
+export const viewingActionsApi = {
+  confirm: (authToken: string, viewingId: string) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/confirm`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
+
+  complete: (authToken: string, viewingId: string, agentNotes?: string) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/complete`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentNotes }),
+    }),
+
+  registerForOpenHouse: (authToken: string, openHouseId: string) =>
+    apiRequest<{ id: string }>(`/open-houses/${openHouseId}/register`, {
+      method: 'POST',
+      authToken,
+    }),
+};
+
+export const mandateApi = {
+  getByProperty: (authToken: string, propertyId: string) =>
+    apiRequest<MandateRecord[]>(`/properties/${propertyId}/mandate`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  create: (authToken: string, propertyId: string, payload: CreateMandatePayload) =>
+    apiRequest<MandateRecord>(`/properties/${propertyId}/mandate`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  sign: (authToken: string, propertyId: string, mandateId: string, party: 'seller' | 'agent') =>
+    apiRequest<MandateRecord>(`/properties/${propertyId}/mandate/${mandateId}/sign`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ party }),
+    }),
+
+  cancel: (authToken: string, propertyId: string, mandateId: string, reason?: string) =>
+    apiRequest<MandateRecord>(`/properties/${propertyId}/mandate/${mandateId}/cancel`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
 };
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -1401,6 +1675,155 @@ export const orphanedTasksApi = {
       `/companies/${companyId}/orphaned-tasks/${taskId}/close`,
       { method: 'POST', authToken },
     ),
+};
+
+// ─── Seller Dashboard ────────────────────────────────────────────────────────
+
+export type SellerProperty = {
+  id: string;
+  title: string;
+  price: number;
+  currency: string;
+  status: string;
+  listing_type: string;
+  property_type: string;
+  verification_status: string;
+  floor_area_sqm: number | null;
+  area_sqm: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  created_at: string;
+  listing_reference: string | null;
+  city: string | null;
+  suburb: string | null;
+  media_url: string | null;
+  completed_viewings: number;
+  upcoming_viewings: number;
+  total_inquiries: number;
+  save_count: number;
+  mandate_type: string | null;
+  mandate_status: string | null;
+  mandate_expiry: string | null;
+  agent_first_name: string | null;
+  agent_last_name: string | null;
+};
+
+export type SellerPropertyViewing = {
+  id: string;
+  scheduled_at: string;
+  status: string;
+  buyer_feedback: string | null;
+  viewing_type: string;
+  duration_minutes: number | null;
+  buyer_first_name: string | null;
+  buyer_last_name: string | null;
+  agent_first_name: string | null;
+  agent_last_name: string | null;
+};
+
+export type SellerPropertyOffer = {
+  id: string;
+  stage_number: number;
+  stage_name: string;
+  status: string;
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+  buyer_first_name: string | null;
+  buyer_last_name: string | null;
+};
+
+export const sellerApi = {
+  getMyProperties: (authToken: string) =>
+    apiRequest<SellerProperty[]>('/seller/properties', { method: 'GET', authToken }),
+
+  getPropertyViewings: (authToken: string, propertyId: string) =>
+    apiRequest<SellerPropertyViewing[]>(`/seller/properties/${propertyId}/viewings`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getPropertyActivity: (authToken: string, propertyId: string) =>
+    apiRequest<Record<string, unknown>[]>(`/seller/properties/${propertyId}/activity`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getPropertyOffers: (authToken: string, propertyId: string) =>
+    apiRequest<SellerPropertyOffer[]>(`/seller/properties/${propertyId}/offers`, {
+      method: 'GET',
+      authToken,
+    }),
+};
+
+// ─── Viewings ────────────────────────────────────────────────────────────────
+
+export type CreateViewingPayload = {
+  viewingType: 'in_person' | 'virtual';
+  scheduledAt: string;
+  durationMinutes?: number;
+  notes?: string;
+};
+
+export type ViewingResponse = {
+  id: string;
+  property_id: string;
+  buyer_id: string;
+  agent_id: string | null;
+  viewing_type: string;
+  scheduled_at: string;
+  duration_minutes: number | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  // Enriched by backend JOIN queries
+  property_title?: string | null;
+};
+
+export const viewingsApi = {
+  request: (authToken: string, propertyId: string, payload: CreateViewingPayload) =>
+    apiRequest<ViewingResponse>(`/properties/${propertyId}/viewings`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getAgentViewings: (authToken: string, from?: string, to?: string) => {
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<ViewingResponse[]>(`/agent/viewings${query}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
+};
+
+// ─── Neighbourhood ────────────────────────────────────────────────────────────
+
+export type NeighbourhoodStats = {
+  suburb: string | null;
+  city: string | null;
+  country: string | null;
+  crime_index: number | null;
+  crime_label: string | null;
+  school_rating: number | null;
+  avg_price_per_sqm: number | null;
+  price_yoy_change_pct: number | null;
+  demand_score: number | null;
+  walkability_score: number | null;
+  amenities_count: number | null;
+  population_density: number | null;
+};
+
+export const neighbourhoodApi = {
+  getByProperty: (propertyId: string, authToken?: string | null) =>
+    apiRequest<NeighbourhoodStats>(`/properties/${propertyId}/neighbourhood`, {
+      method: 'GET',
+      authToken,
+    }),
 };
 
 export type CompanyMemberPermission = { resource: string; action: string };

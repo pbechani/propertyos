@@ -5,7 +5,8 @@ import { Link } from "@/lib/router-compat";
 import {
   TrendingUp, Eye,
   MessageSquare, Plus,
-  Home, DollarSign, Users, Copy
+  Home, DollarSign, Copy,
+  Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, type AgentDashboardResponse, type PropertyListing } from "@/lib/api-client";
+import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type CommissionPipelineItem, type ActivityFeedItem } from "@/lib/api-client";
 
 type DashboardListing = {
   id: string;
@@ -75,13 +76,32 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
 export default function AgentDashboardEnhanced() {
   const [showAddListing, setShowAddListing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState("");
+  const [agentViewings, setAgentViewings] = useState<ViewingResponse[]>([]);
+  const [isLoadingViewings, setIsLoadingViewings] = useState(false);
+  const [viewingsError, setViewingsError] = useState("");
+  const [showOpenHouseModal, setShowOpenHouseModal] = useState(false);
+  const [openHousePropertyId, setOpenHousePropertyId] = useState("");
+  const [openHouseForm, setOpenHouseForm] = useState<CreateOpenHousePayload & { scheduledAt: string; endAt: string }>({
+    scheduledAt: "",
+    endAt: "",
+    maxAttendees: undefined,
+    description: "",
+  });
+  const [isSchedulingOpenHouse, setIsSchedulingOpenHouse] = useState(false);
+  const [openHouseError, setOpenHouseError] = useState("");
+  const [openHouseSuccess, setOpenHouseSuccess] = useState(false);
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
+  const [commissionPipeline, setCommissionPipeline] = useState<CommissionPipelineItem[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [viewingActionError, setViewingActionError] = useState("");
   const [dashboardMetrics, setDashboardMetrics] = useState<AgentDashboardResponse>({
     totalListings: 0,
     byStatus: {},
@@ -115,12 +135,20 @@ export default function AgentDashboardEnhanced() {
     })),
   [activeListings]);
 
-  // 4 most recently listed properties for activity feed
-  const recentListings = useMemo(() =>
-    [...activeListings]
-      .sort((a, b) => a.daysOnMarket - b.daysOnMarket)
-      .slice(0, 4),
-  [activeListings]);
+  const loadOverviewData = async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    try {
+      const [pipeline, feed] = await Promise.all([
+        agentApi.getCommissionPipeline(token),
+        agentApi.getActivityFeed(token),
+      ]);
+      setCommissionPipeline(pipeline);
+      setActivityFeed(feed);
+    } catch {
+      // non-critical — dashboard still usable without these
+    }
+  };
 
   const loadAgentListings = async () => {
     const claims = getSessionClaims();
@@ -222,7 +250,85 @@ export default function AgentDashboardEnhanced() {
 
   useEffect(() => {
     void loadAgentListings();
+    void loadOverviewData();
   }, []);
+
+  useEffect(() => {
+    if (selectedTab !== "viewings") return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingViewings(true);
+    setViewingsError("");
+    agentApi
+      .getViewings(token)
+      .then(setAgentViewings)
+      .catch(() => setViewingsError("Unable to load viewings."))
+      .finally(() => setIsLoadingViewings(false));
+  }, [selectedTab]);
+
+  const handleConfirmViewing = async (viewingId: string) => {
+    const token = getAccessToken();
+    if (!token || confirmingId) return;
+    setConfirmingId(viewingId);
+    setViewingActionError("");
+    try {
+      await viewingActionsApi.confirm(token, viewingId);
+      setAgentViewings((prev) =>
+        prev.map((v) => v.id === viewingId ? { ...v, status: 'confirmed' } : v)
+      );
+    } catch (err) {
+      setViewingActionError(err instanceof Error ? err.message : "Failed to confirm viewing.");
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  const handleCompleteViewing = async (viewingId: string) => {
+    const token = getAccessToken();
+    if (!token || completingId) return;
+    setCompletingId(viewingId);
+    setViewingActionError("");
+    try {
+      await viewingActionsApi.complete(token, viewingId);
+      setAgentViewings((prev) =>
+        prev.map((v) => v.id === viewingId ? { ...v, status: 'completed' } : v)
+      );
+    } catch (err) {
+      setViewingActionError(err instanceof Error ? err.message : "Failed to complete viewing.");
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
+  const handleScheduleOpenHouse = async () => {
+    const token = getAccessToken();
+    if (!token || !openHousePropertyId || !openHouseForm.scheduledAt || !openHouseForm.endAt) return;
+    setIsSchedulingOpenHouse(true);
+    setOpenHouseError("");
+    setOpenHouseSuccess(false);
+    try {
+      await agentApi.createOpenHouse(token, openHousePropertyId, {
+        scheduledAt: new Date(openHouseForm.scheduledAt).toISOString(),
+        endAt: new Date(openHouseForm.endAt).toISOString(),
+        maxAttendees: openHouseForm.maxAttendees,
+        description: openHouseForm.description || undefined,
+      });
+      setOpenHouseSuccess(true);
+      setTimeout(() => {
+        setShowOpenHouseModal(false);
+        setOpenHouseSuccess(false);
+        setOpenHouseForm({ scheduledAt: "", endAt: "", maxAttendees: undefined, description: "" });
+        setOpenHousePropertyId("");
+      }, 1500);
+    } catch (err) {
+      setOpenHouseError(err instanceof Error ? err.message : "Failed to schedule open house.");
+    } finally {
+      setIsSchedulingOpenHouse(false);
+    }
+  };
+
+  const upcomingViewings = agentViewings.filter((v) => new Date(v.scheduled_at) >= new Date());
+  const pastViewings = agentViewings.filter((v) => new Date(v.scheduled_at) < new Date());
 
   const totalPortfolioValue = useMemo(
     () => activeListings.reduce((sum, listing) => sum + Number(listing.price.replace(/[^\d]/g, "")), 0),
@@ -278,6 +384,16 @@ export default function AgentDashboardEnhanced() {
             }`}
           >
             My Listings
+          </button>
+          <button
+            onClick={() => setSelectedTab("viewings")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              selectedTab === "viewings"
+                ? "bg-blue-100 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Viewings
           </button>
         </div>
       </div>
@@ -369,25 +485,49 @@ export default function AgentDashboardEnhanced() {
               </ResponsiveContainer>
             </Card>
 
+            {/* Commission Pipeline */}
+            {commissionPipeline.length > 0 && (
+              <Card className="p-6 mb-6">
+                <h3 className="font-semibold text-lg mb-4">Commission Pipeline</h3>
+                <div className="space-y-3">
+                  {commissionPipeline.slice(0, 5).map((item) => (
+                    <div key={item.mandate_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{item.property_title}</p>
+                        <p className="text-xs text-gray-500 capitalize">{item.mandate_type?.replace('_', ' ')} · {item.listing_status}</p>
+                      </div>
+                      <div className="text-right shrink-0 ml-4">
+                        <p className="text-sm font-semibold text-green-700">
+                          {formatMoney(String(item.estimated_commission ?? 0), 'ZAR')}
+                        </p>
+                        <p className="text-xs text-gray-400">{item.commission_rate}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {/* Recent Activity */}
             <Card className="p-6">
               <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
               <div className="space-y-4">
-                {recentListings.length === 0 ? (
+                {activityFeed.length === 0 ? (
                   <p className="text-sm text-gray-500">No recent activity. Add your first listing to get started.</p>
                 ) : (
-                  recentListings.map((listing) => (
-                    <div key={listing.id} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
+                  activityFeed.slice(0, 8).map((item) => (
+                    <div key={item.id} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                        <Home className="w-5 h-5 text-blue-600" />
+                        <Activity className="w-5 h-5 text-blue-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{listing.address}</div>
+                        <div className="font-medium text-sm truncate">
+                          {item.property_title ?? item.entity_type}
+                        </div>
                         <div className="text-xs text-gray-500">
-                          {listing.daysOnMarket === 0
-                            ? 'Listed today'
-                            : `${listing.daysOnMarket} day${listing.daysOnMarket === 1 ? '' : 's'} on market`}
-                          {' · '}{listing.status}
+                          {item.action.replace(/_/g, ' ')}
+                          {' · '}
+                          {new Date(item.created_at).toLocaleDateString('en-ZA', { dateStyle: 'medium' })}
                         </div>
                       </div>
                     </div>
@@ -583,6 +723,225 @@ export default function AgentDashboardEnhanced() {
           </div>
         )}
       </div>
+
+        {/* Viewings Tab */}
+        {selectedTab === "viewings" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Viewings & Open Houses</h2>
+              <Button
+                onClick={() => setShowOpenHouseModal(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={activeListings.length === 0}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Open House
+              </Button>
+            </div>
+
+            {viewingsError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{viewingsError}</div>
+            )}
+
+            {viewingActionError && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">{viewingActionError}</div>
+            )}
+
+            {isLoadingViewings ? (
+              <Card className="py-12 text-center text-gray-400">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+                <p className="text-sm">Loading viewings…</p>
+              </Card>
+            ) : (
+              <>
+                {/* Upcoming */}
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-3">
+                    Upcoming ({upcomingViewings.length})
+                  </h3>
+                  {upcomingViewings.length === 0 ? (
+                    <Card className="py-8 text-center text-gray-400">
+                      <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No upcoming viewings</p>
+                    </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingViewings.map((v) => (
+                        <Card key={v.id} className="p-4 flex items-start gap-4">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
+                            <p className="text-sm text-gray-600 mt-0.5">
+                              Viewing
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                              </span>
+                              <Badge className="text-xs capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              {v.status !== 'confirmed' && v.status !== 'completed' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 px-2"
+                                  disabled={confirmingId === v.id}
+                                  onClick={() => void handleConfirmViewing(v.id)}
+                                >
+                                  {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                  Confirm
+                                </Button>
+                              )}
+                              {v.status !== 'completed' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 px-2"
+                                  disabled={completingId === v.id}
+                                  onClick={() => void handleCompleteViewing(v.id)}
+                                >
+                                  {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />}
+                                  Complete
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className={v.status === "confirmed" ? "bg-green-100 text-green-700" : v.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}>
+                            {v.status}
+                          </Badge>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Past */}
+                {pastViewings.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-3">Past ({pastViewings.length})</h3>
+                    <div className="space-y-3">
+                      {pastViewings.slice(0, 10).map((v) => (
+                        <Card key={v.id} className="p-4 flex items-start gap-4 opacity-70">
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                            <Clock className="w-5 h-5 text-gray-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
+                            <p className="text-sm text-gray-600 mt-0.5">{v.status}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                            </p>
+                          </div>
+                          <Badge className={v.status === "completed" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}>
+                            {v.status}
+                          </Badge>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+      {/* Open House Modal */}
+      {showOpenHouseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Schedule Open House</h3>
+              <button onClick={() => setShowOpenHouseModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-1">Property *</label>
+              <select
+                value={openHousePropertyId}
+                onChange={(e) => setOpenHousePropertyId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Select a listing…</option>
+                {activeListings.map((l) => (
+                  <option key={l.id} value={l.id}>{l.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">Start *</label>
+                <input
+                  type="datetime-local"
+                  value={openHouseForm.scheduledAt}
+                  onChange={(e) => setOpenHouseForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">End *</label>
+                <input
+                  type="datetime-local"
+                  value={openHouseForm.endAt}
+                  onChange={(e) => setOpenHouseForm((f) => ({ ...f, endAt: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-1">Max Attendees</label>
+              <input
+                type="number"
+                min={1}
+                value={openHouseForm.maxAttendees ?? ""}
+                onChange={(e) => setOpenHouseForm((f) => ({ ...f, maxAttendees: e.target.value ? Number(e.target.value) : undefined }))}
+                placeholder="Unlimited"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-1">Description</label>
+              <textarea
+                value={openHouseForm.description ?? ""}
+                onChange={(e) => setOpenHouseForm((f) => ({ ...f, description: e.target.value }))}
+                rows={2}
+                placeholder="Optional details for attendees…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+
+            {openHouseError && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <XCircle className="w-4 h-4" /> {openHouseError}
+              </div>
+            )}
+            {openHouseSuccess && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle2 className="w-4 h-4" /> Open house scheduled!
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowOpenHouseModal(false)} className="flex-1">Cancel</Button>
+              <Button
+                onClick={() => { void handleScheduleOpenHouse(); }}
+                disabled={isSchedulingOpenHouse || !openHousePropertyId || !openHouseForm.scheduledAt || !openHouseForm.endAt}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                {isSchedulingOpenHouse ? <Loader2 className="w-4 h-4 animate-spin" /> : "Schedule"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {showAddListing && (
         <CreateListing
