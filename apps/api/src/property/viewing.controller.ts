@@ -61,6 +61,11 @@ export class ViewingController {
     return this.viewingService.findByProperty(id);
   }
 
+  @Get('open-houses')
+  async listOpenHouses(@Param('id', ParseUUIDPipe) id: string) {
+    return this.viewingService.propertyOpenHouses(id);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('agent', 'admin')
   @Post('open-houses')

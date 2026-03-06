@@ -47,6 +47,8 @@ export type PropertyRecord = {
   verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  /** ISO timestamp of the next scheduled open house, if any. Injected by the search query. */
+  next_open_house_at?: string | null;
 };
 
 export type PropertyWithLocation = PropertyRecord & {
@@ -573,7 +575,10 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url,
+        (SELECT MIN(oh.scheduled_at)::text FROM property.open_houses oh
+          WHERE oh.property_id = p.id AND oh.status = 'scheduled' AND oh.scheduled_at > NOW()
+        ) AS next_open_house_at
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}

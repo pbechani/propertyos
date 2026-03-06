@@ -680,6 +680,8 @@ export type PropertyListing = {
   company_logo_url?: string | null;
   created_at: string;
   updated_at: string;
+  /** ISO timestamp of the next scheduled open house for this property, if any. */
+  next_open_house_at?: string | null;
   location?: {
     address_line1?: string | null;
     city?: string | null;
@@ -925,6 +927,11 @@ export const propertiesApi = {
     apiRequest<{ message: string }>(`/properties/${id}/save`, {
       method: 'DELETE',
       authToken,
+    }),
+
+  getPropertyOpenHouses: (id: string) =>
+    apiRequest<OpenHouseRecord[]>(`/properties/${id}/open-houses`, {
+      method: 'GET',
     }),
 
   createInquiry: (

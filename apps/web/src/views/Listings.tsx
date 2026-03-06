@@ -153,6 +153,7 @@ type ListingCard = {
   createdAt: string;
   latitude: number | null;
   longitude: number | null;
+  nextOpenHouseAt?: string | null;
 };
 
 type MapPoint = {
@@ -352,6 +353,7 @@ function mapPropertyToListingCard(
     createdAt: property.created_at,
     latitude: Number.isFinite(latitude) ? latitude : null,
     longitude: Number.isFinite(longitude) ? longitude : null,
+    nextOpenHouseAt: (property as PropertyListing & { next_open_house_at?: string | null }).next_open_house_at ?? null,
   };
 }
 
@@ -3281,6 +3283,11 @@ export default function Listings() {
                             {verificationBadge.label}
                           </Badge>
                           <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+                          {property.nextOpenHouseAt && (
+                            <Badge className="bg-purple-600 text-white">
+                              🏡 OPEN HOUSE · {new Date(property.nextOpenHouseAt).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </Badge>
+                          )}
                           {property.isPrivateListing && (
                             <Badge className="bg-purple-600 text-white">🔒 Privately Listed</Badge>
                           )}

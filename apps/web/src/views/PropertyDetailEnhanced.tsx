@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, agentApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 
@@ -436,7 +436,9 @@ export default function PropertyDetailEnhanced() {
   const [cancellingMandateId, setCancellingMandateId] = useState<string | null>(null);
   const [signingMandateId, setSigningMandateId] = useState<string | null>(null);
 
-  const handleAddToFavourites = async () => {
+  const [propertyOpenHouses, setPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
+  const [registeringOpenHouseId, setRegisteringOpenHouseId] = useState<string | null>(null);
+  const [openHouseRegisterSuccess, setOpenHouseRegisterSuccess] = useState<string | null>(null);
     const token = getAccessToken();
     if (!token) {
       const query = searchParams.toString();
@@ -1012,6 +1014,14 @@ export default function PropertyDetailEnhanced() {
       .finally(() => setIsLoadingComparables(false));
   }, [propertyId, currentUser]);
 
+  // Load upcoming open houses for this property (public, no auth)
+  useEffect(() => {
+    if (!propertyId) return;
+    propertiesApi.getPropertyOpenHouses(propertyId)
+      .then(setPropertyOpenHouses)
+      .catch(() => { /* non-critical */ });
+  }, [propertyId]);
+
   // Load mandates for own listings
   useEffect(() => {
     if (!propertyId || !currentUser) return;
@@ -1025,6 +1035,26 @@ export default function PropertyDetailEnhanced() {
       .catch(() => { /* non-critical */ })
       .finally(() => setIsLoadingMandates(false));
   }, [propertyId, currentUser]);
+
+  const handleRegisterOpenHouse = async (openHouseId: string) => {
+    const token = getAccessToken();
+    if (!token) {
+      const query = searchParams.toString();
+      const currentPath = `${pathname}${query ? `?${query}` : ''}`;
+      navigate(`/login?next=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+    setRegisteringOpenHouseId(openHouseId);
+    setOpenHouseRegisterSuccess(null);
+    try {
+      await agentApi.registerForOpenHouse(token, openHouseId);
+      setOpenHouseRegisterSuccess(openHouseId);
+    } catch {
+      // non-critical — silently ignore duplicate registration errors
+    } finally {
+      setRegisteringOpenHouseId(null);
+    }
+  };
 
   const handleCreateMandate = async () => {
     const token = getAccessToken();
@@ -1446,6 +1476,51 @@ export default function PropertyDetailEnhanced() {
                   <Calendar className="w-4 h-4 mr-2" />
                   {isSoldListing ? "Unavailable" : "Schedule Now"}
                 </Button>
+              </Card>
+            )}
+
+            {/* Upcoming Open Houses */}
+            {propertyOpenHouses.length > 0 && (
+              <Card className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Open Houses</h3>
+                    <p className="text-xs text-gray-500">Open to the public — no appointment needed</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {propertyOpenHouses.map((oh) => {
+                    const isRegistered = openHouseRegisterSuccess === oh.id;
+                    const isRegistering = registeringOpenHouseId === oh.id;
+                    return (
+                      <div key={oh.id} className="border border-purple-100 bg-purple-50 rounded-lg p-3">
+                        <p className="font-medium text-sm text-gray-900">
+                          {new Date(oh.scheduled_at).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {new Date(oh.scheduled_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                          {' — '}
+                          {new Date(oh.end_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                          {oh.max_attendees != null && ` · max ${oh.max_attendees} attendees`}
+                        </p>
+                        {oh.description && (
+                          <p className="text-xs text-gray-500 mt-1 italic">{oh.description}</p>
+                        )}
+                        <Button
+                          size="sm"
+                          className={`mt-2 w-full text-xs h-8 ${isRegistered ? 'bg-green-500 hover:bg-green-500 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
+                          disabled={isRegistered || isRegistering}
+                          onClick={() => void handleRegisterOpenHouse(oh.id)}
+                        >
+                          {isRegistered ? '✓ Registered' : isRegistering ? 'Registering…' : 'Register Attendance'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </Card>
             )}
 
