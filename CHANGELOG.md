@@ -13,6 +13,18 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **AgentDashboardEnhanced + PropertyDetailEnhanced — compile & API errors** (2026-03-06)
+  - `PropertyDetailEnhanced.tsx`: recovered missing `const handleAddToFavourites = async () => {` function declaration that was accidentally dropped in a prior session, causing "await isn't allowed in non-async function" and "Return statement is not allowed here" compile errors.
+  - `PropertyDetailEnhanced.tsx`: `registerForOpenHouse` was called on `agentApi` (which has no such method); corrected to `viewingActionsApi.registerForOpenHouse`. `viewingActionsApi` added to the import; unused `agentApi` import removed.
+
+### Changed
+- **AgentDashboardEnhanced — expanded metrics, new Mandates tab, Edit wired** (2026-03-06)
+  - **Overview tab**: added *Listing Status Breakdown* grid (active / draft / under_offer / sold / withdrawn / back_to_market counts sourced from `byStatus` in `AgentDashboardResponse`) and *Verification Summary* grid (verified / unverified counts from `verificationSummary`).
+  - **Analytics tab**: replaced static `—` placeholders with real `byStatus.under_offer` and `byStatus.sold` values; added *Portfolio by Status* horizontal bar chart with percentage bars; added *Verification Breakdown* grid.
+  - **Listings tab**: *Edit* button now opens the `EditListing` modal (previously inert); `EditListing` component imported and wired at the bottom of the view.
+  - **Mandates tab** (new): status summary grid (pending_signature / active / expired / cancelled counts) plus a full mandate table showing property link, mandate type, commission %, start/end period, seller & agent signature status, and status badge. Data loaded lazily on tab focus via `agentApi.getMandates()`.
+
+### Fixed
 - **Identity suite — 10 pre-existing test failures resolved** (2026-03-06)
   - `auth.service.spec.ts` (6 tests): added missing `$queryRaw` mocks for `getRolePermissions`, pending-invitations query, `resolveSelfCompanyCtx`, and `active_company_id` membership re-validation in `refresh`; corrected `BadRequestException` → `ConflictException` for duplicate-email guard.
   - `users.service.spec.ts` (2 tests): `create()` and `updateStatus()` both call `findById()` post-mutation — tests updated to mock INSERT/UPDATE RETURNING id and findById SELECT as two separate `$queryRaw` calls.
