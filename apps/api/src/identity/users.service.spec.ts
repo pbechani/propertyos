@@ -89,7 +89,9 @@ describe('UsersService', () => {
 
   describe('create', () => {
     it('inserts and returns new user', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([baseUser]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: baseUser.id }]) // INSERT RETURNING id
+        .mockResolvedValueOnce([baseUser]);            // findById SELECT
       const result = await service.create({
         email: 'test@example.com',
         passwordHash: '$2b$12$hash',
@@ -97,7 +99,7 @@ describe('UsersService', () => {
         lastName: 'Smith',
       });
       expect(result).toEqual(baseUser);
-      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -119,7 +121,9 @@ describe('UsersService', () => {
   describe('updateStatus', () => {
     it('updates and returns user with new status', async () => {
       const suspended = { ...baseUser, status: 'suspended' };
-      mockPrisma.$queryRaw.mockResolvedValueOnce([suspended]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: baseUser.id }]) // UPDATE RETURNING id
+        .mockResolvedValueOnce([suspended]);           // findById SELECT
       const result = await service.updateStatus(baseUser.id, 'suspended');
       expect(result.status).toBe('suspended');
     });

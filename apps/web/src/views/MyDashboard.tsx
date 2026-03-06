@@ -25,6 +25,8 @@ import { EditListing } from "@/components/EditListing";
 
 type DashboardListing = {
   id: string;
+  title: string;
+  listingType: 'for_sale' | 'to_rent' | 'development' | null;
   image: string;
   price: string;
   address: string;
@@ -60,6 +62,8 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
   return {
     id: property.id,
+    title: property.title,
+    listingType: property.listing_type ?? null,
     image: primaryImage || DEFAULT_LISTING_IMAGE,
     price: formatMoney(property.price, property.currency),
     address,
@@ -751,14 +755,27 @@ export default function MyDashboard() {
                     <tr key={listing.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={listing.image} 
-                            alt={listing.address}
-                            className="w-16 h-12 object-cover rounded"
-                          />
+                          <div className="relative shrink-0 w-16 h-12">
+                            <img 
+                              src={listing.image} 
+                              alt={listing.title}
+                              className="w-full h-full object-cover rounded"
+                            />
+                            {listing.listingType && (
+                              <span className={`absolute bottom-0 left-0 right-0 text-center text-[9px] font-semibold px-1 py-0.5 rounded-b leading-tight ${
+                                listing.listingType === 'for_sale' ? 'bg-blue-600 text-white' :
+                                listing.listingType === 'to_rent' ? 'bg-purple-600 text-white' :
+                                'bg-amber-500 text-white'
+                              }`}>
+                                {listing.listingType === 'for_sale' ? 'For Sale' :
+                                 listing.listingType === 'to_rent' ? 'To Rent' : 'Development'}
+                              </span>
+                            )}
+                          </div>
                           <div className="min-w-0">
-                            <div className="font-medium text-sm truncate">{listing.address}</div>
-                            <div className="text-xs text-gray-500">{listing.daysOnMarket} days on market</div>
+                            <div className="font-semibold text-sm truncate">{listing.title}</div>
+                            <div className="text-xs text-gray-400 truncate mt-0.5">{listing.address}</div>
+                            <div className="text-xs text-gray-400">{listing.daysOnMarket} days on market</div>
                           </div>
                         </div>
                       </td>

@@ -729,7 +729,7 @@ export class PropertyService {
           COUNT(*) FILTER (
             WHERE DATE(v.scheduled_at) = CURRENT_DATE AND v.status IN ('confirmed','pending')
           )::text AS today
-        FROM property.property_viewings v
+        FROM property.viewings v
         WHERE v.agent_id = ${agentId}::uuid
       `,
       this.prisma.$queryRaw<
@@ -774,13 +774,13 @@ export class PropertyService {
         p.id, p.title, p.status, p.price, p.currency,
         p.created_at,
         EXTRACT(DAY FROM NOW() - p.created_at)::int AS days_on_market,
-        (SELECT COUNT(*) FROM property.property_audit_logs al
+        (SELECT COUNT(*) FROM property.audit_logs al
          WHERE al.resource_id = p.id AND al.action = 'property.viewed')::int AS views,
         (SELECT COUNT(*) FROM property.saved_properties s
          WHERE s.property_id = p.id)::int AS saves,
-        (SELECT COUNT(*) FROM property.property_inquiries i
+        (SELECT COUNT(*) FROM property.inquiries i
          WHERE i.property_id = p.id)::int AS inquiries,
-        (SELECT COUNT(*) FROM property.property_viewings v
+        (SELECT COUNT(*) FROM property.viewings v
          WHERE v.property_id = p.id AND v.status = 'completed')::int AS completed_viewings,
         pl.city, pl.suburb
       FROM property.properties p
@@ -792,9 +792,9 @@ export class PropertyService {
 
   async getAgentActivityFeed(agentId: string) {
     return this.prisma.$queryRaw<unknown[]>`
-      SELECT al.id, al.action, al.changes, al.created_at, al.user_id,
+      SELECT al.id, al.action, al.payload, al.created_at, al.actor_id,
              p.id AS property_id, p.title AS property_title
-      FROM property.property_audit_logs al
+      FROM property.audit_logs al
       JOIN property.properties p ON p.id = al.resource_id
       WHERE p.agent_id = ${agentId}::uuid
       ORDER BY al.created_at DESC

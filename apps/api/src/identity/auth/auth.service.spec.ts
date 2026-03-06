@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
+  ConflictException,
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -160,6 +161,8 @@ describe('AuthService', () => {
       mockUsers.assignRole.mockResolvedValueOnce(undefined);
       mockPrisma.$queryRaw
         .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
+        .mockResolvedValueOnce([])                          // getRolePermissions → no perms
+        .mockResolvedValueOnce([])                          // pending invitations → none
         .mockResolvedValueOnce([{ id: 'refresh-id' }]);     // insert refresh token
       mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 
@@ -179,7 +182,7 @@ describe('AuthService', () => {
     it('throws BadRequestException when email already exists', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
       await expect(service.register(dto, requestCtx)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
 
@@ -208,7 +211,7 @@ describe('AuthService', () => {
         password_hash: hash,
       });
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([]) // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([{ id: 'co-uuid', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
         .mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
 
       const result = await service.login(
@@ -311,8 +314,10 @@ describe('AuthService', () => {
             user_id: USER_ID,
             expires_at: futureDate,
             revoked_at: null,
+            active_company_id: 'co-uuid',
           },
         ]) // lookup
+        .mockResolvedValueOnce([{ role: 'buyer_seller', is_admin: false }]) // member validation
         .mockResolvedValueOnce([{ id: 'new-rt-id' }]); // insert new token
       mockPrisma.$executeRaw.mockResolvedValueOnce(1n); // revoke old
       mockUsers.findById.mockResolvedValueOnce(baseUser);
@@ -545,7 +550,7 @@ describe('AuthService', () => {
     it('logs in existing user without creating a new record', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([]) // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([{ id: 'self-co', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
         .mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token insert
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
@@ -565,7 +570,8 @@ describe('AuthService', () => {
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockPrisma.$queryRaw
         .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
-        .mockResolvedValueOnce([])                          // getUserActiveMemberships → no companies
+        .mockResolvedValueOnce([])                          // getRolePermissions → no perms
+        .mockResolvedValueOnce([{ id: 'self-company-id', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
         .mockResolvedValueOnce([{ id: 'rt-id' }]);          // refresh token
       mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 

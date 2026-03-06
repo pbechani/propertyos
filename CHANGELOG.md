@@ -13,6 +13,21 @@ Related docs:
 ## [Unreleased]
 
 ### Fixed
+- **Identity suite — 10 pre-existing test failures resolved** (2026-03-06)
+  - `auth.service.spec.ts` (6 tests): added missing `$queryRaw` mocks for `getRolePermissions`, pending-invitations query, `resolveSelfCompanyCtx`, and `active_company_id` membership re-validation in `refresh`; corrected `BadRequestException` → `ConflictException` for duplicate-email guard.
+  - `users.service.spec.ts` (2 tests): `create()` and `updateStatus()` both call `findById()` post-mutation — tests updated to mock INSERT/UPDATE RETURNING id and findById SELECT as two separate `$queryRaw` calls.
+  - `notification.service.spec.ts` (2 tests): added `EMAIL_PROVIDER: 'sendgrid'` to test config in both SendGrid tests so `resolveEmailProvider()` correctly resolves the provider.
+  - All 55 identity tests now passing.
+
+- **Sprint 03 audit — SQL table/column bugs fixed** (2026-03-06)
+  - `property.service.ts` and `seller-dashboard.service.ts`: 10 references to non-existent table/column names corrected (`property_viewings` → `viewings`, `property_inquiries` → `inquiries`, `property_audit_logs` → `audit_logs`, `al.changes` → `al.payload`, `al.user_id` → `al.actor_id`, `v.feedback_notes`/`v.rating` → `v.buyer_feedback`, `m.expiry_date` → `m.end_date`).
+  - `property.service.spec.ts`: 3 `create()` tests missing self-company lookup mock prepended before INSERT mock.
+
+### Changed
+- **Dashboard UI — Listings tab improvements** (2026-03-06)
+  - `MyDashboard.tsx` and `AgentDashboardEnhanced.tsx` listings tables: listing title is now the primary headline; listing-type badge (`For Sale` / `To Rent` / `Development`) displayed as a coloured strip overlaid on the bottom of the property thumbnail.
+  - `AgentDashboardEnhanced.tsx`: added full **Duplicate** action to the listings table, matching MyDashboard behaviour (copies all fields + media to a new draft, with loading state and error handling).
+
 - **Sprint 02 Enhanced — post-audit bug fixes** (2026-03-05)
   - **[HIGH] Sessions never populated** — `AuthService.issueTokens()` now calls `SessionsService.create()` after every successful login, register, refresh, and OAuth flow. Sessions are persisted to `identity.user_sessions` with IP address and device name (first 100 chars of `User-Agent`).
   - **[MEDIUM] Licence document upload endpoint missing** — `PATCH /api/v1/users/me/licences/:id/document` is now functional. `DocumentStorageService` is properly injected into `ProfessionalLicencesController`; the class closing brace was also corrected.

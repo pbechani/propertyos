@@ -80,6 +80,7 @@ describe('PropertyService', () => {
 
   describe('create', () => {
     it('inserts a property and returns the created record', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]); // INSERT
       // No location dto — no extra calls
 
@@ -105,6 +106,7 @@ describe('PropertyService', () => {
     });
 
     it('upserts location when location dto is provided', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]); // INSERT property
       mockPrisma.$executeRaw.mockResolvedValueOnce(1); // upsert location (no lat/lng)
 
@@ -125,6 +127,7 @@ describe('PropertyService', () => {
     });
 
     it('supports snake_case create payload aliases', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]);
       mockPrisma.$executeRaw.mockResolvedValueOnce(1);
 

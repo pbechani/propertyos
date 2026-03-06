@@ -19,15 +19,15 @@ export class SellerDashboardService {
         pl.city, pl.suburb,
         (SELECT pm.url FROM property.property_media pm
          WHERE pm.property_id = p.id AND pm.is_primary = TRUE LIMIT 1) AS media_url,
-        (SELECT COUNT(*)::int FROM property.property_viewings v
+        (SELECT COUNT(*)::int FROM property.viewings v
          WHERE v.property_id = p.id AND v.status = 'completed') AS completed_viewings,
-        (SELECT COUNT(*)::int FROM property.property_viewings v
+        (SELECT COUNT(*)::int FROM property.viewings v
          WHERE v.property_id = p.id AND v.status = 'confirmed') AS upcoming_viewings,
-        (SELECT COUNT(*)::int FROM property.property_inquiries i
+        (SELECT COUNT(*)::int FROM property.inquiries i
          WHERE i.property_id = p.id) AS total_inquiries,
         (SELECT COUNT(*)::int FROM property.saved_properties s
          WHERE s.property_id = p.id) AS save_count,
-        m.mandate_type, m.status AS mandate_status, m.expiry_date AS mandate_expiry,
+        m.mandate_type, m.status AS mandate_status, m.end_date AS mandate_expiry,
         au.first_name AS agent_first_name, au.last_name AS agent_last_name
       FROM property.properties p
       LEFT JOIN property.property_locations pl ON pl.property_id = p.id
@@ -49,8 +49,8 @@ export class SellerDashboardService {
     }
 
     return this.prisma.$queryRaw<unknown[]>`
-      SELECT action, changes, created_at, user_id
-      FROM property.property_audit_logs
+      SELECT action, payload, created_at, actor_id
+      FROM property.audit_logs
       WHERE resource_id = ${propertyId}::uuid
       ORDER BY created_at DESC
       LIMIT 100
@@ -68,11 +68,11 @@ export class SellerDashboardService {
 
     return this.prisma.$queryRaw<unknown[]>`
       SELECT
-        v.id, v.scheduled_at, v.status, v.feedback_notes, v.rating,
+        v.id, v.scheduled_at, v.status, v.buyer_feedback,
         v.viewing_type, v.duration_minutes,
         bu.first_name AS buyer_first_name, bu.last_name AS buyer_last_name,
         au.first_name AS agent_first_name, au.last_name AS agent_last_name
-      FROM property.property_viewings v
+      FROM property.viewings v
       LEFT JOIN identity.users bu ON bu.id = v.buyer_id
       LEFT JOIN identity.users au ON au.id = v.agent_id
       WHERE v.property_id = ${propertyId}::uuid

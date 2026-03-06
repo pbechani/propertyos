@@ -5,7 +5,7 @@ import { Link } from "@/lib/router-compat";
 import {
   TrendingUp, Eye,
   MessageSquare, Plus,
-  Home, DollarSign, Users
+  Home, DollarSign, Users, Copy
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -20,6 +20,8 @@ import { propertiesApi, type AgentDashboardResponse, type PropertyListing } from
 
 type DashboardListing = {
   id: string;
+  title: string;
+  listingType: 'for_sale' | 'to_rent' | 'development' | null;
   image: string;
   price: string;
   address: string;
@@ -55,6 +57,8 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
   return {
     id: property.id,
+    title: property.title,
+    listingType: property.listing_type ?? null,
     image: primaryImage || DEFAULT_LISTING_IMAGE,
     price: formatMoney(property.price, property.currency),
     address,
@@ -73,8 +77,11 @@ export default function AgentDashboardEnhanced() {
   const [showAddListing, setShowAddListing] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
+  const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState("");
+  const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
+  const [duplicateError, setDuplicateError] = useState("");
   const [dashboardMetrics, setDashboardMetrics] = useState<AgentDashboardResponse>({
     totalListings: 0,
     byStatus: {},
@@ -140,13 +147,76 @@ export default function AgentDashboardEnhanced() {
         token ? propertiesApi.getAgentDashboard(token) : Promise.resolve(dashboardMetrics),
       ]);
 
+      setRawListings(response.data);
       setActiveListings(response.data.map(mapPropertyToDashboardListing));
       setDashboardMetrics(metrics);
     } catch {
       setActiveListings([]);
+      setRawListings([]);
       setListingError("Unable to load agent listings from database.");
     } finally {
       setIsLoadingListings(false);
+    }
+  };
+
+  const handleDuplicateListing = async (listingId: string) => {
+    const token = getAccessToken();
+    if (!token || duplicatingIds.has(listingId)) return;
+
+    const raw = rawListings.find((r) => r.id === listingId);
+    if (!raw) return;
+
+    setDuplicatingIds((prev) => new Set(prev).add(listingId));
+    setDuplicateError("");
+    try {
+      const loc = raw.location;
+      const created = await propertiesApi.create(token, {
+        title: `${raw.title} (Duplicate)`,
+        description: raw.description ?? undefined,
+        property_type: raw.property_type,
+        listingType: raw.listing_type ?? undefined,
+        price: Number(raw.price),
+        currency: raw.currency,
+        bedrooms: raw.bedrooms ?? undefined,
+        bathrooms: raw.bathrooms ?? undefined,
+        parking_spaces: raw.parking_spaces ?? undefined,
+        area_sqm: raw.area_sqm != null ? Number(raw.area_sqm) : undefined,
+        features: raw.features ?? undefined,
+        ...(loc ? {
+          location: {
+            address_line1: loc.address_line1 ?? undefined,
+            city: loc.city ?? undefined,
+            region: loc.region ?? undefined,
+            country: loc.country,
+            postal_code: loc.postal_code ?? undefined,
+            latitude: loc.latitude != null ? Number(loc.latitude) : undefined,
+            longitude: loc.longitude != null ? Number(loc.longitude) : undefined,
+          },
+        } : {}),
+      });
+
+      if (raw.media && raw.media.length > 0) {
+        for (const mediaItem of raw.media) {
+          try {
+            const res = await fetch(mediaItem.url);
+            const blob = await res.blob();
+            const ext = mediaItem.url.split('.').pop()?.split('?')[0] ?? 'jpg';
+            const file = new File([blob], `media.${ext}`, { type: blob.type || 'image/jpeg' });
+            const formData = new FormData();
+            formData.append('file', file);
+            await propertiesApi.addMedia(token, created.id, formData);
+          } catch {
+            // skip individual media failures
+          }
+        }
+      }
+
+      await loadAgentListings();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to duplicate listing";
+      setDuplicateError(msg);
+    } finally {
+      setDuplicatingIds((prev) => { const next = new Set(prev); next.delete(listingId); return next; });
     }
   };
 
@@ -405,6 +475,13 @@ export default function AgentDashboardEnhanced() {
               </div>
             )}
 
+            {duplicateError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+                <span>Duplicate failed: {duplicateError}</span>
+                <button onClick={() => setDuplicateError("")} className="ml-4 text-red-500 hover:text-red-700 font-bold">✕</button>
+              </div>
+            )}
+
             <Card className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -429,14 +506,27 @@ export default function AgentDashboardEnhanced() {
                     <tr key={listing.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={listing.image} 
-                            alt={listing.address}
-                            className="w-16 h-12 object-cover rounded"
-                          />
+                          <div className="relative shrink-0 w-16 h-12">
+                            <img 
+                              src={listing.image} 
+                              alt={listing.title}
+                              className="w-full h-full object-cover rounded"
+                            />
+                            {listing.listingType && (
+                              <span className={`absolute bottom-0 left-0 right-0 text-center text-[9px] font-semibold px-1 py-0.5 rounded-b leading-tight ${
+                                listing.listingType === 'for_sale' ? 'bg-blue-600 text-white' :
+                                listing.listingType === 'to_rent' ? 'bg-purple-600 text-white' :
+                                'bg-amber-500 text-white'
+                              }`}>
+                                {listing.listingType === 'for_sale' ? 'For Sale' :
+                                 listing.listingType === 'to_rent' ? 'To Rent' : 'Development'}
+                              </span>
+                            )}
+                          </div>
                           <div className="min-w-0">
-                            <div className="font-medium text-sm truncate">{listing.address}</div>
-                            <div className="text-xs text-gray-500">{listing.daysOnMarket} days on market</div>
+                            <div className="font-semibold text-sm truncate">{listing.title}</div>
+                            <div className="text-xs text-gray-400 truncate mt-0.5">{listing.address}</div>
+                            <div className="text-xs text-gray-400">{listing.daysOnMarket} days on market</div>
                           </div>
                         </div>
                       </td>
@@ -473,6 +563,16 @@ export default function AgentDashboardEnhanced() {
                             <Link to={`/app/property/${listing.id}`}>View</Link>
                           </Button>
                           <Button size="sm" variant="outline">Edit</Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={duplicatingIds.has(listing.id)}
+                            onClick={() => { void handleDuplicateListing(listing.id); }}
+                            title="Duplicate as draft"
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            {duplicatingIds.has(listing.id) ? "Copying…" : "Duplicate"}
+                          </Button>
                         </div>
                       </td>
                     </tr>
