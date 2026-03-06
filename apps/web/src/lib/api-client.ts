@@ -1095,6 +1095,19 @@ export type CreateOpenHousePayload = {
   description?: string;
 };
 
+export type OpenHouseRecord = {
+  id: string;
+  property_id: string;
+  property_title: string;
+  agent_id: string;
+  scheduled_at: string;
+  end_at: string;
+  max_attendees: number | null;
+  description: string | null;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  created_at: string;
+};
+
 // ─── Mandate types ────────────────────────────────────────────────────────────
 
 export type MandateRecord = {
@@ -1193,6 +1206,12 @@ export const agentApi = {
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+    }),
+
+  getOpenHouses: (authToken: string) =>
+    apiRequest<OpenHouseRecord[]>('/agent/open-houses', {
+      method: 'GET',
+      authToken,
     }),
 
   getMandates: (authToken: string) =>

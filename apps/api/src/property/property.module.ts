@@ -16,7 +16,7 @@ import { MandateController, AgentMandateController } from './mandate.controller'
 import { ValuationService } from './valuation.service';
 import { ValuationController, ValuerController, ValuersController } from './valuation.controller';
 import { ViewingService } from './viewing.service';
-import { ViewingController, ViewingActionController, AgentViewingCalendarController, OpenHouseController } from './viewing.controller';
+import { ViewingController, ViewingActionController, AgentViewingCalendarController, AgentOpenHouseController, OpenHouseController } from './viewing.controller';
 import { NeighbourhoodService, SyndicationService } from './neighbourhood.service';
 import {
   PropertyNeighbourhoodController,
@@ -50,6 +50,7 @@ import { SellerDashboardService } from './seller-dashboard.service';
     ViewingController,
     ViewingActionController,
     AgentViewingCalendarController,
+    AgentOpenHouseController,
     OpenHouseController,
     PropertyNeighbourhoodController,
     NeighbourhoodController,

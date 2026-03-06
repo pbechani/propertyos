@@ -6,7 +6,8 @@ import {
   TrendingUp, Eye,
   MessageSquare, Plus,
   Home, DollarSign, Copy,
-  Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity
+  Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity, Users,
+  ChevronLeft, ChevronRight, List as ListIcon
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type CommissionPipelineItem, type ActivityFeedItem } from "@/lib/api-client";
+import { propertiesApi, agentApi, viewingActionsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem } from "@/lib/api-client";
 
 type DashboardListing = {
   id: string;
@@ -95,6 +96,7 @@ export default function AgentDashboardEnhanced() {
   const [isSchedulingOpenHouse, setIsSchedulingOpenHouse] = useState(false);
   const [openHouseError, setOpenHouseError] = useState("");
   const [openHouseSuccess, setOpenHouseSuccess] = useState(false);
+  const [agentOpenHouses, setAgentOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
   const [commissionPipeline, setCommissionPipeline] = useState<CommissionPipelineItem[]>([]);
@@ -102,6 +104,12 @@ export default function AgentDashboardEnhanced() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [viewingActionError, setViewingActionError] = useState("");
+  const [viewingsView, setViewingsView] = useState<"list" | "calendar">("list");
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedCalDay, setSelectedCalDay] = useState<string | null>(null);
   const [dashboardMetrics, setDashboardMetrics] = useState<AgentDashboardResponse>({
     totalListings: 0,
     byStatus: {},
@@ -259,9 +267,14 @@ export default function AgentDashboardEnhanced() {
     if (!token) return;
     setIsLoadingViewings(true);
     setViewingsError("");
-    agentApi
-      .getViewings(token)
-      .then(setAgentViewings)
+    Promise.all([
+      agentApi.getViewings(token),
+      agentApi.getOpenHouses(token),
+    ])
+      .then(([viewings, openHouses]) => {
+        setAgentViewings(viewings);
+        setAgentOpenHouses(openHouses);
+      })
       .catch(() => setViewingsError("Unable to load viewings."))
       .finally(() => setIsLoadingViewings(false));
   }, [selectedTab]);
@@ -314,6 +327,8 @@ export default function AgentDashboardEnhanced() {
         description: openHouseForm.description || undefined,
       });
       setOpenHouseSuccess(true);
+      // Refresh open houses list in background
+      agentApi.getOpenHouses(token).then(setAgentOpenHouses).catch(() => undefined);
       setTimeout(() => {
         setShowOpenHouseModal(false);
         setOpenHouseSuccess(false);
@@ -329,6 +344,54 @@ export default function AgentDashboardEnhanced() {
 
   const upcomingViewings = agentViewings.filter((v) => new Date(v.scheduled_at) >= new Date());
   const pastViewings = agentViewings.filter((v) => new Date(v.scheduled_at) < new Date());
+
+  // Group all viewings by calendar date key (YYYY-MM-DD)
+  const viewingsByDate = useMemo(() => {
+    const map = new Map<string, ViewingResponse[]>();
+    agentViewings.forEach((v) => {
+      const key = v.scheduled_at.slice(0, 10);
+      const existing = map.get(key) ?? [];
+      map.set(key, [...existing, v]);
+    });
+    return map;
+  }, [agentViewings]);
+
+  const openHousesByDate = useMemo(() => {
+    const map = new Map<string, OpenHouseRecord[]>();
+    agentOpenHouses.forEach((oh) => {
+      const key = oh.scheduled_at.slice(0, 10);
+      const existing = map.get(key) ?? [];
+      map.set(key, [...existing, oh]);
+    });
+    return map;
+  }, [agentOpenHouses]);
+
+  // Build a 6-week (42-cell) grid for the current calendar month
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startOffset = firstDay.getDay(); // 0 = Sunday
+    const days: Array<{ date: Date; dateStr: string; inMonth: boolean }> = [];
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const d = new Date(year, month, -i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      days.push({ date: d, dateStr, inMonth: false });
+    }
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ date, dateStr, inMonth: true });
+    }
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(year, month + 1, i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      days.push({ date: d, dateStr, inMonth: false });
+    }
+    return days;
+  }, [calendarMonth]);
 
   const totalPortfolioValue = useMemo(
     () => activeListings.reduce((sum, listing) => sum + Number(listing.price.replace(/[^\d]/g, "")), 0),
@@ -722,21 +785,40 @@ export default function AgentDashboardEnhanced() {
             </Card>
           </div>
         )}
-      </div>
 
         {/* Viewings Tab */}
         {selectedTab === "viewings" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Viewings & Open Houses</h2>
-              <Button
-                onClick={() => setShowOpenHouseModal(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-                disabled={activeListings.length === 0}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Schedule Open House
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* List / Calendar toggle */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewingsView("list")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    <ListIcon className="w-4 h-4" />
+                    List
+                  </button>
+                  <button
+                    onClick={() => setViewingsView("calendar")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "calendar" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Calendar
+                  </button>
+                </div>
+                <Button
+                  onClick={() => setShowOpenHouseModal(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  disabled={activeListings.length === 0}
+                  title={activeListings.length === 0 ? "You need at least one active property listing to schedule an open house" : undefined}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Schedule Open House
+                </Button>
+              </div>
             </div>
 
             {viewingsError && (
@@ -752,7 +834,203 @@ export default function AgentDashboardEnhanced() {
                 <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
                 <p className="text-sm">Loading viewings…</p>
               </Card>
+            ) : viewingsView === "calendar" ? (
+              /* ── Calendar View ── */
+              <Card className="p-4 md:p-6">
+                {/* Month navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-800">
+                      {calendarMonth.toLocaleString("en-ZA", { month: "long", year: "numeric" })}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{agentViewings.length} total viewings</p>
+                  </div>
+                  <button
+                    onClick={() => setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Next month"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Day-of-week headers */}
+                <div className="grid grid-cols-7 mb-1">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                    <div key={d} className="text-center text-xs font-medium text-gray-400 py-2">{d}</div>
+                  ))}
+                </div>
+
+                {/* Day cells */}
+                <div className="grid grid-cols-7 border-l border-t border-gray-200">
+                  {calendarDays.map(({ date, dateStr, inMonth }) => {
+                    const dayViewings = viewingsByDate.get(dateStr) ?? [];
+                    const dayOpenHouses = openHousesByDate.get(dateStr) ?? [];
+                    const totalItems = dayViewings.length + dayOpenHouses.length;
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const isToday = dateStr === todayStr;
+                    const isSelected = dateStr === selectedCalDay;
+                    // Combined chips: viewings first (up to 2 total), then open houses
+                    const viewingChips = dayViewings.slice(0, Math.min(2, dayViewings.length));
+                    const openHouseChips = dayOpenHouses.slice(0, Math.max(0, 2 - viewingChips.length));
+                    const hiddenCount = totalItems - viewingChips.length - openHouseChips.length;
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => setSelectedCalDay((prev) => (prev === dateStr ? null : dateStr))}
+                        className={`border-r border-b border-gray-200 min-h-18 p-1.5 text-left transition-colors ${
+                          !inMonth ? "bg-gray-50" : "bg-white hover:bg-blue-50"
+                        } ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""}`}
+                      >
+                        <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
+                          isToday ? "bg-blue-600 text-white" : inMonth ? "text-gray-700" : "text-gray-300"
+                        }`}>
+                          {date.getDate()}
+                        </span>
+                        <div className="mt-1 space-y-0.5">
+                          {viewingChips.map((v) => (
+                            <div
+                              key={v.id}
+                              className={`text-[10px] px-1 py-0.5 rounded truncate leading-tight ${
+                                v.status === "confirmed"
+                                  ? "bg-green-100 text-green-700"
+                                  : v.status === "completed"
+                                  ? "bg-gray-100 text-gray-500"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {new Date(v.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          ))}
+                          {openHouseChips.map((oh) => (
+                            <div
+                              key={oh.id}
+                              className="text-[10px] px-1 py-0.5 rounded truncate leading-tight bg-purple-100 text-purple-700"
+                            >
+                              OH {new Date(oh.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          ))}
+                          {hiddenCount > 0 && (
+                            <div className="text-[10px] text-gray-400 pl-1">+{hiddenCount} more</div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-100 inline-block" />Pending</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-100 inline-block" />Confirmed</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-100 inline-block" />Completed</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-purple-100 inline-block" />Open House</span>
+                </div>
+
+                {/* Selected day detail panel */}
+                {selectedCalDay && ((viewingsByDate.get(selectedCalDay)?.length ?? 0) + (openHousesByDate.get(selectedCalDay)?.length ?? 0)) > 0 && (() => {
+                  const dayViewingsDetail = viewingsByDate.get(selectedCalDay) ?? [];
+                  const dayOpenHousesDetail = openHousesByDate.get(selectedCalDay) ?? [];
+                  const totalCount = dayViewingsDetail.length + dayOpenHousesDetail.length;
+                  return (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="font-semibold text-sm text-gray-700 mb-3">
+                        {new Date(selectedCalDay + "T12:00:00").toLocaleDateString("en-ZA", {
+                          weekday: "long", day: "numeric", month: "long",
+                        })}
+                        <span className="ml-2 font-normal text-gray-400">
+                          — {totalCount} event{totalCount > 1 ? "s" : ""}
+                        </span>
+                      </h4>
+                      <div className="space-y-2">
+                        {dayViewingsDetail
+                          .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
+                          .map((v) => (
+                            <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                              <div className="text-xs font-mono text-gray-500 w-12 shrink-0">
+                                {new Date(v.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{v.property_title ?? "Property"}</p>
+                                <p className="text-xs text-gray-500 capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {v.status !== "confirmed" && v.status !== "completed" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2"
+                                    disabled={confirmingId === v.id}
+                                    onClick={() => void handleConfirmViewing(v.id)}
+                                  >
+                                    {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Confirm"}
+                                  </Button>
+                                )}
+                                {v.status !== "completed" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2"
+                                    disabled={completingId === v.id}
+                                    onClick={() => void handleCompleteViewing(v.id)}
+                                  >
+                                    {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Complete"}
+                                  </Button>
+                                )}
+                                <Badge className={
+                                  v.status === "confirmed" ? "bg-green-100 text-green-700" :
+                                  v.status === "completed" ? "bg-blue-100 text-blue-700" :
+                                  "bg-yellow-100 text-yellow-700"
+                                }>
+                                  {v.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        {dayOpenHousesDetail
+                          .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
+                          .map((oh) => (
+                            <div key={oh.id} className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
+                              <div className="text-xs font-mono text-purple-500 w-12 shrink-0">
+                                {new Date(oh.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{oh.property_title}</p>
+                                <p className="text-xs text-purple-500">
+                                  Open House
+                                  {oh.max_attendees != null ? ` · max ${oh.max_attendees}` : ""}
+                                  {" → "}{new Date(oh.end_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                              <Badge className={
+                                oh.status === "completed" ? "bg-green-100 text-green-700" :
+                                oh.status === "cancelled" ? "bg-red-100 text-red-700" :
+                                "bg-purple-100 text-purple-700"
+                              }>
+                                {oh.status}
+                              </Badge>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {selectedCalDay && ((viewingsByDate.get(selectedCalDay)?.length ?? 0) + (openHousesByDate.get(selectedCalDay)?.length ?? 0)) === 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 text-center text-sm text-gray-400">
+                    No events on {new Date(selectedCalDay + "T12:00:00").toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+                  </div>
+                )}
+              </Card>
             ) : (
+              /* ── List View ── */
               <>
                 {/* Upcoming */}
                 <div>
@@ -844,10 +1122,51 @@ export default function AgentDashboardEnhanced() {
                     </div>
                   </div>
                 )}
+
+                {/* Open Houses */}
+                {agentOpenHouses.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-purple-500" />
+                      Open Houses ({agentOpenHouses.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {agentOpenHouses.map((oh) => (
+                        <Card key={oh.id} className="p-4 flex items-start gap-4">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                            <Users className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{oh.property_title}</p>
+                            <p className="text-sm text-gray-600 mt-0.5">
+                              {new Date(oh.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                              {" → "}
+                              {new Date(oh.end_at).toLocaleTimeString("en-ZA", { timeStyle: "short" })}
+                            </p>
+                            {oh.max_attendees != null && (
+                              <p className="text-xs text-gray-400 mt-0.5">Max {oh.max_attendees} attendees</p>
+                            )}
+                            {oh.description && (
+                              <p className="text-xs text-gray-400 mt-0.5 truncate">{oh.description}</p>
+                            )}
+                          </div>
+                          <Badge className={
+                            oh.status === "completed" ? "bg-green-100 text-green-700" :
+                            oh.status === "cancelled" ? "bg-red-100 text-red-700" :
+                            "bg-purple-100 text-purple-700"
+                          }>
+                            {oh.status}
+                          </Badge>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
         )}
+      </div>
 
       {/* Open House Modal */}
       {showOpenHouseModal && (
@@ -865,6 +1184,7 @@ export default function AgentDashboardEnhanced() {
               <select
                 value={openHousePropertyId}
                 onChange={(e) => setOpenHousePropertyId(e.target.value)}
+                title="Select a property"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">Select a listing…</option>
@@ -881,6 +1201,7 @@ export default function AgentDashboardEnhanced() {
                   type="datetime-local"
                   value={openHouseForm.scheduledAt}
                   onChange={(e) => setOpenHouseForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  title="Open house start date and time"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
@@ -890,6 +1211,7 @@ export default function AgentDashboardEnhanced() {
                   type="datetime-local"
                   value={openHouseForm.endAt}
                   onChange={(e) => setOpenHouseForm((f) => ({ ...f, endAt: e.target.value }))}
+                  title="Open house end date and time"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>

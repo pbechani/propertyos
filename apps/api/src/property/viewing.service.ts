@@ -275,6 +275,20 @@ export class ViewingService {
     `;
   }
 
+  async agentOpenHouses(
+    agentId: string,
+  ): Promise<(OpenHouseRecord & { property_title: string })[]> {
+    return this.prisma.$queryRaw<
+      (OpenHouseRecord & { property_title: string })[]
+    >`
+      SELECT oh.*, p.title as property_title
+      FROM property.open_houses oh
+      JOIN property.properties p ON p.id = oh.property_id
+      WHERE oh.agent_id = ${agentId}::uuid
+      ORDER BY oh.scheduled_at DESC
+    `;
+  }
+
   // ──────────────────────────────────────────────────────────
   // OPEN HOUSES
   // ──────────────────────────────────────────────────────────

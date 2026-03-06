@@ -164,6 +164,21 @@ export class AgentViewingCalendarController {
 }
 
 /**
+ * GET  /api/v1/agent/open-houses   [agent] — list own open houses
+ */
+@Controller('agent/open-houses')
+export class AgentOpenHouseController {
+  constructor(private readonly viewingService: ViewingService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Get()
+  async list(@Request() req: AuthRequest) {
+    return this.viewingService.agentOpenHouses(req.user.sub);
+  }
+}
+
+/**
  * POST /api/v1/open-houses/:id/register   [buyer]
  */
 @Controller('open-houses')
