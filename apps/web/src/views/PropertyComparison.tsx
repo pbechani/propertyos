@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/lib/router-compat";
 import {
@@ -23,10 +23,6 @@ function formatMoney(price: string, currency: string) {
     currency: currency || "ZAR",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function isWinner(propertyId: string, values: Array<{ propertyId: string; value: number | null }>, winner: string | null) {
-  return winner === propertyId;
 }
 
 export default function PropertyComparison() {
@@ -73,7 +69,7 @@ export default function PropertyComparison() {
     searchDebounce.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await propertiesApi.search({ search: searchQuery.trim(), limit: 6 });
+        const res = await propertiesApi.search({ q: searchQuery.trim(), limit: 6 });
         // Map to ComparisonProperty shape for display
         setSearchResults(
           res.data.map((p) => ({
@@ -516,5 +512,3 @@ export default function PropertyComparison() {
     </div>
   );
 }
-
-import { Card } from "@/components/ui/card";

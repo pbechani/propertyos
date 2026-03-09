@@ -1,107 +1,101 @@
 'use client';
 
-import { X, Bell, CheckCircle, AlertTriangle, Info, MessageSquare } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { X, Bell, CheckCircle, AlertTriangle, Info, MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { notificationsApi, type UserNotification } from "@/lib/api-client";
+import { getAccessToken, getActiveCompanyContext } from "@/lib/auth-session";
 
 interface NotificationCenterProps {
   onClose: () => void;
 }
 
-interface Notification {
-  id: string;
-  type: "success" | "warning" | "info" | "message";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  actionText?: string;
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function getIcon(type: string) {
+  if (type.includes("confirmed") || type.includes("approved") || type.includes("success")) return CheckCircle;
+  if (type.includes("declined") || type.includes("cancelled") || type.includes("warning")) return AlertTriangle;
+  if (type.includes("message") || type.includes("inquiry") || type.includes("request")) return MessageSquare;
+  return Info;
+}
+
+function getColorClasses(type: string): string {
+  if (type.includes("confirmed") || type.includes("approved") || type.includes("success")) return "bg-green-100 text-green-600";
+  if (type.includes("declined") || type.includes("cancelled") || type.includes("warning")) return "bg-orange-100 text-orange-600";
+  if (type.includes("message") || type.includes("inquiry") || type.includes("request")) return "bg-blue-100 text-blue-600";
+  return "bg-gray-100 text-gray-600";
 }
 
 export function NotificationCenter({ onClose }: NotificationCenterProps) {
-  const notifications: Notification[] = [
-    {
-      id: "1",
-      type: "success",
-      title: "Verification Approved",
-      message: "Your identity has been verified. You now have a verified badge!",
-      time: "5 minutes ago",
-      read: false,
-      actionText: "View Profile",
-    },
-    {
-      id: "2",
-      type: "message",
-      title: "New Inquiry on 88 Sunset Boulevard",
-      message: "Sarah Johnson is interested in scheduling a viewing.",
-      time: "1 hour ago",
-      read: false,
-      actionText: "Respond",
-    },
-    {
-      id: "3",
-      type: "warning",
-      title: "Document Expiring Soon",
-      message: "Your business license will expire in 30 days. Please update.",
-      time: "3 hours ago",
-      read: false,
-      actionText: "Update Document",
-    },
-    {
-      id: "4",
-      type: "info",
-      title: "Viewing Scheduled",
-      message: "Property viewing confirmed for tomorrow at 2:00 PM",
-      time: "5 hours ago",
-      read: true,
-      actionText: "View Details",
-    },
-    {
-      id: "5",
-      type: "success",
-      title: "New Lead Generated",
-      message: "You have a new lead for 204 Sky View property",
-      time: "Yesterday",
-      read: true,
-      actionText: "Contact Lead",
-    },
-    {
-      id: "6",
-      type: "info",
-      title: "Price Alert",
-      message: "Property in West Hills dropped by $50,000",
-      time: "2 days ago",
-      read: true,
-    },
-  ];
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  const [markingAll, setMarkingAll] = useState(false);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return CheckCircle;
-      case "warning":
-        return AlertTriangle;
-      case "message":
-        return MessageSquare;
-      default:
-        return Info;
+  const activeCompany = getActiveCompanyContext();
+  const companyName = activeCompany?.name ?? null;
+
+  const load = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const data = await notificationsApi.getAll(token);
+      setNotifications(data);
+    } catch {
+      setError("Unable to load notifications.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleMarkRead = async (id: string) => {
+    const token = getAccessToken();
+    if (!token || markingId) return;
+    setMarkingId(id);
+    try {
+      await notificationsApi.markRead(token, id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
+      );
+    } finally {
+      setMarkingId(null);
     }
   };
 
-  const getColorClasses = (type: string) => {
-    switch (type) {
-      case "success":
-        return "bg-green-100 text-green-600";
-      case "warning":
-        return "bg-orange-100 text-orange-600";
-      case "message":
-        return "bg-blue-100 text-blue-600";
-      default:
-        return "bg-gray-100 text-gray-600";
+  const handleMarkAllRead = async () => {
+    const token = getAccessToken();
+    if (!token || markingAll) return;
+    setMarkingAll(true);
+    try {
+      await notificationsApi.markAllRead(token);
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })),
+      );
+    } finally {
+      setMarkingAll(false);
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -112,15 +106,24 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
             <Bell className="w-6 h-6 text-blue-600" />
             <div>
               <h2 className="text-xl font-semibold">Notifications</h2>
-              {unreadCount > 0 && (
-                <p className="text-sm text-gray-600">{unreadCount} unread notifications</p>
-              )}
+              <p className="text-sm text-gray-500">
+                {companyName ? `${companyName} · ` : ""}
+                {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              Mark all as read
-            </Button>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+              >
+                {markingAll ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                Mark all as read
+              </Button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -132,57 +135,68 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
           </div>
         </div>
 
-        {/* Notifications List */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-2">
-            {notifications.map((notification) => {
-              const Icon = getIcon(notification.type);
-              const colorClasses = getColorClasses(notification.type);
+          {isLoading && (
+            <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Loading notifications…</span>
+            </div>
+          )}
 
-              return (
-                <div
-                  key={notification.id}
-                  className={`p-4 rounded-lg border transition-colors ${
-                    notification.read
-                      ? "bg-white border-gray-200"
-                      : "bg-blue-50 border-blue-200"
-                  } hover:shadow-md`}
-                >
-                  <div className="flex gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClasses}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-1">
-                        <h3 className="font-semibold text-gray-900">{notification.title}</h3>
-                        <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                          {notification.time}
-                        </span>
+          {!isLoading && error && (
+            <p className="text-center text-sm text-red-500 py-12">{error}</p>
+          )}
+
+          {!isLoading && !error && notifications.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <Bell className="w-10 h-10 mb-3 opacity-30" />
+              <p className="text-sm">No notifications yet</p>
+            </div>
+          )}
+
+          {!isLoading && !error && notifications.length > 0 && (
+            <div className="space-y-2">
+              {notifications.map((notification) => {
+                const isRead = Boolean(notification.read_at);
+                const Icon = getIcon(notification.type);
+                const colorClasses = getColorClasses(notification.type);
+
+                return (
+                  <div
+                    key={notification.id}
+                    className={`p-4 rounded-lg border transition-colors cursor-pointer hover:shadow-md ${
+                      isRead ? "bg-white border-gray-200" : "bg-blue-50 border-blue-200"
+                    }`}
+                    onClick={() => { if (!isRead) void handleMarkRead(notification.id); }}
+                    role="button"
+                    aria-label={isRead ? notification.title : `Mark as read: ${notification.title}`}
+                  >
+                    <div className="flex gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClasses}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{notification.message}</p>
-                      {notification.actionText && (
-                        <Button variant="outline" size="sm">
-                          {notification.actionText}
-                        </Button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-semibold text-gray-900 text-sm">{notification.title}</h3>
+                          <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                            {formatRelativeTime(notification.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{notification.body}</p>
+                      </div>
+                      {!isRead && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-2" aria-hidden="true" />
                       )}
                     </div>
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-2"></div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-lg">
-          <Button variant="ghost" className="w-full">
-            View All Notifications
-          </Button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
     </div>
   );
 }
+

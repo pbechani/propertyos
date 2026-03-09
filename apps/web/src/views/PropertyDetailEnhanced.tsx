@@ -7,14 +7,15 @@ import {
   MapPin, Bed, Bath, Car, Maximize, Share2, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, Shield, AlertTriangle,
   Calendar, Clock, History, Flag, ChevronRight, X, ZoomIn,
-  Heart, Video, Info
+  Heart, Video, Info,
+  Eye, TrendingUp, Users, MessageCircle, BarChart2, Home, Loader2, AlertCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 
@@ -418,6 +419,10 @@ export default function PropertyDetailEnhanced() {
   const [isSubmittingValuation, setIsSubmittingValuation] = useState(false);
   const [valuationError, setValuationError] = useState("");
   const [valuationSuccess, setValuationSuccess] = useState("");
+  const [propertyValuations, setPropertyValuations] = useState<ValuationRecord[]>([]);
+  const [isLoadingValuations, setIsLoadingValuations] = useState(false);
+  const [aiEstimate, setAiEstimate] = useState<AiValuationEstimate | null>(null);
+  const [isLoadingAiEstimate, setIsLoadingAiEstimate] = useState(false);
   const [comparableSales, setComparableSales] = useState<ComparableSale[]>([]);
   const [isLoadingComparables, setIsLoadingComparables] = useState(false);
   const [showComparables, setShowComparables] = useState(false);
@@ -439,6 +444,62 @@ export default function PropertyDetailEnhanced() {
   const [propertyOpenHouses, setPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [registeringOpenHouseId, setRegisteringOpenHouseId] = useState<string | null>(null);
   const [openHouseRegisterSuccess, setOpenHouseRegisterSuccess] = useState<string | null>(null);
+
+  // ── Listing-owner management panel ──────────────────────────────────────────
+  const [listingStats, setListingStats] = useState<PropertyStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [listingViewings, setListingViewings] = useState<ListingViewingRecord[]>([]);
+  const [isLoadingViewings, setIsLoadingViewings] = useState(false);
+  const [listingInquiries, setListingInquiries] = useState<PropertyInquiryRecord[]>([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+  const [ownerTab, setOwnerTab] = useState<'viewings' | 'inquiries' | 'open_houses'>('viewings');
+
+  // ── Viewing action state ──────────────────────────────────────────────────
+  const [showDeclineViewingModal, setShowDeclineViewingModal] = useState(false);
+  const [decliningViewingId, setDecliningViewingId] = useState<string | null>(null);
+  const [declineViewingForm, setDeclineViewingForm] = useState<AgentDeclineViewingPayload>({ reason: '', alternativeDates: [], message: '' });
+  const [isDecliningViewing, setIsDecliningViewing] = useState(false);
+  const [declineViewingError, setDeclineViewingError] = useState('');
+  const [altDeclineDateInput, setAltDeclineDateInput] = useState('');
+  const [isSubmittingViewingAction, setIsSubmittingViewingAction] = useState<string | null>(null);
+  const [completingViewingId, setCompletingViewingId] = useState<string | null>(null);
+  // Cancel viewing modal
+  const [showCancelViewingModal, setShowCancelViewingModal] = useState(false);
+  const [cancellingViewingId, setCancellingViewingId] = useState<string | null>(null);
+  const [cancelViewingReason, setCancelViewingReason] = useState('');
+  const [isCancellingViewing, setIsCancellingViewing] = useState(false);
+  const [cancelViewingError, setCancelViewingError] = useState('');
+  // Reschedule viewing modal
+  const [showRescheduleViewingModal, setShowRescheduleViewingModal] = useState(false);
+  const [reschedulingViewingId, setReschedulingViewingId] = useState<string | null>(null);
+  const [rescheduleViewingForm, setRescheduleViewingForm] = useState<RescheduleViewingPayload>({ scheduledAt: '', reason: '' });
+  const [isReschedulingViewing, setIsReschedulingViewing] = useState(false);
+  const [rescheduleViewingError, setRescheduleViewingError] = useState('');
+
+  // ── Enquiry reply state ────────────────────────────────────────────────────
+  const [replyingInquiryId, setReplyingInquiryId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  // ── Open house schedule form state ────────────────────────────────────────
+  const [showCreateOpenHouseForm, setShowCreateOpenHouseForm] = useState(false);
+  const [openHouseForm, setOpenHouseForm] = useState<CreateOpenHousePayload>({ scheduledAt: '', endAt: '', maxAttendees: undefined, description: '' });
+  const [isSubmittingOpenHouse, setIsSubmittingOpenHouse] = useState(false);
+  const [openHouseFormError, setOpenHouseFormError] = useState('');
+
+  // ── Cancel open house modal state ─────────────────────────────────────────
+  const [showCancelOpenHouseModal, setShowCancelOpenHouseModal] = useState(false);
+  const [cancellingOpenHouseId, setCancellingOpenHouseId] = useState<string | null>(null);
+  const [cancelOpenHouseForm, setCancelOpenHouseForm] = useState<CancelOpenHousePayload>({ reason: '' });
+  const [isCancellingOpenHouse, setIsCancellingOpenHouse] = useState(false);
+  const [cancelOpenHouseError, setCancelOpenHouseError] = useState('');
+
+  // ── Reschedule open house modal state ─────────────────────────────────────
+  const [showRescheduleOpenHouseModal, setShowRescheduleOpenHouseModal] = useState(false);
+  const [reschedulingOpenHouseId, setReschedulingOpenHouseId] = useState<string | null>(null);
+  const [rescheduleOpenHouseForm, setRescheduleOpenHouseForm] = useState<RescheduleOpenHousePayload>({ scheduledAt: '', endAt: '', reason: '' });
+  const [isReschedulingOpenHouse, setIsReschedulingOpenHouse] = useState(false);
+  const [rescheduleOpenHouseError, setRescheduleOpenHouseError] = useState('');
 
   const handleAddToFavourites = async () => {
     const token = getAccessToken();
@@ -664,7 +725,7 @@ export default function PropertyDetailEnhanced() {
 
     try {
       await viewingsApi.request(token, propertyId, {
-        viewingType: viewingType === 'inPerson' ? 'in_person' : 'virtual',
+        viewingType: viewingType === 'inPerson' ? 'physical' : 'virtual',
         scheduledAt: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
         notes: [
           `Name: ${viewerName}`,
@@ -821,7 +882,8 @@ export default function PropertyDetailEnhanced() {
       setPropertyError("");
 
       try {
-        const listing = await propertiesApi.getById(propertyId);
+        const authToken = getAccessToken();
+        const listing = await propertiesApi.getById(propertyId, authToken ?? undefined);
         const looseListing = listing as PropertyListing & {
           agent?: {
             companyName?: string | null;
@@ -1016,6 +1078,34 @@ export default function PropertyDetailEnhanced() {
       .finally(() => setIsLoadingComparables(false));
   }, [propertyId, currentUser]);
 
+  // Load valuation history for eligible users
+  useEffect(() => {
+    if (!propertyId || !currentUser) return;
+    const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
+    if (!userRoles.some((r) => ['agent', 'admin', 'valuer', 'buyer_seller'].includes(r))) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingValuations(true);
+    propertiesApi.getPropertyValuations(token, propertyId)
+      .then(setPropertyValuations)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingValuations(false));
+  }, [propertyId, currentUser]);
+
+  // Load AI estimate for agents, valuers, admins
+  useEffect(() => {
+    if (!propertyId || !currentUser) return;
+    const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
+    if (!userRoles.some((r) => ['agent', 'admin', 'valuer'].includes(r))) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingAiEstimate(true);
+    propertiesApi.getAiEstimate(token, propertyId)
+      .then(setAiEstimate)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingAiEstimate(false));
+  }, [propertyId, currentUser]);
+
   // Load upcoming open houses for this property (public, no auth)
   useEffect(() => {
     if (!propertyId) return;
@@ -1037,6 +1127,33 @@ export default function PropertyDetailEnhanced() {
       .catch(() => { /* non-critical */ })
       .finally(() => setIsLoadingMandates(false));
   }, [propertyId, currentUser]);
+
+  // Load per-property management data for the listing creator
+  useEffect(() => {
+    if (!propertyId || !currentUser?.id || !property.agent.id) return;
+    if (currentUser.id !== property.agent.id) return;
+    const token = getAccessToken();
+    if (!token) return;
+
+    setIsLoadingStats(true);
+    propertiesApi.getPropertyStats(token, propertyId)
+      .then(setListingStats)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingStats(false));
+
+    setIsLoadingViewings(true);
+    propertiesApi.getPropertyViewings(token, propertyId)
+      .then(setListingViewings)
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingViewings(false));
+
+    setIsLoadingInquiries(true);
+    propertiesApi.getPropertyInquiries(token, propertyId)
+      .then((result) => setListingInquiries(result.data))
+      .catch(() => { /* non-critical */ })
+      .finally(() => setIsLoadingInquiries(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId, currentUser?.id, property.agent.id]);
 
   const handleRegisterOpenHouse = async (openHouseId: string) => {
     const token = getAccessToken();
@@ -1073,6 +1190,199 @@ export default function PropertyDetailEnhanced() {
       setMandateError(err instanceof Error ? err.message : "Failed to create mandate.");
     } finally {
       setIsSubmittingMandate(false);
+    }
+  };
+
+  const handleAcceptViewing = async (viewingId: string) => {
+    const token = getAccessToken();
+    if (!token) return;
+    setIsSubmittingViewingAction(viewingId);
+    try {
+      const updated = await viewingsApi.confirm(token, viewingId);
+      setListingViewings((prev) => prev.map((v) => v.id === viewingId ? { ...v, status: updated.status } : v));
+    } catch {
+      // silently ignore — status badge will not update
+    } finally {
+      setIsSubmittingViewingAction(null);
+    }
+  };
+
+  const handleDeclineViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !decliningViewingId || declineViewingForm.reason.trim().length < 10) return;
+    setIsDecliningViewing(true);
+    setDeclineViewingError('');
+    try {
+      const updated = await viewingsApi.decline(token, decliningViewingId, declineViewingForm);
+      setListingViewings((prev) => prev.map((v) => v.id === decliningViewingId ? { ...v, status: updated.status, declined_at: new Date().toISOString() } : v));
+      setShowDeclineViewingModal(false);
+      setDecliningViewingId(null);
+      setDeclineViewingForm({ reason: '', alternativeDates: [], message: '' });
+    } catch (err) {
+      setDeclineViewingError(err instanceof Error ? err.message : 'Failed to decline viewing.');
+    } finally {
+      setIsDecliningViewing(false);
+    }
+  };
+
+  const handleCompleteViewing = async (viewingId: string) => {
+    const token = getAccessToken();
+    if (!token || completingViewingId) return;
+    setCompletingViewingId(viewingId);
+    try {
+      await viewingActionsApi.complete(token, viewingId);
+      setListingViewings((prev) => prev.map((v) => v.id === viewingId ? { ...v, status: 'completed' } : v));
+    } catch {
+      // silently ignore
+    } finally {
+      setCompletingViewingId(null);
+    }
+  };
+
+  const handleCancelViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !cancellingViewingId || cancelViewingReason.trim().length < 5) return;
+    setIsCancellingViewing(true);
+    setCancelViewingError('');
+    try {
+      const updated = await viewingsApi.cancel(token, cancellingViewingId, { reason: cancelViewingReason });
+      setListingViewings((prev) => prev.map((v) => v.id === cancellingViewingId ? { ...v, status: updated.status, cancel_reason: cancelViewingReason, cancelled_by: 'agent' } : v));
+      setShowCancelViewingModal(false);
+      setCancellingViewingId(null);
+      setCancelViewingReason('');
+    } catch (err) {
+      setCancelViewingError(err instanceof Error ? err.message : 'Failed to cancel viewing.');
+    } finally {
+      setIsCancellingViewing(false);
+    }
+  };
+
+  const handleRescheduleViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !reschedulingViewingId || !rescheduleViewingForm.scheduledAt) return;
+    setIsReschedulingViewing(true);
+    setRescheduleViewingError('');
+    try {
+      const updated = await viewingsApi.reschedule(token, reschedulingViewingId, {
+        ...rescheduleViewingForm,
+        scheduledAt: new Date(rescheduleViewingForm.scheduledAt).toISOString(),
+      });
+      setListingViewings((prev) =>
+        prev.map((v) => v.id === reschedulingViewingId ? { ...v, scheduled_at: updated.scheduled_at, status: 'confirmed', rescheduled_at: updated.rescheduled_at } : v)
+      );
+      setShowRescheduleViewingModal(false);
+      setReschedulingViewingId(null);
+      setRescheduleViewingForm({ scheduledAt: '', reason: '' });
+    } catch (err) {
+      setRescheduleViewingError(err instanceof Error ? err.message : 'Failed to reschedule viewing.');
+    } finally {
+      setIsReschedulingViewing(false);
+    }
+  };
+
+  const handleReplyInquiry = async (inquiryId: string) => {
+    const token = getAccessToken();
+    if (!token || !replyText.trim()) return;
+    setIsSubmittingReply(true);
+    try {
+      await inquiriesApi.respond(token, inquiryId, { response: replyText });
+      setListingInquiries((prev) =>
+        prev.map((inq) =>
+          inq.id === inquiryId ? { ...inq, response: replyText, status: 'responded' } : inq
+        )
+      );
+      setReplyingInquiryId(null);
+      setReplyText('');
+    } catch {
+      // silently ignore
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
+
+  const handleCreateOpenHouse = async () => {
+    const token = getAccessToken();
+    if (!token || !propertyId) return;
+    if (!openHouseForm.scheduledAt || !openHouseForm.endAt) {
+      setOpenHouseFormError('Start time and end time are required.');
+      return;
+    }
+    setIsSubmittingOpenHouse(true);
+    setOpenHouseFormError('');
+    try {
+      const payload: CreateOpenHousePayload = {
+        scheduledAt: openHouseForm.scheduledAt,
+        endAt: openHouseForm.endAt,
+        ...(openHouseForm.maxAttendees ? { maxAttendees: Number(openHouseForm.maxAttendees) } : {}),
+        ...(openHouseForm.description?.trim() ? { description: openHouseForm.description } : {}),
+      };
+      const created = await agentApi.createOpenHouse(token, propertyId, payload);
+      const newRecord: OpenHouseRecord = {
+        id: created.id,
+        property_id: propertyId,
+        property_title: '',
+        agent_id: currentUser?.id ?? '',
+        scheduled_at: openHouseForm.scheduledAt,
+        end_at: openHouseForm.endAt,
+        max_attendees: openHouseForm.maxAttendees ? Number(openHouseForm.maxAttendees) : null,
+        description: openHouseForm.description?.trim() || null,
+        status: 'scheduled',
+        cancel_reason: null,
+        rescheduled_at: null,
+        rescheduled_reason: null,
+        created_at: new Date().toISOString(),
+      };
+      setPropertyOpenHouses((prev) => [newRecord, ...prev]);
+      setShowCreateOpenHouseForm(false);
+      setOpenHouseForm({ scheduledAt: '', endAt: '', maxAttendees: undefined, description: '' });
+    } catch (err) {
+      setOpenHouseFormError(err instanceof Error ? err.message : 'Failed to schedule open house.');
+    } finally {
+      setIsSubmittingOpenHouse(false);
+    }
+  };
+
+  const handleCancelOpenHouse = async () => {
+    const token = getAccessToken();
+    if (!token || !cancellingOpenHouseId) return;
+    if (!cancelOpenHouseForm.reason.trim() || cancelOpenHouseForm.reason.trim().length < 5) {
+      setCancelOpenHouseError('Please provide a reason (at least 5 characters).');
+      return;
+    }
+    setIsCancellingOpenHouse(true);
+    setCancelOpenHouseError('');
+    try {
+      const updated = await agentApi.cancelOpenHouse(token, cancellingOpenHouseId, { reason: cancelOpenHouseForm.reason.trim() });
+      setPropertyOpenHouses((prev) => prev.map((oh) => oh.id === cancellingOpenHouseId ? { ...oh, status: updated.status, cancel_reason: updated.cancel_reason } : oh));
+      setShowCancelOpenHouseModal(false);
+      setCancellingOpenHouseId(null);
+      setCancelOpenHouseForm({ reason: '' });
+    } catch (err) {
+      setCancelOpenHouseError(err instanceof Error ? err.message : 'Failed to cancel open house.');
+    } finally {
+      setIsCancellingOpenHouse(false);
+    }
+  };
+
+  const handleRescheduleOpenHouse = async () => {
+    const token = getAccessToken();
+    if (!token || !reschedulingOpenHouseId) return;
+    if (!rescheduleOpenHouseForm.scheduledAt || !rescheduleOpenHouseForm.endAt) {
+      setRescheduleOpenHouseError('New start time and end time are required.');
+      return;
+    }
+    setIsReschedulingOpenHouse(true);
+    setRescheduleOpenHouseError('');
+    try {
+      const updated = await agentApi.rescheduleOpenHouse(token, reschedulingOpenHouseId, rescheduleOpenHouseForm);
+      setPropertyOpenHouses((prev) => prev.map((oh) => oh.id === reschedulingOpenHouseId ? { ...oh, scheduled_at: updated.scheduled_at, end_at: updated.end_at, rescheduled_at: updated.rescheduled_at, rescheduled_reason: updated.rescheduled_reason } : oh));
+      setShowRescheduleOpenHouseModal(false);
+      setReschedulingOpenHouseId(null);
+      setRescheduleOpenHouseForm({ scheduledAt: '', endAt: '', reason: '' });
+    } catch (err) {
+      setRescheduleOpenHouseError(err instanceof Error ? err.message : 'Failed to reschedule open house.');
+    } finally {
+      setIsReschedulingOpenHouse(false);
     }
   };
 
@@ -1130,6 +1440,528 @@ export default function PropertyDetailEnhanced() {
         {!isLoadingProperty && propertyError && (
           <Card className="mb-6 p-4 text-sm text-red-700 bg-red-50 border-red-200">
             {propertyError}
+          </Card>
+        )}
+
+        {/* ── Listing Intelligence — visible only to the listing creator ─────── */}
+        {isOwnListing && (
+          <Card className="mb-6 overflow-hidden border-0 shadow-lg">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <BarChart2 className="w-5 h-5 text-blue-400" />
+                    <h2 className="text-lg font-bold text-white">Listing Intelligence</h2>
+                  </div>
+                  <p className="text-slate-400 text-sm">Your listing — performance & management overview</p>
+                </div>
+              </div>
+
+              {/* Stat cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-5">
+                {/* Views */}
+                <div className="bg-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="w-4 h-4 text-blue-400" />
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Views</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.views ?? 0)}
+                  </div>
+                </div>
+
+                {/* Saves */}
+                <div className="bg-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Heart className="w-4 h-4 text-rose-400" />
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Saves</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.saves ?? 0)}
+                  </div>
+                </div>
+
+                {/* Enquiries */}
+                <div className="bg-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageCircle className="w-4 h-4 text-orange-400" />
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Enquiries</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.inquiries ?? 0)}
+                  </div>
+                </div>
+
+                {/* Viewings */}
+                <div className="bg-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Viewings</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {isLoadingStats ? <span className="text-slate-500">…</span> : (
+                      (listingStats?.viewings_requested ?? 0) +
+                      (listingStats?.viewings_confirmed ?? 0) +
+                      (listingStats?.viewings_completed ?? 0)
+                    )}
+                  </div>
+                  {listingStats && (
+                    <div className="mt-1 flex gap-2 flex-wrap">
+                      {listingStats.viewings_requested > 0 && <span className="text-xs text-amber-300">{listingStats.viewings_requested} pending</span>}
+                      {listingStats.viewings_confirmed > 0 && <span className="text-xs text-blue-300">{listingStats.viewings_confirmed} confirmed</span>}
+                      {listingStats.viewings_completed > 0 && <span className="text-xs text-emerald-300">{listingStats.viewings_completed} done</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* Days on market */}
+                <div className="bg-slate-700/60 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-purple-400" />
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Days Listed</span>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.days_on_market ?? 0)}
+                  </div>
+                  {listingStats && listingStats.open_houses_scheduled > 0 && (
+                    <div className="mt-1 text-xs text-purple-300">{listingStats.open_houses_scheduled} open house{listingStats.open_houses_scheduled !== 1 ? 's' : ''} scheduled</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3">
+              <div className="flex gap-2">
+                {/* Viewings tab */}
+                <button
+                  onClick={() => setOwnerTab('viewings')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+                    ownerTab === 'viewings'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                  }`}
+                >
+                  <Calendar className={`w-4 h-4 ${ownerTab === 'viewings' ? 'text-blue-200' : 'text-blue-400'}`} />
+                  <span>Scheduled Viewings</span>
+                  {listingViewings.length > 0 && (
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'viewings' ? 'bg-blue-500 text-blue-100' : 'bg-blue-100 text-blue-600'}`}>
+                      {listingViewings.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Enquiries tab */}
+                <button
+                  onClick={() => setOwnerTab('inquiries')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+                    ownerTab === 'inquiries'
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600'
+                  }`}
+                >
+                  <MessageCircle className={`w-4 h-4 ${ownerTab === 'inquiries' ? 'text-orange-200' : 'text-orange-400'}`} />
+                  <span>Enquiries</span>
+                  {listingInquiries.length > 0 && (
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'inquiries' ? 'bg-orange-400 text-orange-100' : 'bg-orange-100 text-orange-600'}`}>
+                      {listingInquiries.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Open Houses tab */}
+                <button
+                  onClick={() => setOwnerTab('open_houses')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+                    ownerTab === 'open_houses'
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-purple-300 hover:text-purple-600'
+                  }`}
+                >
+                  <Home className={`w-4 h-4 ${ownerTab === 'open_houses' ? 'text-purple-200' : 'text-purple-400'}`} />
+                  <span>Open Houses</span>
+                  {propertyOpenHouses.length > 0 && (
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'open_houses' ? 'bg-purple-500 text-purple-100' : 'bg-purple-100 text-purple-600'}`}>
+                      {propertyOpenHouses.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Tab content */}
+            <div className="bg-white px-6 py-4">
+
+              {/* Viewings tab */}
+              {ownerTab === 'viewings' && (
+                <div>
+                  {isLoadingViewings ? (
+                    <p className="text-sm text-gray-400 py-4">Loading viewings…</p>
+                  ) : listingViewings.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No viewings booked yet</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {listingViewings.map((v) => {
+                        const statusColors: Record<string, string> = {
+                          requested: 'bg-amber-100 text-amber-700',
+                          confirmed: 'bg-blue-100 text-blue-700',
+                          completed: 'bg-emerald-100 text-emerald-700',
+                          declined: 'bg-red-100 text-red-700',
+                          cancelled: 'bg-gray-100 text-gray-600',
+                        };
+                        const buyerName = [v.buyer_first_name, v.buyer_last_name].filter(Boolean).join(' ') || 'Unknown Buyer';
+                        const typeLabel = v.viewing_type === 'virtual' ? 'Virtual' : v.viewing_type === 'open_house' ? 'Open House' : 'In-Person';
+                        const isActioning = isSubmittingViewingAction === v.id;
+                        return (
+                          <div key={v.id} className="py-3 space-y-2">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                                  <Users className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm text-gray-900 truncate">{buyerName}</p>
+                                  {v.buyer_email && <p className="text-xs text-gray-500 truncate">{v.buyer_email}</p>}
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {new Date(v.scheduled_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                      {' '}
+                                      {new Date(v.scheduled_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <span className="text-xs text-gray-400">· {typeLabel}</span>
+                                    {v.duration_minutes && <span className="text-xs text-gray-400">· {v.duration_minutes}min</span>}
+                                  </div>
+                                  {v.cancel_reason && <p className="text-xs text-red-500 mt-1">Reason: {v.cancel_reason}</p>}
+                                  {v.buyer_feedback && <p className="text-xs text-gray-400 mt-1 italic">"{v.buyer_feedback}"</p>}
+                                </div>
+                              </div>
+                              <Badge className={`shrink-0 text-xs ${statusColors[v.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                {v.status}
+                              </Badge>
+                            </div>
+
+                            {/* Action buttons */}
+                            {v.status === 'requested' && (
+                              <div className="ml-11 flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => { void handleAcceptViewing(v.id); }}
+                                  disabled={isActioning}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                                >
+                                  {isActioning ? 'Confirming…' : 'Confirm'}
+                                </button>
+                                <button
+                                  onClick={() => { setDecliningViewingId(v.id); setDeclineViewingForm({ reason: '', alternativeDates: [], message: '' }); setDeclineViewingError(''); setAltDeclineDateInput(''); setShowDeclineViewingModal(true); }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => { setCancellingViewingId(v.id); setCancelViewingReason(''); setCancelViewingError(''); setShowCancelViewingModal(true); }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+
+                            {v.status === 'confirmed' && (
+                              <div className="ml-11 flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => { void handleCompleteViewing(v.id); }}
+                                  disabled={completingViewingId === v.id}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50 transition-colors"
+                                >
+                                  {completingViewingId === v.id ? 'Completing…' : 'Complete'}
+                                </button>
+                                <button
+                                  onClick={() => { setReschedulingViewingId(v.id); setRescheduleViewingForm({ scheduledAt: '', reason: '' }); setRescheduleViewingError(''); setShowRescheduleViewingModal(true); }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  onClick={() => { setCancellingViewingId(v.id); setCancelViewingReason(''); setCancelViewingError(''); setShowCancelViewingModal(true); }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Enquiries tab */}
+              {ownerTab === 'inquiries' && (
+                <div>
+                  {isLoadingInquiries ? (
+                    <p className="text-sm text-gray-400 py-4">Loading enquiries…</p>
+                  ) : listingInquiries.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No enquiries received yet</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {listingInquiries.map((inq) => {
+                        const typeColors: Record<string, string> = {
+                          viewing: 'bg-purple-100 text-purple-700',
+                          offer: 'bg-green-100 text-green-700',
+                          question: 'bg-blue-100 text-blue-700',
+                        };
+                        const statusColors: Record<string, string> = {
+                          new: 'bg-amber-100 text-amber-700',
+                          responded: 'bg-emerald-100 text-emerald-700',
+                          closed: 'bg-gray-100 text-gray-600',
+                        };
+                        return (
+                          <div key={inq.id} className="py-3">
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                  <MessageSquare className="w-3.5 h-3.5 text-orange-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm text-gray-900 truncate">
+                                    {inq.requester_name || 'Anonymous'}
+                                  </p>
+                                  {inq.requester_email && <p className="text-xs text-gray-500">{inq.requester_email}</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge className={`text-xs ${typeColors[inq.inquiry_type] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {inq.inquiry_type}
+                                </Badge>
+                                <Badge className={`text-xs ${statusColors[inq.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {inq.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            {inq.message && (
+                              <p className="text-sm text-gray-600 ml-9 line-clamp-2">{inq.message}</p>
+                            )}
+                            {inq.response && (
+                              <div className="ml-9 mt-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                                <p className="text-xs font-medium text-emerald-700 mb-0.5">Your response:</p>
+                                <p className="text-xs text-emerald-800 line-clamp-2">{inq.response}</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 ml-9 mt-1">
+                              {new Date(inq.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+
+                            {/* Reply action */}
+                            {inq.status === 'new' && (
+                              <div className="ml-9 mt-2">
+                                {replyingInquiryId !== inq.id ? (
+                                  <button
+                                    onClick={() => { setReplyingInquiryId(inq.id); setReplyText(''); }}
+                                    className="text-xs px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                  >
+                                    Reply
+                                  </button>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <textarea
+                                      rows={3}
+                                      placeholder="Write your response…"
+                                      value={replyText}
+                                      onChange={(e) => setReplyText(e.target.value)}
+                                      className="w-full text-xs border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-400 resize-none"
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => { void handleReplyInquiry(inq.id); }}
+                                        disabled={isSubmittingReply || !replyText.trim()}
+                                        className="text-xs px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                                      >
+                                        {isSubmittingReply ? 'Sending…' : 'Send Reply'}
+                                      </button>
+                                      <button
+                                        onClick={() => setReplyingInquiryId(null)}
+                                        className="text-xs px-3 py-1.5 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Open Houses tab */}
+              {ownerTab === 'open_houses' && (
+                <div>
+                  {/* Schedule button */}
+                  <div className="mb-4">
+                    {!showCreateOpenHouseForm ? (
+                      <button
+                        onClick={() => { setShowCreateOpenHouseForm(true); setOpenHouseFormError(''); }}
+                        className="text-sm px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
+                      >
+                        + Schedule Open House
+                      </button>
+                    ) : (
+                      <div className="border border-purple-100 rounded-xl bg-purple-50 p-4 space-y-3">
+                        <p className="text-sm font-medium text-purple-900">Schedule Open House</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Start date &amp; time <span className="text-red-500">*</span></label>
+                            <input
+                              type="datetime-local"
+                              value={openHouseForm.scheduledAt}
+                              onChange={(e) => setOpenHouseForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">End date &amp; time <span className="text-red-500">*</span></label>
+                            <input
+                              type="datetime-local"
+                              value={openHouseForm.endAt}
+                              onChange={(e) => setOpenHouseForm((f) => ({ ...f, endAt: e.target.value }))}
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Max attendees (optional)</label>
+                            <input
+                              type="number"
+                              min={1}
+                              placeholder="e.g. 20"
+                              value={openHouseForm.maxAttendees ?? ''}
+                              onChange={(e) => setOpenHouseForm((f) => ({ ...f, maxAttendees: e.target.value ? Number(e.target.value) : undefined }))}
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Description (optional)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Refreshments provided"
+                              value={openHouseForm.description ?? ''}
+                              onChange={(e) => setOpenHouseForm((f) => ({ ...f, description: e.target.value }))}
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                            />
+                          </div>
+                        </div>
+                        {openHouseFormError && (
+                          <p className="text-xs text-red-600">{openHouseFormError}</p>
+                        )}
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => { void handleCreateOpenHouse(); }}
+                            disabled={isSubmittingOpenHouse}
+                            className="text-xs px-4 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium"
+                          >
+                            {isSubmittingOpenHouse ? 'Scheduling…' : 'Schedule'}
+                          </button>
+                          <button
+                            onClick={() => { setShowCreateOpenHouseForm(false); setOpenHouseFormError(''); }}
+                            className="text-xs px-3 py-1.5 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {propertyOpenHouses.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No open houses scheduled</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {propertyOpenHouses.map((oh) => {
+                        const statusColors: Record<string, string> = {
+                          scheduled: 'bg-blue-100 text-blue-700',
+                          active: 'bg-emerald-100 text-emerald-700',
+                          completed: 'bg-gray-100 text-gray-600',
+                          cancelled: 'bg-red-100 text-red-700',
+                        };
+                        return (
+                          <div key={oh.id} className="py-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                                  <Calendar className="w-4 h-4 text-purple-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-gray-900">
+                                    {new Date(oh.scheduled_at).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {new Date(oh.scheduled_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                                    {' – '}
+                                    {new Date(oh.end_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                                    {oh.max_attendees != null && ` · max ${oh.max_attendees} attendees`}
+                                  </p>
+                                  {oh.description && <p className="text-xs text-gray-400 mt-1 italic">{oh.description}</p>}
+                                  {oh.rescheduled_at && (
+                                    <p className="text-xs text-amber-600 mt-1">Rescheduled{oh.rescheduled_reason ? `: ${oh.rescheduled_reason}` : ''}</p>
+                                  )}
+                                  {oh.cancel_reason && (
+                                    <p className="text-xs text-red-500 mt-1">Cancelled: {oh.cancel_reason}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <Badge className={`shrink-0 text-xs ${statusColors[oh.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                {oh.status}
+                              </Badge>
+                            </div>
+                            {oh.status === 'scheduled' && (
+                              <div className="ml-11 flex flex-wrap gap-2 mt-2">
+                                <button
+                                  onClick={() => {
+                                    setReschedulingOpenHouseId(oh.id);
+                                    setRescheduleOpenHouseForm({ scheduledAt: '', endAt: '', reason: '' });
+                                    setRescheduleOpenHouseError('');
+                                    setShowRescheduleOpenHouseModal(true);
+                                  }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCancellingOpenHouseId(oh.id);
+                                    setCancelOpenHouseForm({ reason: '' });
+                                    setCancelOpenHouseError('');
+                                    setShowCancelOpenHouseModal(true);
+                                  }}
+                                  className="text-xs px-3 py-1.5 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </Card>
         )}
 
@@ -1470,6 +2302,11 @@ export default function PropertyDetailEnhanced() {
                   className="w-full bg-white text-blue-600 hover:bg-blue-50"
                   onClick={() => {
                     if (!isSoldListing) {
+                      if (currentUser) {
+                        setViewerName(`${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}`.trim());
+                        setViewerEmail(currentUser.email ?? '');
+                        setViewerPhone(currentUser.phone ?? '');
+                      }
                       setShowScheduleModal(true);
                     }
                   }}
@@ -1513,8 +2350,9 @@ export default function PropertyDetailEnhanced() {
                         )}
                         <Button
                           size="sm"
-                          className={`mt-2 w-full text-xs h-8 ${isRegistered ? 'bg-green-500 hover:bg-green-500 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
-                          disabled={isRegistered || isRegistering}
+                          className={`mt-2 w-full text-xs h-8 ${isRegistered ? 'bg-green-500 hover:bg-green-500 text-white' : isOwnListing ? 'opacity-50 cursor-not-allowed bg-purple-300 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
+                          disabled={isRegistered || isRegistering || isOwnListing}
+                          title={isOwnListing ? 'You cannot register for your own listing' : undefined}
                           onClick={() => void handleRegisterOpenHouse(oh.id)}
                         >
                           {isRegistered ? '✓ Registered' : isRegistering ? 'Registering…' : 'Register Attendance'}
@@ -1663,18 +2501,90 @@ export default function PropertyDetailEnhanced() {
               </Card>
             )}
 
-            {/* Request Valuation — visible to agents, valuers, and property owners */}
+            {/* Property Valuation — AI estimate + history + request */}
             {currentUser && (() => {
               const userRoles = currentUser.roles ?? (currentUser.role ? [currentUser.role] : []);
-              const canRequestValuation = userRoles.some((r) =>
-                ["agent", "admin", "valuer", "buyer_seller"].includes(r),
-              );
-              return canRequestValuation ? (
-                <Card className="p-5">
-                  <h3 className="font-semibold mb-2">Property Valuation</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Request a formal or comparative market analysis for this property.
-                  </p>
+              const canViewAiEstimate = userRoles.some((r) => ['agent', 'admin', 'valuer'].includes(r));
+              const canRequestValuation = userRoles.some((r) => ['agent', 'admin', 'valuer', 'buyer_seller'].includes(r));
+              if (!canRequestValuation) return null;
+
+              const confidenceColor = aiEstimate?.confidence === 'high'
+                ? 'text-green-700 bg-green-50 border-green-200'
+                : aiEstimate?.confidence === 'medium'
+                ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
+                : 'text-orange-700 bg-orange-50 border-orange-200';
+
+              return (
+                <Card className="p-5 space-y-4">
+                  <h3 className="font-semibold">Property Valuation</h3>
+
+                  {/* AI Estimate — agents/valuers/admins only */}
+                  {canViewAiEstimate && (
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                      <p className="text-xs font-medium text-blue-600 mb-1.5 flex items-center gap-1">
+                        <span>AI Estimate</span>
+                        {aiEstimate && (
+                          <span className={`ml-auto text-xs px-1.5 py-0.5 rounded-full border font-medium ${confidenceColor}`}>
+                            {aiEstimate.confidence} confidence
+                          </span>
+                        )}
+                      </p>
+                      {isLoadingAiEstimate ? (
+                        <div className="flex items-center gap-2 text-sm text-blue-500">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Calculating…</span>
+                        </div>
+                      ) : aiEstimate && aiEstimate.estimate > 0 ? (
+                        <>
+                          <p className="text-xl font-bold text-blue-900">
+                            {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.estimate)}
+                          </p>
+                          <p className="text-xs text-blue-600 mt-0.5">
+                            Range: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.low)} – {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.high)}
+                          </p>
+                          <p className="text-xs text-blue-500 mt-1 italic">{aiEstimate.methodology}</p>
+                          <p className="text-xs text-blue-400 mt-0.5">Based on {aiEstimate.comparables_count} comparable sale{aiEstimate.comparables_count !== 1 ? 's' : ''}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-blue-500">Insufficient data for estimate.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Valuation history */}
+                  {isLoadingValuations ? (
+                    <p className="text-xs text-gray-400">Loading valuations…</p>
+                  ) : propertyValuations.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Valuation History</p>
+                      <div className="space-y-2">
+                        {propertyValuations.map((v) => (
+                          <div key={v.id} className="rounded-lg border border-gray-100 bg-gray-50 p-2.5 text-xs">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium capitalize ${v.valuation_type === 'formal' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {v.valuation_type === 'cma' ? 'CMA' : 'Formal'}
+                              </span>
+                              <span className="text-gray-500">{new Date(v.valuation_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                            <p className="font-semibold text-gray-900 mt-1">
+                              {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: v.currency, maximumFractionDigits: 0 }).format(Number(v.estimated_value))}
+                            </p>
+                            {v.market_low && v.market_high && (
+                              <p className="text-gray-500 mt-0.5">
+                                Range: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: v.currency, maximumFractionDigits: 0 }).format(Number(v.market_low))} – {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: v.currency, maximumFractionDigits: 0 }).format(Number(v.market_high))}
+                              </p>
+                            )}
+                            {v.requesting_purpose && (
+                              <p className="text-gray-400 mt-0.5 capitalize">{v.requesting_purpose.replace('_', ' ')}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No valuations recorded yet.</p>
+                  )}
+
                   <Button
                     variant="outline"
                     className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
@@ -1683,7 +2593,7 @@ export default function PropertyDetailEnhanced() {
                     Request Valuation
                   </Button>
                 </Card>
-              ) : null;
+              );
             })()}
 
             {/* Comparable Sales — agents, valuers, admins */}
@@ -1709,15 +2619,16 @@ export default function PropertyDetailEnhanced() {
                         <div className="space-y-2 mt-1">
                           {comparableSales.slice(0, 5).map((cs) => (
                             <div key={cs.id} className="border border-gray-100 rounded-lg p-2 text-xs">
-                              <p className="font-medium truncate">{cs.title}</p>
+                              <p className="font-medium truncate">{cs.address}</p>
+                              {cs.city && <p className="text-gray-400 truncate">{cs.city}</p>}
                               <div className="flex items-center justify-between mt-0.5 text-gray-500">
-                                <span>{new Intl.NumberFormat('en-ZA', { style: 'currency', currency: cs.currency || 'ZAR', maximumFractionDigits: 0 }).format(Number(cs.price))}</span>
-                                <span>{cs.distance_km?.toFixed(1)} km away</span>
+                                <span>{new Intl.NumberFormat('en-ZA', { style: 'currency', currency: cs.currency || 'ZAR', maximumFractionDigits: 0 }).format(Number(cs.sale_price))}</span>
+                                {cs.property_type && <span className="capitalize text-gray-400">{cs.property_type}</span>}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5 text-gray-400">
                                 {cs.bedrooms != null && <span>{cs.bedrooms} bd</span>}
-                                {cs.area_sqm != null && <span>{cs.area_sqm} m²</span>}
-                                {cs.sold_at && <span>sold {new Date(cs.sold_at).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}</span>}
+                                {cs.floor_area_sqm != null && <span>{cs.floor_area_sqm} m²</span>}
+                                {cs.sale_date && <span>sold {new Date(cs.sale_date).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}</span>}
                               </div>
                             </div>
                           ))}
@@ -1728,6 +2639,7 @@ export default function PropertyDetailEnhanced() {
                 </Card>
               );
             })()}
+
 
             {!property.isPrivateListing && (
               <Card className="p-5 text-center">
@@ -1971,6 +2883,278 @@ export default function PropertyDetailEnhanced() {
           </div>
         </div>
       </div>
+
+      {/* Decline Viewing Modal */}
+      {showDeclineViewingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-red-700">Decline Viewing</h3>
+              <button onClick={() => setShowDeclineViewingModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {declineViewingError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{declineViewingError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">Reason for declining * <span className="text-gray-400 font-normal">(min 10 chars)</span></label>
+                <textarea
+                  value={declineViewingForm.reason}
+                  onChange={(e) => setDeclineViewingForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={3}
+                  placeholder="Explain why you are declining this viewing request…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Suggest alternative dates <span className="text-gray-400 font-normal">(optional)</span></label>
+                <div className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={altDeclineDateInput}
+                    onChange={(e) => setAltDeclineDateInput(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    title="Alternative date"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (altDeclineDateInput) {
+                        setDeclineViewingForm((f) => ({ ...f, alternativeDates: [...(f.alternativeDates ?? []), new Date(altDeclineDateInput).toISOString()] }));
+                        setAltDeclineDateInput('');
+                      }
+                    }}
+                  >Add</Button>
+                </div>
+                {(declineViewingForm.alternativeDates ?? []).length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {(declineViewingForm.alternativeDates ?? []).map((d, i) => (
+                      <li key={i} className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded">
+                        {new Date(d).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}
+                        <button
+                          onClick={() => setDeclineViewingForm((f) => ({ ...f, alternativeDates: (f.alternativeDates ?? []).filter((_, j) => j !== i) }))}
+                          className="text-red-400 hover:text-red-600 ml-2"
+                          aria-label="Remove date"
+                        ><X className="w-3 h-3" /></button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Additional message to buyer <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={declineViewingForm.message ?? ''}
+                  onChange={(e) => setDeclineViewingForm((f) => ({ ...f, message: e.target.value }))}
+                  rows={2}
+                  placeholder="Any extra information for the buyer…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowDeclineViewingModal(false)}>Cancel</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={isDecliningViewing || declineViewingForm.reason.trim().length < 10}
+                onClick={() => void handleDeclineViewing()}
+              >
+                {isDecliningViewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Decline Viewing
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Cancel Viewing Modal */}
+      {showCancelViewingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-orange-700">Cancel Viewing</h3>
+              <button onClick={() => setShowCancelViewingModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {cancelViewingError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{cancelViewingError}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1">Reason for cancellation * <span className="text-gray-400 font-normal">(min 5 chars)</span></label>
+              <textarea
+                value={cancelViewingReason}
+                onChange={(e) => setCancelViewingReason(e.target.value)}
+                rows={3}
+                placeholder="Provide a reason for cancelling this viewing…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCancelViewingModal(false)}>Back</Button>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                disabled={isCancellingViewing || cancelViewingReason.trim().length < 5}
+                onClick={() => void handleCancelViewing()}
+              >
+                {isCancellingViewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Cancellation
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Reschedule Viewing Modal */}
+      {showRescheduleViewingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-blue-700">Reschedule Viewing</h3>
+              <button onClick={() => setShowRescheduleViewingModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {rescheduleViewingError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{rescheduleViewingError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">New date &amp; time *</label>
+                <input
+                  type="datetime-local"
+                  value={rescheduleViewingForm.scheduledAt}
+                  onChange={(e) => setRescheduleViewingForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  title="New viewing date and time"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Reason for rescheduling <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={rescheduleViewingForm.reason ?? ''}
+                  onChange={(e) => setRescheduleViewingForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={2}
+                  placeholder="Let the buyer know why you need to reschedule…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowRescheduleViewingModal(false)}>Cancel</Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isReschedulingViewing || !rescheduleViewingForm.scheduledAt}
+                onClick={() => void handleRescheduleViewing()}
+              >
+                {isReschedulingViewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Reschedule
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Cancel Open House Modal */}
+      {showCancelOpenHouseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-red-700">Cancel Open House</h3>
+              <button onClick={() => setShowCancelOpenHouseModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {cancelOpenHouseError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{cancelOpenHouseError}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1">Reason for cancellation * <span className="text-gray-400 font-normal">(min 5 chars)</span></label>
+              <textarea
+                value={cancelOpenHouseForm.reason}
+                onChange={(e) => setCancelOpenHouseForm({ reason: e.target.value })}
+                rows={3}
+                placeholder="Provide a reason — registered attendees will be notified by email…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCancelOpenHouseModal(false)}>Back</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={isCancellingOpenHouse || cancelOpenHouseForm.reason.trim().length < 5}
+                onClick={() => void handleCancelOpenHouse()}
+              >
+                {isCancellingOpenHouse ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Cancellation
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Reschedule Open House Modal */}
+      {showRescheduleOpenHouseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-amber-700">Reschedule Open House</h3>
+              <button onClick={() => setShowRescheduleOpenHouseModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {rescheduleOpenHouseError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{rescheduleOpenHouseError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">New start date &amp; time *</label>
+                <input
+                  type="datetime-local"
+                  value={rescheduleOpenHouseForm.scheduledAt}
+                  onChange={(e) => setRescheduleOpenHouseForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  title="New open house start date and time"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">New end date &amp; time *</label>
+                <input
+                  type="datetime-local"
+                  value={rescheduleOpenHouseForm.endAt}
+                  onChange={(e) => setRescheduleOpenHouseForm((f) => ({ ...f, endAt: e.target.value }))}
+                  title="New open house end date and time"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Reason <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={rescheduleOpenHouseForm.reason ?? ''}
+                  onChange={(e) => setRescheduleOpenHouseForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={2}
+                  placeholder="Registered attendees will be notified with the new time…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowRescheduleOpenHouseModal(false)}>Cancel</Button>
+              <Button
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={isReschedulingOpenHouse || !rescheduleOpenHouseForm.scheduledAt || !rescheduleOpenHouseForm.endAt}
+                onClick={() => void handleRescheduleOpenHouse()}
+              >
+                {isReschedulingOpenHouse ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Reschedule
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Fraud Report Modal */}
       {showFraudReport && (
@@ -2309,6 +3493,12 @@ export default function PropertyDetailEnhanced() {
               {scheduleStep === 3 && (
                 <div>
                   <h4 className="text-lg font-semibold mb-4">Your Contact Details</h4>
+                  {currentUser && (
+                    <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      Pre-filled from your profile — edit if needed.
+                    </div>
+                  )}
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Full Name *</label>

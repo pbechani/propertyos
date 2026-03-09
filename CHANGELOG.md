@@ -12,7 +12,298 @@ Related docs:
 
 ## [Unreleased]
 
+### Added
+- **LLM Gateway — multi-provider AI integration (PDR-007) (2026-03-08)**
+  - **`LlmGatewayService`** (`ai-intelligence/llm/`) — Multi-provider LLM abstraction using native `fetch` (no new npm dependency). Supports OpenAI (`gpt-4o-mini`), Anthropic (`claude-3-haiku-20240307`), and Gemini (`gemini-1.5-flash`). Primary + optional fallback provider chain; 15 s `AbortController` timeout per request; JSON-mode support per provider (OpenAI uses `response_format:json_object`, Anthropic/Gemini append instruction to system prompt). `isEnabled` is `false` when no `LLM_API_KEY` is set — platform degrades gracefully to the existing keyword router with no config required.
+  - **`LlmGatewayTypes`** (`ai-intelligence/llm/llm-gateway.types.ts`) — Shared `LlmProvider`, `LlmMessage`, `LlmCompletionOptions`, `LlmCompletion` types.
+  - **LLM fallback in `AIIntelligenceService`** — `semanticFallback()` now attempts an LLM call when no keyword intent scores ≥ 1. Builds a compact `buildDataSnapshot()` (4 parallel Prisma queries: lead stats, task stats, property counts, 5 recent leads) and sends it as JSON context to the LLM with a structured system prompt instructing the model to return an `AssistantResponse`-shaped JSON object (no PII beyond first-name initials). Falls back to the existing static help message if the LLM is disabled, API call fails, or JSON parse fails.
+  - **Env vars** — 6 new optional variables: `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_FALLBACK_PROVIDER`, `LLM_FALLBACK_API_KEY`, `LLM_FALLBACK_MODEL`. All optional, added to `env.validation.ts` (Joi) and `.env.example` with full comments.
+  - **Tests**: `ai-intelligence.service.spec.ts` updated with `LlmGatewayService` mock (`isEnabled: false`). All 484 tests pass, TypeScript compiles clean.
+
+- **AI Infrastructure — 5-Layer Architecture (2026-03-08)**
+  - **AgentMemoryService** (`ai-intelligence/memory/`) — Two-tier memory for AI agents: ephemeral short-term (TTL-bounded, default 5 min) and persistent long-term storage; circular reasoning-step buffer (50 steps per agent×company); `purgeExpiredShortTerm()` for scheduled housekeeping; full snapshot API.
+  - **AgentRegistryService** (`ai-intelligence/registry/`) — Central discovery registry with `AI_AGENTS_TOKEN` injection; tracks agent descriptors, health metrics, pause/resume, per-invocation success/failure counters; `getCapableAgent()` and `getAgentForAction()` for capability-based routing.
+  - **AiObservabilityService** (`ai-intelligence/observability/`) — Structured trace lifecycle (`startTrace` → `endTrace` / `failTrace`); token + cost estimation (COST_PER_TOKEN_USD model); in-memory circular buffer (500 traces); `ObservabilityReport` with per-agent breakdown, p95 latency, and 24 h call counts.
+  - **AiGuardrailsService** (`ai-intelligence/guardrails/`) — Synchronous gate before every AI interaction: length limit (1000 chars), prompt injection detection (9 OWASP LLM01 regexes), PII scan (SA ID, credit card, email, phone), content policy, and per-user rate limiting (120 queries/hour with rolling window).
+  - **QueryPlannerService + WorkflowOrchestratorService** (`ai-intelligence/orchestrator/`) — DAG-based query planning with explicit `ExecutionPlan`; topological sort (Kahn's algorithm); per-task observability tracing; fallback-delegate pattern (`setFallbackDelegate`) to call `AIIntelligenceService` without circular constructor dependency.
+  - **BaseAgent** updated with three new required abstract properties: `description`, `capabilities`, `actions`; **TaskAgent** implements all three.
+  - `ai-intelligence.module.ts` rewritten: registers all 10 providers, wires fallback delegate via `OnModuleInit`.
+  - `ai-intelligence.controller.ts` gains 4 new endpoints: `POST /assistant/orchestrated`, `GET /agents`, `GET /observability/traces`, `GET /observability/metrics`.
+  - **Tests**: 3 new spec files — `agent-memory.service.spec.ts` (13 tests), `ai-guardrails.service.spec.ts` (24 tests), `ai-observability.service.spec.ts` (17 tests); `ai-intelligence.service.spec.ts` updated with mocks for new constructor dependencies. Full suite: **484 tests, 38 suites, 0 failures**. TypeScript compiles clean.
+
+### Changed
+- **AI Assistant — natural language understanding (2026-03-08)**
+  - Replaced rigid keyword-only fallback (`handleHelp()`) with a **semantic scoring engine** so the assistant reasons about any free-form question and returns the best-matching response, annotating it with *"I interpreted your question as…"* when confidence is moderate so the user can correct it.
+  - Added **synonym normalisation** inside the semantic fallback: natural-language words (`clients`, `customers`, `prospects` → leads; `homes`, `houses`, `apartments` → properties; `appointments`, `showings`, `site visits` → viewings; `to-dos`, `action items`, `reminders` → tasks; `revenue`, `earnings`, `forecast` → pipeline value; and more) are expanded before scoring so phrasing freely always hits the right intent.
+  - Semantic fallback scores 21 intents by token overlap (multi-word tokens score 3, single words score 1). Scores ≥ 4 return direct results; scores 1–3 prepend an interpretation note; score 0 returns a friendly clarification prompt asking the user to rephrase.
+  - 6 new spec tests: synonym normalisation for clients/homes/appointments; semantic fallback for stalled-deals routing; zero-confidence clarification prompt; low-confidence annotation. Total: 423 tests, all passing. tsc clean.
+
+### Added
+- **Floating AI Assistant** (2026-03-08)
+  - New `FloatingAssistant` component (`apps/web/src/components/FloatingAssistant.tsx`) accessible from **every authenticated page** — no navigation required.
+  - Draggable window: grab the header bar to reposition anywhere on screen; touch/mobile drag supported.
+  - Voice input via Web Speech API: mic button pulses red when listening, interim transcript displayed in real-time, auto-sends on speech end. Gracefully hidden in unsupported browsers.
+  - Minimize/restore: collapse the window to just the title bar, then click to expand.
+  - Full response rendering: list, chart, summary-cards, and text responses all rendered inline in the compact window — identical capabilities to the AI Intelligence panel.
+  - Page context awareness: automatically detects the current route and sends `pageContext` with every query so the AI assistant knows what the user is looking at.
+  - Integrated into `Layout.tsx`: rendered for all `isAuthenticated` sessions.
+
+- **AI Assistant page-context routing** (2026-03-08)
+  - New `pageContext?: string` field on `AssistantQueryDto` (max 300 chars, optional).
+  - Backend `queryAssistant` service now accepts `pageContext` and routes contextual queries:
+    - If on a **lead detail page** and query references "this lead / this contact / their stage / their tasks" etc. → calls new `handleLeadById()` to fetch that lead's full summary + pending tasks directly by UUID.
+    - If on a **property detail page** and query references "this property / this listing / this house" etc. → calls new `handlePropertyById()` to fetch property details by UUID.
+  - `handleLeadById`: returns lead name, temperature, stage, budget, prequalification, last-contact age, deal value, preferred location, and up to 5 pending tasks.
+  - `handlePropertyById`: returns property title, type, price, status, city, bed/bath count, and view count.
+  - `AIIntelligencePanel.tsx` AI Assistant tab now also sends page context on every query.
+  - `aiIntelligenceApi.query()` in `api-client.ts` updated to accept optional `pageContext` parameter.
+  - 3 new spec tests for page-context routing: contextual lead routing, `handleLeadById` with tasks, `handleLeadById` not-found.
+
 ### Fixed
+- **Viewing notifications not visible to buyers** (2026-03-07)
+  - Buyer-facing in-app notifications (`viewing_confirmed`, `viewing_declined`, `viewing_cancelled`, `viewing_rescheduled`, `open_house.cancelled`, `open_house.rescheduled`) were stored with `company_id = NULL`, but buyers log in under their self-system company. Notifications were therefore never returned by the strict `company_id = $companyId` query.
+  - Fixed the **write side**: `createInAppNotification` calls for buyer recipients now pass the buyer's self-system company ID (looked up via the new `getBuyerSelfCompanyId()` helper) instead of `null`.
+  - Fixed open-house cancel/reschedule registrant notifications, which were incorrectly using the **agent's** `companyId` for buyer recipients.
+  - `getNotifications()` query unchanged — strict `company_id = $companyId` equality is correct now that notifications are stored with the right company ID.
+  - Added 3 spec tests in `viewing.service.spec.ts` covering the read path for `getNotifications()`.
+
+### Added
+- **AI Real Estate Assistant — chat interface in AI Intelligence Panel** (2026-03-07)
+  - **Backend** (`ai-intelligence.service.ts`): `queryAssistant(userId, companyId, query)` with keyword intent detection routing to 9 handlers — `find_buyers` (buyer-property matches or scored leads), `write_description` (template copy for most recent listing), `summarize_tasks` (overdue/today lead tasks from `sales.lead_tasks`), `suggest_followups` (leads not contacted in 7+ days, sorted by score), `analyze_pipeline` (lead count by stage as recharts-ready bar chart data), `hot_leads` (top A/B-grade leads), `pricing_check`, `buyer_matches`, `help`. Added `AssistantListItem`, `AssistantChartBar`, `AssistantSummaryCard`, `AssistantResponse` types exported from the service.
+  - **Controller** (`ai-intelligence.controller.ts`): `POST /ai-intelligence/assistant` with `AssistantQueryDto` (string, max 500 chars).
+  - **Spec** (`ai-intelligence.service.spec.ts`): 11 new tests for `queryAssistant` — ForbiddenException when no company, find_buyers match, find_buyers fallback, write_description with and without listings, summarize_tasks with and without tasks, suggest_followups, analyze_pipeline chart, hot_leads list, unknown query help text. Tests: 390 total, all passing.
+  - **api-client.ts**: `AssistantListItem`, `AssistantChartBar`, `AssistantSummaryCard`, `AssistantResponse` types; `aiIntelligenceApi.query(token, query)` POST method.
+  - **`AIIntelligencePanel.tsx`**: `AIAssistantTab` component with scrollable message history, 6 suggested prompt chips, inline `AssistantResponseRenderer` handling list (cards with nav links), chart (Recharts `BarChart` + summary cards grid), and text/error response types. Recharts imports added. "✦ Assistant" added as 5th tab — always accessible even before dashboard data loads.
+
+- **AI Assistant — robust intent expansion (35+ intents, Phase 7)** (2026-03-08)
+  - **Backend**: `queryAssistant` expanded from 9 to 35+ keyword-routing intents covering every major CRM entity. New handlers: `handleOverdueTasks`, `handleUpcomingTasks`, `handleHighPriorityTasks`, `handleCountTasks`, `handleUncontactedLeads`, `handlePipelineValue` (chart), `handleDealsAtRisk`, `handleConversionStats` (summary + text), `handleLeadsByTemperature` (parameterized: hot/warm/cold/nurture), `handleLeadsByStage` (parameterized: new/contacted/active/under_contract), `handlePrequalifiedLeads`, `handleCountLeads`, `handleMyListings`, `handleCountListings`, `handlePendingViewings`, `handleUpcomingViewings`, `handleCountViewings`, `handleUpcomingOpenHouses`, `handleRecentActivity`, `handleBusinessSummary` (8-card snapshot via 4 parallel queries), `handleEntitySearch` (leads + properties by name — falls back gracefully). Added `extractEntityName(query)` helper for natural name queries ("tell me about X", "find lead X", "who is X"). Added `formatRelativeTime(date)` helper. `summary` responseType now used for count/stat queries.
+  - **Frontend** (`AIIntelligencePanel.tsx`): Added dedicated `summary` responseType renderer — 2-column card grid with colour-coded values (`red/orange/green/blue/purple/gray`) plus optional narrative text below.
+  - **Spec** (`ai-intelligence.service.spec.ts`): 24 new tests covering every new handler. Tests: 414 total, all passing. tsc clean.
+
+- **AI Intelligence Panel — full-stack agent intelligence engine** (2026-03-07)
+  - **`apps/api/src/ai-intelligence/ai-intelligence.service.ts`**: `getDashboard()` queries existing CRM + property data to produce four insight streams — (1) **Lead Scoring** (0–100, grade A/B/C/D): temperature score (hot=40, warm=30, nurture=20, cold=10) + stage score (new=5 → under_contract=45) + recency bonus (+20/+10/+5) + prequalified bonus (+15) + budget defined (+5); (2) **Pricing Insights**: compares active listings against market average of comparables (same city + property_type from other companies), flags overpriced (>15% above) / underpriced (>15% below) / competitive; (3) **Buyer Matching**: matches buyer-type leads against active listings by budget overlap (60pts) + type preference (25pts) + location preference (15pts) + hot-buyer bonus (10pts), returns top 20 matches ≥40pts; (4) **Recommendations**: hot/A-grade leads not contacted in 7+ days, warm/B-grade leads not contacted in 14+ days, under-contract deals silent for 14+ days (urgent), pricing alerts, strong buyer matches (≥70 match score). All logic is deterministic — no external AI calls.
+  - **`apps/api/src/ai-intelligence/ai-intelligence.controller.ts`**: single `GET /ai-intelligence/dashboard` endpoint, JWT-guarded, company-scoped.
+  - **`apps/api/src/ai-intelligence/ai-intelligence.module.ts`**: module with controller, service, and export.
+  - **`apps/api/src/ai-intelligence/ai-intelligence.service.spec.ts`**: 12 unit tests — ForbiddenException guard, full dashboard structure, lead scoring (hot+active=A, cold+new=D, empty DB), pricing insights (overpriced, underpriced, insufficient comparables), buyer matching (budget overlap, far-off budget), recommendations (deal_risk urgent, hot_lead generation) — all passing.
+  - **`apps/api/src/app.module.ts`**: `AIIntelligenceModule` registered after `LeadsModule`.
+  - **`apps/web/src/lib/api-client.ts`**: added `AIRecommendation`, `LeadScore`, `PricingInsight`, `BuyerMatch`, `AIIntelligenceDashboard` types and `aiIntelligenceApi.getDashboard()`.
+  - **`apps/web/src/views/AIIntelligencePanel.tsx`**: standalone panel view with summary cards (urgent actions, total insights, leads scored, avg lead score, listings analysed, buyer matches), section tabs (Recommendations / Lead Scores / Pricing Insights / Buyer Matches), refresh button, loading skeleton, and error display.
+  - **`apps/web/src/app/app/ai-intelligence/page.tsx`**: Next.js route exporting `AIIntelligencePanel`.
+  - **`apps/web/src/components/AppSidebar.tsx`**: added `Brain` icon import; added `AI Intelligence → /app/ai-intelligence` to `agentNavigation` array (5th item, rendered in the `slice(2)` group after Lead Management).
+  - **`apps/web/src/views/AgentDashboardEnhanced.tsx`**: added `"ai"` to tab union type; added 🧠 AI Intelligence tab button (purple highlight) after CRM; added `{selectedTab === "ai" && <AIIntelligencePanel />}` tab content block.
+- **Leads Module — full backend API and multi-tenant DB schema** (2026-03-07)
+  - **Migration `202603070019_leads_module`**: three tables in `sales` schema — `sales.leads` (buyer/seller/renter/investor leads with hot/warm/cold/nurture temperature, 7-stage pipeline, budget range, prequalification flag, deal value, next follow-up); `sales.lead_activities` (append-only audit log via trigger — email/call/sms/meeting/note/stage_change); `sales.lead_tasks` (call/email/meeting/follow_up tasks with high/medium/low priority and completion tracking). Composite indexes on `(company_id, stage)` and `(company_id, created_at DESC)`.
+  - **`apps/api/src/leads/leads.dto.ts`**: exported constants (`LEAD_TYPES`, `LEAD_TEMPERATURES`, `LEAD_STAGES`, `TASK_TYPES`, `TASK_PRIORITIES`, `ACTIVITY_TYPES`) and six DTOs: `CreateLeadDto`, `UpdateLeadDto` (+ lostReason), `ListLeadsQueryDto` (search/type/temperature/stage/assignedTo/limit/offset), `CreateLeadActivityDto`, `CreateLeadTaskDto`, `UpdateLeadTaskDto`.
+  - **`apps/api/src/leads/leads.service.ts`**: full CRUD + analytics using raw SQL (`$queryRaw` / `$queryRawUnsafe`). `list()` — dynamic WHERE with ILIKE search; `create()` — INSERT + auto-logs 'note' activity; `update()` — dynamic SET, stage change auto-logs `stage_change` activity with `{from_stage, to_stage}` metadata; `getDashboard()` — 5 parallel queries (KPIs, tasks, recent activities, byType, byTemperature); `getPipeline()` — groups non-closed leads by `LEAD_STAGES` order; `getAnalytics()` — 5 parallel GROUP BY queries (summary, bySource, byType, funnel, monthly trend).
+  - **`apps/api/src/leads/lead-activity.service.ts`**: `list()` joins `actor_name`; `create()` inserts activity and updates `last_contact_at` on parent lead.
+  - **`apps/api/src/leads/lead-task.service.ts`**: `list()` sorted by completed ASC + due_date + priority; `update()` sets/clears `completed_at`/`completed_by` when toggling completion.
+  - **`apps/api/src/leads/leads.controller.ts`**: 13 endpoints under `@Controller('leads')` — static routes `/dashboard`, `/pipeline`, `/analytics` registered before parameterised `:id` to avoid NestJS route shadowing; write endpoints guarded with `@Roles('agent', 'admin')`.
+  - **`apps/api/src/leads/leads.module.ts`**: registers all three services and the controller.
+  - **`apps/api/src/leads/leads.service.spec.ts`**: 16 unit tests (list ×3, create ×2, getById ×3, update ×3, remove ×2, getDashboard ×2) — all passing.
+  - **`apps/api/src/app.module.ts`**: `LeadsModule` registered after `SalesModule`.
+  - **`apps/web/src/lib/api-client.ts`**: replaced old `crmApi` stub with `leadsApi` (13 methods); replaced `LeadRecord` → `LeadRow`, `LeadActivityRecord` → `LeadActivityRow`, `CrmDashboardResponse` → `LeadDashboardResponse`, `CreateLeadPayload` (old field names) → new schema-aligned fields (`name`, `type`, `email`, `phone`, `source`, …). Added `LeadTaskRow`, `LeadPipelineStage`, `LeadPipelineResponse`, `LeadAnalyticsResponse`, `ListLeadsQuery`, `CreateLeadActivityPayload`, `CreateLeadTaskPayload`, `UpdateLeadTaskPayload`.
+  - **`apps/web/src/views/AgentDashboardEnhanced.tsx`**: updated all state types and API calls to use `leadsApi` and the new type names; field name references updated (`contact_name` → `name`, `status` → `stage`, etc.); dashboard KPI cards show `hotLeads`, `activeDeals`, `recentActivities.length`; status breakdown now renders `byTemperature` entries.
+- **Lead Management — all 5 views wired to live API** (2026-03-07)
+  - **`apps/web/src/views/LeadDashboard.tsx`**: replaced `mockLeads` with `leadsApi.getDashboard(token)` — loading spinner, error state, KPI cards from `{ totalLeads, hotLeads, activeDeals, pipelineValue }`, pending tasks from `LeadTaskRow[]`, recent activities from `LeadActivityRow[]`, distribution grids from `byType` / `byTemperature`.
+  - **`apps/web/src/views/LeadsPage.tsx`**: replaced mock with `leadsApi.list(token, filters)` — 350 ms debounced search, server-side type/temperature/stage filters, pagination; Add Lead modal wired to `leadsApi.create()` with toast-style success reset; field names updated to `LeadRow` (`name`, `budget_min`/`budget_max` as numeric strings, etc.).
+  - **`apps/web/src/views/LeadPipeline.tsx`**: replaced mock with `leadsApi.getPipeline(token)` — stage summary bar reads `s.count` / `s.totalValue`; kanban columns resolved via `stageMap.get(stage.id)?.leads`; `LeadKanbanCard` uses `LeadRow` field names; `under-contract` stage key corrected to `under_contract`.
+  - **`apps/web/src/views/LeadAnalytics.tsx`**: replaced module-level `mockLeads` derivations with `leadsApi.getAnalytics(token)` — `bySource` / `byType` transformed to recharts `{name, value}[]`; `funnel` / `monthlyTrend` / `sourcePerformance` consumed directly; currency formatting updated from USD to ZAR (`R`).
+  - **`apps/web/src/views/LeadDetail.tsx`**: replaced mock lookups with three parallel API calls — `leadsApi.getById`, `leadsApi.listActivities`, `leadsApi.listTasks`; activities sorted by `created_at` DESC; field names updated (`assigned_agent_name`, `last_contact_at`, `next_follow_up`, `deal_value`, `created_at`); tasks use `task.completed` (boolean) and `task.due_date`; activity feed uses `actor_name` / `created_at`; `under-contract` stage key corrected to `under_contract` throughout.
+- **Lead Management screens — all 5 pages ported from sample UI** (2026-03-07)
+  - **`apps/web/src/lib/lead-mock-data.ts`**: shared types (`Lead`, `LeadTask`, `LeadActivity`) and mock data (10 leads, 5 tasks, 5 activities) used by all lead views until the backend API is wired in.
+  - **`apps/web/src/views/LeadDashboard.tsx`**: dashboard page with 4 KPI cards (total leads, hot leads, active deals, pipeline value), "Today's Tasks" list, "Recent Activity" feed, lead distribution grid (by type and temperature).
+  - **`apps/web/src/views/LeadsPage.tsx`**: searchable/filterable leads table with text search, type/temperature dropdowns, stage pill filters, and per-row call/email/view actions.
+  - **`apps/web/src/views/LeadPipeline.tsx`**: Kanban board with 6 stage columns (New → Closed), stage summary stats bar, colour-coded lead cards with temperature dot, prequalification badge, next follow-up date, and click-through to lead detail.
+  - **`apps/web/src/views/LeadAnalytics.tsx`**: analytics page with 4 KPI cards, recharts PieChart (source distribution), BarChart (type distribution), horizontal BarChart (pipeline funnel), LineChart (monthly trend), and source performance table with inline conversion progress bars.
+  - **`apps/web/src/views/LeadDetail.tsx`**: individual lead page with back navigation, lead header (name, temp/stage/prequalified badges, contact links), Edit/Delete buttons, two-column layout (lead details grid, preferences, notes, activity timeline | quick actions, tasks, stage progress tracker).
+  - **Route pages**: thin re-export wrappers at `app/app/leads/page.tsx`, `app/app/leads/dashboard/page.tsx`, `app/app/leads/pipeline/page.tsx`, `app/app/leads/analytics/page.tsx`, and `app/app/leads/[id]/page.tsx` — all hooked to the existing Lead Management sub-group in `AppSidebar.tsx`.
+  - All pages styled to match the listings page look and feel: `bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`, `hover:bg-accent`, `rounded-2xl` cards, `font-semibold` headers. react-router replaced with Next.js `next/link` and `next/navigation`.
+- **Sidebar — Agent Cockpit collapsible group for agent role** (2026-03-07)
+  - `AppSidebar.tsx`: when the active role is `agent`, the four nav items (Agent Dashboard, Listings, Safety, Analytics) are now nested inside a collapsible **Agent Cockpit** section headed by a `Gauge` icon. The group defaults to open and toggles via `showAgentCockpit` state. Implemented identically on both the desktop sidebar and the mobile drawer, following the same pattern as the existing "Company Administration" group.
+  - **Lead Management sub-group** added inside Agent Cockpit, positioned between Listings and Safety. Contains four sub-items: Lead Dashboard (`/app/leads/dashboard`), Leads (`/app/leads`), Pipeline (`/app/leads/pipeline`), Analytics (`/app/leads/analytics`). Collapsible via `showLeadManagement` state (defaults open), using `Target` icon as header and slightly smaller item sizing (`text-xs`, `w-3.5`) to visually distinguish the second nesting level. `leadManagementNavigation` constant added; `Target` and `Kanban` icons added to lucide-react imports.
+- **Property Valuation — AI Estimate and Valuation History Display** (2026-03-07)
+  - **`valuation.service.ts`**: new `getAiEstimate()` method — Automated Valuation Model (AVM) using comparable sales. Fetches subject property's `area_sqm`, `bedrooms`, `property_type` from `property.properties`; retrieves comparable sales within 5 km; uses price-per-m² calculation when area is available for both subject and comparables, otherwise falls back to median sale price. Confidence band (`high`/`medium`/`low`) derived from coefficient of variation across comparable prices. Falls back to asking price ±15% when no comparables exist. Module-level `median()` helper added.
+  - **`valuation.controller.ts`**: `GET /api/v1/properties/:id/ai-estimate` added to `ValuationController` (agent/admin/valuer/buyer_seller).
+  - **`api-client.ts`**: `AiValuationEstimate` type added; `ComparableSale` type corrected to match actual `property.comparable_sales` schema (`address`, `sale_price`, `sale_date`, `floor_area_sqm`, etc.); `propertiesApi.getAiEstimate()` method added.
+  - **`PropertyDetailEnhanced.tsx`**: Property Valuation sidebar card now displays: (1) AI Estimate panel (blue, with confidence badge, estimated value, low–high range, methodology, comparable count); (2) Valuation History list (type badge, date, value, range, purpose); (3) "Request Valuation" button. Comparable Sales card fixed to use correct field names (`cs.address`, `cs.sale_price`, `cs.sale_date`, `cs.floor_area_sqm`).
+  - **`valuation.service.spec.ts`**: 4 new tests for `getAiEstimate` — price-per-m² method, median fallback, asking-price fallback (no comparables), NotFoundException.
+- **Open House Cancel & Reschedule with attendee email notifications** (2026-03-07)
+  - **Migration `202603060018_open_house_lifecycle`**: adds `cancel_reason TEXT`, `rescheduled_at TIMESTAMPTZ`, and `rescheduled_reason TEXT` columns to `property.open_houses`.
+  - **`mandate.dto.ts`**: new `CancelOpenHouseDto` (`reason: string @MinLength(5)`) and `RescheduleOpenHouseDto` (`scheduledAt`, `endAt`, optional `reason`).
+  - **`viewing.service.ts`**: `OpenHouseRecord` type extended with the three new columns; new `cancelOpenHouse()` method — verifies ownership, flips status to 'cancelled', fetches all registrations and sends an email + in-app notification to each registered attendee; new `rescheduleOpenHouse()` method — verifies ownership, updates scheduled/end times and rescheduled metadata, notifies all registered attendees with the new date/time.
+  - **`viewing.controller.ts`**: `PATCH /api/v1/open-houses/:id/cancel` and `PATCH /api/v1/open-houses/:id/reschedule` added to `OpenHouseController` (agent/admin only).
+  - **`api-client.ts`**: `CancelOpenHousePayload` and `RescheduleOpenHousePayload` types exported; `OpenHouseRecord` type extended with `cancel_reason`, `rescheduled_at`, `rescheduled_reason`; `agentApi.cancelOpenHouse()` and `agentApi.rescheduleOpenHouse()` added.
+  - **`PropertyDetailEnhanced.tsx`**: Cancel and Reschedule buttons appear on `scheduled` open house cards in the owner's Open Houses tab; confirmation modals with reason fields; cancelled/rescheduled metadata displayed inline on each card; `handleCancelOpenHouse()` and `handleRescheduleOpenHouse()` handlers update local state on success.
+  - **`viewing.service.spec.ts`**: 8 new tests — `cancelOpenHouse` (happy path, not-found, forbidden, already-cancelled) and `rescheduleOpenHouse` (happy path, not-found, forbidden, already-cancelled); 344 tests now pass.
+
+### Fixed
+- **Listing Intelligence Panel — Views stat definitively fixed with dedicated view_count column** (2026-03-06, v3)
+  - Root cause of all previous attempts failing: `property.audit_logs` stores `actor_id = NULL` for every view because (a) all historical rows were written before auth tokens were forwarded, and (b) Next.js SSR renders `GET /properties/:id` without auth on every page load — so even after fixing the frontend, one anonymous audit-log row was still written per visit.
+  - **Migration `202603060017_property_view_count`**: adds `view_count INTEGER NOT NULL DEFAULT 0` to `property.properties`. This column starts at 0 for all listings (clean slate).
+  - **`property.service.ts` `findById()`**: now performs `UPDATE property.properties SET view_count = view_count + 1` only when (a) `actorId` is present (authenticated call — SSR anonymous calls are skipped) AND (b) `actorId` does not match `agent_id` or `owner_id` (owner/agent visits are skipped).
+  - **`property.service.ts` `getPropertyStats()`**: reads `p.view_count::text` directly instead of counting `property.audit_logs` rows — no more audit-log pollution.
+  - **`PropertyRecord` type**: added `view_count: number` field.
+  - **`property.service.spec.ts`**: 4 regression tests — non-owner authenticated visit increments counter + logs audit; agent-owner visit skips both; property-owner visit skips both; SSR unauthenticated call (no actorId) skips counter increment.
+- **Listing Intelligence Panel — Views stat now correctly excludes the listing creator's own visits** (2026-03-06, revised)
+  - Root cause identified: `propertiesApi.getById()` in the frontend never forwarded the user's JWT, so every view was written to `property.audit_logs` with `actor_id = NULL`. Because `NULL IS DISTINCT FROM uuid` is always `TRUE`, the earlier SQL filter had no effect.
+  - `property.service.ts` `findById()`: now checks whether `viewContext.actorId` matches the property's `agent_id` or `owner_id`. If it does, the `property.viewed` audit-log entry is skipped entirely, so owner/agent page-loads are never stored in the first place.
+  - `api-client.ts` `propertiesApi.getById()`: now accepts an optional `authToken` parameter so authenticated visits carry the caller's identity.
+  - `PropertyDetailEnhanced.tsx`: passes the current access token to `propertiesApi.getById()` so the creator's `actor_id` is sent to the API on every client-side property fetch, activating the owner-exclusion guard in the service.
+  - `property.service.spec.ts`: added 3 regression tests — non-owner visit logs `property.viewed`; agent-owner visit does **not** log; property-owner visit does **not** log.
+- **Listing Intelligence Panel — Views stat excludes the listing creator's own visits** (2026-03-06)
+  - `property.service.ts` `getPropertyStats()`: the views subquery now adds `AND actor_id IS DISTINCT FROM ${userId}::uuid` so page-views generated by the agent/owner themselves are not counted in the Views card on the Listing Intelligence Panel. Uses `IS DISTINCT FROM` to correctly handle `NULL` actor IDs.
+
+### Added
+- **Listing Intelligence Panel — Complete, Reschedule, Cancel modals on Scheduled Viewings tab** (2026-03-06)
+  - `PropertyDetailEnhanced.tsx`: the Scheduled Viewings tab now mirrors the full set of action buttons available on the Agent Dashboard viewings tab, while retaining the property detail page's own theming.
+  - `requested` viewings: **Confirm** + **Decline** (existing modal) + new **Cancel** button (opens Cancel modal).
+  - `confirmed` viewings: new **Complete** button (calls `PATCH /viewings/:id/complete`, updates status locally), new **Reschedule** button (opens Reschedule modal), and **Cancel** button (opens Cancel modal) — replaces the previous inline text-input cancel flow.
+  - **Cancel Viewing Modal**: orange-themed, requires a cancellation reason ≥5 chars, shows `AlertCircle` error banner, `Loader2` spinner on submit, calls `viewingsApi.cancel()`.
+  - **Reschedule Viewing Modal**: blue-themed, requires a new datetime, optional reason textarea, `Loader2` spinner on submit, calls `viewingsApi.reschedule()` and updates `scheduled_at` / `rescheduled_at` locally.
+  - New state vars: `completingViewingId`, `showCancelViewingModal`, `cancellingViewingId`, `cancelViewingReason`, `isCancellingViewing`, `cancelViewingError`, `showRescheduleViewingModal`, `reschedulingViewingId`, `rescheduleViewingForm`, `isReschedulingViewing`, `rescheduleViewingError`.
+  - New handlers: `handleCompleteViewing(viewingId)`, `handleCancelViewing()` (modal-based, replaces inline version), `handleRescheduleViewing()`.
+  - `api-client.ts`: added `RescheduleViewingPayload` to the import in `PropertyDetailEnhanced.tsx`.
+
+
+  - Listing owners can now manage their property directly from the Listing Intelligence Panel in `PropertyDetailEnhanced.tsx`.
+  - **Viewings tab**: each viewing card now shows action buttons gated by status: `requested` → **Confirm** (calls `PATCH /viewings/:id/confirm`) + **Decline** button opens a full modal (reason ≥10 chars, optional alternative dates with add/remove, optional message to buyer) matching the agent dashboard pattern; `confirmed` → **Cancel Viewing** with inline reason input (calls `PATCH /viewings/:id/cancel`). All actions update the local state immediately without a full page reload.
+  - **Enquiries tab**: each enquiry with `status === 'new'` shows a **Reply** button that expands an inline textarea; submitting calls `PATCH /api/v1/inquiries/:id/respond` and updates the card with the response text and `responded` status.
+  - **Open Houses tab**: a **Schedule Open House** button at the top of the tab expands an inline form with start/end datetime, max attendees, and description; submitting calls `POST /properties/:id/open-houses` and prepends the new record to the list.
+  - `api-client.ts`: added `inquiriesApi.respond(authToken, inquiryId, { response })` calling `PATCH /inquiries/:id/respond`; added `agentApi` and `inquiriesApi` to imports in `PropertyDetailEnhanced.tsx`.
+
+### Changed
+- **Navbar — removed Create Listing button, notification bell on all pages** (2026-03-06)
+  - `Layout.tsx`: removed the "Create Listing" button (desktop `<Button>` and mobile `<button>` variants) from the shared top navbar across all authenticated pages.
+  - `Layout.tsx`: added the notification bell (with unread badge) to the simplified toolbar branch (`!shouldShowToolbar`, i.e. property detail pages) so it is now present on every authenticated page.
+  - Cleaned up unused `Button`, `Plus`, `CreateListing` imports; removed `showCreateModal` state and the `<CreateListing>` modal render; removed now-unused `isProfileDashboardRoute`, `isRoleSetupRoute`, `isCompanyRoute` constants. TypeScript clean build confirmed.
+
+### Fixed
+- **Open house registration — Register Attendance button disabled for listing creators** (2026-03-06)
+  - `PropertyDetailEnhanced.tsx`: the "Register Attendance" button is now `disabled` (with muted purple styling and a `title` tooltip "You cannot register for your own listing") when `isOwnListing` is true (i.e. `currentUser.id === property.agent.id`).
+  - Reverted the previous backend `ForbiddenException` approach — no server-side guard needed; the check is a UI affordance.
+
+### Added
+- **Listing Intelligence Panel on property detail page** (2026-03-06)
+  - Listing creators (agents) now see a full management dashboard at the top of `PropertyDetailEnhanced.tsx`, conditionally rendered when `currentUser.id === property.agent.id`.
+  - **Stat cards**: Views, Saves, Enquiries, combined Viewings count (with breakdown annotations for pending/confirmed/done), and Days Listed — sourced from `GET /properties/:id/stats`.
+  - **Viewings tab**: chronological list of all viewers with buyer name, email, scheduled date/time, viewing type, duration, status badge, buyer feedback, and cancel reason.
+  - **Enquiries tab**: all incoming enquiries with type badge (viewing/offer/question), requester contact, message snippet, response (if any), and status badge (new/responded).
+  - **Open Houses tab**: all scheduled open houses from existing `propertyOpenHouses` state with date range, attendee cap, and status badge.
+  - Backend: `getPropertyStats(userId, propertyId)` and `getPropertyViewingsList(userId, propertyId)` added to `property.service.ts`; `GET /properties/:id/stats` and `GET /properties/:id/viewings` endpoints added to `PropertyController` (placed before the generic `GET :id` route to avoid conflicts).
+  - API client: `PropertyStats`, `ListingViewingRecord`, `PropertyInquiryRecord` types; `getPropertyStats`, `getPropertyViewings`, `getPropertyInquiries` methods added to `propertiesApi` in `api-client.ts`.
+
+### Fixed
+- **Viewing notifications — company scope bug** (2026-03-06)
+  - Agent notifications for viewing events (request, buyer-cancel) were being stored with the *buyer's* `active_company_id` (from JWT) instead of the *property's* `company_id`. This meant that when a buyer booked a viewing while signed in under "Self" (null company), the agent's notification was stored with `company_id = null` and therefore invisible when the agent logged in as their company.
+  - `viewing.service.ts` `request()` — the initial `SELECT` of `property.properties` now also fetches `company_id`; the new `propertyCompanyId` value is passed to `createInAppNotification` for the agent notification instead of the caller's `companyId`.
+  - `viewing.service.ts` `cancel()` (buyer-cancels branch) — added `getPropertyInfo(viewing.property_id)` lookup so the agent notification is tagged with the property's `company_id`.
+  - `viewing.service.ts` `confirm()` — buyer confirmation notification now passes `null` as `companyId`; buyer notifications are never company-scoped.
+  - Added private `getPropertyInfo(propertyId)` helper that returns `{ title, company_id }` (extending the existing `getPropertyTitle` helper).
+
+- **Notification center — hardwired mock data replaced with live API** (2026-03-06)
+  - `NotificationCenter.tsx` previously rendered 6 static mock notifications that never changed. Completely rewritten to call `notificationsApi.getAll(token)` on mount, show a loading spinner, an empty state, and real notifications with relative timestamps and mark-as-read / mark-all-read actions.
+  - `Layout.tsx` bell badge now driven by real unread count fetched from the notifications API; badge is hidden when there are zero unread notifications.
+
+- **Notification center — company-scoped notification filtering** (2026-03-06)
+  - Users now see only notifications relevant to their currently active company. Added `company_id UUID NULL` column (FK → `identity.companies`) to `identity.user_notifications` via migration `202603060016_notifications_company_context`; new compound index on `(user_id, company_id, read_at, created_at)` replaces the old single-column unread index.
+  - `viewing.service.ts` — `createInAppNotification` stores `company_id`; `getNotifications(userId, companyId?)` filters rows where `company_id = ?` (when an active company exists) or `company_id IS NULL` (for individual/no-company context).
+  - `viewing.controller.ts` — `GET /notifications` passes `req.user.active_company_id` to `getNotifications()`.
+
+- **PropertyComparison — pre-existing TypeScript errors** (2026-03-06)
+  - Removed unused `useMemo` import and unused `isWinner` helper function; removed duplicate `import { Card }` statement appended at end-of-file.
+  - Added `q?: string` text-search parameter to `SearchPropertiesDto` and `property.service.ts` (ILIKE filter on title/description); added matching `q?: string` to `PropertySearchParams` in `api-client.ts`; updated the add-to-comparison search call from the non-existent `search` key to `q`.
+
+- **Agent dashboard — 500 on `/agent/dashboard/summary` and `/agent/commission-pipeline`** (2026-03-06)
+  - `property.service.ts` `getAgentDashboardSummary` and `getAgentCommissionPipeline` both contained SQL JOINs against a `sales.transaction_stages` table that does not exist in the database schema.
+  - The correct tables are `sales.property_sales` (which tracks active sale transactions with `property_id`, `current_stage` SMALLINT, `country`, `status`) and `sales.stage_configs` (which maps stage numbers to names per country, seeded with 14 ZA stages).
+  - Fix: replaced `JOIN sales.transaction_stages ts … AND ts.status = 'in_progress'` with `JOIN sales.property_sales ps … AND ps.status = 'active' JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country` in both methods; `ts.stage_name` references updated to `sc.stage_name`. Commission pipeline uses LEFT JOINs so properties without an active sale are still returned.
+- **Viewing schedule — Internal Server Error (`full_name` column does not exist)** (2026-03-06)
+  - `viewing.service.ts` `getUserContact` queried `SELECT email, full_name FROM identity.users` but the table has `first_name` / `last_name` columns — PostgreSQL threw `column "full_name" does not exist` → unhandled exception → 500 on every buyer viewing request.
+  - Fix: changed query to `SELECT email, CONCAT(first_name, ' ', last_name) AS full_name`.
+  - `viewing.service.spec.ts`: added missing `NotificationService` mock provider (Nest DI failed to compile test module), updated `baseViewing` fixture (`status: 'requested'`, `viewing_type: 'physical'`), and added the three extra `$queryRaw` mock returns (`getUserContact`, `getPropertyTitle`, `createInAppNotification`) required by the notification flow in the `request` and `confirm` happy-path tests. All 11 tests now pass.
+- **Viewing schedule — Internal Server Error (audit log `event_id` NOT NULL)** (2026-03-06)
+  - `audit.service.ts`: `AuditLogParams.eventId` was typed as required (`string`) but every call site across `viewing.service.ts`, `property.service.ts`, and other services omitted it. `undefined` in the Prisma raw template was passed as SQL `NULL`, violating the `event_id NOT NULL` constraint → unhandled Prisma exception → 500.
+  - Fix: made `eventId` optional (`eventId?: string`) and added `const eventId = entry.eventId ?? randomUUID()` in `AuditService.log()` — a UUID is auto-generated for call sites that don't supply a correlation ID.
+  - The earlier TS compile appeared clean only because `tsc 2>&1 | head -20` truncated errors and `head` exits 0 regardless; running `tsc --noEmit` without pipe truncation confirms 0 errors after this fix.
+
+- **Buyer viewing schedule — validation errors** (2026-03-07)
+  - `PropertyDetailEnhanced.tsx`: `handleConfirmViewing` was sending `viewingType: 'in_person'` — renamed to `'physical'` to match the backend `CreateViewingDto` enum (`physical | virtual | open_house`).
+  - `api-client.ts`: `CreateViewingPayload.viewingType` type updated from `'in_person' | 'virtual'` → `'physical' | 'virtual' | 'open_house'` to match backend DTO.
+  - `mandate.dto.ts`: added `@IsOptional() @IsString() notes?: string` to `CreateViewingDto` — the buyer scheduling form intentionally packs contact details (name, email, phone, special requests) into the `notes` field; the backend's whitelist validation (`forbidNonWhitelisted`) was rejecting the un-declared property with "property notes should not exist".
+
+- **Non-admin company member blocked on login** (2026-03-07)
+  - `CompanyContextSelect.tsx`: non-admin members of a real company are now routed to `/app/my-dashboard`; only company admins (`is_admin === true`) are routed to `/company/dashboard`.  Previously all non-self company users were sent to `/company/dashboard` regardless of role, causing a 403 "Company admin access required" from the admin-guarded dashboard API endpoint.
+  - `CompanyDashboard.tsx`: added `!activeCompany.is_admin` check in the guard block so any non-admin who navigates directly to `/company/dashboard` is immediately redirected to `/app/my-dashboard`.
+
+- **My Dashboard shown to agents under a company context** (2026-03-06)
+  - When a user with the `agent` role selected a real company (non-self), they were routed to `/app/my-dashboard` — the personal dashboard — instead of the Agent Dashboard.
+  - `CompanyContextSelect.tsx`: routing now checks `selectedCompany.role`. Agents are sent to `/app/agent`; admins to `/company/dashboard`; everyone else to `/app/my-dashboard`.
+  - `MyDashboard.tsx`: added an agent guard alongside the existing admin guard — if the active company is a real (non-self) company and the user's role is `agent`, the page immediately redirects to `/app/agent`. Prevents direct-URL access to the personal dashboard for company agents.
+
+- **Agent dashboard — "Unable to load agent listings" error** (2026-03-06)
+  - `RolesGuard` only checked `request.user.roles` (global identity roles), ignoring `active_company_role` from the JWT. A user acting as an agent under a company has `active_company_role: 'agent'` but no global `'agent'` role, so every `@Roles('agent', 'admin')` endpoint rejected them with 403 — `GET /agent/dashboard` failed, `Promise.all` rejected, and the dashboard showed the error.
+  - Fix: `roles.guard.ts` now merges `active_company_role` into the effective roles array before checking. A user with `active_company_role: 'agent'` can now access any endpoint decorated with `@Roles('agent', ...)`.
+  - Added 3 tests in `roles.guard.spec.ts` covering: active company role grants access, mismatched company role is denied, and `null` company role falls back to global roles.
+
+- **My Listings leaking cross-company listings** (2026-03-07)
+  - `property.service.ts` — `getOwnerListings()` now accepts an optional `companyId` parameter and adds `AND p.company_id = $N::uuid` to the WHERE clause when supplied. Previously only `owner_id / agent_id` was checked, so all listings the user ever created across all companies were returned regardless of active context.
+  - `buyer.controller.ts` — `GET /properties/my-listings` now passes `req.user.active_company_id` (from the JWT) to `getOwnerListings()` so only listings belonging to the currently active company are returned.
+
+- **My Properties — "Unable to load your properties" error** (2026-03-07)
+  - `seller-dashboard.service.ts` — `getSellerProperties()` was referencing `pl.suburb` which does not exist on `property.property_locations`; corrected to `pl.region AS suburb`. The column was named `region` in the migration but the query used the old alias.
+
+### Added
+- **Viewing Lifecycle — Decline, Cancel, Reschedule & Notifications** (2026-03-07)
+  - **Database migration** `202603060015_viewing_lifecycle_notifications`:
+    - `property.viewings`: added `cancel_reason`, `cancelled_by`, `rescheduled_at`, `rescheduled_reason`, `declined_at` columns; `'declined'` added to status CHECK constraint.
+    - New `identity.user_notifications` table for in-app notification inbox.
+  - **Backend** (`apps/api/src/property/`):
+    - `mandate.dto.ts`: three new DTOs — `AgentDeclineViewingDto` (reason ≥10 chars, optional alternative dates array, optional message), `CancelViewingDto` (reason ≥5 chars), `RescheduleViewingDto` (scheduledAt, optional duration/virtualLink/reason).
+    - `viewing.service.ts`: new methods — `decline()`, `cancel()`, `reschedule()`, `getBuyerViewings()`, `getNotifications()`, `markNotificationRead()`, `markAllNotificationsRead()`; `request()` and `confirm()` now trigger email + in-app notification; private helpers `getUserContact()`, `getPropertyTitle()`, `createInAppNotification()`.
+    - `viewing.controller.ts`: new endpoints — `PATCH /viewings/:id/decline` (agent/admin), `PATCH /viewings/:id/cancel` (all roles), `PATCH /viewings/:id/reschedule` (agent/admin), `GET /buyer/viewings`, `GET /notifications`, `PATCH /notifications/read-all`, `PATCH /notifications/:id/read`; split into `BuyerViewingController` and `NotificationsController` controllers.
+    - `property.module.ts`: registered `BuyerViewingController`, `NotificationsController`, `NotificationService`.
+    - `identity.module.ts`: `NotificationService` added to `exports`.
+  - **Frontend** (`apps/web/`):
+    - `api-client.ts`: updated `ViewingResponse` type with lifecycle fields; new types `AgentDeclineViewingPayload`, `CancelViewingPayload`, `RescheduleViewingPayload`, `UserNotification`; `viewingsApi` extended with `confirm`, `decline`, `cancel`, `reschedule`, `getMyViewings`; new `notificationsApi` with `getAll`, `markRead`, `markAllRead`.
+    - `AgentDashboardEnhanced.tsx`:
+      - **Accept / Decline** buttons on `'requested'` viewings; **Complete / Reschedule / Cancel** on `'confirmed'` viewings.
+      - **Decline modal** — reason field (≥10 chars), optional alternative date-time picker (add/remove list), optional message to buyer.
+      - **Cancel modal** (agent) — reason field (≥5 chars), notifies buyer by email.
+      - **Reschedule modal** — new date/time picker, optional reason, notifies buyer with old vs new time.
+      - **Notification bell** in header — red badge with unread count, dropdown showing last 20 notifications; marks all read on open; uses `notificationsApi`.
+    - `MyDashboard.tsx`:
+      - New **My Viewings** tab — lists all buyer viewings with status badges, cancel reason display, and a "Cancel this viewing" link (opens cancel modal).
+      - **Cancel Viewing modal** (buyer) — reason field; calls `viewingsApi.cancel()`.
+      - **Notification bell** in header — same pattern as agent dashboard.
+
+- **Agent Schedule Viewing — manual booking on behalf of buyer** (2026-03-06)
+  - Backend (`apps/api/src/property/`):
+    - `mandate.dto.ts`: new `AgentBookViewingDto` — `viewingType` ('physical'|'virtual'), `scheduledAt`, optional `durationMinutes`/`virtualLink`, required `buyerContactName`, optional `buyerContactEmail`/`buyerContactPhone`/`notes`.
+    - `viewing.service.ts`: new `bookForBuyer()` method — verified property lookup, buyer contact stored as JSON in `agent_notes` with `bookedByAgent: true` flag, `buyer_id` set to `agentId` as proxy (no user account needed), status auto-set to `'confirmed'`, audit log `'viewing.agent_booked'`.
+    - `viewing.controller.ts`: new `POST /properties/:id/viewings/agent-book` endpoint, `Roles('agent', 'admin')` — separate from the existing buyer-only `POST /properties/:id/viewings`.
+  - Frontend (`apps/web/`):
+    - `api-client.ts`: `AgentBookViewingPayload` type; `viewingsApi.bookForBuyer()` calling the new endpoint.
+    - `AgentDashboardEnhanced.tsx` — **Schedule Viewing** button added to the Viewings tab header; **Schedule Viewing modal** (full-screen overlay):
+      - Listing selector, date/time picker, viewing type (In-Person / Virtual), duration input.
+      - Buyer contact section: full name (required), email, phone.
+      - Notes textarea.
+      - Submit disabled until property, date, and buyer name are filled; spinner while in-flight; error banner on failure.
+    - Viewing cards updated: when `agent_notes` contains `bookedByAgent: true`, the card shows the buyer's name (and phone/email for upcoming viewings) instead of the generic "Buyer Viewing" label.
+
+- **Listing Syndication Engine — frontend UI** (2026-03-06)
+  - `api-client.ts`: added `SyndicationRecord` type and `syndicationApi` with three methods:
+    - `syndicate(token, propertyId)` → `POST /properties/:id/syndicate` (push to all active portals)
+    - `getStatus(token, propertyId)` → `GET /properties/:id/syndication-status` (fetch per-portal records)
+    - `pause(token, propertyId, portalId)` → `PATCH /properties/:id/syndicate/:portalId/pause`
+  - `AgentDashboardEnhanced.tsx` — **Syndicate** button added to each row in the Listings tab (alongside View / Edit / Duplicate).
+  - **Syndication modal** (full-screen overlay, triggered per listing):
+    - Shows property title and total portal count in the header.
+    - **"Sync to All Portals"** button calls `POST /properties/:id/syndicate`; results immediately reflected in the list below.
+    - Per-portal rows: portal name, colour-coded status badge (`pending` yellow / `synced` green / `paused` blue / `failed` red), last-synced timestamp, external listing link (when available), and a **Pause** button for active/pending portals.
+    - Loading spinner while the initial status fetch is in flight; inline error banner on failure.
+
+### Fixed
+
 - **AgentDashboardEnhanced + PropertyDetailEnhanced — compile & API errors** (2026-03-06)
   - `PropertyDetailEnhanced.tsx`: recovered missing `const handleAddToFavourites = async () => {` function declaration that was accidentally dropped in a prior session, causing "await isn't allowed in non-async function" and "Return statement is not allowed here" compile errors.
   - `PropertyDetailEnhanced.tsx`: `registerForOpenHouse` was called on `agentApi` (which has no such method); corrected to `viewingActionsApi.registerForOpenHouse`. `viewingActionsApi` added to the import; unused `agentApi` import removed.

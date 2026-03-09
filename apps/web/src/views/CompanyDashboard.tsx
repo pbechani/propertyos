@@ -59,7 +59,7 @@ export default function CompanyDashboard() {
   const activeCompany = getActiveCompanyContext();
 
   useEffect(() => {
-    if (!activeCompany || activeCompany.slug === 'self') {
+    if (!activeCompany || activeCompany.slug === 'self' || !activeCompany.is_admin) {
       navigate('/app/my-dashboard');
       return;
     }

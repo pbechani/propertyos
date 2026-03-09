@@ -91,8 +91,20 @@ export default function CompanyContextSelect() {
       if (selectedCompany) saveActiveCompanyContext(selectedCompany);
 
       const safeNext = nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : null;
-      // Self is the personal system company — send to My Dashboard, not Company Dashboard
-      const defaultDestination = selectedCompany?.slug === 'self' ? '/app/my-dashboard' : '/company/dashboard';
+      // Routing by context:
+      //   self company          → My Dashboard (personal)
+      //   company admin         → Company Dashboard
+      //   company agent role    → Agent Dashboard
+      //   other company member  → My Dashboard
+      const role = selectedCompany?.role?.toLowerCase();
+      const defaultDestination =
+        selectedCompany?.slug === 'self'
+          ? '/app/my-dashboard'
+          : selectedCompany?.is_admin
+          ? '/company/dashboard'
+          : role === 'agent'
+          ? '/app/agent'
+          : '/app/my-dashboard';
       navigate(safeNext ?? defaultDestination);
     } catch (err) {
       if (err instanceof ApiError) {

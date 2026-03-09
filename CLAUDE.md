@@ -469,8 +469,27 @@ Before implementing any sprint, read:
 
 ## Testing Requirements
 
-- Unit tests for business logic
-- Integration tests for API endpoints
+Every code change must include or update tests. No change is complete without test coverage.
+
+### Required Tests by Change Type
+| Change Type | Required Tests |
+|---|---|
+| New service method | Unit test: happy path + ≥2 edge cases / error paths |
+| New API endpoint | Integration test: success, 401 auth failure, 400 invalid input, 404 not found |
+| New DTO | Validation tests for each `@IsIn`, `@IsNotEmpty`, `@Min`/`@Max` rule |
+| Bug fix | Regression test that would have caught the original bug |
+| Schema change | Update all affected spec mocks to match new column names/types/constraints |
+| New business rule | Unit test encoding the rule as an expectation |
+
+### Verification Checklist Before Done
+- [ ] `npx tsc --noEmit -p apps/api/tsconfig.json` (full output, **no** `| head`) exits 0
+- [ ] `npm run test --workspace=apps/api` — all tests pass
+- [ ] CHANGELOG updated under `### Fixed`, `### Added`, or `### Changed`
+- [ ] All relevant sprint/design/API docs updated
+
+### Test Scope
+- Unit tests for all business logic (service methods)
+- Integration tests for all API endpoints
 - E2E tests for critical flows (auth, escrow release, stage progression)
 - Offline sync tests for mobile
 - Load tests before production (target: 1000 concurrent users)

@@ -10,7 +10,7 @@ import {
   Heart, Building2, HardHat, ShoppingBag,
   MapPin, Bed, Bath, ArrowRight,
   Package, AlertTriangle, Copy,
-  Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, UserCircle
+  Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, UserCircle, Bell, X, Loader2, AlertCircle
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -20,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken, getIsAdminFromToken, getActiveCompanyContext } from "@/lib/auth-session";
-import { propertiesApi, auditApi, usersApi, sellerApi, type PropertyListing, type AuditLogEntry, type AuthUser, type SellerProperty, type SellerPropertyViewing } from "@/lib/api-client";
+import { propertiesApi, auditApi, usersApi, sellerApi, viewingsApi, notificationsApi, type PropertyListing, type AuditLogEntry, type AuthUser, type SellerProperty, type SellerPropertyViewing, type ViewingResponse, type CancelViewingPayload, type UserNotification } from "@/lib/api-client";
 import { CreateListing } from "@/components/CreateListing";
 import { EditListing } from "@/components/EditListing";
 
@@ -82,7 +82,7 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 export default function MyDashboard() {
   const router = useRouter();
 
-  // Company admins should never land on this personal dashboard — redirect them.
+  // Company admins and company agents should not land on this personal dashboard.
   useEffect(() => {
     const activeCompany = getActiveCompanyContext();
     const isAdmin =
@@ -90,9 +90,17 @@ export default function MyDashboard() {
       (activeCompany?.slug !== 'self' && (activeCompany?.is_admin ?? false));
     if (isAdmin) {
       router.replace('/company/dashboard');
+      return;
+    }
+    const isCompanyAgent =
+      activeCompany?.slug !== 'self' &&
+      activeCompany != null &&
+      activeCompany.role?.toLowerCase() === 'agent';
+    if (isCompanyAgent) {
+      router.replace('/app/agent');
     }
   }, [router]);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "favourites" | "my-properties" | "my-projects" | "my-orders">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "favourites" | "my-properties" | "my-projects" | "my-orders" | "my-viewings">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -121,6 +129,21 @@ export default function MyDashboard() {
   const [expandedSellerPropertyId, setExpandedSellerPropertyId] = useState<string | null>(null);
   const [sellerPropertyViewings, setSellerPropertyViewings] = useState<Record<string, SellerPropertyViewing[]>>({});
   const [isLoadingViewingsFor, setIsLoadingViewingsFor] = useState<string | null>(null);
+
+  // Buyer viewings state
+  const [myViewings, setMyViewings] = useState<ViewingResponse[]>([]);
+  const [isLoadingMyViewings, setIsLoadingMyViewings] = useState(false);
+  const [myViewingsError, setMyViewingsError] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellingViewingId, setCancellingViewingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  // Notifications
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   // Status counts derived from the full (unfiltered) listing set
   const listingsByStatus = useMemo(() => {
@@ -250,6 +273,9 @@ export default function MyDashboard() {
     void loadUserProfile();
     void loadRecentActivity();
     void loadSavedCount();
+    // Load notifications
+    const token = getAccessToken();
+    if (token) notificationsApi.getAll(token).then(setNotifications).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -336,7 +362,45 @@ export default function MyDashboard() {
     if (selectedTab === "my-properties") {
       void loadSellerProperties();
     }
+    if (selectedTab === "my-viewings") {
+      void loadMyViewings();
+    }
   }, [selectedTab]);
+
+  const loadMyViewings = async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    setIsLoadingMyViewings(true);
+    setMyViewingsError("");
+    try {
+      const data = await viewingsApi.getMyViewings(token);
+      setMyViewings(data);
+    } catch {
+      setMyViewingsError("Unable to load your viewings.");
+    } finally {
+      setIsLoadingMyViewings(false);
+    }
+  };
+
+  const handleCancelMyViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !cancellingViewingId || cancelReason.trim().length < 5) return;
+    setIsCancelling(true);
+    setCancelError("");
+    try {
+      await viewingsApi.cancel(token, cancellingViewingId, { reason: cancelReason } as CancelViewingPayload);
+      setMyViewings((prev) =>
+        prev.map((v) => v.id === cancellingViewingId ? { ...v, status: 'cancelled', cancel_reason: cancelReason, cancelled_by: 'buyer' } : v)
+      );
+      setShowCancelModal(false);
+      setCancellingViewingId(null);
+      setCancelReason("");
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "Failed to cancel viewing.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const loadSellerProperties = async () => {
     const token = getAccessToken();
@@ -390,7 +454,48 @@ export default function MyDashboard() {
             <h1 className="text-2xl md:text-3xl font-bold mb-1">My Dashboard</h1>
             <p className="text-gray-600">Welcome back{currentUser ? `, ${currentUser.firstName}` : ""}</p>
           </div>
-
+          {/* Notification Bell */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowNotifications((p) => !p);
+                if (!showNotifications && unreadCount > 0) {
+                  const token = getAccessToken();
+                  if (token) notificationsApi.markAllRead(token).then(() => setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))).catch(() => undefined);
+                }
+              }}
+              className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <p className="font-semibold text-sm">Notifications</p>
+                  <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                </div>
+                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-8">No notifications</p>
+                  ) : (
+                    notifications.slice(0, 20).map((n) => (
+                      <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800 bg-blue-50/40"}`}>
+                        <p className="font-medium">{n.title}</p>
+                        <p className="text-xs mt-0.5 text-gray-500">{n.body}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-ZA", { dateStyle: "short", timeStyle: "short" })}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -454,6 +559,16 @@ export default function MyDashboard() {
             }`}
           >
             My Orders
+          </button>
+          <button
+            onClick={() => setSelectedTab("my-viewings")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              selectedTab === "my-viewings"
+                ? "bg-green-100 text-green-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            My Viewings
           </button>
           <button
             onClick={() => setSelectedTab("analytics")}
@@ -1229,6 +1344,117 @@ export default function MyDashboard() {
             <Button asChild variant="outline">
               <Link to="/app/contractor-supplier-marketplace">Browse Suppliers</Link>
             </Button>
+          </Card>
+        </div>
+      )}
+
+      {/* My Viewings Tab */}
+      {selectedTab === "my-viewings" && (
+        <div className="p-4 md:p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">My Viewings</h2>
+          </div>
+
+          {myViewingsError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />{myViewingsError}
+            </div>
+          )}
+
+          {isLoadingMyViewings ? (
+            <Card className="py-12 text-center text-gray-400">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+              <p className="text-sm">Loading your viewings…</p>
+            </Card>
+          ) : myViewings.length === 0 ? (
+            <Card className="text-center py-16 text-gray-400">
+              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-25" />
+              <p className="font-medium text-gray-500 mb-1">No viewings scheduled</p>
+              <p className="text-sm">Property viewings you book will appear here</p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {myViewings.map((v) => {
+                const isPast = new Date(v.scheduled_at) < new Date();
+                return (
+                  <Card key={v.id} className={`p-4 flex items-start gap-4 ${isPast ? "opacity-70" : ""}`}>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isPast ? "bg-gray-100" : "bg-green-100"}`}>
+                      <Calendar className={`w-5 h-5 ${isPast ? "text-gray-500" : "text-green-600"}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                        </span>
+                        <span className="capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</span>
+                      </div>
+                      {v.cancel_reason && (
+                        <p className="text-xs text-red-500 mt-1">Cancellation reason: {v.cancel_reason}</p>
+                      )}
+                      {(v.status === 'requested' || v.status === 'confirmed') && !isPast && (
+                        <div className="mt-2">
+                          <button
+                            className="text-xs text-red-500 hover:text-red-700 underline"
+                            onClick={() => { setCancellingViewingId(v.id); setCancelReason(""); setCancelError(""); setShowCancelModal(true); }}
+                          >
+                            Cancel this viewing
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <Badge className={
+                      v.status === "confirmed" ? "bg-green-100 text-green-700" :
+                      v.status === "completed" ? "bg-blue-100 text-blue-700" :
+                      v.status === "cancelled" ? "bg-red-100 text-red-700" :
+                      v.status === "declined" ? "bg-orange-100 text-orange-700" :
+                      "bg-yellow-100 text-yellow-700"
+                    }>
+                      {v.status}
+                    </Badge>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cancel Viewing Modal (buyer) */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-red-700">Cancel Viewing</h3>
+              <button onClick={() => setShowCancelModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {cancelError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{cancelError}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1">Reason for cancellation * <span className="text-gray-400 font-normal">(min 5 chars)</span></label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                placeholder="Provide a reason for cancelling this viewing…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)}>Back</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={isCancelling || cancelReason.trim().length < 5}
+                onClick={() => void handleCancelMyViewing()}
+              >
+                {isCancelling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Cancellation
+              </Button>
+            </div>
           </Card>
         </div>
       )}

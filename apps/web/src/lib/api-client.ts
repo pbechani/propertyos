@@ -770,6 +770,7 @@ export type PropertySearchParams = {
   verification_status?: PropertyVerificationStatus;
   features?: string;
   sort?: 'price_asc' | 'price_desc' | 'newest' | 'relevance';
+  q?: string;
   page?: number;
   limit?: number;
 };
@@ -850,9 +851,10 @@ export const propertiesApi = {
       },
     ),
 
-  getById: (id: string) =>
+  getById: (id: string, authToken?: string) =>
     apiRequest<PropertyListing>(`/properties/${id}`, {
       method: 'GET',
+      ...(authToken ? { authToken } : {}),
     }),
 
   getAgentProfile: (id: string) =>
@@ -1030,6 +1032,24 @@ export const propertiesApi = {
       `/properties/${propertyId}/comparable-sales${radius !== undefined ? `?radius=${radius}` : ''}`,
       { method: 'GET', authToken }
     ),
+
+  getAiEstimate: (authToken: string, propertyId: string) =>
+    apiRequest<AiValuationEstimate>(`/properties/${propertyId}/ai-estimate`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getPropertyStats: (authToken: string, propertyId: string) =>
+    apiRequest<PropertyStats>(`/properties/${propertyId}/stats`, { method: 'GET', authToken }),
+
+  getPropertyViewings: (authToken: string, propertyId: string) =>
+    apiRequest<ListingViewingRecord[]>(`/properties/${propertyId}/viewings`, { method: 'GET', authToken }),
+
+  getPropertyInquiries: (authToken: string, propertyId: string, limit = 50) =>
+    apiRequest<{ data: PropertyInquiryRecord[]; total: number }>(
+      `/properties/${propertyId}/inquiries?limit=${limit}`,
+      { method: 'GET', authToken }
+    ),
 };
 
 // ─── Compare & Valuation types ───────────────────────────────────────────────
@@ -1102,6 +1122,16 @@ export type CreateOpenHousePayload = {
   description?: string;
 };
 
+export type CancelOpenHousePayload = {
+  reason: string;
+};
+
+export type RescheduleOpenHousePayload = {
+  scheduledAt: string;
+  endAt: string;
+  reason?: string;
+};
+
 export type OpenHouseRecord = {
   id: string;
   property_id: string;
@@ -1112,6 +1142,9 @@ export type OpenHouseRecord = {
   max_attendees: number | null;
   description: string | null;
   status: 'scheduled' | 'completed' | 'cancelled';
+  cancel_reason: string | null;
+  rescheduled_at: string | null;
+  rescheduled_reason: string | null;
   created_at: string;
 };
 
@@ -1150,20 +1183,78 @@ export type CreateMandatePayload = {
 
 // ─── Comparable sales type ─────────────────────────────────────────────────────
 
+export type PropertyStats = {
+  views: number;
+  saves: number;
+  inquiries: number;
+  viewings_requested: number;
+  viewings_confirmed: number;
+  viewings_completed: number;
+  viewings_declined: number;
+  viewings_cancelled: number;
+  open_houses_scheduled: number;
+  days_on_market: number;
+};
+
+export type ListingViewingRecord = {
+  id: string;
+  scheduled_at: string;
+  status: string;
+  viewing_type: string;
+  duration_minutes: number | null;
+  buyer_feedback: string | null;
+  cancel_reason: string | null;
+  declined_at: string | null;
+  rescheduled_at: string | null;
+  created_at: string;
+  buyer_first_name: string | null;
+  buyer_last_name: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
+};
+
+export type PropertyInquiryRecord = {
+  id: string;
+  inquiry_type: string;
+  message: string | null;
+  status: string;
+  requester_name: string | null;
+  requester_email: string | null;
+  requester_phone: string | null;
+  response: string | null;
+  responded_at: string | null;
+  created_at: string;
+};
+
 export type ComparableSale = {
   id: string;
-  title: string;
-  price: string;
-  currency: string;
-  area_sqm: string | null;
-  floor_area_sqm: string | null;
-  bedrooms: number | null;
-  property_type: string;
+  address: string;
   city: string | null;
-  distance_km: number;
-  sold_at: string | null;
+  region: string | null;
+  country: string;
+  property_type: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floor_area_sqm: string | null;
+  erf_size_sqm: string | null;
+  sale_price: string;
+  currency: string;
+  sale_date: string;
+  days_on_market: number | null;
+  lat: string | null;
+  lng: string | null;
+  data_source: string | null;
   created_at: string;
-  price_per_sqm: number | null;
+};
+
+export type AiValuationEstimate = {
+  estimate: number;
+  low: number;
+  high: number;
+  currency: string;
+  confidence: 'high' | 'medium' | 'low';
+  methodology: string;
+  comparables_count: number;
 };
 
 // ─── Commission pipeline type ──────────────────────────────────────────────────
@@ -1210,6 +1301,22 @@ export const agentApi = {
   createOpenHouse: (authToken: string, propertyId: string, payload: CreateOpenHousePayload) =>
     apiRequest<{ id: string }>(`/properties/${propertyId}/open-houses`, {
       method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  cancelOpenHouse: (authToken: string, openHouseId: string, payload: CancelOpenHousePayload) =>
+    apiRequest<OpenHouseRecord>(`/open-houses/${openHouseId}/cancel`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  rescheduleOpenHouse: (authToken: string, openHouseId: string, payload: RescheduleOpenHousePayload) =>
+    apiRequest<OpenHouseRecord>(`/open-houses/${openHouseId}/reschedule`, {
+      method: 'PATCH',
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -1307,118 +1414,257 @@ export type ActivityType = typeof ACTIVITY_TYPES[number];
 export const LEAD_SOURCES = ['portal_enquiry', 'referral', 'walk_in', 'social_media', 'open_house'] as const;
 export type LeadSource = typeof LEAD_SOURCES[number];
 
-export type LeadRecord = {
+// ─── Leads types ─────────────────────────────────────────────────────────────
+
+export type LeadRow = {
   id: string;
-  agent_id: string;
-  contact_name: string;
-  contact_email: string | null;
-  contact_phone: string | null;
-  lead_source: string | null;
-  buyer_requirements: {
-    minPrice?: number;
-    maxPrice?: number;
-    bedrooms?: number;
-    areas?: string[];
-    propertyTypes?: string[];
-  } | null;
-  status: string;
+  company_id: string;
+  assigned_to: string | null;
+  created_by: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  source: string | null;
+  type: string;
+  timeline: string | null;
+  budget_min: string | null;
+  budget_max: string | null;
+  budget_currency: string;
+  preferences: string | null;
+  temperature: string;
+  stage: string;
+  prequalified: boolean;
+  deal_value: string | null;
   notes: string | null;
-  assigned_property_id: string | null;
+  next_follow_up: string | null;
+  last_contact_at: string | null;
+  closed_at: string | null;
+  lost_reason: string | null;
   created_at: string;
   updated_at: string;
+  assigned_agent_name?: string | null;
 };
 
-export type LeadActivityRecord = {
+export type LeadActivityRow = {
   id: string;
   lead_id: string;
-  agent_id: string;
-  activity_type: string | null;
-  notes: string | null;
-  scheduled_at: string | null;
-  completed_at: string | null;
+  company_id: string;
+  actor_id: string;
+  type: string;
+  description: string;
+  metadata: Record<string, unknown>;
   created_at: string;
+  actor_name?: string | null;
 };
 
-export type CrmDashboardResponse = {
+export type LeadTaskRow = {
+  id: string;
+  lead_id: string;
+  company_id: string;
+  assigned_to: string | null;
+  created_by: string;
+  title: string;
+  type: string;
+  priority: string;
+  due_date: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  assigned_agent_name?: string | null;
+};
+
+export type LeadDashboardResponse = {
   totalLeads: number;
-  byStatus: Record<string, number>;
-  activitiesThisWeek: number;
+  hotLeads: number;
+  activeDeals: number;
+  pipelineValue: number;
+  pendingTasks: LeadTaskRow[];
+  recentActivities: LeadActivityRow[];
+  byType: Record<string, number>;
+  byTemperature: Record<string, number>;
+};
+
+export type LeadPipelineStage = {
+  stage: string;
+  leads: LeadRow[];
+  count: number;
+  totalValue: number;
+};
+
+export type LeadPipelineResponse = {
+  stages: LeadPipelineStage[];
+};
+
+export type LeadAnalyticsResponse = {
+  conversionRate: number;
+  closedRevenue: number;
+  activeLeads: number;
+  bySource: { source: string; count: number }[];
+  byType: { type: string; count: number }[];
+  funnel: { stage: string; count: number }[];
+  monthlyTrend: { month: string; leads: number; closed: number }[];
+  sourcePerformance: {
+    source: string;
+    count: number;
+    closed: number;
+    conversion: number;
+    value: number;
+  }[];
 };
 
 export type CreateLeadPayload = {
-  contactName: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  leadSource?: string;
+  name: string;
+  type: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  source?: string;
+  timeline?: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  budgetCurrency?: string;
+  preferences?: string;
+  temperature?: string;
+  stage?: string;
+  prequalified?: boolean;
+  dealValue?: number;
   notes?: string;
-  assignedPropertyId?: string;
-  buyerRequirements?: {
-    minPrice?: number;
-    maxPrice?: number;
-    bedrooms?: number;
-    areas?: string[];
-    propertyTypes?: string[];
-  };
+  nextFollowUp?: string;
+  assignedTo?: string;
 };
 
-export type LogActivityPayload = {
-  activityType: string;
-  notes?: string;
+export type UpdateLeadPayload = Partial<CreateLeadPayload> & {
+  lostReason?: string;
 };
 
-export const crmApi = {
-  getDashboard: (authToken: string) =>
-    apiRequest<CrmDashboardResponse>('/agent/dashboard', {
-      method: 'GET',
-      authToken,
-    }),
+export type ListLeadsQuery = {
+  search?: string;
+  type?: string;
+  temperature?: string;
+  stage?: string;
+  assignedTo?: string;
+  limit?: number;
+  offset?: number;
+};
 
-  getLeads: (authToken: string, params?: { status?: string; page?: number; limit?: number }) => {
+export type CreateLeadActivityPayload = {
+  type: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type CreateLeadTaskPayload = {
+  title: string;
+  type: string;
+  priority: string;
+  dueDate?: string;
+  assignedTo?: string;
+};
+
+export type UpdateLeadTaskPayload = Partial<CreateLeadTaskPayload> & {
+  completed?: boolean;
+};
+
+export const leadsApi = {
+  list: (authToken: string, params?: ListLeadsQuery) => {
     const qs = new URLSearchParams();
-    if (params?.status) qs.set('status', params.status);
-    if (params?.page) qs.set('page', String(params.page));
-    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.search) qs.set('search', params.search);
+    if (params?.type) qs.set('type', params.type);
+    if (params?.temperature) qs.set('temperature', params.temperature);
+    if (params?.stage) qs.set('stage', params.stage);
+    if (params?.assignedTo) qs.set('assignedTo', params.assignedTo);
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.offset !== undefined) qs.set('offset', String(params.offset));
     const query = qs.toString() ? `?${qs.toString()}` : '';
-    return apiRequest<{ data: LeadRecord[]; total: number }>(`/agent/leads${query}`, {
+    return apiRequest<{ data: LeadRow[]; total: number }>(`/leads${query}`, {
       method: 'GET',
       authToken,
     });
   },
 
-  getLeadById: (authToken: string, leadId: string) =>
-    apiRequest<LeadRecord>(`/agent/leads/${leadId}`, {
-      method: 'GET',
-      authToken,
-    }),
-
-  createLead: (authToken: string, payload: CreateLeadPayload) =>
-    apiRequest<LeadRecord>('/agent/leads', {
+  create: (authToken: string, payload: CreateLeadPayload) =>
+    apiRequest<LeadRow>('/leads', {
       method: 'POST',
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
 
-  updateLeadStatus: (authToken: string, leadId: string, status: string) =>
-    apiRequest<LeadRecord>(`/agent/leads/${leadId}/status`, {
+  getDashboard: (authToken: string) =>
+    apiRequest<LeadDashboardResponse>('/leads/dashboard', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getPipeline: (authToken: string) =>
+    apiRequest<LeadPipelineResponse>('/leads/pipeline', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getAnalytics: (authToken: string) =>
+    apiRequest<LeadAnalyticsResponse>('/leads/analytics', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getById: (authToken: string, leadId: string) =>
+    apiRequest<LeadRow>(`/leads/${leadId}`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  update: (authToken: string, leadId: string, payload: UpdateLeadPayload) =>
+    apiRequest<LeadRow>(`/leads/${leadId}`, {
       method: 'PATCH',
       authToken,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(payload),
     }),
 
-  logActivity: (authToken: string, leadId: string, payload: LogActivityPayload) =>
-    apiRequest<LeadActivityRecord>(`/agent/leads/${leadId}/activities`, {
+  remove: (authToken: string, leadId: string) =>
+    apiRequest<void>(`/leads/${leadId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  listActivities: (authToken: string, leadId: string) =>
+    apiRequest<LeadActivityRow[]>(`/leads/${leadId}/activities`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  createActivity: (authToken: string, leadId: string, payload: CreateLeadActivityPayload) =>
+    apiRequest<LeadActivityRow>(`/leads/${leadId}/activities`, {
       method: 'POST',
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
 
-  getActivities: (authToken: string, leadId: string) =>
-    apiRequest<LeadActivityRecord[]>(`/agent/leads/${leadId}/activities`, {
+  listTasks: (authToken: string, leadId: string) =>
+    apiRequest<LeadTaskRow[]>(`/leads/${leadId}/tasks`, {
       method: 'GET',
       authToken,
+    }),
+
+  createTask: (authToken: string, leadId: string, payload: CreateLeadTaskPayload) =>
+    apiRequest<LeadTaskRow>(`/leads/${leadId}/tasks`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateTask: (authToken: string, leadId: string, taskId: string, payload: UpdateLeadTaskPayload) =>
+    apiRequest<LeadTaskRow>(`/leads/${leadId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }),
 };
 
@@ -1911,9 +2157,20 @@ export const sellerApi = {
 // ─── Viewings ────────────────────────────────────────────────────────────────
 
 export type CreateViewingPayload = {
-  viewingType: 'in_person' | 'virtual';
+  viewingType: 'physical' | 'virtual' | 'open_house';
   scheduledAt: string;
   durationMinutes?: number;
+  notes?: string;
+};
+
+export type AgentBookViewingPayload = {
+  viewingType: 'physical' | 'virtual';
+  scheduledAt: string;
+  durationMinutes?: number;
+  virtualLink?: string;
+  buyerContactName: string;
+  buyerContactEmail?: string;
+  buyerContactPhone?: string;
   notes?: string;
 };
 
@@ -1927,14 +2184,56 @@ export type ViewingResponse = {
   duration_minutes: number | null;
   status: string;
   notes: string | null;
+  cancel_reason: string | null;
+  cancelled_by: 'buyer' | 'agent' | 'system' | null;
+  rescheduled_at: string | null;
+  rescheduled_reason: string | null;
+  declined_at: string | null;
   created_at: string;
   // Enriched by backend JOIN queries
   property_title?: string | null;
 };
 
+export type AgentDeclineViewingPayload = {
+  reason: string;
+  alternativeDates?: string[];
+  message?: string;
+};
+
+export type CancelViewingPayload = {
+  reason: string;
+};
+
+export type RescheduleViewingPayload = {
+  scheduledAt: string;
+  durationMinutes?: number;
+  virtualLink?: string;
+  reason?: string;
+};
+
+export type UserNotification = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 export const viewingsApi = {
   request: (authToken: string, propertyId: string, payload: CreateViewingPayload) =>
     apiRequest<ViewingResponse>(`/properties/${propertyId}/viewings`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  bookForBuyer: (authToken: string, propertyId: string, payload: AgentBookViewingPayload) =>
+    apiRequest<ViewingResponse>(`/properties/${propertyId}/viewings/agent-book`, {
       method: 'POST',
       authToken,
       headers: { 'Content-Type': 'application/json' },
@@ -1951,6 +2250,74 @@ export const viewingsApi = {
       authToken,
     });
   },
+
+  confirm: (authToken: string, viewingId: string) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/confirm`, {
+      method: 'PATCH',
+      authToken,
+    }),
+
+  decline: (authToken: string, viewingId: string, payload: AgentDeclineViewingPayload) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/decline`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  cancel: (authToken: string, viewingId: string, payload: CancelViewingPayload) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/cancel`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  reschedule: (authToken: string, viewingId: string, payload: RescheduleViewingPayload) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/reschedule`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getMyViewings: (authToken: string) =>
+    apiRequest<ViewingResponse[]>(`/buyer/viewings`, {
+      method: 'GET',
+      authToken,
+    }),
+};
+
+export const notificationsApi = {
+  getAll: (authToken: string) =>
+    apiRequest<UserNotification[]>(`/notifications`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  markRead: (authToken: string, notificationId: string) =>
+    apiRequest<{ ok: boolean }>(`/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+      authToken,
+    }),
+
+  markAllRead: (authToken: string) =>
+    apiRequest<{ ok: boolean }>(`/notifications/read-all`, {
+      method: 'PATCH',
+      authToken,
+    }),
+};
+
+// ─── Inquiries ────────────────────────────────────────────────────────────────
+
+export const inquiriesApi = {
+  respond: (authToken: string, inquiryId: string, payload: { response: string }) =>
+    apiRequest<{ ok: boolean }>(`/inquiries/${inquiryId}/respond`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ─── Neighbourhood ────────────────────────────────────────────────────────────
@@ -1975,6 +2342,37 @@ export const neighbourhoodApi = {
     apiRequest<NeighbourhoodStats>(`/properties/${propertyId}/neighbourhood`, {
       method: 'GET',
       authToken,
+    }),
+};
+
+export type SyndicationRecord = {
+  id: string;
+  property_id: string;
+  portal_id: string;
+  portal_name: string;
+  external_listing_id: string | null;
+  external_url: string | null;
+  sync_status: 'pending' | 'synced' | 'paused' | 'failed';
+  last_synced_at: string | null;
+  error_message: string | null;
+  created_at: string;
+};
+
+export const syndicationApi = {
+  syndicate: (token: string, propertyId: string) =>
+    apiRequest<SyndicationRecord[]>(`/properties/${propertyId}/syndicate`, {
+      method: 'POST',
+      authToken: token,
+    }),
+  getStatus: (token: string, propertyId: string) =>
+    apiRequest<SyndicationRecord[]>(`/properties/${propertyId}/syndication-status`, {
+      method: 'GET',
+      authToken: token,
+    }),
+  pause: (token: string, propertyId: string, portalId: string) =>
+    apiRequest<SyndicationRecord>(`/properties/${propertyId}/syndicate/${portalId}/pause`, {
+      method: 'PATCH',
+      authToken: token,
     }),
 };
 
@@ -2011,4 +2409,249 @@ export type CompanyMember = {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Intelligence
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AIRecommendationType =
+  | 'lead_followup'
+  | 'pricing_alert'
+  | 'buyer_match'
+  | 'deal_risk'
+  | 'hot_lead';
+
+export type AIRecommendationPriority = 'urgent' | 'high' | 'medium' | 'low';
+
+export type AIRecommendation = {
+  id: string;
+  type: AIRecommendationType;
+  priority: AIRecommendationPriority;
+  title: string;
+  description: string;
+  entityId?: string;
+  entityName?: string;
+  actionUrl?: string;
+  createdAt: string;
+};
+
+export type LeadScore = {
+  leadId: string;
+  leadName: string;
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D';
+  temperature: string;
+  stage: string;
+  reasoning: string[];
+};
+
+export type PricingInsight = {
+  listingId: string;
+  listingTitle: string;
+  currentPrice: number;
+  avgMarketPrice: number;
+  priceDiff: number;
+  recommendation: 'overpriced' | 'underpriced' | 'competitive';
+  comparablesCount: number;
+};
+
+export type BuyerMatch = {
+  leadId: string;
+  leadName: string;
+  listingId: string;
+  listingTitle: string;
+  matchScore: number;
+  matchReasons: string[];
+};
+
+export type AIIntelligenceDashboard = {
+  recommendations: AIRecommendation[];
+  leadScores: LeadScore[];
+  pricingInsights: PricingInsight[];
+  buyerMatches: BuyerMatch[];
+  summary: {
+    totalRecommendations: number;
+    urgentCount: number;
+    leadsScored: number;
+    avgLeadScore: number;
+    listingsAnalyzed: number;
+    buyerMatchesFound: number;
+  };
+};
+
+export type AssistantListItem = {
+  id: string;
+  label: string;
+  sublabel?: string;
+  badge?: string;
+  badgeColor?: 'green' | 'orange' | 'red' | 'blue' | 'gray' | 'purple';
+  href?: string;
+};
+
+export type AssistantChartBar = {
+  label: string;
+  value: number;
+  color?: string;
+};
+
+export type AssistantSummaryCard = {
+  label: string;
+  value: string | number;
+  color?: string;
+};
+
+export type AssistantResponse = {
+  responseType: 'list' | 'chart' | 'summary' | 'text' | 'error';
+  title?: string;
+  text?: string;
+  items?: AssistantListItem[];
+  chart?: { title: string; bars: AssistantChartBar[] };
+  summaryCards?: AssistantSummaryCard[];
+  totalCount?: number;
+};
+
+// ── Orchestrator / Command Center types ──────────────────────────────────────
+
+export type OrchestratorResult = {
+  planId: string;
+  intent: string;
+  confidence: number;
+  response: AssistantResponse;
+  durationMs: number;
+  traceId: string;
+};
+
+export type AgentStatus = 'active' | 'paused' | 'error';
+
+export type AgentDescriptor = {
+  name: string;
+  description: string;
+  capabilities: string[];
+  actions: string[];
+  allowedTools: string[];
+  status: AgentStatus;
+  registeredAt: string;
+  invocationCount: number;
+  successCount: number;
+  errorCount: number;
+  avgDurationMs: number;
+  lastInvokedAt?: string;
+  lastError?: string;
+};
+
+export type RegistryHealth = {
+  totalAgents: number;
+  activeAgents: number;
+  pausedAgents: number;
+  errorAgents: number;
+  totalInvocations: number;
+  overallSuccessRate: number;
+};
+
+export type AgentMetrics = {
+  agentName: string;
+  totalCalls: number;
+  successCalls: number;
+  failedCalls: number;
+  successRate: number;
+  avgDurationMs: number;
+  p95DurationMs: number;
+  totalEstimatedCostUsd: number;
+  callsLast24h: number;
+};
+
+export type AgentTrace = {
+  traceId: string;
+  agentName: string;
+  action: string;
+  companyId: string;
+  userId?: string;
+  inputSummary?: string;
+  outputSummary?: string;
+  matchedIntent?: string;
+  intentConfidence?: number;
+  startedAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  status: 'running' | 'success' | 'failed';
+  estimatedTokens?: number;
+  estimatedCostUsd?: number;
+  error?: string;
+};
+
+export type ObservabilityReport = {
+  generatedAt: string;
+  totalTraces: number;
+  activeTraces: number;
+  successRate: number;
+  avgDurationMs: number;
+  totalEstimatedCostUsd: number;
+  agentMetrics: AgentMetrics[];
+  recentTraces: AgentTrace[];
+};
+
+export type CommandCenterOverview = {
+  agents: AgentDescriptor[];
+  health: RegistryHealth;
+  metrics: ObservabilityReport;
+  memorySizes: { shortTerm: number; longTerm: number; reasoningSteps: number };
+};
+
+export type SafetyRule = {
+  id: string;
+  name: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  enabled: boolean;
+};
+
+export const aiIntelligenceApi = {
+  getDashboard: (token: string) =>
+    apiRequest<AIIntelligenceDashboard>('/ai-intelligence/dashboard', {
+      authToken: token,
+    }),
+  query: (token: string, query: string, pageContext?: string) =>
+    apiRequest<AssistantResponse>('/ai-intelligence/assistant', {
+      authToken: token,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, ...(pageContext ? { pageContext } : {}) }),
+    }),
+  queryOrchestrated: (token: string, query: string, pageContext?: string) =>
+    apiRequest<OrchestratorResult>('/ai-intelligence/assistant/orchestrated', {
+      authToken: token,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, ...(pageContext ? { pageContext } : {}) }),
+    }),
+};
+
+export const aiCommandCenterApi = {
+  getOverview: (token: string) =>
+    apiRequest<CommandCenterOverview>('/ai-intelligence/command-center/overview', {
+      authToken: token,
+    }),
+  getTraces: (token: string, limit = 50) =>
+    apiRequest<AgentTrace[]>(`/ai-intelligence/observability/traces?limit=${limit}`, {
+      authToken: token,
+    }),
+  getMetrics: (token: string) =>
+    apiRequest<ObservabilityReport>('/ai-intelligence/observability/metrics', {
+      authToken: token,
+    }),
+  getSafetyRules: (token: string) =>
+    apiRequest<SafetyRule[]>('/ai-intelligence/safety/rules', {
+      authToken: token,
+    }),
+  pauseAgent: (token: string, name: string) =>
+    apiRequest<{ name: string; status: string }>(
+      `/ai-intelligence/agents/${encodeURIComponent(name)}/pause`,
+      { method: 'POST', authToken: token },
+    ),
+  resumeAgent: (token: string, name: string) =>
+    apiRequest<{ name: string; status: string }>(
+      `/ai-intelligence/agents/${encodeURIComponent(name)}/resume`,
+      { method: 'POST', authToken: token },
+    ),
 };

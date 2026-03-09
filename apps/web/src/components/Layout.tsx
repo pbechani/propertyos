@@ -3,13 +3,12 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Plus, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { CreateListing } from "@/components/CreateListing";
+import { Bell, Menu } from "lucide-react";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
+import { FloatingAssistant } from "@/components/FloatingAssistant";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { authExtApi, type AuthUser } from "@/lib/api-client";
+import { authExtApi, notificationsApi, type AuthUser } from "@/lib/api-client";
 import {
   clearAuthSession,
   getAccessToken,
@@ -36,7 +35,6 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,6 +42,7 @@ export function Layout({ children }: LayoutProps) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [activeCompany, setActiveCompany] = useState<CompanyContext | null>(null);
   const [hasMultipleCompanies, setHasMultipleCompanies] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const SIDEBAR_COLLAPSED_KEY = 'pribec.sidebar_collapsed';
 
@@ -63,6 +62,15 @@ export function Layout({ children }: LayoutProps) {
       window.removeEventListener(sessionUpdatedEventName, syncAuth);
     };
   }, [pathname]);
+
+  // Poll unread notification count (refresh on tab change and when bell is closed)
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) { setUnreadCount(0); return; }
+    notificationsApi.getAll(token)
+      .then((ns) => setUnreadCount(ns.filter((n) => !n.read_at).length))
+      .catch(() => undefined);
+  }, [isAuthenticated, showNotifications, pathname]);
 
   useEffect(() => {
     const savedValue = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -94,9 +102,6 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const isPropertyDetailRoute = pathname.startsWith('/app/property/');
-  const isProfileDashboardRoute = pathname === '/profile-dashboard';
-  const isRoleSetupRoute = pathname === '/role-setup' || pathname === '/profile-setup';
-  const isCompanyRoute = pathname.startsWith('/company/');
   const shouldShowSidebar = isAuthenticated;
   const shouldShowToolbar = !isPropertyDetailRoute;
   const shouldShowThemeToggle = true;
@@ -135,6 +140,21 @@ export function Layout({ children }: LayoutProps) {
                   </button>
                 )}
                 <div className="flex items-center gap-2 ml-auto">
+                  {isAuthenticated && (
+                    <button
+                      aria-label="Open notifications"
+                      className="relative p-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowNotifications(true)}
+                    >
+                      <Bell className="w-5 h-5" aria-hidden="true" />
+                      {unreadCount > 0 && (
+                        <span
+                          className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+                          aria-label={`${unreadCount} unread notifications`}
+                        />
+                      )}
+                    </button>
+                  )}
                   {shouldShowThemeToggle && <ThemeToggle />}
                   {isAuthenticated && (
                     <DropdownMenu>
@@ -177,34 +197,18 @@ export function Layout({ children }: LayoutProps) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 md:gap-4">
-                  {!isProfileDashboardRoute && !isRoleSetupRoute && !isCompanyRoute && (
-                    <>
-                      <Button
-                        className="bg-blue-500 hover:bg-blue-600 text-white hidden sm:flex"
-                        onClick={() => setShowCreateModal(true)}
-                      >
-                        <Plus className="w-4 h-4 md:mr-2" />
-                        <span className="hidden md:inline">Create Listing</span>
-                      </Button>
-                      <button
-                        className="sm:hidden p-2 text-blue-600 hover:text-blue-700"
-                        onClick={() => setShowCreateModal(true)}
-                        aria-label="Create listing"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    </>
-                  )}
                   <button
                     aria-label="Open notifications"
                     className="relative p-2 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowNotifications(true)}
                   >
                     <Bell className="w-5 h-5" aria-hidden="true" />
-                    <span
-                      className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-                      aria-label="Unread notifications"
-                    />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+                        aria-label={`${unreadCount} unread notifications`}
+                      />
+                    )}
                   </button>
                   {shouldShowThemeToggle && <ThemeToggle />}
                   <DropdownMenu>
@@ -239,11 +243,11 @@ export function Layout({ children }: LayoutProps) {
         </main>
       </div>
 
-      {/* Create Listing Modal */}
-      {showCreateModal && <CreateListing onClose={() => setShowCreateModal(false)} />}
-
       {/* Notification Center */}
       {showNotifications && <NotificationCenter onClose={() => setShowNotifications(false)} />}
+
+      {/* Floating AI Assistant — available on all authenticated pages */}
+      {isAuthenticated && <FloatingAssistant />}
     </div>
   );
 }

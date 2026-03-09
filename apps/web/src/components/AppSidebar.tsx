@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
 import { getIsAdminFromToken } from '@/lib/auth-session';
 
@@ -37,6 +37,15 @@ const agentNavigation = [
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+  { name: 'AI Intelligence', href: '/app/ai-intelligence', icon: Brain },
+];
+
+/** Sub-navigation nested under Lead Management inside Agent Cockpit. */
+const leadManagementNavigation = [
+  { name: 'Lead Dashboard', href: '/app/leads/dashboard', icon: LayoutDashboard },
+  { name: 'Leads', href: '/app/leads', icon: Users },
+  { name: 'Pipeline', href: '/app/leads/pipeline', icon: Kanban },
+  { name: 'Analytics', href: '/app/leads/analytics', icon: BarChart3 },
 ];
 
 /** Navigation shown when the user is operating under a real company context (non-admin, non-agent). */
@@ -56,6 +65,7 @@ const adminCompanyNavigation = [
   { name: 'Permissions', href: '/company/permissions', icon: Shield },
   { name: 'Activity Logs', href: '/company/activities', icon: Activity },
   { name: 'Revoked Users', href: '/company/revoked-pool', icon: UserX },
+  { name: 'AI Command Center', href: '/admin/ai-command-center', icon: Brain },
 ];
 
 const quickLinks = [
@@ -93,6 +103,8 @@ export function AppSidebar({
   const router = useRouter();
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [showAdminGroup, setShowAdminGroup] = useState(true);
+  const [showAgentCockpit, setShowAgentCockpit] = useState(true);
+  const [showLeadManagement, setShowLeadManagement] = useState(true);
 
   const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
   const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
@@ -253,6 +265,93 @@ export function AppSidebar({
                 </div>
               )}
             </div>
+          ) : isAgentRole ? (
+            <div>
+              <button
+                onClick={() => setShowAgentCockpit((v) => !v)}
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent`}
+                title="Agent Cockpit"
+              >
+                <Gauge className="w-5 h-5 shrink-0" />
+                {!isSidebarCollapsed && (
+                  <>
+                    <span className="font-medium flex-1 text-left">Agent Cockpit</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showAgentCockpit ? 'rotate-180' : ''}`} />
+                  </>
+                )}
+              </button>
+              {showAgentCockpit && (
+                <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                  {agentNavigation.slice(0, 2).map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        isActive(pathname, item.href)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                    </Link>
+                  ))}
+                  <div>
+                    <button
+                      onClick={() => setShowLeadManagement((v) => !v)}
+                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors text-muted-foreground hover:bg-accent`}
+                      title="Lead Management"
+                    >
+                      <Target className="w-4 h-4 shrink-0" />
+                      {!isSidebarCollapsed && (
+                        <>
+                          <span className="text-sm font-medium flex-1 text-left">Lead Management</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showLeadManagement ? 'rotate-180' : ''}`} />
+                        </>
+                      )}
+                    </button>
+                    {showLeadManagement && (
+                      <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                        {leadManagementNavigation.map((item) => (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                            className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
+                              isActive(pathname, item.href)
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-muted-foreground hover:bg-accent'
+                            }`}
+                            title={item.name}
+                          >
+                            <item.icon className="w-3.5 h-3.5" />
+                            {!isSidebarCollapsed && <span className="text-xs font-medium">{item.name}</span>}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {agentNavigation.slice(2).map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        isActive(pathname, item.href)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             navigation.map((item) => (
               <Link
@@ -384,6 +483,83 @@ export function AppSidebar({
                   {showAdminGroup && (
                     <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
                       {adminCompanyNavigation.map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive(pathname, item.href)
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : isAgentRole ? (
+                <div>
+                  <button
+                    onClick={() => setShowAgentCockpit((v) => !v)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent"
+                  >
+                    <Gauge className="w-5 h-5 shrink-0" />
+                    <span className="font-medium flex-1 text-left">Agent Cockpit</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showAgentCockpit ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showAgentCockpit && (
+                    <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                      {agentNavigation.slice(0, 2).map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive(pathname, item.href)
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                      <div>
+                        <button
+                          onClick={() => setShowLeadManagement((v) => !v)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-muted-foreground hover:bg-accent"
+                        >
+                          <Target className="w-4 h-4 shrink-0" />
+                          <span className="text-sm font-medium flex-1 text-left">Lead Management</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showLeadManagement ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showLeadManagement && (
+                          <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                            {leadManagementNavigation.map((item) => (
+                              <Link
+                                key={item.name}
+                                href={item.href}
+                                onClick={() => setShowMobileMenu(false)}
+                                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                  isActive(pathname, item.href)
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-muted-foreground hover:bg-accent'
+                                }`}
+                              >
+                                <item.icon className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{item.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {agentNavigation.slice(2).map((item) => (
                         <Link
                           key={item.name}
                           href={item.href}

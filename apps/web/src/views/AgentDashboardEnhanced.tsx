@@ -7,7 +7,7 @@ import {
   MessageSquare, Plus,
   Home, DollarSign, Copy,
   Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity, Users,
-  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, BarChart3, AlertCircle
+  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, BarChart3, AlertCircle, Share2, Bell
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -18,8 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, agentApi, viewingActionsApi, crmApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord, type LeadRecord, type LeadActivityRecord, type CrmDashboardResponse, type CreateLeadPayload, LEAD_STATUSES, ACTIVITY_TYPES, LEAD_SOURCES } from "@/lib/api-client";
+import { propertiesApi, agentApi, viewingActionsApi, leadsApi, viewingsApi, syndicationApi, notificationsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord, type LeadRow, type LeadActivityRow, type LeadDashboardResponse, type CreateLeadPayload, type SyndicationRecord, type AgentBookViewingPayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type UserNotification, LEAD_STATUSES, ACTIVITY_TYPES, LEAD_SOURCES } from "@/lib/api-client";
 import { EditListing } from "@/components/EditListing";
+import AIIntelligencePanel from "@/views/AIIntelligencePanel";
 
 type DashboardListing = {
   id: string;
@@ -78,7 +79,7 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
 
 export default function AgentDashboardEnhanced() {
   const [showAddListing, setShowAddListing] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm" | "ai">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -101,19 +102,41 @@ export default function AgentDashboardEnhanced() {
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
+  // Syndication state
+  const [syndicationPropertyId, setSyndicationPropertyId] = useState<string | null>(null);
+  const [syndicationTitle, setSyndicationTitle] = useState("");
+  const [syndicationRecords, setSyndicationRecords] = useState<SyndicationRecord[]>([]);
+  const [isSyndicationLoading, setIsSyndicationLoading] = useState(false);
+  const [isSyndicating, setIsSyndicating] = useState(false);
+  const [syndicationError, setSyndicationError] = useState("");
+  const [pausingPortalId, setPausingPortalId] = useState<string | null>(null);
+  // Schedule viewing (agent books on behalf of buyer)
+  const [showScheduleViewing, setShowScheduleViewing] = useState(false);
+  const [scheduleViewingForm, setScheduleViewingForm] = useState<AgentBookViewingPayload & { propertyId: string }>({
+    propertyId: "",
+    viewingType: "physical",
+    scheduledAt: "",
+    durationMinutes: 30,
+    buyerContactName: "",
+    buyerContactEmail: "",
+    buyerContactPhone: "",
+    notes: "",
+  });
+  const [isSchedulingViewing, setIsSchedulingViewing] = useState(false);
+  const [scheduleViewingError, setScheduleViewingError] = useState("");
   // CRM state
-  const [crmDashboard, setCrmDashboard] = useState<CrmDashboardResponse>({ totalLeads: 0, byStatus: {}, activitiesThisWeek: 0 });
-  const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [crmDashboard, setCrmDashboard] = useState<LeadDashboardResponse>({ totalLeads: 0, hotLeads: 0, activeDeals: 0, pipelineValue: 0, pendingTasks: [], recentActivities: [], byType: {}, byTemperature: {} });
+  const [leads, setLeads] = useState<LeadRow[]>([]);
   const [leadTotal, setLeadTotal] = useState(0);
   const [leadPage, setLeadPage] = useState(1);
   const [leadStatusFilter, setLeadStatusFilter] = useState<string>("all");
   const [isLoadingCrm, setIsLoadingCrm] = useState(false);
   const [crmError, setCrmError] = useState("");
-  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
-  const [leadActivities, setLeadActivities] = useState<LeadActivityRecord[]>([]);
+  const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
+  const [leadActivities, setLeadActivities] = useState<LeadActivityRow[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
-  const [createLeadForm, setCreateLeadForm] = useState<CreateLeadPayload>({ contactName: "", contactEmail: "", contactPhone: "", leadSource: "", notes: "" });
+  const [createLeadForm, setCreateLeadForm] = useState<CreateLeadPayload>({ name: "", type: "buyer", email: "", phone: "", source: "", notes: "" });
   const [isCreatingLead, setIsCreatingLead] = useState(false);
   const [createLeadError, setCreateLeadError] = useState("");
   const [logActivityForm, setLogActivityForm] = useState({ activityType: "note", notes: "" });
@@ -129,6 +152,28 @@ export default function AgentDashboardEnhanced() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [viewingActionError, setViewingActionError] = useState("");
+  // Decline viewing modal
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [decliningViewingId, setDecliningViewingId] = useState<string | null>(null);
+  const [declineForm, setDeclineForm] = useState<AgentDeclineViewingPayload>({ reason: "", alternativeDates: [], message: "" });
+  const [isDeclining, setIsDeclining] = useState(false);
+  const [declineError, setDeclineError] = useState("");
+  const [altDateInput, setAltDateInput] = useState("");
+  // Cancel viewing modal
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellingViewingId, setCancellingViewingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+  // Reschedule viewing modal
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [reschedulingViewingId, setReschedulingViewingId] = useState<string | null>(null);
+  const [rescheduleForm, setRescheduleForm] = useState<RescheduleViewingPayload>({ scheduledAt: "", reason: "" });
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState("");
+  // Notifications
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [viewingsView, setViewingsView] = useState<"list" | "calendar">("list");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date();
@@ -167,6 +212,72 @@ export default function AgentDashboardEnhanced() {
       inquiries: l.inquiries,
     })),
   [activeListings]);
+
+  const openSyndication = async (propertyId: string, title: string) => {
+    const token = getAccessToken();
+    if (!token) return;
+    setSyndicationPropertyId(propertyId);
+    setSyndicationTitle(title);
+    setSyndicationError("");
+    setIsSyndicationLoading(true);
+    setSyndicationRecords([]);
+    try {
+      const records = await syndicationApi.getStatus(token, propertyId);
+      setSyndicationRecords(records);
+    } catch {
+      setSyndicationError("Failed to load syndication status.");
+    } finally {
+      setIsSyndicationLoading(false);
+    }
+  };
+
+  const handleSyndicate = async () => {
+    if (!syndicationPropertyId) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setIsSyndicating(true);
+    setSyndicationError("");
+    try {
+      const records = await syndicationApi.syndicate(token, syndicationPropertyId);
+      setSyndicationRecords(records);
+    } catch (err) {
+      setSyndicationError(err instanceof Error ? err.message : "Syndication failed.");
+    } finally {
+      setIsSyndicating(false);
+    }
+  };
+
+  const handlePauseSyndication = async (portalId: string) => {
+    if (!syndicationPropertyId) return;
+    const token = getAccessToken();
+    if (!token) return;
+    setPausingPortalId(portalId);
+    try {
+      const updated = await syndicationApi.pause(token, syndicationPropertyId, portalId);
+      setSyndicationRecords((prev) => prev.map((r) => r.portal_id === portalId ? updated : r));
+    } catch {
+      // non-fatal — status will remain unchanged
+    } finally {
+      setPausingPortalId(null);
+    }
+  };
+
+  const handleScheduleViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !scheduleViewingForm.propertyId || !scheduleViewingForm.scheduledAt || !scheduleViewingForm.buyerContactName.trim()) return;
+    setIsSchedulingViewing(true);
+    setScheduleViewingError("");
+    try {
+      const { propertyId, ...payload } = scheduleViewingForm;
+      const created = await viewingsApi.bookForBuyer(token, propertyId, payload);
+      setAgentViewings((prev) => [created, ...prev]);
+      setShowScheduleViewing(false);
+    } catch (err) {
+      setScheduleViewingError(err instanceof Error ? err.message : "Failed to schedule viewing.");
+    } finally {
+      setIsSchedulingViewing(false);
+    }
+  };
 
   const loadOverviewData = async () => {
     const token = getAccessToken();
@@ -294,8 +405,8 @@ export default function AgentDashboardEnhanced() {
     setCrmError("");
     const statusParam = leadStatusFilter === "all" ? undefined : leadStatusFilter;
     Promise.all([
-      crmApi.getDashboard(token),
-      crmApi.getLeads(token, { status: statusParam, page: leadPage, limit: 20 }),
+      leadsApi.getDashboard(token),
+      leadsApi.list(token, { stage: statusParam, offset: (leadPage - 1) * 20, limit: 20 }),
     ])
       .then(([dash, leadsRes]) => {
         setCrmDashboard(dash);
@@ -336,6 +447,13 @@ export default function AgentDashboardEnhanced() {
       .finally(() => setIsLoadingViewings(false));
   }, [selectedTab]);
 
+  // Load notifications on mount
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    notificationsApi.getAll(token).then(setNotifications).catch(() => undefined);
+  }, []);
+
   const handleConfirmViewing = async (viewingId: string) => {
     const token = getAccessToken();
     if (!token || confirmingId) return;
@@ -369,6 +487,71 @@ export default function AgentDashboardEnhanced() {
       setCompletingId(null);
     }
   };
+
+  const handleDeclineViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !decliningViewingId || declineForm.reason.trim().length < 10) return;
+    setIsDeclining(true);
+    setDeclineError("");
+    try {
+      await viewingsApi.decline(token, decliningViewingId, declineForm);
+      setAgentViewings((prev) =>
+        prev.map((v) => v.id === decliningViewingId ? { ...v, status: 'declined', declined_at: new Date().toISOString() } : v)
+      );
+      setShowDeclineModal(false);
+      setDecliningViewingId(null);
+      setDeclineForm({ reason: "", alternativeDates: [], message: "" });
+    } catch (err) {
+      setDeclineError(err instanceof Error ? err.message : "Failed to decline viewing.");
+    } finally {
+      setIsDeclining(false);
+    }
+  };
+
+  const handleCancelViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !cancellingViewingId || cancelReason.trim().length < 5) return;
+    setIsCancelling(true);
+    setCancelError("");
+    try {
+      await viewingsApi.cancel(token, cancellingViewingId, { reason: cancelReason });
+      setAgentViewings((prev) =>
+        prev.map((v) => v.id === cancellingViewingId ? { ...v, status: 'cancelled', cancel_reason: cancelReason, cancelled_by: 'agent' } : v)
+      );
+      setShowCancelModal(false);
+      setCancellingViewingId(null);
+      setCancelReason("");
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "Failed to cancel viewing.");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleRescheduleViewing = async () => {
+    const token = getAccessToken();
+    if (!token || !reschedulingViewingId || !rescheduleForm.scheduledAt) return;
+    setIsRescheduling(true);
+    setRescheduleError("");
+    try {
+      const updated = await viewingsApi.reschedule(token, reschedulingViewingId, {
+        ...rescheduleForm,
+        scheduledAt: new Date(rescheduleForm.scheduledAt).toISOString(),
+      });
+      setAgentViewings((prev) =>
+        prev.map((v) => v.id === reschedulingViewingId ? { ...v, scheduled_at: updated.scheduled_at, status: 'confirmed', rescheduled_at: updated.rescheduled_at } : v)
+      );
+      setShowRescheduleModal(false);
+      setReschedulingViewingId(null);
+      setRescheduleForm({ scheduledAt: "", reason: "" });
+    } catch (err) {
+      setRescheduleError(err instanceof Error ? err.message : "Failed to reschedule viewing.");
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const handleScheduleOpenHouse = async () => {
     const token = getAccessToken();
@@ -464,13 +647,57 @@ export default function AgentDashboardEnhanced() {
             <h1 className="text-2xl md:text-3xl font-bold mb-1">Agent Dashboard</h1>
             <p className="text-gray-600">Welcome back, {agentName}</p>
           </div>
-          <Button 
-            onClick={() => setShowAddListing(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Listing
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Notification Bell */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications((p) => !p);
+                  if (!showNotifications && unreadCount > 0) {
+                    const token = getAccessToken();
+                    if (token) notificationsApi.markAllRead(token).then(() => setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))).catch(() => undefined);
+                  }
+                }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 text-gray-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <p className="font-semibold text-sm">Notifications</p>
+                    <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-8">No notifications</p>
+                    ) : (
+                      notifications.slice(0, 20).map((n) => (
+                        <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800 bg-blue-50/40"}`}>
+                          <p className="font-medium">{n.title}</p>
+                          <p className="text-xs mt-0.5 text-gray-500">{n.body}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-ZA", { dateStyle: "short", timeStyle: "short" })}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button 
+              onClick={() => setShowAddListing(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Listing
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -534,6 +761,16 @@ export default function AgentDashboardEnhanced() {
             }`}
           >
             CRM
+          </button>
+          <button
+            onClick={() => setSelectedTab("ai")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              selectedTab === "ai"
+                ? "bg-purple-100 text-purple-700"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <span>🧠</span> AI Intelligence
           </button>
         </div>
       </div>
@@ -974,6 +1211,15 @@ export default function AgentDashboardEnhanced() {
                             <Copy className="w-3 h-3 mr-1" />
                             {duplicatingIds.has(listing.id) ? "Copying…" : "Duplicate"}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { void openSyndication(listing.id, listing.title); }}
+                            title="Syndicate to portals"
+                          >
+                            <Share2 className="w-3 h-3 mr-1" />
+                            Syndicate
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1116,26 +1362,26 @@ export default function AgentDashboardEnhanced() {
                 <div className="text-xs text-gray-500 mt-1">Total Leads</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-green-600">{crmDashboard.byStatus?.active ?? crmDashboard.byStatus?.qualified ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Qualified</div>
+                <div className="text-3xl font-bold text-green-600">{crmDashboard.hotLeads}</div>
+                <div className="text-xs text-gray-500 mt-1">Hot Leads</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-yellow-600">{crmDashboard.byStatus?.offer ?? 0}</div>
-                <div className="text-xs text-gray-500 mt-1">At Offer Stage</div>
+                <div className="text-3xl font-bold text-yellow-600">{crmDashboard.activeDeals}</div>
+                <div className="text-xs text-gray-500 mt-1">Active Deals</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600">{crmDashboard.activitiesThisWeek}</div>
-                <div className="text-xs text-gray-500 mt-1">Activities This Week</div>
+                <div className="text-3xl font-bold text-purple-600">{crmDashboard.recentActivities?.length ?? 0}</div>
+                <div className="text-xs text-gray-500 mt-1">Recent Activities</div>
               </Card>
             </div>
 
-            {/* Status breakdown pills */}
-            {Object.keys(crmDashboard.byStatus ?? {}).length > 0 && (
+            {/* Temperature breakdown pills */}
+            {Object.keys(crmDashboard.byTemperature ?? {}).length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {Object.entries(crmDashboard.byStatus ?? {}).map(([status, count]) => (
-                  <div key={status} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1 text-xs font-medium text-gray-700 capitalize">
+                {Object.entries(crmDashboard.byTemperature ?? {}).map(([temp, count]) => (
+                  <div key={temp} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3 py-1 text-xs font-medium text-gray-700 capitalize">
                     <span className="w-2 h-2 rounded-full bg-blue-400" />
-                    {status.replace(/_/g, " ")} <span className="text-gray-400">({count})</span>
+                    {temp.replace(/_/g, " ")} <span className="text-gray-400">({count as number})</span>
                   </div>
                 ))}
               </div>
@@ -1190,24 +1436,24 @@ export default function AgentDashboardEnhanced() {
                           new: "bg-gray-100 text-gray-700",
                           contacted: "bg-blue-100 text-blue-700",
                           qualified: "bg-cyan-100 text-cyan-700",
-                          showing: "bg-yellow-100 text-yellow-700",
-                          offer: "bg-orange-100 text-orange-700",
+                          active: "bg-yellow-100 text-yellow-700",
+                          under_contract: "bg-orange-100 text-orange-700",
                           closed: "bg-green-100 text-green-700",
-                          inactive: "bg-red-100 text-red-600",
+                          lost: "bg-red-100 text-red-600",
                         };
                         return (
                           <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-4 py-3">
-                              <p className="font-medium">{lead.contact_name}</p>
-                              {lead.contact_email && <p className="text-xs text-gray-500 truncate max-w-[160px]">{lead.contact_email}</p>}
-                              {lead.contact_phone && <p className="text-xs text-gray-400">{lead.contact_phone}</p>}
+                              <p className="font-medium">{lead.name}</p>
+                              {lead.email && <p className="text-xs text-gray-500 truncate max-w-[160px]">{lead.email}</p>}
+                              {lead.phone && <p className="text-xs text-gray-400">{lead.phone}</p>}
                             </td>
                             <td className="px-4 py-3 hidden sm:table-cell">
-                              <span className="capitalize text-gray-600">{lead.lead_source?.replace(/_/g, " ") ?? "—"}</span>
+                              <span className="capitalize text-gray-600">{lead.source?.replace(/_/g, " ") ?? "—"}</span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${statusColours[lead.status] ?? "bg-gray-100 text-gray-700"}`}>
-                                {lead.status.replace(/_/g, " ")}
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${statusColours[lead.stage] ?? "bg-gray-100 text-gray-700"}`}>
+                                {lead.stage.replace(/_/g, " ")}
                               </span>
                             </td>
                             <td className="px-4 py-3 hidden md:table-cell max-w-[200px]">
@@ -1226,7 +1472,7 @@ export default function AgentDashboardEnhanced() {
                                   const token = getAccessToken();
                                   if (!token) return;
                                   setIsLoadingActivities(true);
-                                  crmApi.getActivities(token, lead.id)
+                                  leadsApi.listActivities(token, lead.id)
                                     .then(setLeadActivities)
                                     .finally(() => setIsLoadingActivities(false));
                                 }}
@@ -1295,6 +1541,19 @@ export default function AgentDashboardEnhanced() {
                     Calendar
                   </button>
                 </div>
+                <Button
+                  onClick={() => {
+                    setScheduleViewingForm({ propertyId: "", viewingType: "physical", scheduledAt: "", durationMinutes: 30, buyerContactName: "", buyerContactEmail: "", buyerContactPhone: "", notes: "" });
+                    setScheduleViewingError("");
+                    setShowScheduleViewing(true);
+                  }}
+                  variant="outline"
+                  disabled={activeListings.length === 0}
+                  title={activeListings.length === 0 ? "No listings available" : undefined}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Schedule Viewing
+                </Button>
                 <Button
                   onClick={() => setShowOpenHouseModal(true)}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
@@ -1447,32 +1706,64 @@ export default function AgentDashboardEnhanced() {
                                 <p className="text-sm font-medium truncate">{v.property_title ?? "Property"}</p>
                                 <p className="text-xs text-gray-500 capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</p>
                               </div>
-                              <div className="flex items-center gap-2">
-                                {v.status !== "confirmed" && v.status !== "completed" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7 px-2"
-                                    disabled={confirmingId === v.id}
-                                    onClick={() => void handleConfirmViewing(v.id)}
-                                  >
-                                    {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Confirm"}
-                                  </Button>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {v.status === 'requested' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7 px-2"
+                                      disabled={confirmingId === v.id}
+                                      onClick={() => void handleConfirmViewing(v.id)}
+                                    >
+                                      {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Accept"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7 px-2 text-red-600 border-red-200 hover:bg-red-50"
+                                      onClick={() => { setDecliningViewingId(v.id); setDeclineForm({ reason: "", alternativeDates: [], message: "" }); setDeclineError(""); setShowDeclineModal(true); }}
+                                    >
+                                      Decline
+                                    </Button>
+                                  </>
                                 )}
-                                {v.status !== "completed" && (
+                                {v.status === 'confirmed' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7 px-2"
+                                      disabled={completingId === v.id}
+                                      onClick={() => void handleCompleteViewing(v.id)}
+                                    >
+                                      {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Complete"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                      onClick={() => { setReschedulingViewingId(v.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
+                                    >
+                                      Reschedule
+                                    </Button>
+                                  </>
+                                )}
+                                {(v.status === 'requested' || v.status === 'confirmed') && (
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="text-xs h-7 px-2"
-                                    disabled={completingId === v.id}
-                                    onClick={() => void handleCompleteViewing(v.id)}
+                                    className="text-xs h-7 px-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+                                    onClick={() => { setCancellingViewingId(v.id); setCancelReason(""); setCancelError(""); setShowCancelModal(true); }}
                                   >
-                                    {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Complete"}
+                                    Cancel
                                   </Button>
                                 )}
                                 <Badge className={
                                   v.status === "confirmed" ? "bg-green-100 text-green-700" :
                                   v.status === "completed" ? "bg-blue-100 text-blue-700" :
+                                  v.status === "declined" ? "bg-red-100 text-red-700" :
+                                  v.status === "cancelled" ? "bg-orange-100 text-orange-700" :
                                   "bg-yellow-100 text-yellow-700"
                                 }>
                                   {v.status}
@@ -1531,52 +1822,97 @@ export default function AgentDashboardEnhanced() {
                   ) : (
                     <div className="space-y-3">
                       {upcomingViewings.map((v) => (
-                        <Card key={v.id} className="p-4 flex items-start gap-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                            <Calendar className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
-                            <p className="text-sm text-gray-600 mt-0.5">
-                              Viewing
-                            </p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
-                              </span>
-                              <Badge className="text-xs capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</Badge>
+                        <Card key={v.id} className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                              <Calendar className="w-5 h-5 text-blue-600" />
                             </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              {v.status !== 'confirmed' && v.status !== 'completed' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs h-7 px-2"
-                                  disabled={confirmingId === v.id}
-                                  onClick={() => void handleConfirmViewing(v.id)}
-                                >
-                                  {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1" />}
-                                  Confirm
-                                </Button>
-                              )}
-                              {v.status !== 'completed' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs h-7 px-2"
-                                  disabled={completingId === v.id}
-                                  onClick={() => void handleCompleteViewing(v.id)}
-                                >
-                                  {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />}
-                                  Complete
-                                </Button>
-                              )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
+                              {(() => {
+                                try {
+                                  const meta = v.notes ? JSON.parse(v.notes) : null;
+                                  if (meta?.bookedByAgent) {
+                                    return (
+                                      <p className="text-sm text-gray-600 mt-0.5">
+                                        {meta.name}{meta.phone ? ` · ${meta.phone}` : ""}{meta.email ? ` · ${meta.email}` : ""}
+                                      </p>
+                                    );
+                                  }
+                                } catch { /* not agent-booked */ }
+                                return <p className="text-sm text-gray-600 mt-0.5">Buyer Viewing</p>;
+                              })()}
+                              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                                </span>
+                                <Badge className="text-xs capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</Badge>
+                              </div>
                             </div>
+                            <Badge className={v.status === "confirmed" ? "bg-green-100 text-green-700" : v.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}>
+                              {v.status}
+                            </Badge>
                           </div>
-                          <Badge className={v.status === "confirmed" ? "bg-green-100 text-green-700" : v.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}>
-                            {v.status}
-                          </Badge>
+                          {(v.status === 'requested' || v.status === 'confirmed') && (
+                            <div className="ml-14 flex flex-wrap gap-2 mt-2">
+                              {v.status === 'requested' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2"
+                                    disabled={confirmingId === v.id}
+                                    onClick={() => void handleConfirmViewing(v.id)}
+                                  >
+                                    {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1" />}
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2 text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={() => { setDecliningViewingId(v.id); setDeclineForm({ reason: "", alternativeDates: [], message: "" }); setDeclineError(""); setShowDeclineModal(true); }}
+                                  >
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Decline
+                                  </Button>
+                                </>
+                              )}
+                              {v.status === 'confirmed' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2"
+                                    disabled={completingId === v.id}
+                                    onClick={() => void handleCompleteViewing(v.id)}
+                                  >
+                                    {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />}
+                                    Complete
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    onClick={() => { setReschedulingViewingId(v.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
+                                  >
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    Reschedule
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 px-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+                                onClick={() => { setCancellingViewingId(v.id); setCancelReason(""); setCancelError(""); setShowCancelModal(true); }}
+                              >
+                                <X className="w-3 h-3 mr-1" />
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                         </Card>
                       ))}
                     </div>
@@ -1595,7 +1931,15 @@ export default function AgentDashboardEnhanced() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
-                            <p className="text-sm text-gray-600 mt-0.5">{v.status}</p>
+                            {(() => {
+                              try {
+                                const meta = v.notes ? JSON.parse(v.notes) : null;
+                                if (meta?.bookedByAgent) {
+                                  return <p className="text-sm text-gray-600 mt-0.5">{meta.name}</p>;
+                                }
+                              } catch { /* not agent-booked */ }
+                              return null;
+                            })()}
                             <p className="text-xs text-gray-400 mt-1">
                               {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
                             </p>
@@ -1652,7 +1996,159 @@ export default function AgentDashboardEnhanced() {
             )}
           </div>
         )}
+
+        {/* AI Intelligence Tab */}
+        {selectedTab === "ai" && (
+          <AIIntelligencePanel />
+        )}
       </div>
+
+      {/* Schedule Viewing Modal (agent books on behalf of buyer) */}
+      {showScheduleViewing && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Schedule Viewing</h3>
+              <button onClick={() => setShowScheduleViewing(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {scheduleViewingError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{scheduleViewingError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-3">
+              {/* Property selector */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Property *</label>
+                <select
+                  value={scheduleViewingForm.propertyId}
+                  onChange={(e) => setScheduleViewingForm((f) => ({ ...f, propertyId: e.target.value }))}
+                  title="Select a listing"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Select a listing…</option>
+                  {activeListings.map((l) => (
+                    <option key={l.id} value={l.id}>{l.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date/time + type row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium block mb-1">Date & Time *</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleViewingForm.scheduledAt}
+                    onChange={(e) => setScheduleViewingForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                    title="Viewing date and time"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">Type</label>
+                  <select
+                    value={scheduleViewingForm.viewingType}
+                    onChange={(e) => setScheduleViewingForm((f) => ({ ...f, viewingType: e.target.value as 'physical' | 'virtual' }))}
+                    title="Viewing type"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="physical">In-Person</option>
+                    <option value="virtual">Virtual</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Duration (minutes)</label>
+                <input
+                  type="number"
+                  min={15}
+                  max={240}
+                  step={15}
+                  value={scheduleViewingForm.durationMinutes ?? 30}
+                  onChange={(e) => setScheduleViewingForm((f) => ({ ...f, durationMinutes: Number(e.target.value) }))}
+                  title="Duration in minutes"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              {/* Buyer contact — the key new fields */}
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Buyer Contact Details</p>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="text-sm font-medium block mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={scheduleViewingForm.buyerContactName}
+                      onChange={(e) => setScheduleViewingForm((f) => ({ ...f, buyerContactName: e.target.value }))}
+                      placeholder="e.g. Thabo Nkosi"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={scheduleViewingForm.buyerContactEmail ?? ""}
+                        onChange={(e) => setScheduleViewingForm((f) => ({ ...f, buyerContactEmail: e.target.value }))}
+                        placeholder="buyer@email.com"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Phone</label>
+                      <input
+                        type="tel"
+                        value={scheduleViewingForm.buyerContactPhone ?? ""}
+                        onChange={(e) => setScheduleViewingForm((f) => ({ ...f, buyerContactPhone: e.target.value }))}
+                        placeholder="+27..."
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Notes</label>
+                <textarea
+                  value={scheduleViewingForm.notes ?? ""}
+                  onChange={(e) => setScheduleViewingForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                  placeholder="Any special requirements or instructions…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setShowScheduleViewing(false)}>Cancel</Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={
+                  isSchedulingViewing ||
+                  !scheduleViewingForm.propertyId ||
+                  !scheduleViewingForm.scheduledAt ||
+                  !scheduleViewingForm.buyerContactName.trim()
+                }
+                onClick={() => { void handleScheduleViewing(); }}
+              >
+                {isSchedulingViewing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Calendar className="w-4 h-4 mr-1" />}
+                {isSchedulingViewing ? "Scheduling…" : "Confirm Viewing"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Open House Modal */}
       {showOpenHouseModal && (
@@ -1786,8 +2282,8 @@ export default function AgentDashboardEnhanced() {
                 <label className="text-sm font-medium block mb-1">Contact Name *</label>
                 <input
                   type="text"
-                  value={createLeadForm.contactName}
-                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactName: e.target.value }))}
+                  value={createLeadForm.name}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Full name"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
@@ -1796,8 +2292,8 @@ export default function AgentDashboardEnhanced() {
                 <label className="text-sm font-medium block mb-1">Email</label>
                 <input
                   type="email"
-                  value={createLeadForm.contactEmail ?? ""}
-                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                  value={createLeadForm.email ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="email@example.com"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
@@ -1806,8 +2302,8 @@ export default function AgentDashboardEnhanced() {
                 <label className="text-sm font-medium block mb-1">Phone</label>
                 <input
                   type="tel"
-                  value={createLeadForm.contactPhone ?? ""}
-                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                  value={createLeadForm.phone ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+27..."
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
@@ -1815,28 +2311,14 @@ export default function AgentDashboardEnhanced() {
               <div>
                 <label className="text-sm font-medium block mb-1">Source</label>
                 <select
-                  value={createLeadForm.leadSource ?? ""}
-                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, leadSource: e.target.value }))}
+                  value={createLeadForm.source ?? ""}
+                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, source: e.target.value }))}
                   title="Lead source"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="">Select source…</option>
                   {LEAD_SOURCES.map((s) => (
                     <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Assign to Listing</label>
-                <select
-                  value={createLeadForm.assignedPropertyId ?? ""}
-                  onChange={(e) => setCreateLeadForm((f) => ({ ...f, assignedPropertyId: e.target.value || undefined }))}
-                  title="Assign to a listing"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">None</option>
-                  {activeListings.map((l) => (
-                    <option key={l.id} value={l.id}>{l.title}</option>
                   ))}
                 </select>
               </div>
@@ -1854,17 +2336,17 @@ export default function AgentDashboardEnhanced() {
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setShowCreateLead(false)} className="flex-1">Cancel</Button>
               <Button
-                disabled={isCreatingLead || !createLeadForm.contactName.trim()}
+                disabled={isCreatingLead || !createLeadForm.name.trim()}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   const token = getAccessToken();
                   if (!token) return;
                   setIsCreatingLead(true);
                   setCreateLeadError("");
-                  crmApi.createLead(token, { ...createLeadForm, contactName: createLeadForm.contactName.trim() })
+                  leadsApi.create(token, { ...createLeadForm, name: createLeadForm.name.trim() })
                     .then(() => {
                       setShowCreateLead(false);
-                      setCreateLeadForm({ contactName: "", contactEmail: "", contactPhone: "", leadSource: "", notes: "" });
+                      setCreateLeadForm({ name: "", type: "buyer", email: "", phone: "", source: "", notes: "" });
                       setLeadPage(1);
                       // re-trigger load
                       setLeadStatusFilter((f) => f);
@@ -1880,6 +2362,116 @@ export default function AgentDashboardEnhanced() {
         </div>
       )}
 
+      {/* Syndication Modal */}
+      {syndicationPropertyId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-xl p-6 space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h3 className="text-lg font-bold">Portal Syndication</h3>
+                  <p className="text-xs text-gray-500 truncate max-w-xs">{syndicationTitle}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setSyndicationPropertyId(null); setSyndicationRecords([]); setSyndicationError(""); }}
+                aria-label="Close"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {syndicationError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{syndicationError}
+              </div>
+            )}
+
+            {/* Push to all portals button */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                {syndicationRecords.length === 0 && !isSyndicationLoading
+                  ? "This listing has not been pushed to any portals yet."
+                  : `${syndicationRecords.length} portal${syndicationRecords.length !== 1 ? 's' : ''} tracked`}
+              </p>
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isSyndicating}
+                onClick={() => { void handleSyndicate(); }}
+              >
+                {isSyndicating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
+                {isSyndicating ? "Pushing…" : "Sync to All Portals"}
+              </Button>
+            </div>
+
+            {/* Portal status list */}
+            {isSyndicationLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : syndicationRecords.length > 0 ? (
+              <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
+                {syndicationRecords.map((rec) => {
+                  const statusColour =
+                    rec.sync_status === 'synced'  ? 'bg-green-100 text-green-700' :
+                    rec.sync_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    rec.sync_status === 'paused'  ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-red-100 text-red-700';
+                  return (
+                    <div key={rec.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                          <Share2 className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{rec.portal_name}</p>
+                          <p className="text-xs text-gray-400">
+                            {rec.last_synced_at
+                              ? `Last synced ${new Date(rec.last_synced_at).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' })}`
+                              : 'Not yet synced'}
+                          </p>
+                          {rec.error_message && (
+                            <p className="text-xs text-red-500 mt-0.5 truncate">{rec.error_message}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${statusColour}`}>
+                          {rec.sync_status}
+                        </span>
+                        {rec.external_url && (
+                          <a
+                            href={rec.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:underline"
+                          >
+                            View
+                          </a>
+                        )}
+                        {(rec.sync_status === 'pending' || rec.sync_status === 'synced') && (
+                          <button
+                            disabled={pausingPortalId === rec.portal_id}
+                            onClick={() => { void handlePauseSyndication(rec.portal_id); }}
+                            className="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded px-2 py-0.5 disabled:opacity-50"
+                          >
+                            {pausingPortalId === rec.portal_id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Pause'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </Card>
+        </div>
+      )}
+
       {/* Lead Detail Drawer */}
       {selectedLead && (
         <div className="fixed inset-0 z-50 flex">
@@ -1888,8 +2480,8 @@ export default function AgentDashboardEnhanced() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <div>
-                <h3 className="font-bold text-lg">{selectedLead.contact_name}</h3>
-                <p className="text-sm text-gray-500 capitalize">{selectedLead.status.replace(/_/g, " ")} · {selectedLead.lead_source?.replace(/_/g, " ") ?? "No source"}</p>
+                <h3 className="font-bold text-lg">{selectedLead.name}</h3>
+                <p className="text-sm text-gray-500 capitalize">{selectedLead.stage.replace(/_/g, " ")} · {selectedLead.source?.replace(/_/g, " ") ?? "No source"}</p>
               </div>
               <button onClick={() => setSelectedLead(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
@@ -1897,16 +2489,16 @@ export default function AgentDashboardEnhanced() {
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {/* Contact info */}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                {selectedLead.contact_email && (
+                {selectedLead.email && (
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Email</p>
-                    <p className="font-medium truncate">{selectedLead.contact_email}</p>
+                    <p className="font-medium truncate">{selectedLead.email}</p>
                   </div>
                 )}
-                {selectedLead.contact_phone && (
+                {selectedLead.phone && (
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Phone</p>
-                    <p className="font-medium">{selectedLead.contact_phone}</p>
+                    <p className="font-medium">{selectedLead.phone}</p>
                   </div>
                 )}
                 <div>
@@ -1930,7 +2522,7 @@ export default function AgentDashboardEnhanced() {
               <div>
                 <p className="text-xs text-gray-400 mb-1">Update Status</p>
                 <div className="flex flex-wrap gap-2">
-                  {LEAD_STATUSES.filter((s) => s !== selectedLead.status).map((s) => (
+                  {LEAD_STATUSES.filter((s) => s !== selectedLead.stage).map((s) => (
                     <button
                       key={s}
                       disabled={!!leadStatusUpdating}
@@ -1938,8 +2530,8 @@ export default function AgentDashboardEnhanced() {
                         const token = getAccessToken();
                         if (!token) return;
                         setLeadStatusUpdating(s);
-                        crmApi.updateLeadStatus(token, selectedLead.id, s)
-                          .then((updated) => {
+                        leadsApi.update(token, selectedLead.id, { stage: s })
+                          .then((updated: LeadRow) => {
                             setSelectedLead(updated);
                             setLeads((prev) => prev.map((l) => l.id === updated.id ? updated : l));
                           })
@@ -1976,13 +2568,13 @@ export default function AgentDashboardEnhanced() {
                       const token = getAccessToken();
                       if (!token) return;
                       setIsLoggingActivity(true);
-                      crmApi.logActivity(token, selectedLead.id, logActivityForm)
+                      leadsApi.createActivity(token, selectedLead.id, { type: logActivityForm.activityType, description: logActivityForm.notes || logActivityForm.activityType })
                         .then(() => {
                           setLogActivityForm({ activityType: "note", notes: "" });
                           const t2 = getAccessToken();
                           if (t2) {
                             setIsLoadingActivities(true);
-                            crmApi.getActivities(t2, selectedLead.id)
+                            leadsApi.listActivities(t2, selectedLead.id)
                               .then(setLeadActivities)
                               .finally(() => setIsLoadingActivities(false));
                           }
@@ -2018,8 +2610,8 @@ export default function AgentDashboardEnhanced() {
                           <Activity className="w-3.5 h-3.5 text-blue-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium capitalize">{(act.activity_type ?? "note").replace(/_/g, " ")}</p>
-                          {act.notes && <p className="text-sm text-gray-600 mt-0.5">{act.notes}</p>}
+                          <p className="text-sm font-medium capitalize">{(act.type ?? "note").replace(/_/g, " ")}</p>
+                          {act.description && <p className="text-sm text-gray-600 mt-0.5">{act.description}</p>}
                           <p className="text-xs text-gray-400 mt-1">{new Date(act.created_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}</p>
                         </div>
                       </div>
@@ -2031,6 +2623,180 @@ export default function AgentDashboardEnhanced() {
           </div>
         </div>
       )}
+      {/* ── Decline Viewing Modal ── */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-red-700">Decline Viewing</h3>
+              <button onClick={() => setShowDeclineModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {declineError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{declineError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">Reason for declining * <span className="text-gray-400 font-normal">(min 10 chars)</span></label>
+                <textarea
+                  value={declineForm.reason}
+                  onChange={(e) => setDeclineForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={3}
+                  placeholder="Explain why you are declining this viewing request…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Suggest alternative dates <span className="text-gray-400 font-normal">(optional)</span></label>
+                <div className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={altDateInput}
+                    onChange={(e) => setAltDateInput(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    title="Alternative date"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (altDateInput) {
+                        setDeclineForm((f) => ({ ...f, alternativeDates: [...(f.alternativeDates ?? []), new Date(altDateInput).toISOString()] }));
+                        setAltDateInput("");
+                      }
+                    }}
+                  >Add</Button>
+                </div>
+                {(declineForm.alternativeDates ?? []).length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {(declineForm.alternativeDates ?? []).map((d, i) => (
+                      <li key={i} className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded">
+                        {new Date(d).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
+                        <button
+                          onClick={() => setDeclineForm((f) => ({ ...f, alternativeDates: (f.alternativeDates ?? []).filter((_, j) => j !== i) }))}
+                          className="text-red-400 hover:text-red-600 ml-2"
+                          aria-label="Remove date"
+                        ><X className="w-3 h-3" /></button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Additional message to buyer <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={declineForm.message ?? ""}
+                  onChange={(e) => setDeclineForm((f) => ({ ...f, message: e.target.value }))}
+                  rows={2}
+                  placeholder="Any extra information for the buyer…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowDeclineModal(false)}>Cancel</Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={isDeclining || declineForm.reason.trim().length < 10}
+                onClick={() => void handleDeclineViewing()}
+              >
+                {isDeclining ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Decline Viewing
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Cancel Viewing Modal ── */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-orange-700">Cancel Viewing</h3>
+              <button onClick={() => setShowCancelModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {cancelError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{cancelError}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium block mb-1">Reason for cancellation * <span className="text-gray-400 font-normal">(min 5 chars)</span></label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                placeholder="Provide a reason for cancelling this viewing…"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCancelModal(false)}>Back</Button>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                disabled={isCancelling || cancelReason.trim().length < 5}
+                onClick={() => void handleCancelViewing()}
+              >
+                {isCancelling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Cancellation
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Reschedule Viewing Modal ── */}
+      {showRescheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-blue-700">Reschedule Viewing</h3>
+              <button onClick={() => setShowRescheduleModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            {rescheduleError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />{rescheduleError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium block mb-1">New date &amp; time *</label>
+                <input
+                  type="datetime-local"
+                  value={rescheduleForm.scheduledAt}
+                  onChange={(e) => setRescheduleForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                  title="New viewing date and time"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Reason for rescheduling <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={rescheduleForm.reason ?? ""}
+                  onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={2}
+                  placeholder="Let the buyer know why you need to reschedule…"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowRescheduleModal(false)}>Cancel</Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isRescheduling || !rescheduleForm.scheduledAt}
+                onClick={() => void handleRescheduleViewing()}
+              >
+                {isRescheduling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Reschedule
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }
