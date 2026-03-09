@@ -243,6 +243,118 @@ export class ValuationService {
   // Private helpers
   // ──────────────────────────────────────────────────────────
 
+  // ──────────────────────────────────────────────────────────
+  // AI ESTIMATE (Automated Valuation Model)
+  // ──────────────────────────────────────────────────────────
+
+  async getAiEstimate(propertyId: string): Promise<{
+    estimate: number;
+    low: number;
+    high: number;
+    currency: string;
+    confidence: 'high' | 'medium' | 'low';
+    methodology: string;
+    comparables_count: number;
+  }> {
+    // 1. Fetch property attributes
+    const propRows = await this.prisma.$queryRaw<Array<{
+      price: string | null;
+      currency: string | null;
+      area_sqm: string | null;
+      bedrooms: number | null;
+      bathrooms: number | null;
+      property_type: string | null;
+    }>>`
+      SELECT price, currency, area_sqm, bedrooms, bathrooms, property_type
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid
+      LIMIT 1
+    `;
+    if (!propRows.length) throw new NotFoundException('Property not found');
+    const prop = propRows[0];
+
+    // 2. Fetch comparable sales (up to 5 km radius)
+    const comparables = await this.getComparableSales(propertyId, 5);
+
+    const currency = prop.currency ?? 'ZAR';
+
+    // 3. No comparables — fall back to asking price with wide band
+    if (!comparables.length) {
+      const askingPrice = prop.price ? parseFloat(prop.price) : 0;
+      if (askingPrice <= 0) {
+        return {
+          estimate: 0, low: 0, high: 0, currency,
+          confidence: 'low',
+          methodology: 'Insufficient data — no comparable sales found within 5 km and no asking price set.',
+          comparables_count: 0,
+        };
+      }
+      return {
+        estimate: Math.round(askingPrice),
+        low: Math.round(askingPrice * 0.85),
+        high: Math.round(askingPrice * 1.15),
+        currency,
+        confidence: 'low',
+        methodology: 'Based on asking price only — no comparable sales found within 5 km.',
+        comparables_count: 0,
+      };
+    }
+
+    // 4. Filter to same property type if we have enough matches
+    const sameType = prop.property_type
+      ? comparables.filter((c) => !c.property_type || c.property_type === prop.property_type)
+      : comparables;
+    const pool = sameType.length >= 3 ? sameType : comparables;
+
+    // 5. Choose price-per-m² approach if both subject and comparables have area
+    const subjectArea = prop.area_sqm ? parseFloat(prop.area_sqm) : null;
+    const withArea = pool.filter((c) => c.floor_area_sqm && parseFloat(c.floor_area_sqm) > 0);
+
+    let estimate: number;
+    let methodology: string;
+
+    if (subjectArea && subjectArea > 0 && withArea.length >= 2) {
+      const pricePerSqm = withArea.map(
+        (c) => parseFloat(c.sale_price) / parseFloat(c.floor_area_sqm!),
+      );
+      const med = median(pricePerSqm);
+      estimate = Math.round(med * subjectArea);
+      methodology = `Price-per-m² method using ${withArea.length} comparable sale${withArea.length !== 1 ? 's' : ''} — median ZAR ${Math.round(med).toLocaleString('en-ZA')}/m² × ${subjectArea} m².`;
+    } else {
+      const prices = pool.map((c) => parseFloat(c.sale_price));
+      estimate = Math.round(median(prices));
+      methodology = `Median sale price from ${pool.length} comparable sale${pool.length !== 1 ? 's' : ''} within 5 km radius.`;
+    }
+
+    // 6. Calculate confidence band from variance of comparable prices
+    const prices = pool.map((c) => parseFloat(c.sale_price));
+    const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const variance = prices.reduce((sum, v) => sum + (v - mean) ** 2, 0) / prices.length;
+    const cv = mean > 0 ? Math.sqrt(variance) / mean : 0.3;
+
+    const bandPct = Math.min(0.30, Math.max(0.05, cv));
+    const low = Math.round(estimate * (1 - bandPct));
+    const high = Math.round(estimate * (1 + bandPct));
+
+    const confidence: 'high' | 'medium' | 'low' =
+      pool.length >= 5 && cv < 0.15 ? 'high' :
+      pool.length >= 3 && cv < 0.25 ? 'medium' : 'low';
+
+    return {
+      estimate,
+      low,
+      high,
+      currency,
+      confidence,
+      methodology,
+      comparables_count: pool.length,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Private helpers
+  // ──────────────────────────────────────────────────────────
+
   private async findValuationOrThrow(valuationId: string): Promise<ValuationRecord> {
     const rows = await this.prisma.$queryRaw<ValuationRecord[]>`
       SELECT * FROM property.valuations WHERE id = ${valuationId}::uuid LIMIT 1
@@ -250,4 +362,16 @@ export class ValuationService {
     if (!rows.length) throw new NotFoundException('Valuation not found');
     return rows[0];
   }
+}
+
+// ──────────────────────────────────────────────────────────
+// Pure statistical helpers (module-level)
+// ──────────────────────────────────────────────────────────
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
 }

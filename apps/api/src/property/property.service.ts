@@ -47,6 +47,8 @@ export type PropertyRecord = {
   verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  /** Running count of authenticated non-owner page views. See migration 202603060017. */
+  view_count: number;
   /** ISO timestamp of the next scheduled open house, if any. Injected by the search query. */
   next_open_house_at?: string | null;
 };
@@ -237,18 +239,44 @@ export class PropertyService {
     const location = await this.getLocation(id);
     const media = await this.getMedia(id);
 
-    try {
-      await this.audit.log({
-        actorId: viewContext?.actorId,
-        actorRole: viewContext?.actorRole ?? 'public',
-        action: 'property.viewed',
-        resourceType: 'property',
-        resourceId: id,
-        ipAddress: viewContext?.ipAddress,
-        userAgent: viewContext?.userAgent,
-      });
-    } catch {
-      // View tracking should not block property reads.
+    // Increment the mutable view counter only when:
+    //  - the request carries an authenticated actor ID (skips SSR anonymous calls), AND
+    //  - that actor is NOT the property owner or the listing agent.
+    // Using a dedicated counter column rather than counting audit_logs rows avoids:
+    //  a) historical null-actor audit rows inflating the count, and
+    //  b) Next.js SSR calls (no auth token → null actor) always triggering a log.
+    const actorId = viewContext?.actorId;
+    const isOwnerView =
+      actorId &&
+      (actorId === property.agent_id || actorId === property.owner_id);
+
+    if (actorId && !isOwnerView) {
+      try {
+        await this.prisma.$executeRaw`
+          UPDATE property.properties
+             SET view_count = view_count + 1
+           WHERE id = ${id}::uuid
+        `;
+      } catch {
+        // View counting must never block property reads.
+      }
+    }
+
+    // Still write an audit log entry so the full activity trail is preserved.
+    if (!isOwnerView) {
+      try {
+        await this.audit.log({
+          actorId: viewContext?.actorId,
+          actorRole: viewContext?.actorRole ?? 'public',
+          action: 'property.viewed',
+          resourceType: 'property',
+          resourceId: id,
+          ipAddress: viewContext?.ipAddress,
+          userAgent: viewContext?.userAgent,
+        });
+      } catch {
+        // Audit log failures must not block property reads.
+      }
     }
 
     return { ...property, location: location ?? null, media };
@@ -430,13 +458,24 @@ export class PropertyService {
   async getOwnerListings(
     userId: string,
     status?: string,
+    companyId?: string | null,
   ): Promise<{ data: PropertyWithLocation[]; total: number }> {
     const hasStatusFilter = !!status && status !== 'all';
-    const values: unknown[] = hasStatusFilter ? [userId, status] : [userId];
+    const hasCompanyFilter = !!companyId;
 
-    const whereClause = hasStatusFilter
-      ? 'WHERE (p.owner_id = $1::uuid OR p.agent_id = $1::uuid) AND p.status = $2'
-      : 'WHERE (p.owner_id = $1::uuid OR p.agent_id = $1::uuid)';
+    const conditions: string[] = ['(p.owner_id = $1::uuid OR p.agent_id = $1::uuid)'];
+    const values: unknown[] = [userId];
+
+    if (hasStatusFilter) {
+      values.push(status);
+      conditions.push(`p.status = $${values.length}`);
+    }
+    if (hasCompanyFilter) {
+      values.push(companyId);
+      conditions.push(`p.company_id = $${values.length}::uuid`);
+    }
+
+    const whereClause = 'WHERE ' + conditions.join(' AND ');
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
@@ -535,6 +574,12 @@ export class PropertyService {
         conditions.push(`p.features @> $${idx++}::jsonb`);
         values.push(JSON.stringify([feat]));
       }
+    }
+
+    if (dto.q) {
+      conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx})`);
+      idx++;
+      values.push(`%${dto.q}%`);
     }
 
     // Geo-radius filter using PostGIS ST_DWithin
@@ -738,13 +783,13 @@ export class PropertyService {
         WHERE v.agent_id = ${agentId}::uuid
       `,
       this.prisma.$queryRaw<
-        { property_id: string; title: string; price: string; stage_name: string }[]
+        { property_id: string; title: string; price: string; stage_name: string | null }[]
       >`
-        SELECT p.id AS property_id, p.title, p.price::text, ts.stage_name
+        SELECT p.id AS property_id, p.title, p.price::text, sc.stage_name
         FROM property.properties p
-        JOIN sales.transaction_stages ts ON ts.property_id = p.id
+        JOIN sales.property_sales ps ON ps.property_id = p.id AND ps.status = 'active'
+        JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country
         WHERE p.agent_id = ${agentId}::uuid
-          AND ts.status = 'in_progress'
         ORDER BY p.price DESC
         LIMIT 10
       `,
@@ -795,6 +840,100 @@ export class PropertyService {
     `;
   }
 
+  /** Per-property statistics for the listing creator (agent or owner). */
+  async getPropertyStats(userId: string, propertyId: string) {
+    const rows = await this.prisma.$queryRaw<
+      { agent_id: string | null; owner_id: string | null }[]
+    >`
+      SELECT agent_id::text, owner_id::text
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Property not found');
+    const prop = rows[0];
+    if (prop.agent_id !== userId && prop.owner_id !== userId) {
+      throw new ForbiddenException('You can only view stats for your own listings');
+    }
+
+    const stats = await this.prisma.$queryRaw<
+      {
+        views: string;
+        saves: string;
+        inquiries: string;
+        viewings_requested: string;
+        viewings_confirmed: string;
+        viewings_completed: string;
+        viewings_declined: string;
+        viewings_cancelled: string;
+        open_houses_scheduled: string;
+        days_on_market: string;
+      }[]
+    >`
+      SELECT
+        p.view_count::text AS views,
+        (SELECT COUNT(*)::text FROM property.saved_properties
+         WHERE property_id = ${propertyId}::uuid) AS saves,
+        (SELECT COUNT(*)::text FROM property.inquiries
+         WHERE property_id = ${propertyId}::uuid) AS inquiries,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'requested') AS viewings_requested,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'confirmed') AS viewings_confirmed,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'completed') AS viewings_completed,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'declined') AS viewings_declined,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'cancelled') AS viewings_cancelled,
+        (SELECT COUNT(*)::text FROM property.open_houses
+         WHERE property_id = ${propertyId}::uuid AND status = 'scheduled') AS open_houses_scheduled,
+        EXTRACT(DAY FROM NOW() - p.created_at)::text AS days_on_market
+      FROM property.properties p
+      WHERE p.id = ${propertyId}::uuid
+    `;
+    const s = stats[0];
+    const toInt = (v: string) => parseInt(v || '0', 10);
+    return {
+      views: toInt(s.views),
+      saves: toInt(s.saves),
+      inquiries: toInt(s.inquiries),
+      viewings_requested: toInt(s.viewings_requested),
+      viewings_confirmed: toInt(s.viewings_confirmed),
+      viewings_completed: toInt(s.viewings_completed),
+      viewings_declined: toInt(s.viewings_declined),
+      viewings_cancelled: toInt(s.viewings_cancelled),
+      open_houses_scheduled: toInt(s.open_houses_scheduled),
+      days_on_market: toInt(s.days_on_market),
+    };
+  }
+
+  /** All viewings for a single property — accessible by listing agent or owner. */
+  async getPropertyViewingsList(userId: string, propertyId: string) {
+    const rows = await this.prisma.$queryRaw<
+      { agent_id: string | null; owner_id: string | null }[]
+    >`
+      SELECT agent_id::text, owner_id::text
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Property not found');
+    if (rows[0].agent_id !== userId && rows[0].owner_id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT
+        v.id, v.scheduled_at, v.status, v.viewing_type, v.duration_minutes,
+        v.buyer_feedback, v.cancel_reason, v.declined_at, v.rescheduled_at, v.created_at,
+        bu.first_name AS buyer_first_name, bu.last_name AS buyer_last_name,
+        bu.email AS buyer_email, bu.phone AS buyer_phone
+      FROM property.viewings v
+      LEFT JOIN identity.users bu ON bu.id = v.buyer_id
+      WHERE v.property_id = ${propertyId}::uuid
+      ORDER BY v.scheduled_at DESC
+      LIMIT 50
+    `;
+  }
+
   async getAgentActivityFeed(agentId: string) {
     return this.prisma.$queryRaw<unknown[]>`
       SELECT al.id, al.action, al.payload, al.created_at, al.actor_id,
@@ -815,17 +954,17 @@ export class PropertyService {
         price: string;
         mandate_type: string;
         commission_rate: string | null;
-        stage_name: string;
+        stage_name: string | null;
       }[]
     >`
       SELECT
         p.id AS property_id, p.title, p.price::text,
         m.mandate_type, m.commission_rate::text,
-        ts.stage_name
+        sc.stage_name
       FROM property.properties p
       JOIN property.mandates m ON m.property_id = p.id AND m.status = 'active'
-      LEFT JOIN sales.transaction_stages ts
-        ON ts.property_id = p.id AND ts.status = 'in_progress'
+      LEFT JOIN sales.property_sales ps ON ps.property_id = p.id AND ps.status = 'active'
+      LEFT JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country
       WHERE m.agent_id = ${agentId}::uuid
       ORDER BY p.price DESC
     `;

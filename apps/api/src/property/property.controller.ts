@@ -167,6 +167,32 @@ export class PropertyController {
   }
 
   /**
+   * GET /api/v1/properties/:id/stats
+   * Per-property performance stats for the listing creator (agent or owner). [auth, own listing]
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/stats')
+  async getPropertyStats(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.propertyService.getPropertyStats(req.user.sub, id);
+  }
+
+  /**
+   * GET /api/v1/properties/:id/viewings
+   * All viewings for the listing — accessible by listing creator. [auth, own listing]
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/viewings')
+  async getPropertyViewings(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.propertyService.getPropertyViewingsList(req.user.sub, id);
+  }
+
+  /**
    * GET /api/v1/properties/:id
    * Public property detail.
    */

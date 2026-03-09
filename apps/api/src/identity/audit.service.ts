@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database';
 
 type AuditLogParams = {
-  eventId: string;
+  eventId?: string;
   actorId?: string | null;
   actorRole?: string | null;
   /** Active company context at the time of the action. */
@@ -22,6 +23,7 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async log(entry: AuditLogParams): Promise<void> {
+    const eventId = entry.eventId ?? randomUUID();
     await this.prisma.$executeRaw`
       INSERT INTO identity.audit_logs (
         event_id,
@@ -36,7 +38,7 @@ export class AuditService {
         user_agent,
         device_metadata
       ) VALUES (
-        ${entry.eventId},
+        ${eventId},
         ${entry.actorId ?? null}::uuid,
         ${entry.actorRole ?? null},
         ${entry.companyId ?? null}::uuid,

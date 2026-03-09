@@ -15,9 +15,15 @@ import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { ViewingService } from './viewing.service';
 import {
+  AgentBookViewingDto,
+  AgentDeclineViewingDto,
   AgentViewingUpdateDto,
+  CancelOpenHouseDto,
+  CancelViewingDto,
   CreateOpenHouseDto,
   CreateViewingDto,
+  RescheduleOpenHouseDto,
+  RescheduleViewingDto,
   ViewingFeedbackDto,
 } from './mandate.dto';
 
@@ -28,9 +34,10 @@ type AuthRequest = {
 };
 
 /**
- * POST /api/v1/properties/:id/viewings          [buyer]
- * GET  /api/v1/properties/:id/viewings          [agent]
- * POST /api/v1/properties/:id/open-houses       [agent]
+ * POST /api/v1/properties/:id/viewings            [buyer]
+ * POST /api/v1/properties/:id/viewings/agent-book [agent] — agent books on behalf of buyer
+ * GET  /api/v1/properties/:id/viewings            [agent]
+ * POST /api/v1/properties/:id/open-houses         [agent]
  */
 @Controller('properties/:id')
 export class ViewingController {
@@ -45,6 +52,24 @@ export class ViewingController {
     @Request() req: AuthRequest,
   ) {
     return this.viewingService.request(
+      id,
+      req.user.sub,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Post('viewings/agent-book')
+  async agentBook(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AgentBookViewingDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.bookForBuyer(
       id,
       req.user.sub,
       dto,
@@ -147,6 +172,63 @@ export class ViewingActionController {
       req.user.active_company_id,
     );
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/decline')
+  async decline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AgentDeclineViewingDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.decline(
+      id,
+      req.user.sub,
+      req.user.roles[0] ?? 'agent',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
+  @Patch(':id/cancel')
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelViewingDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.cancel(
+      id,
+      req.user.sub,
+      req.user.roles[0] ?? 'buyer_seller',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/reschedule')
+  async reschedule(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RescheduleViewingDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.reschedule(
+      id,
+      req.user.sub,
+      req.user.roles[0] ?? 'agent',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
 }
 
 /**
@@ -204,5 +286,91 @@ export class OpenHouseController {
       req.headers['user-agent'],
       req.user.active_company_id,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/cancel')
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelOpenHouseDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.cancelOpenHouse(
+      id,
+      req.user.sub,
+      req.user.roles[0] ?? 'agent',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/reschedule')
+  async reschedule(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RescheduleOpenHouseDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.rescheduleOpenHouse(
+      id,
+      req.user.sub,
+      req.user.roles[0] ?? 'agent',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+}
+
+/**
+ * GET /api/v1/buyer/viewings   [buyer] — list own viewing history
+ */
+@Controller('buyer/viewings')
+export class BuyerViewingController {
+  constructor(private readonly viewingService: ViewingService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('buyer_seller', 'investor', 'admin')
+  @Get()
+  async myViewings(@Request() req: AuthRequest) {
+    return this.viewingService.getBuyerViewings(req.user.sub);
+  }
+}
+
+/**
+ * GET    /api/v1/notifications            — list (last 50)
+ * PATCH  /api/v1/notifications/:id/read   — mark one read
+ * PATCH  /api/v1/notifications/read-all   — mark all read
+ */
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private readonly viewingService: ViewingService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async list(@Request() req: AuthRequest) {
+    return this.viewingService.getNotifications(req.user.sub, req.user.active_company_id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('read-all')
+  async readAll(@Request() req: AuthRequest) {
+    await this.viewingService.markAllNotificationsRead(req.user.sub);
+    return { success: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/read')
+  async markRead(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    await this.viewingService.markNotificationRead(id, req.user.sub);
+    return { success: true };
   }
 }

@@ -7,7 +7,9 @@ describe('RolesGuard', () => {
   let reflector: jest.Mocked<Reflector>;
 
   const buildContext = (
-    user: { id: string; email: string; roles: string[] } | undefined,
+    user:
+      | { id: string; email: string; roles: string[]; active_company_role?: string | null }
+      | undefined,
   ) => ({
     getHandler: jest.fn(),
     getClass: jest.fn(),
@@ -106,6 +108,45 @@ describe('RolesGuard', () => {
       expect(() =>
         guard.canActivate(ctx as unknown as ExecutionContext),
       ).toThrow(ForbiddenException);
+    });
+  });
+
+  // ─── Company role (active_company_role) ──────────────────────────────────
+
+  describe('when user has the role via active_company_role', () => {
+    it('returns true when active_company_role matches a required role', () => {
+      reflector.getAllAndOverride.mockReturnValue(['agent', 'admin']);
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['buyer_seller'],
+        active_company_role: 'agent',
+      });
+      expect(guard.canActivate(ctx as unknown as ExecutionContext)).toBe(true);
+    });
+
+    it('throws ForbiddenException when active_company_role does not match', () => {
+      reflector.getAllAndOverride.mockReturnValue(['admin']);
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['buyer_seller'],
+        active_company_role: 'agent',
+      });
+      expect(() =>
+        guard.canActivate(ctx as unknown as ExecutionContext),
+      ).toThrow(ForbiddenException);
+    });
+
+    it('returns true when active_company_role is null but global role matches', () => {
+      reflector.getAllAndOverride.mockReturnValue(['agent']);
+      const ctx = buildContext({
+        id: 'u1',
+        email: 'a@b.com',
+        roles: ['agent'],
+        active_company_role: null,
+      });
+      expect(guard.canActivate(ctx as unknown as ExecutionContext)).toBe(true);
     });
   });
 

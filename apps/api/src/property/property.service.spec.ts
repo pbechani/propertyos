@@ -47,6 +47,7 @@ describe('PropertyService', () => {
     verified_at: null,
     created_at: new Date('2026-02-21'),
     updated_at: new Date('2026-02-21'),
+    view_count: 0,
   };
 
   let module: TestingModule;
@@ -185,6 +186,54 @@ describe('PropertyService', () => {
       await expect(service.findById('non-existent-uuid')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('increments view_count and logs property.viewed for an authenticated non-owner visitor', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      mockPrisma.$executeRaw.mockResolvedValueOnce(1); // UPDATE view_count
+      await service.findById(propertyId, { actorId: 'visitor-uuid-9999', actorRole: 'buyer' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed', actorId: 'visitor-uuid-9999' }),
+      );
+    });
+
+    it('does NOT increment view_count or log property.viewed when actor is the listing agent', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      await service.findById(propertyId, { actorId: agentId, actorRole: 'agent' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(mockAudit.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed' }),
+      );
+    });
+
+    it('does NOT increment view_count when actor is the owner', async () => {
+      const ownedProperty = { ...baseProperty, agent_id: null, owner_id: 'owner-uuid-7777' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([ownedProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      await service.findById(propertyId, { actorId: 'owner-uuid-7777', actorRole: 'buyer_seller' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(mockAudit.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed' }),
+      );
+    });
+
+    it('does NOT increment view_count for unauthenticated (SSR) requests', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      // No actorId — simulates the Next.js SSR call
+      await service.findById(propertyId, { actorRole: 'public' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
   });
 

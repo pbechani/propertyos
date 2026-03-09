@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsDateString,
   IsIn,
   IsNotEmpty,
@@ -8,6 +9,7 @@ import {
   IsUUID,
   Max,
   Min,
+  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -138,6 +140,45 @@ export class CreateViewingDto {
   @IsOptional()
   @IsString()
   virtualLink?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class AgentBookViewingDto {
+  @IsIn(['physical', 'virtual'])
+  viewingType!: 'physical' | 'virtual';
+
+  @IsDateString()
+  scheduledAt!: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(15)
+  @Max(240)
+  @Type(() => Number)
+  durationMinutes?: number;
+
+  @IsOptional()
+  @IsString()
+  virtualLink?: string;
+
+  /** Buyer contact — stored in agent_notes as JSON for offline-booked viewings */
+  @IsString()
+  buyerContactName!: string;
+
+  @IsOptional()
+  @IsString()
+  buyerContactEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  buyerContactPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
 
 export class ViewingFeedbackDto {
@@ -166,6 +207,54 @@ export class AgentViewingUpdateDto {
   noShowReason?: string;
 }
 
+// ──────────────────────────────────────────────────────────
+// VIEWING LIFECYCLE DTOs
+// ──────────────────────────────────────────────────────────
+
+export class AgentDeclineViewingDto {
+  /** Reason shown to the buyer (min 10 chars) */
+  @IsString()
+  @MinLength(10)
+  reason!: string;
+
+  /** ISO date-time strings the agent is available on */
+  @IsOptional()
+  @IsArray()
+  @IsDateString({}, { each: true })
+  alternativeDates?: string[];
+
+  /** Optional longer message to accompany the declined notification */
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
+export class CancelViewingDto {
+  @IsString()
+  @MinLength(5)
+  reason!: string;
+}
+
+export class RescheduleViewingDto {
+  @IsDateString()
+  scheduledAt!: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(15)
+  @Max(240)
+  @Type(() => Number)
+  durationMinutes?: number;
+
+  @IsOptional()
+  @IsString()
+  virtualLink?: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
 export class CreateOpenHouseDto {
   @IsDateString()
   scheduledAt!: string;
@@ -182,4 +271,22 @@ export class CreateOpenHouseDto {
   @IsOptional()
   @IsString()
   description?: string;
+}
+
+export class CancelOpenHouseDto {
+  @IsString()
+  @MinLength(5)
+  reason!: string;
+}
+
+export class RescheduleOpenHouseDto {
+  @IsDateString()
+  scheduledAt!: string;
+
+  @IsDateString()
+  endAt!: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }

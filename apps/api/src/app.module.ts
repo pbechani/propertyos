@@ -12,6 +12,8 @@ import { envValidationSchema, envValidationOptions } from './config';
 import { IdentityModule } from './identity/identity.module';
 import { PropertyModule } from './property/property.module';
 import { SalesModule } from './sales/sales.module';
+import { LeadsModule } from './leads/leads.module';
+import { AIIntelligenceModule } from './ai-intelligence/ai-intelligence.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { SalesModule } from './sales/sales.module';
     IdentityModule,
     PropertyModule,
     SalesModule,
+    LeadsModule,
+    AIIntelligenceModule,
   ],
   providers: [
     {

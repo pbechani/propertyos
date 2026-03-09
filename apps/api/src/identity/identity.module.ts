@@ -113,6 +113,7 @@ import { NotificationPreferencesService } from './notification-preferences/notif
     CompanyContextGuard,
     CompanyAdminGuard,
     CompanyPermissionGuard,
+    NotificationService,
   ],
 })
 export class IdentityModule {}

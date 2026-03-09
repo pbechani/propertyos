@@ -46,7 +46,7 @@ export class BuyerController {
     @Request() req: AuthRequest,
     @Query('status') status?: string,
   ) {
-    return this.propertyService.getOwnerListings(req.user.sub, status);
+    return this.propertyService.getOwnerListings(req.user.sub, status, req.user.active_company_id);
   }
 
   /**

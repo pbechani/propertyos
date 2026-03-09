@@ -81,6 +81,14 @@ export const envValidationSchema = Joi.object({
   // Observability
   SENTRY_DSN: Joi.string().allow('').optional(),
   ELASTICSEARCH_URL: Joi.string().optional(),
+
+  // LLM Gateway (PDR-007 — all optional; features degrade gracefully without a key)
+  LLM_PROVIDER: Joi.string().valid('openai', 'anthropic', 'gemini').default('openai'),
+  LLM_API_KEY: Joi.string().optional(),
+  LLM_MODEL: Joi.string().default('gpt-4o-mini'),
+  LLM_FALLBACK_PROVIDER: Joi.string().valid('openai', 'anthropic', 'gemini').optional(),
+  LLM_FALLBACK_API_KEY: Joi.string().optional(),
+  LLM_FALLBACK_MODEL: Joi.string().optional(),
 });
 
 export const envValidationOptions = {

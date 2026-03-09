@@ -126,4 +126,75 @@ describe('ValuationService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('getAiEstimate', () => {
+    const baseProp = {
+      price: '1500000', currency: 'ZAR',
+      area_sqm: '120', bedrooms: 3, bathrooms: 2, property_type: 'residential',
+    };
+
+    const makeComp = (sale_price: string, floor_area_sqm = '110') => ({
+      id: crypto.randomUUID?.() ?? valuationId,
+      address: '1 Test St', city: 'Cape Town', region: null, country: 'ZA',
+      property_type: 'residential', property_subtype: null,
+      bedrooms: 3, bathrooms: 2, floor_area_sqm,
+      erf_size_sqm: null, sale_price, currency: 'ZAR',
+      sale_date: new Date(), days_on_market: null,
+      lat: null, lng: null, data_source: null, created_at: new Date(),
+    });
+
+    it('returns a price-per-sqm estimate when comparables have area', async () => {
+      // property lookup
+      mockPrisma.$queryRaw.mockResolvedValueOnce([baseProp]);
+      // getComparableSales: location lookup (no lat/lng) → city fallback
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ latitude: null, longitude: null, country: 'ZA', city: 'Cape Town' }]);
+      // comparable_sales rows
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        makeComp('1200000', '120'),
+        makeComp('1320000', '120'),
+        makeComp('1440000', '120'),
+      ]);
+
+      const result = await service.getAiEstimate(propertyId);
+
+      expect(result.estimate).toBeGreaterThan(0);
+      expect(result.low).toBeLessThan(result.estimate);
+      expect(result.high).toBeGreaterThan(result.estimate);
+      expect(['high', 'medium', 'low']).toContain(result.confidence);
+      expect(result.comparables_count).toBe(3);
+      expect(result.currency).toBe('ZAR');
+      expect(result.methodology).toMatch(/price-per-m²/i);
+    });
+
+    it('falls back to median sale price when subject has no area', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...baseProp, area_sqm: null }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ latitude: null, longitude: null, country: 'ZA', city: 'Cape Town' }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        makeComp('1000000'), makeComp('1200000'), makeComp('1400000'),
+      ]);
+
+      const result = await service.getAiEstimate(propertyId);
+
+      expect(result.estimate).toBe(1200000);
+      expect(result.methodology).toMatch(/median/i);
+    });
+
+    it('falls back to asking price with low confidence when no comparables', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([baseProp]);
+      // location has lat/lng — bounding-box query returns empty
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ latitude: '-33.9', longitude: '18.4', country: 'ZA', city: 'Cape Town' }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // no comparable sales
+
+      const result = await service.getAiEstimate(propertyId);
+
+      expect(result.estimate).toBe(1500000);
+      expect(result.confidence).toBe('low');
+      expect(result.comparables_count).toBe(0);
+    });
+
+    it('throws NotFoundException if property does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      await expect(service.getAiEstimate(propertyId)).rejects.toThrow(NotFoundException);
+    });
+  });
 });

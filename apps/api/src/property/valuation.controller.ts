@@ -66,6 +66,13 @@ export class ValuationController {
     const radiusKm = radius ? parseFloat(radius) : 2;
     return this.valuationService.getComparableSales(id, Number.isFinite(radiusKm) ? radiusKm : 2);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin', 'valuer', 'buyer_seller')
+  @Get('ai-estimate')
+  async aiEstimate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.valuationService.getAiEstimate(id);
+  }
 }
 
 /**

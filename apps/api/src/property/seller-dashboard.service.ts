@@ -16,7 +16,7 @@ export class SellerDashboardService {
         p.id, p.title, p.price, p.currency, p.status, p.listing_type,
         p.property_type, p.verification_status, p.floor_area_sqm, p.area_sqm,
         p.bedrooms, p.bathrooms, p.created_at, p.listing_reference,
-        pl.city, pl.suburb,
+        pl.city, pl.region AS suburb,
         (SELECT pm.url FROM property.property_media pm
          WHERE pm.property_id = p.id AND pm.is_primary = TRUE LIMIT 1) AS media_url,
         (SELECT COUNT(*)::int FROM property.viewings v

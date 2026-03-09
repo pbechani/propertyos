@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, ForbiddenException, NotFoundExc
 import { ViewingService } from './viewing.service';
 import { PropertyAuditService } from './property-audit.service';
 import { PrismaService } from '../database';
+import { NotificationService } from '../identity/notification.service';
 
 describe('ViewingService', () => {
   let service: ViewingService;
@@ -14,6 +15,7 @@ describe('ViewingService', () => {
   };
 
   const mockAudit = { log: jest.fn() };
+  const mockNotifications = { sendEmail: jest.fn().mockResolvedValue(undefined), sendSms: jest.fn().mockResolvedValue(undefined) };
 
   const buyerId = '11111111-1111-1111-1111-111111111111';
   const agentId = '22222222-2222-2222-2222-222222222222';
@@ -26,23 +28,29 @@ describe('ViewingService', () => {
     property_id: propertyId,
     buyer_id: buyerId,
     agent_id: agentId,
-    status: 'pending',
+    status: 'requested',
     scheduled_at: new Date('2026-08-01T10:00:00Z'),
-    viewing_type: 'in_person',
+    viewing_type: 'physical',
     duration_minutes: 30,
-    created_at: new Date(),
-    updated_at: new Date(),
+    virtual_link: null,
+    agent_notes: null,
+    buyer_feedback: null,
+    no_show_reason: null,
+    cancel_reason: null,
+    cancelled_by: null,
+    rescheduled_at: null,
+    rescheduled_reason: null,
+    declined_at: null,
     confirmed_at: null,
     completed_at: null,
-    cancelled_at: null,
-    feedback_notes: null,
-    rating: null,
+    created_at: new Date(),
   };
 
   const baseProperty = {
     id: propertyId,
     title: 'Test Property',
     agent_id: agentId,
+    company_id: null,
   };
 
   beforeEach(async () => {
@@ -51,6 +59,7 @@ describe('ViewingService', () => {
         ViewingService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: PropertyAuditService, useValue: mockAudit },
+        { provide: NotificationService, useValue: mockNotifications },
       ],
     }).compile();
 
@@ -66,6 +75,9 @@ describe('ViewingService', () => {
     it('creates a viewing request and resolves agent from property', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]); // property lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseViewing]);  // INSERT
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ email: 'agent@test.com', full_name: 'Agent Name' }]); // getUserContact(agentId)
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ title: 'Test Property' }]); // getPropertyTitle
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // createInAppNotification
 
       const result = await service.request(propertyId, buyerId, {
         scheduledAt: '2026-08-01T10:00:00Z',
@@ -73,7 +85,7 @@ describe('ViewingService', () => {
         durationMinutes: 30,
       });
 
-      expect(result).toMatchObject({ id: viewingId, status: 'pending' });
+      expect(result).toMatchObject({ id: viewingId, status: 'requested' });
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'viewing.requested' }),
       );
@@ -94,10 +106,13 @@ describe('ViewingService', () => {
   describe('confirm', () => {
     it('confirms a requested viewing', async () => {
       const requestedViewing = { ...baseViewing, status: 'requested' };
-      mockPrisma.$queryRaw.mockResolvedValueOnce([requestedViewing]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([requestedViewing]); // findViewingOrThrow
       mockPrisma.$queryRaw.mockResolvedValueOnce([
         { ...requestedViewing, status: 'confirmed', confirmed_at: new Date() },
-      ]);
+      ]); // UPDATE
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ email: 'buyer@test.com', full_name: 'Buyer Name' }]); // getUserContact(buyerId)
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ title: 'Test Property' }]); // getPropertyTitle
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // createInAppNotification
 
       const result = await service.confirm(viewingId, agentId, 'agent');
 
@@ -194,6 +209,180 @@ describe('ViewingService', () => {
       await expect(
         service.registerForOpenHouse(openHouseId, buyerId),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cancelOpenHouse', () => {
+    const scheduledOpenHouse = {
+      id: openHouseId,
+      property_id: propertyId,
+      agent_id: agentId,
+      status: 'scheduled',
+      scheduled_at: new Date('2026-09-01T10:00:00Z'),
+      end_at: new Date('2026-09-01T12:00:00Z'),
+      max_attendees: null,
+      cancel_reason: null,
+      rescheduled_at: null,
+      rescheduled_reason: null,
+    };
+    const cancelledOpenHouse = { ...scheduledOpenHouse, status: 'cancelled', cancel_reason: 'Venue unavailable' };
+
+    it('cancels a scheduled open house and emails registered attendees', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([scheduledOpenHouse]); // fetch open house
+      mockPrisma.$queryRaw.mockResolvedValueOnce([cancelledOpenHouse]); // UPDATE
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ buyer_id: buyerId }]); // registrations
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ title: 'Test Property' }]); // getPropertyTitle
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ email: 'buyer@test.com', full_name: 'Buyer Name' }]); // getUserContact
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // createInAppNotification
+
+      const result = await service.cancelOpenHouse(
+        openHouseId, agentId, 'agent', { reason: 'Venue unavailable' },
+      );
+
+      expect(result).toMatchObject({ status: 'cancelled', cancel_reason: 'Venue unavailable' });
+      expect(mockNotifications.sendEmail).toHaveBeenCalledWith(
+        'buyer@test.com',
+        expect.stringContaining('Cancelled'),
+        expect.stringContaining('Venue unavailable'),
+      );
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'open_house.cancelled' }),
+      );
+    });
+
+    it('throws NotFoundException if open house does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // not found
+
+      await expect(
+        service.cancelOpenHouse(openHouseId, agentId, 'agent', { reason: 'Venue unavailable' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException if the caller does not own the open house', async () => {
+      const othersHouse = { ...scheduledOpenHouse, agent_id: 'other-agent-id' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([othersHouse]);
+
+      await expect(
+        service.cancelOpenHouse(openHouseId, agentId, 'agent', { reason: 'Test' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws BadRequestException if open house is already cancelled', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...scheduledOpenHouse, status: 'cancelled' }]);
+
+      await expect(
+        service.cancelOpenHouse(openHouseId, agentId, 'agent', { reason: 'Test reason' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('rescheduleOpenHouse', () => {
+    const scheduledOpenHouse = {
+      id: openHouseId,
+      property_id: propertyId,
+      agent_id: agentId,
+      status: 'scheduled',
+      scheduled_at: new Date('2026-09-01T10:00:00Z'),
+      end_at: new Date('2026-09-01T12:00:00Z'),
+      max_attendees: null,
+      cancel_reason: null,
+      rescheduled_at: null,
+      rescheduled_reason: null,
+    };
+
+    it('reschedules a scheduled open house and emails registered attendees', async () => {
+      const rescheduledRow = {
+        ...scheduledOpenHouse,
+        scheduled_at: new Date('2026-09-08T10:00:00Z'),
+        end_at: new Date('2026-09-08T12:00:00Z'),
+        rescheduled_at: new Date(),
+        rescheduled_reason: 'Hosting conflict',
+      };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([scheduledOpenHouse]); // fetch
+      mockPrisma.$queryRaw.mockResolvedValueOnce([rescheduledRow]);      // UPDATE
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ buyer_id: buyerId }]); // registrations
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ title: 'Test Property' }]); // getPropertyTitle
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ email: 'buyer@test.com', full_name: 'Buyer Name' }]); // getUserContact
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // createInAppNotification
+
+      const result = await service.rescheduleOpenHouse(
+        openHouseId, agentId, 'agent',
+        { scheduledAt: '2026-09-08T10:00:00Z', endAt: '2026-09-08T12:00:00Z', reason: 'Hosting conflict' },
+      );
+
+      expect(result).toMatchObject({ rescheduled_reason: 'Hosting conflict' });
+      expect(mockNotifications.sendEmail).toHaveBeenCalledWith(
+        'buyer@test.com',
+        expect.stringContaining('Rescheduled'),
+        expect.stringContaining('Sept 2026'),
+      );
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'open_house.rescheduled' }),
+      );
+    });
+
+    it('throws NotFoundException if open house does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(
+        service.rescheduleOpenHouse(openHouseId, agentId, 'agent', {
+          scheduledAt: '2026-09-08T10:00:00Z', endAt: '2026-09-08T12:00:00Z',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException if caller does not own the open house', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...scheduledOpenHouse, agent_id: 'other-agent' }]);
+
+      await expect(
+        service.rescheduleOpenHouse(openHouseId, agentId, 'agent', {
+          scheduledAt: '2026-09-08T10:00:00Z', endAt: '2026-09-08T12:00:00Z',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws BadRequestException if open house has already been cancelled', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...scheduledOpenHouse, status: 'cancelled' }]);
+
+      await expect(
+        service.rescheduleOpenHouse(openHouseId, agentId, 'agent', {
+          scheduledAt: '2026-09-08T10:00:00Z', endAt: '2026-09-08T12:00:00Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getNotifications', () => {
+    const userId = 'user-uuid-1';
+    const companyId = 'company-uuid-1';
+    const companyNotification = { id: 'n1', user_id: userId, company_id: companyId, type: 'viewing_confirmed' };
+    const personalNotification = { id: 'n2', user_id: userId, company_id: null, type: 'viewing_declined' };
+
+    it('returns notifications scoped to the provided companyId', async () => {
+      // Buyer notifications are stored with the buyer's self-company ID so that
+      // strict company_id equality is used and notifications appear in the right context.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([companyNotification]);
+
+      const result = await service.getNotifications(userId, companyId);
+
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(result).toEqual([companyNotification]);
+    });
+
+    it('returns only null-company notifications when no companyId is provided', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([personalNotification]);
+
+      const result = await service.getNotifications(userId);
+
+      expect(result).toEqual([personalNotification]);
+    });
+
+    it('returns empty array when user has no notifications', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getNotifications(userId, companyId);
+
+      expect(result).toEqual([]);
     });
   });
 });

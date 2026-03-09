@@ -360,6 +360,10 @@ export class SearchPropertiesDto {
   sort?: SortOption;
 
   @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Type(() => Number)
