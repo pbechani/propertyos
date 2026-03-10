@@ -59,8 +59,61 @@ export const SALE_TRANSITIONS: Record<SaleStatus, readonly SaleStatus[]> = {
   cancelled: [],
 };
 
-/** Total number of stages in the default pipeline */
-export const TOTAL_STAGES = 14;
+/** Total number of stages in the default pipeline (includes 2 pre-transaction stages) */
+export const TOTAL_STAGES = 16;
+
+// ── Sprint 04 Enhanced constants ──────────────────────────────────────────────
+
+export const OTP_STATUSES = [
+  'draft',
+  'pending_buyer_signature',
+  'pending_seller_signature',
+  'accepted',
+  'counter_offered',
+  'withdrawn',
+  'expired',
+] as const;
+export type OtpStatus = (typeof OTP_STATUSES)[number];
+
+export const BOND_APP_STATUSES = [
+  'pending',
+  'submitted',
+  'pre_approved',
+  'approved',
+  'declined',
+  'cancelled',
+] as const;
+export type BondAppStatus = (typeof BOND_APP_STATUSES)[number];
+
+export const COMPLIANCE_CERT_TYPES = [
+  'electrical',
+  'plumbing',
+  'gas',
+  'electric_fence',
+  'beetle',
+  'rates_clearance',
+] as const;
+export type ComplianceCertType = (typeof COMPLIANCE_CERT_TYPES)[number];
+
+export const CERT_STATUSES = ['required', 'in_progress', 'obtained', 'waived'] as const;
+export type CertStatus = (typeof CERT_STATUSES)[number];
+
+export const DEAL_ROOM_THREAD_TYPES = [
+  'offer_negotiation',
+  'general',
+  'conveyancer_only',
+  'agent_only',
+  'compliance',
+] as const;
+export type DealRoomThreadType = (typeof DEAL_ROOM_THREAD_TYPES)[number];
+
+export const DISBURSEMENT_STATUSES = [
+  'draft',
+  'pending_approval',
+  'approved',
+  'transferred',
+] as const;
+export type DisbursementStatus = (typeof DISBURSEMENT_STATUSES)[number];
 
 /** Default pagination limit */
 export const DEFAULT_PAGE_LIMIT = 20;

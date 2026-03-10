@@ -22,6 +22,9 @@ import { GovernmentInteractionService } from './government-interaction.service';
 import { SaleMessageService } from './sale-message.service';
 import {
   AssignConveyancerDto,
+  AssignAgentDto,
+  AssignBuyerDto,
+  AssignSellerDto,
   CompleteStageDto,
   CreateGovernmentInteractionDto,
   FlagStageDto,
@@ -95,6 +98,116 @@ export class SalesController {
   @Get(':id')
   getSale(@Param('id', ParseUUIDPipe) id: string, @Request() req: AuthRequest) {
     return this.salesService.getSale(id, req.user.sub, req.user.roles);
+  }
+
+  /**
+   * PATCH /api/v1/sales/:id/assign-buyer
+   * Add a buyer to a sale (multiple buyers supported). [agent, admin]
+   */
+  @UseGuards(RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/assign-buyer')
+  assignBuyer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignBuyerDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.salesService.assignBuyer(
+      id,
+      req.user.sub,
+      req.user.roles,
+      dto.buyerId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  /**
+   * DELETE /api/v1/sales/:id/buyers/:userId
+   * Remove a buyer from a sale. [agent, admin]
+   */
+  @UseGuards(RolesGuard)
+  @Roles('agent', 'admin')
+  @Delete(':id/buyers/:userId')
+  removeBuyer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.salesService.removeBuyer(
+      id,
+      req.user.sub,
+      req.user.roles,
+      userId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  /**
+   * PATCH /api/v1/sales/:id/assign-seller
+   * Add a seller to a sale (multiple sellers supported). [agent, admin]
+   */
+  @UseGuards(RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/assign-seller')
+  assignSeller(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignSellerDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.salesService.assignSeller(
+      id,
+      req.user.sub,
+      req.user.roles,
+      dto.sellerId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  /**
+   * DELETE /api/v1/sales/:id/sellers/:userId
+   * Remove a seller from a sale. At least one seller must remain. [agent, admin]
+   */
+  @UseGuards(RolesGuard)
+  @Roles('agent', 'admin')
+  @Delete(':id/sellers/:userId')
+  removeSeller(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.salesService.removeSeller(
+      id,
+      req.user.sub,
+      req.user.roles,
+      userId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  /**
+   * PATCH /api/v1/sales/:id/assign-agent
+   * Assign or change the agent on a sale. [agent, admin]
+   */
+  @UseGuards(RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/assign-agent')
+  assignAgent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignAgentDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.salesService.assignAgent(
+      id,
+      req.user.sub,
+      req.user.roles,
+      dto.agentId,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   /**

@@ -8,14 +8,14 @@ import {
   ChevronLeft, CheckCircle2, Shield, AlertTriangle,
   Calendar, Clock, History, Flag, ChevronRight, X, ZoomIn,
   Heart, Video, Info,
-  Eye, TrendingUp, Users, MessageCircle, BarChart2, Home, Loader2, AlertCircle
+  Eye, TrendingUp, Users, MessageCircle, BarChart2, Home, Loader2, AlertCircle, RefreshCw, Plus
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, salesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type Sale } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 
 
@@ -299,6 +299,7 @@ function computeSimilarityScore(target: PropertyListing, candidate: PropertyList
 }
 
 type PropertyDetailState = {
+  id: string;
   title: string;
   address: string;
   latitude: number | null;
@@ -331,6 +332,7 @@ type PropertyDetailState = {
 
 function getEmptyPropertyDetail(): PropertyDetailState {
   return {
+    id: "",
     title: "",
     address: "Address unavailable",
     latitude: null,
@@ -389,6 +391,7 @@ export default function PropertyDetailEnhanced() {
   const [carouselOffset, setCarouselOffset] = useState(0);
   const [isLoadingProperty, setIsLoadingProperty] = useState(false);
   const [propertyError, setPropertyError] = useState("");
+  const [rawListingCurrency, setRawListingCurrency] = useState('ZAR');
   const [inquiryName, setInquiryName] = useState("");
   const [inquiryEmail, setInquiryEmail] = useState("");
   const [inquiryPhone, setInquiryPhone] = useState("");
@@ -434,12 +437,28 @@ export default function PropertyDetailEnhanced() {
     commissionRate: 5,
     startDate: '',
     endDate: '',
+    sellerIsPlatformUser: true,
   });
   const [isSubmittingMandate, setIsSubmittingMandate] = useState(false);
   const [mandateError, setMandateError] = useState("");
   const [mandateSuccess, setMandateSuccess] = useState("");
   const [cancellingMandateId, setCancellingMandateId] = useState<string | null>(null);
   const [signingMandateId, setSigningMandateId] = useState<string | null>(null);
+  const [offlineSignMandateId, setOfflineSignMandateId] = useState<string | null>(null);
+  const [offlineSignDocUrl, setOfflineSignDocUrl] = useState('');
+  const [isSubmittingOfflineSign, setIsSubmittingOfflineSign] = useState(false);
+
+  // ── Initiate Sale (owner/agent only) ─────────────────────────────────────
+  const [showInitiateSaleModal, setShowInitiateSaleModal] = useState(false);
+  const [initiateSaleAgreedPrice, setInitiateSaleAgreedPrice] = useState('');
+  const [initiateSaleCurrency, setInitiateSaleCurrency] = useState('ZAR');
+  const [initiateSaleSellerId, setInitiateSaleSellerId] = useState('');
+  const [initiateSaleBuyerId, setInitiateSaleBuyerId] = useState('');
+  const [initiateSaleDeposit, setInitiateSaleDeposit] = useState('');
+  const [submittingInitiateSale, setSubmittingInitiateSale] = useState(false);
+  const [initiateSaleError, setInitiateSaleError] = useState<string | null>(null);
+  // Existing active sale for this property (if any)
+  const [existingSale, setExistingSale] = useState<Sale | null>(null);
 
   const [propertyOpenHouses, setPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [registeringOpenHouseId, setRegisteringOpenHouseId] = useState<string | null>(null);
@@ -540,6 +559,40 @@ export default function PropertyDetailEnhanced() {
     }
 
     return token;
+  };
+
+  const handleInitiateSaleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = getAccessToken();
+    if (!token) { setInitiateSaleError('Please log in to continue.'); return; }
+    const user = getStoredUser();
+    if (!user?.id) { setInitiateSaleError('Session expired — please log in again.'); return; }
+    if (!property.id || !initiateSaleAgreedPrice) {
+      setInitiateSaleError('Please enter an agreed price.');
+      return;
+    }
+    if (!initiateSaleSellerId.trim()) {
+      setInitiateSaleError('Please enter the seller\'s user ID.');
+      return;
+    }
+    setSubmittingInitiateSale(true);
+    setInitiateSaleError(null);
+    try {
+      const sale = await salesApi.create(token, {
+        propertyId: property.id,
+        sellerId: initiateSaleSellerId.trim(),
+        buyerId: initiateSaleBuyerId.trim() || undefined,
+        agreedPrice: Number(initiateSaleAgreedPrice),
+        currency: initiateSaleCurrency,
+        ...(initiateSaleDeposit ? { depositAmount: Number(initiateSaleDeposit) } : {}),
+      });
+      setShowInitiateSaleModal(false);
+      navigate(`/workspace/${sale.id}`);
+    } catch (err) {
+      setInitiateSaleError(err instanceof Error ? err.message : 'Failed to initiate sale.');
+    } finally {
+      setSubmittingInitiateSale(false);
+    }
   };
 
   const handleCallAgent = async () => {
@@ -859,6 +912,17 @@ export default function PropertyDetailEnhanced() {
     });
   }, []);
 
+  // Non-blockingly check if an active sale already exists for this property
+  useEffect(() => {
+    if (!propertyId) return;
+    const token = getAccessToken();
+    if (!token) return;
+    salesApi.getMySales(token).then((sales) => {
+      const found = sales.find((s) => s.propertyId === propertyId && s.status !== 'cancelled');
+      setExistingSale(found ?? null);
+    }).catch(() => { /* non-critical */ });
+  }, [propertyId]);
+
   // Load saved status for current property
   useEffect(() => {
     if (!propertyId) return;
@@ -1001,6 +1065,7 @@ export default function PropertyDetailEnhanced() {
           : [];
 
         setProperty(() => ({
+          id: listing.id,
           title: listing.title,
           address,
           latitude,
@@ -1021,6 +1086,7 @@ export default function PropertyDetailEnhanced() {
           createdAt: listing.created_at,
           updatedAt: listing.updated_at,
         }));
+        setRawListingCurrency(listing.currency || 'ZAR');
         // Normalize null listing_type to 'for_sale' — legacy records without an
         // explicit type default to for-sale and should be treated as equivalent.
         const normaliseListingType = (t: string | null | undefined) => t ?? 'for_sale';
@@ -1415,6 +1481,24 @@ export default function PropertyDetailEnhanced() {
       setMandateError(err instanceof Error ? err.message : "Failed to cancel mandate.");
     } finally {
       setCancellingMandateId(null);
+    }
+  };
+
+  const handleSellerOfflineSign = async (mandateId: string) => {
+    const token = getAccessToken();
+    if (!token || !propertyId || !offlineSignDocUrl.trim()) return;
+    setIsSubmittingOfflineSign(true);
+    setMandateError("");
+    try {
+      const updated = await mandateApi.markSellerSignedOffline(token, propertyId, mandateId, offlineSignDocUrl.trim());
+      setMandates((prev) => prev.map((m) => m.id === mandateId ? updated : m));
+      setOfflineSignMandateId(null);
+      setOfflineSignDocUrl('');
+      setMandateSuccess('Seller offline signature recorded.');
+    } catch (err) {
+      setMandateError(err instanceof Error ? err.message : 'Failed to record offline signature.');
+    } finally {
+      setIsSubmittingOfflineSign(false);
     }
   };
 
@@ -2282,12 +2366,47 @@ export default function PropertyDetailEnhanced() {
           <div className="space-y-6">
             {/* Schedule Viewing Button - Prominent */}
             {isOwnListing ? (
-              <Card className="p-6 bg-linear-to-br from-gray-100 to-gray-200 border border-gray-300">
-                <Calendar className="w-8 h-8 mb-3 text-gray-400" />
-                <h3 className="font-bold text-xl mb-2 text-gray-700">Your Listing</h3>
-                <p className="text-gray-500 text-sm">
-                  You cannot schedule a viewing on a property you listed.
-                </p>
+              <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                <Home className="w-8 h-8 mb-3 text-blue-500" />
+                <h3 className="font-bold text-xl mb-1 text-blue-800">Your Listing</h3>
+                {existingSale ? (
+                  <>
+                    <p className="text-blue-600 text-sm mb-3">
+                      A sale is already in progress for this property.
+                    </p>
+                    <div className="mb-4 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 shrink-0" />
+                      Stage {existingSale.currentStage} · {existingSale.status.charAt(0).toUpperCase() + existingSale.status.slice(1)}
+                    </div>
+                    <Button
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={() => navigate(`/workspace/${existingSale.id}`)}
+                    >
+                      View Sale Workspace →
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-blue-600 text-sm mb-4">
+                      Initiate a sale to begin the 14-stage purchase pipeline for this property.
+                    </p>
+                    <Button
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={() => {
+                        setInitiateSaleAgreedPrice('');
+                        setInitiateSaleCurrency(rawListingCurrency);
+                        setInitiateSaleBuyerId('');
+                        setInitiateSaleDeposit('');
+                        setInitiateSaleError(null);
+                        setShowInitiateSaleModal(true);
+                      }}
+                      disabled={isSoldListing}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {isSoldListing ? 'Property Sold' : 'Initiate Sale'}
+                    </Button>
+                  </>
+                )}
               </Card>
             ) : (
               <Card className="p-6 bg-linear-to-br from-blue-500 to-purple-600 text-white">
@@ -2407,12 +2526,17 @@ export default function PropertyDetailEnhanced() {
                           {new Date(m.start_date).toLocaleDateString('en-ZA')} – {new Date(m.end_date).toLocaleDateString('en-ZA')}
                         </p>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                          <span>{m.agent_signed_at ? '✓ Agent signed' : '○ Agent unsigned'}</span>
-                          <span>{m.seller_signed_at ? '✓ Seller signed' : '○ Seller unsigned'}</span>
+                          <span>{m.signed_by_agent_at ? '✓ Agent signed' : '○ Agent unsigned'}</span>
+                          <span>{m.signed_by_seller_at ? '✓ Seller signed' : '○ Seller unsigned'}</span>
                         </div>
-                        {m.status === 'active' && (
-                          <div className="flex gap-2 mt-2">
-                            {!m.agent_signed_at && (
+                        {m.seller_name && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Seller: {m.seller_name}{m.seller_email ? ` · ${m.seller_email}` : ''}{m.seller_phone ? ` · ${m.seller_phone}` : ''}
+                          </p>
+                        )}
+                        {(m.status === 'pending_signature' || m.status === 'active') && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {!m.signed_by_agent_at && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2422,6 +2546,44 @@ export default function PropertyDetailEnhanced() {
                               >
                                 Sign as Agent
                               </Button>
+                            )}
+                            {!m.signed_by_seller_at && !m.seller_is_platform_user && (
+                              offlineSignMandateId === m.id ? (
+                                <div className="flex gap-1 w-full mt-1">
+                                  <input
+                                    type="url"
+                                    placeholder="Signed agreement document URL"
+                                    className="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
+                                    value={offlineSignDocUrl}
+                                    onChange={(e) => setOfflineSignDocUrl(e.target.value)}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white"
+                                    disabled={isSubmittingOfflineSign || !offlineSignDocUrl.trim()}
+                                    onClick={() => void handleSellerOfflineSign(m.id)}
+                                  >
+                                    {isSubmittingOfflineSign ? 'Saving…' : 'Confirm'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs h-7"
+                                    onClick={() => { setOfflineSignMandateId(null); setOfflineSignDocUrl(''); }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-7 text-green-700 border-green-300 hover:bg-green-50"
+                                  onClick={() => setOfflineSignMandateId(m.id)}
+                                >
+                                  Mark Seller Signed (Offline)
+                                </Button>
+                              )
                             )}
                             <Button
                               size="sm"
@@ -2488,6 +2650,53 @@ export default function PropertyDetailEnhanced() {
                         />
                       </div>
                     </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-xs font-medium text-gray-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={mandateForm.sellerIsPlatformUser !== false}
+                          onChange={(e) => setMandateForm((f) => ({ ...f, sellerIsPlatformUser: e.target.checked }))}
+                          className="rounded"
+                        />
+                        Seller is registered on the platform
+                      </label>
+                    </div>
+                    {mandateForm.sellerIsPlatformUser === false && (
+                      <>
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Seller Full Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. John Smith"
+                            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                            value={mandateForm.sellerName ?? ''}
+                            onChange={(e) => setMandateForm((f) => ({ ...f, sellerName: e.target.value }))}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Seller Email</label>
+                            <input
+                              type="email"
+                              placeholder="seller@example.com"
+                              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                              value={mandateForm.sellerEmail ?? ''}
+                              onChange={(e) => setMandateForm((f) => ({ ...f, sellerEmail: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-600 block mb-1">Seller Phone</label>
+                            <input
+                              type="tel"
+                              placeholder="+27 ..."
+                              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2"
+                              value={mandateForm.sellerPhone ?? ''}
+                              onChange={(e) => setMandateForm((f) => ({ ...f, sellerPhone: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <Button
                       size="sm"
                       className="w-full bg-blue-500 hover:bg-blue-600 text-white"
@@ -3153,6 +3362,100 @@ export default function PropertyDetailEnhanced() {
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Initiate Sale Modal (own listing only) */}
+      {showInitiateSaleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b">
+              <div>
+                <h2 className="text-lg font-bold">Initiate Sale</h2>
+                <p className="text-sm text-gray-500 truncate max-w-xs">{property.title}</p>
+              </div>
+              <button onClick={() => setShowInitiateSaleModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <form onSubmit={handleInitiateSaleSubmit} className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    value={initiateSaleAgreedPrice}
+                    onChange={e => setInitiateSaleAgreedPrice(e.target.value)}
+                    required
+                    placeholder="e.g. 1500000"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                  <select
+                    value={initiateSaleCurrency}
+                    onChange={e => setInitiateSaleCurrency(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="ZAR">ZAR</option>
+                    <option value="USD">USD</option>
+                    <option value="ZWL">ZWL</option>
+                    <option value="BWP">BWP</option>
+                    <option value="KES">KES</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deposit Amount <span className="text-gray-400">(optional)</span></label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={initiateSaleDeposit}
+                  onChange={e => setInitiateSaleDeposit(e.target.value)}
+                  placeholder="e.g. 150000"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Seller ID *</label>
+                <input
+                  type="text"
+                  value={initiateSaleSellerId}
+                  onChange={e => setInitiateSaleSellerId(e.target.value)}
+                  required
+                  placeholder="Seller's user UUID"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Buyer ID <span className="text-gray-400">(optional — add later)</span></label>
+                <input
+                  type="text"
+                  value={initiateSaleBuyerId}
+                  onChange={e => setInitiateSaleBuyerId(e.target.value)}
+                  placeholder="Buyer's user UUID"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {initiateSaleError && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{initiateSaleError}</p>
+              )}
+              <div className="flex gap-3 pt-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setShowInitiateSaleModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600" disabled={submittingInitiateSale}>
+                  {submittingInitiateSale ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {submittingInitiateSale ? 'Creating…' : 'Initiate Sale'}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

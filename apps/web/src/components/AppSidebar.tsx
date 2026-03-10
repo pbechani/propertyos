@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
 import { getIsAdminFromToken } from '@/lib/auth-session';
 
@@ -24,17 +24,20 @@ interface AppSidebarProps {
 const selfNavigation = [
   { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
+  { name: 'My Sales', href: '/app/sales', icon: Kanban },
   { name: 'Service Providers', href: '/service-providers', icon: Users },
   { name: 'Project Management', href: '/construction', icon: ClipboardList },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Company Registration', href: '/app/my-companies', icon: Briefcase },
+  { name: 'Sessions', href: '/app/sessions', icon: History },
 ];
 
 /** Navigation shown when the active user's role is 'agent'. */
 const agentNavigation = [
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
+  { name: 'My Sales', href: '/app/sales', icon: Kanban },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'AI Intelligence', href: '/app/ai-intelligence', icon: Brain },

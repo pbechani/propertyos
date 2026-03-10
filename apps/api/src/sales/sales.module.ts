@@ -11,6 +11,15 @@ import {
   ConveyancerCasesDashboardController,
   AdminSalesDashboardController,
 } from './dashboard.controller';
+// ── Sprint 04 Enhanced ────────────────────────────────────────────────────────
+import { OtpService } from './otp.service';
+import { DealRoomService } from './deal-room.service';
+import { BondApplicationService } from './bond-application.service';
+import { ComplianceService } from './compliance.service';
+import { DisbursementService } from './disbursement.service';
+import { SellerDisclosureService } from './seller-disclosure.service';
+import { PostSaleChecklistService } from './post-sale-checklist.service';
+import { SalesEnhancedController } from './sales-enhanced.controller';
 
 @Module({
   controllers: [
@@ -19,6 +28,7 @@ import {
     ConveyancerCasesDashboardController,
     AdminSalesDashboardController,
     SalesController,
+    SalesEnhancedController,
   ],
   providers: [
     SalesService,
@@ -27,6 +37,14 @@ import {
     GovernmentInteractionService,
     SaleMessageService,
     SalesAuditService,
+    // Sprint 04 Enhanced
+    OtpService,
+    DealRoomService,
+    BondApplicationService,
+    ComplianceService,
+    DisbursementService,
+    SellerDisclosureService,
+    PostSaleChecklistService,
   ],
   exports: [SalesService, SalesAuditService],
 })

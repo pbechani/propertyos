@@ -349,6 +349,13 @@ export const authApi = {
     }),
 };
 
+export type UserSearchResult = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 export const usersApi = {
   me: (authToken: string) =>
     apiRequest<AuthUser>('/users/me', {
@@ -385,6 +392,12 @@ export const usersApi = {
       authToken,
       body: formData,
     });
+  },
+
+  search: (authToken: string, q: string, role?: string): Promise<UserSearchResult[]> => {
+    const qs = new URLSearchParams({ q });
+    if (role) qs.set('role', role);
+    return apiRequest<UserSearchResult[]>(`/users/search?${qs.toString()}`, { authToken });
   },
 };
 
@@ -1162,12 +1175,17 @@ export type MandateRecord = {
   end_date: string;
   auto_renewal: boolean;
   status: 'pending_signature' | 'active' | 'expired' | 'cancelled';
-  seller_signed_at: string | null;
-  agent_signed_at: string | null;
+  signed_by_seller_at: string | null;
+  signed_by_agent_at: string | null;
   cancelled_at: string | null;
   cancellation_reason: string | null;
   terms_document_url: string | null;
   created_at: string;
+  seller_name: string | null;
+  seller_email: string | null;
+  seller_phone: string | null;
+  seller_is_platform_user: boolean;
+  agreement_document_url: string | null;
 };
 
 export type CreateMandatePayload = {
@@ -1179,6 +1197,10 @@ export type CreateMandatePayload = {
   autoRenewal?: boolean;
   termsDocumentUrl?: string;
   brokerageId?: string;
+  sellerName?: string;
+  sellerEmail?: string;
+  sellerPhone?: string;
+  sellerIsPlatformUser?: boolean;
 };
 
 // ─── Comparable sales type ─────────────────────────────────────────────────────
@@ -1272,6 +1294,11 @@ export type CommissionPipelineItem = {
   listing_status: string;
 };
 
+export type CommissionPipelineResponse = {
+  deals: CommissionPipelineItem[];
+  totalEstimated: number;
+};
+
 // ─── Activity feed type ────────────────────────────────────────────────────────
 
 export type ActivityFeedItem = {
@@ -1335,7 +1362,7 @@ export const agentApi = {
     }),
 
   getCommissionPipeline: (authToken: string) =>
-    apiRequest<CommissionPipelineItem[]>('/agent/commission-pipeline', {
+    apiRequest<CommissionPipelineResponse>('/agent/commission-pipeline', {
       method: 'GET',
       authToken,
     }),
@@ -1401,6 +1428,22 @@ export const mandateApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     }),
+
+  markSellerSignedOffline: (
+    authToken: string,
+    propertyId: string,
+    mandateId: string,
+    documentUrl: string,
+  ) =>
+    apiRequest<MandateRecord>(
+      `/properties/${propertyId}/mandate/${mandateId}/seller-offline-sign`,
+      {
+        method: 'POST',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentUrl }),
+      },
+    ),
 };
 
 // ─── Agent CRM ────────────────────────────────────────────────────────────────
@@ -2654,4 +2697,582 @@ export const aiCommandCenterApi = {
       `/ai-intelligence/agents/${encodeURIComponent(name)}/resume`,
       { method: 'POST', authToken: token },
     ),
+};
+
+// ─── Sales Progression Types ────────────────────────────────────────────────
+
+export type SaleStage = {
+  stageNumber: number;
+  name: string;
+  status: 'not_started' | 'in_progress' | 'completed' | 'blocked' | 'skipped';
+  startedAt?: string | null;
+  completedAt?: string | null;
+  flaggedReason?: string | null;
+  daysInStage?: number;
+};
+
+export type SaleDocument = {
+  id: string;
+  stageNumber: number;
+  name: string;
+  documentType?: string | null;
+  status: 'pending' | 'received' | 'verified' | 'rejected';
+  uploadedBy?: string | null;
+  uploadedAt?: string | null;
+  fileUrl?: string | null;
+  reviewNotes?: string | null;
+};
+
+export type PersonInfo = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+export type Sale = {
+  id: string;
+  propertyId: string;
+  buyerId: string | null;
+  sellerId: string;
+  agentId?: string | null;
+  conveyancerId?: string | null;
+  status: 'active' | 'completed' | 'cancelled' | 'disputed';
+  currentStage: number;
+  purchasePrice: number;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  property?: { title?: string; addressLine1?: string; city?: string } | null;
+  buyers: PersonInfo[];
+  sellers: PersonInfo[];
+  buyer?: { firstName: string; lastName: string; email: string } | null;  // kept for backwards compat
+  seller?: { firstName: string; lastName: string; email: string } | null; // kept for backwards compat
+  agent?: { firstName: string; lastName: string; email: string } | null;
+  conveyancer?: { firstName: string; lastName: string; email: string } | null;
+  stages?: SaleStage[];
+  commission?: { rate: number; mandateType: string; estimated: number } | null;
+};
+
+export type OTPVersion = {
+  id: string;
+  saleId: string;
+  version: number;
+  offeredPrice: number;
+  currency?: string;
+  conditions?: unknown;
+  status: 'draft' | 'pending' | 'pending_buyer' | 'pending_seller' | 'signed' | 'counter_offered' | 'withdrawn' | 'expired' | 'accepted' | 'rejected';
+  createdBy?: string;
+  buyerSignedAt?: string | null;
+  sellerSignedAt?: string | null;
+  createdAt: string;
+};
+
+export type DealRoomMessage = {
+  id: string;
+  saleId: string;
+  senderId: string;
+  senderRole: string;
+  threadType: 'legal' | 'financial' | 'general' | 'compliance';
+  content: string;
+  readAt?: string | null;
+  createdAt: string;
+  sender?: { firstName: string; lastName: string } | null;
+};
+
+export type BondApplication = {
+  id: string;
+  saleId: string;
+  buyerId: string;
+  bankName: string;
+  applicationRef?: string | null;
+  loanAmount: number;
+  status: 'submitted' | 'under_review' | 'approved' | 'declined' | 'conditional';
+  interestRate?: number | null;
+  termMonths?: number | null;
+  conditions?: unknown;
+  submittedAt?: string | null;
+  approvedAt?: string | null;
+  createdAt: string;
+};
+
+export type ComplianceItem = {
+  certType: string;
+  status: 'required' | 'in_progress' | 'received' | 'waived';
+  dueDate?: string | null;
+  receivedDate?: string | null;
+  fileUrl?: string | null;
+  notes?: string | null;
+};
+
+export type ComplianceStatus = {
+  requirements: ComplianceItem[];
+  allMet: boolean;
+};
+
+export type DisbursementInstruction = {
+  id: string;
+  saleId: string;
+  payee: string;
+  payeeType: 'agent' | 'seller' | 'bank' | 'govt' | 'other';
+  amount: number;
+  currency: string;
+  bankDetails: unknown;
+  purpose: string;
+  status: 'pending' | 'approved' | 'paid';
+  approvedAt?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+};
+
+export type SellerDisclosure = {
+  id: string;
+  saleId: string;
+  disclosureData: unknown;
+  sellerSignedAt?: string | null;
+  buyerAcknowledgedAt?: string | null;
+  status: 'draft' | 'pending_seller' | 'pending_buyer' | 'completed';
+  createdAt: string;
+};
+
+export type PostSaleChecklist = {
+  items: Array<{ key: string; label: string; done: boolean; doneAt?: string | null }>;
+  completedAt?: string | null;
+};
+
+// ─── salesApi ───────────────────────────────────────────────────────────────
+
+// Stage rows come from raw SQL — normalise snake_case to the SaleStage type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSaleDocument(raw: any): SaleDocument {
+  return {
+    id:           raw.id,
+    stageNumber:  raw.stageNumber  ?? raw.stage_number,
+    name:         raw.name         ?? raw.document_name ?? '',
+    documentType: raw.documentType ?? raw.document_type ?? null,
+    status:       (raw.status      ?? 'pending') as SaleDocument['status'],
+    uploadedBy:   raw.uploadedBy   ?? raw.uploaded_by   ?? null,
+    uploadedAt:   raw.uploadedAt
+                    ? raw.uploadedAt
+                    : raw.uploaded_at
+                      ? new Date(raw.uploaded_at).toISOString()
+                      : null,
+    fileUrl:      raw.fileUrl      ?? raw.url           ?? null,
+    reviewNotes:  raw.reviewNotes  ?? null,
+  };
+}
+
+function mapStage(raw: any): SaleStage {
+  return {
+    stageNumber:   raw.stageNumber   ?? raw.stage_number,
+    name:          raw.name          ?? raw.stage_name ?? '',
+    status:        (raw.status       ?? 'not_started') as SaleStage['status'],
+    startedAt:     raw.startedAt     ?? raw.started_at    ?? null,
+    completedAt:   raw.completedAt   ?? raw.completed_at  ?? null,
+    flaggedReason: raw.flaggedReason ?? raw.flagged_reason ?? null,
+    daysInStage:   raw.daysInStage   ?? raw.days_in_stage,
+  };
+}
+
+// The backend returns raw SQL snake_case rows — normalise to the camelCase Sale type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSale(raw: any): Sale {
+  const mapPerson = (p: any) => p ? {
+    firstName: p.firstName ?? p.first_name ?? '',
+    lastName:  p.lastName  ?? p.last_name  ?? '',
+    email:     p.email     ?? '',
+  } : null;
+  const mapPersonInfo = (p: any): PersonInfo => ({
+    id:        p.id,
+    firstName: p.firstName ?? p.first_name ?? '',
+    lastName:  p.lastName  ?? p.last_name  ?? '',
+    email:     p.email     ?? '',
+  });
+  const buyers: PersonInfo[]  = Array.isArray(raw.buyers)  ? raw.buyers.map(mapPersonInfo)  : [];
+  const sellers: PersonInfo[] = Array.isArray(raw.sellers) ? raw.sellers.map(mapPersonInfo) : [];
+  return {
+    id:              raw.id,
+    propertyId:      raw.propertyId      ?? raw.property_id,
+    buyerId:         raw.buyerId         ?? raw.buyer_id         ?? null,
+    sellerId:        raw.sellerId        ?? raw.seller_id,
+    agentId:         raw.agentId         ?? raw.agent_id         ?? null,
+    conveyancerId:   raw.conveyancerId   ?? raw.buyer_conveyancer_id ?? raw.conveyancer_id ?? null,
+    status:          raw.status,
+    currentStage:    raw.currentStage    ?? raw.current_stage    ?? 1,
+    purchasePrice:   Number(raw.purchasePrice ?? raw.agreed_price ?? 0),
+    currency:        raw.currency        ?? 'ZAR',
+    createdAt:       raw.createdAt       ?? raw.created_at,
+    updatedAt:       raw.updatedAt       ?? raw.updated_at,
+    property:        raw.property        ?? null,
+    buyers,
+    sellers,
+    buyer:           buyers[0] ? { firstName: buyers[0].firstName, lastName: buyers[0].lastName, email: buyers[0].email } : mapPerson(raw.buyer),
+    seller:          sellers[0] ? { firstName: sellers[0].firstName, lastName: sellers[0].lastName, email: sellers[0].email } : mapPerson(raw.seller),
+    agent:           mapPerson(raw.agent),
+    conveyancer:     mapPerson(raw.conveyancer),
+    stages:          raw.stages          ?? undefined,
+    commission:      raw.commission      ?? null,
+  };
+}
+
+export const salesApi = {
+  // ── Base Sale operations ─────────────────────────────────────────────────
+  create: (token: string, payload: { propertyId: string; buyerId?: string; sellerId: string; agentId?: string; agreedPrice: number; currency?: string; depositAmount?: number }) =>
+    apiRequest<unknown>('/sales', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(mapSale),
+
+  getMySales: (token: string) =>
+    apiRequest<{ data: unknown[]; total: number; page: number; limit: number }>('/sales/me', { authToken: token })
+      .then(r => r.data.map(mapSale)),
+
+  getById: (token: string, saleId: string) =>
+    apiRequest<unknown>(`/sales/${saleId}`, { authToken: token }).then(mapSale),
+
+  assignConveyancer: (token: string, saleId: string, payload: { conveyancerId: string }) =>
+    apiRequest<Sale>(`/sales/${saleId}/assign-conveyancer`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  assignAgent: (token: string, saleId: string, agentId: string) =>
+    apiRequest<Sale>(`/sales/${saleId}/assign-agent`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId }),
+    }),
+
+  assignBuyer: (token: string, saleId: string, buyerId: string) =>
+    apiRequest<{ message: string }>(`/sales/${saleId}/assign-buyer`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ buyerId }),
+    }),
+
+  removeBuyer: (token: string, saleId: string, userId: string) =>
+    apiRequest<{ message: string }>(`/sales/${saleId}/buyers/${userId}`, {
+      method: 'DELETE',
+      authToken: token,
+    }),
+
+  assignSeller: (token: string, saleId: string, sellerId: string) =>
+    apiRequest<{ message: string }>(`/sales/${saleId}/assign-seller`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sellerId }),
+    }),
+
+  removeSeller: (token: string, saleId: string, userId: string) =>
+    apiRequest<{ message: string }>(`/sales/${saleId}/sellers/${userId}`, {
+      method: 'DELETE',
+      authToken: token,
+    }),
+
+  cancel: (token: string, saleId: string, payload: { reason: string }) =>
+    apiRequest<Sale>(`/sales/${saleId}/cancel`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getStages: (token: string, saleId: string) =>
+    apiRequest<unknown[]>(`/sales/${saleId}/stages`, { authToken: token })
+      .then(r => r.map(mapStage)),
+
+  startStage: (token: string, saleId: string, stageNum: number, payload?: object) =>
+    apiRequest<unknown>(`/sales/${saleId}/stages/${stageNum}/start`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    }).then(mapStage),
+
+  completeStage: (token: string, saleId: string, stageNum: number, payload?: object) =>
+    apiRequest<unknown>(`/sales/${saleId}/stages/${stageNum}/complete`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    }).then(mapStage),
+
+  flagStage: (token: string, saleId: string, stageNum: number, payload: { reason: string }) =>
+    apiRequest<unknown>(`/sales/${saleId}/stages/${stageNum}/flag`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(mapStage),
+
+  addDocument: (token: string, saleId: string, stageNum: number, payload: { documentName: string; documentType?: string; url?: string; isRequired?: boolean }) =>
+    apiRequest<SaleDocument>(`/sales/${saleId}/stages/${stageNum}/documents`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then(mapSaleDocument),
+
+  getDocuments: (token: string, saleId: string) =>
+    apiRequest<SaleDocument[]>(`/sales/${saleId}/documents`, { authToken: token })
+      .then(r => r.map(mapSaleDocument)),
+
+  updateDocumentStatus: (token: string, saleId: string, docId: string, payload: { status: string; reviewNotes?: string }) =>
+    apiRequest<SaleDocument>(`/sales/${saleId}/documents/${docId}/status`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  deleteDocument: (token: string, saleId: string, docId: string) =>
+    apiRequest<void>(`/sales/${saleId}/documents/${docId}`, {
+      method: 'DELETE',
+      authToken: token,
+    }),
+
+  getMessages: (token: string, saleId: string) =>
+    apiRequest<Array<{ id: string; content: string; senderId: string; senderRole: string; createdAt: string }>>(`/sales/${saleId}/messages`, { authToken: token }),
+
+  addMessage: (token: string, saleId: string, payload: { content: string; recipientId?: string }) =>
+    apiRequest<{ id: string; content: string; senderId: string; createdAt: string }>(`/sales/${saleId}/messages`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getGovernmentInteractions: (token: string, saleId: string) =>
+    apiRequest<Array<{ id: string; department: string; status: string; notes?: string }>>(`/sales/${saleId}/government-interactions`, { authToken: token }),
+
+  addGovernmentInteraction: (token: string, saleId: string, payload: { department: string; status: string; notes?: string }) =>
+    apiRequest<{ id: string }>(`/sales/${saleId}/government-interactions`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  // ── OTP (Offer to Purchase) ──────────────────────────────────────────────
+  createOTP: (token: string, saleId: string, payload: { offeredPrice: number; currency?: string; offerValidUntil: string; conditions?: unknown }) =>
+    apiRequest<OTPVersion>(`/sales/${saleId}/otp`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getOTPVersions: (token: string, saleId: string) =>
+    apiRequest<OTPVersion[]>(`/sales/${saleId}/otp/versions`, { authToken: token }),
+
+  signOTP: (token: string, saleId: string, otpId: string, payload?: { signatureData?: string }) =>
+    apiRequest<OTPVersion>(`/sales/${saleId}/otp/${otpId}/sign`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    }),
+
+  counterOfferOTP: (token: string, saleId: string, otpId: string, payload: { offeredPrice: number; offerValidUntil: string; conditions?: unknown }) =>
+    apiRequest<OTPVersion>(`/sales/${saleId}/otp/${otpId}/counter-offer`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  withdrawOTP: (token: string, saleId: string, otpId: string, payload?: { reason?: string }) =>
+    apiRequest<OTPVersion>(`/sales/${saleId}/otp/${otpId}/withdraw`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    }),
+
+  compareOffers: (token: string, saleId: string) =>
+    apiRequest<OTPVersion[]>(`/sales/${saleId}/offers/compare`, { authToken: token }),
+
+  // ── Deal Room ────────────────────────────────────────────────────────────
+  sendDealRoomMessage: (token: string, saleId: string, payload: { content: string; threadType: 'legal' | 'financial' | 'general' | 'compliance'; recipientId?: string }) =>
+    apiRequest<DealRoomMessage>(`/sales/${saleId}/deal-room/messages`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getDealRoomMessages: (token: string, saleId: string, threadType?: string) =>
+    apiRequest<DealRoomMessage[]>(`/sales/${saleId}/deal-room/messages${threadType ? `?threadType=${threadType}` : ''}`, { authToken: token }),
+
+  markDealRoomMessageRead: (token: string, saleId: string, messageId: string) =>
+    apiRequest<void>(`/sales/${saleId}/deal-room/messages/${messageId}/read`, {
+      method: 'PATCH',
+      authToken: token,
+    }),
+
+  // ── Bond Application ─────────────────────────────────────────────────────
+  createBondApplication: (token: string, saleId: string, payload: { bankName: string; loanAmount: number; applicationRef?: string }) =>
+    apiRequest<BondApplication>(`/sales/${saleId}/bond-application`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateBondApplication: (token: string, saleId: string, appId: string, payload: Partial<BondApplication>) =>
+    apiRequest<BondApplication>(`/sales/${saleId}/bond-application/${appId}/update`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getBondApplication: (token: string, saleId: string) =>
+    apiRequest<BondApplication | null>(`/sales/${saleId}/bond-application`, { authToken: token }),
+
+  // ── Compliance ───────────────────────────────────────────────────────────
+  setComplianceRequirements: (token: string, saleId: string, payload: { requirements: Array<{ certType: string; dueDate?: string }> }) =>
+    apiRequest<ComplianceStatus>(`/sales/${saleId}/compliance-requirements`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateComplianceStatus: (token: string, saleId: string, certType: string, payload: { status: string; notes?: string; fileUrl?: string; receivedDate?: string }) =>
+    apiRequest<ComplianceItem>(`/sales/${saleId}/compliance/${certType}/status`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getComplianceStatus: (token: string, saleId: string) =>
+    apiRequest<ComplianceStatus>(`/sales/${saleId}/compliance-status`, { authToken: token }),
+
+  // ── Disbursement Instructions ────────────────────────────────────────────
+  createDisbursementInstruction: (token: string, saleId: string, payload: { payee: string; payeeType: string; amount: number; currency?: string; bankDetails: object; purpose: string }) =>
+    apiRequest<DisbursementInstruction>(`/sales/${saleId}/disbursement-instructions`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getDisbursementInstructions: (token: string, saleId: string) =>
+    apiRequest<DisbursementInstruction[]>(`/sales/${saleId}/disbursement-instructions`, { authToken: token }),
+
+  approveDisbursementInstruction: (token: string, saleId: string, instrId: string) =>
+    apiRequest<DisbursementInstruction>(`/sales/${saleId}/disbursement-instructions/${instrId}/approve`, {
+      method: 'PATCH',
+      authToken: token,
+    }),
+
+  // ── Seller Disclosure ────────────────────────────────────────────────────
+  createSellerDisclosure: (token: string, saleId: string, payload: { disclosureData: object }) =>
+    apiRequest<SellerDisclosure>(`/sales/${saleId}/seller-disclosure`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getSellerDisclosure: (token: string, saleId: string) =>
+    apiRequest<SellerDisclosure | null>(`/sales/${saleId}/seller-disclosure`, { authToken: token }),
+
+  signSellerDisclosure: (token: string, saleId: string, payload?: { signatureData?: string }) =>
+    apiRequest<SellerDisclosure>(`/sales/${saleId}/seller-disclosure/sign`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload ?? {}),
+    }),
+
+  // ── Post-Sale Checklist ──────────────────────────────────────────────────
+  getPostSaleChecklist: (token: string, saleId: string) =>
+    apiRequest<PostSaleChecklist>(`/sales/${saleId}/post-sale-checklist`, { authToken: token }),
+
+  updatePostSaleChecklist: (token: string, saleId: string, payload: { items: Array<{ key: string; done: boolean }> }) =>
+    apiRequest<PostSaleChecklist>(`/sales/${saleId}/post-sale-checklist`, {
+      method: 'PATCH',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+};
+
+// ─── Agent Sales Dashboard ──────────────────────────────────────────────────
+
+export const agentSalesApi = {
+  getSales: (token: string) =>
+    apiRequest<{ data: unknown[]; total: number; page: number; limit: number }>('/agent/sales', { authToken: token })
+      .then(r => r.data.map(mapSale)),
+};
+
+// ─── Conveyancer API ─────────────────────────────────────────────────────────
+
+export type ConveyancerCase = {
+  id: string;
+  propertyAddress: string;
+  buyer: string;
+  seller: string;
+  currentStage: number;
+  stageName: string;
+  status: 'active' | 'completed' | 'cancelled' | 'disputed';
+  priority: 'high' | 'medium' | 'low';
+  daysOpen: number;
+  purchasePrice: number;
+  currency: string;
+  sale?: Sale;
+};
+
+export const conveyancerApi = {
+  getCases: (token: string) =>
+    apiRequest<{ data: ConveyancerCase[]; total: number; page: number; limit: number }>('/conveyancer/cases', { authToken: token })
+      .then(r => r.data),
+};
+
+// ─── Admin Sales Dashboard ──────────────────────────────────────────────────
+
+export const adminSalesApi = {
+  getSales: (token: string) =>
+    apiRequest<{ data: unknown[]; total: number; page: number; limit: number }>('/admin/sales', { authToken: token })
+      .then(r => r.data.map(mapSale)),
+};
+
+// ─── Sessions API (Sprint 02 Enhanced) ──────────────────────────────────────
+
+export type UserSession = {
+  id: string;
+  deviceInfo?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  lastActiveAt?: string | null;
+  createdAt: string;
+  current?: boolean;
+};
+
+export const sessionsApi = {
+  getSessions: (token: string) =>
+    apiRequest<UserSession[]>('/users/me/sessions', { authToken: token }),
+
+  revokeAll: (token: string) =>
+    apiRequest<void>('/users/me/sessions', {
+      method: 'DELETE',
+      authToken: token,
+    }),
+
+  revokeSession: (token: string, sessionId: string) =>
+    apiRequest<void>(`/users/me/sessions/${sessionId}`, {
+      method: 'DELETE',
+      authToken: token,
+    }),
 };

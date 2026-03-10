@@ -148,6 +148,7 @@ export default function AgentDashboardEnhanced() {
   const [isLoadingMandates, setIsLoadingMandates] = useState(false);
   const [mandatesError, setMandatesError] = useState("");
   const [commissionPipeline, setCommissionPipeline] = useState<CommissionPipelineItem[]>([]);
+  const [commissionTotal, setCommissionTotal] = useState<number>(0);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -287,7 +288,8 @@ export default function AgentDashboardEnhanced() {
         agentApi.getCommissionPipeline(token),
         agentApi.getActivityFeed(token),
       ]);
-      setCommissionPipeline(pipeline);
+      setCommissionPipeline(pipeline.deals ?? []);
+      setCommissionTotal(pipeline.totalEstimated ?? 0);
       setActivityFeed(feed);
     } catch {
       // non-critical — dashboard still usable without these
@@ -921,7 +923,13 @@ export default function AgentDashboardEnhanced() {
             {/* Commission Pipeline */}
             {commissionPipeline.length > 0 && (
               <Card className="p-6 mb-6">
-                <h3 className="font-semibold text-lg mb-4">Commission Pipeline</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-lg">Commission Pipeline</h3>
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Total Estimated</div>
+                    <div className="text-lg font-bold text-green-700">{formatMoney(String(commissionTotal), 'ZAR')}</div>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   {commissionPipeline.slice(0, 5).map((item) => (
                     <div key={item.mandate_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
@@ -1314,11 +1322,11 @@ export default function AgentDashboardEnhanced() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="space-y-1 text-xs">
-                              <div className={m.agent_signed_at ? 'text-green-600' : 'text-gray-400'}>
-                                {m.agent_signed_at ? '✓ Agent' : '○ Agent unsigned'}
+                              <div className={m.signed_by_agent_at ? 'text-green-600' : 'text-gray-400'}>
+                                {m.signed_by_agent_at ? '✓ Agent' : '○ Agent unsigned'}
                               </div>
-                              <div className={m.seller_signed_at ? 'text-green-600' : 'text-gray-400'}>
-                                {m.seller_signed_at ? '✓ Seller' : '○ Seller unsigned'}
+                              <div className={m.signed_by_seller_at ? 'text-green-600' : 'text-gray-400'}>
+                                {m.signed_by_seller_at ? '✓ Seller' : '○ Seller unsigned'}
                               </div>
                             </div>
                           </td>

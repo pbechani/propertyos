@@ -2,9 +2,10 @@
 **Addendum to sprint-03-property-marketplace.md**
 **Added: March 2026 — Based on real-estate-platform-guide.md & AI_RealEstate_PM_Blueprint.md**
 
-> **Status: ✅ Implemented — 2026-03-06**
+> **Status: ✅ Implemented — 2026-03-06 | Updated: 2026-03-11 (mandate offline signing)**
 > Migration `202603050014_sprint03_enhanced` applied to `pribec_dev`. All 12 features delivered.
-> Tests: 25/25 passing (`mandate.service.spec`, `valuation.service.spec`, `viewing.service.spec`). TypeScript: clean build (`tsc --noEmit`).
+> Migration `202603100021_mandate_seller_fields` applied — adds offline-seller fields to `property.mandates`.
+> Tests: 569 passing (`mandate.service.spec` 13 tests, `valuation.service.spec`, `viewing.service.spec`, + all suites). TypeScript: clean build (`tsc --noEmit`).
 
 ---
 
@@ -97,6 +98,12 @@ CREATE TABLE property.mandates (
   signed_by_agent_at TIMESTAMPTZ,
   status VARCHAR(20) DEFAULT 'pending_signature', -- pending_signature, active, expired, cancelled
   cancellation_reason TEXT,
+  -- Offline seller support (migration 202603100021_mandate_seller_fields)
+  seller_name VARCHAR(255),            -- contact name when seller has no platform account
+  seller_email VARCHAR(255),
+  seller_phone VARCHAR(50),
+  seller_is_platform_user BOOLEAN NOT NULL DEFAULT TRUE,  -- FALSE = seller signs physically
+  agreement_document_url TEXT,         -- scanned signed agreement uploaded by agent
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(property_id, agent_id, status)  -- prevent duplicate active mandates
 );
@@ -124,12 +131,19 @@ CREATE INDEX ON property.mandates (agent_id, status);
 
 ### API endpoints:
 ```
-POST  /api/v1/properties/:id/mandate              [agent] — create mandate draft
-GET   /api/v1/properties/:id/mandate              [agent (own), seller, admin]
-POST  /api/v1/properties/:id/mandate/:mId/sign    [seller, agent] — e-sign mandate
-PATCH /api/v1/properties/:id/mandate/:mId/cancel  [agent, seller, admin]
-GET   /api/v1/agent/mandates                      [agent] — own active mandates
+POST  /api/v1/properties/:id/mandate                         [agent] — create mandate draft
+GET   /api/v1/properties/:id/mandate                         [agent (own), seller, admin]
+POST  /api/v1/properties/:id/mandate/:mId/sign               [seller, agent] — e-sign mandate
+POST  /api/v1/properties/:id/mandate/:mId/seller-offline-sign [agent] — upload proof & mark non-platform seller as signed
+PATCH /api/v1/properties/:id/mandate/:mId/cancel             [agent, seller, admin]
+GET   /api/v1/agent/mandates                                 [agent] — own active mandates
 ```
+
+**Offline seller signing rules:**
+- `seller_is_platform_user` must be `false` on the mandate
+- Only the mandate's own `agent_id` can call this endpoint
+- Body: `{ documentUrl: string }` — URL of the scanned physically-signed agreement
+- Sets `signed_by_seller_at`, stores `agreement_document_url`; auto-activates if agent has also signed
 
 ---
 
@@ -391,6 +405,10 @@ GET  /api/v1/seller/properties/:id/offers  — active offers (read-only — agen
 - [ ] Property comparison returns correct winner for price/sqm
 - [ ] Neighbourhood insights displayed on listing detail page
 - [ ] Comparable sales auto-pulled within 2km radius on valuation request
+- [x] Offline seller signing — agent can mark a non-platform seller as signed by uploading a scanned agreement document (`POST seller-offline-sign`)
+- [x] `seller_is_platform_user = true` mandates reject offline signing with `400 Bad Request`
+- [x] Only the mandate's agent may call `seller-offline-sign` (others get `403 Forbidden`)
+- [x] Mandate auto-activates when both `signed_by_agent_at` and `signed_by_seller_at` are set, regardless of signing path (digital or offline)
 
 ---
 

@@ -14,6 +14,7 @@ import { PropertyModule } from './property/property.module';
 import { SalesModule } from './sales/sales.module';
 import { LeadsModule } from './leads/leads.module';
 import { AIIntelligenceModule } from './ai-intelligence/ai-intelligence.module';
+import { MindsDBModule } from './mindsdb/mindsdb.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { AIIntelligenceModule } from './ai-intelligence/ai-intelligence.module';
     SalesModule,
     LeadsModule,
     AIIntelligenceModule,
+    MindsDBModule,
   ],
   providers: [
     {

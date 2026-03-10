@@ -944,6 +944,8 @@ model PropertySale {
   messages               SaleMessage[]
   stageProgress          SaleStageProgress[]
   documents              SaleStageDocument[]
+  buyers                 SaleBuyer[]
+  sellers                SaleSeller[]
 
   @@index([propertyId], map: "idx_property_sales_property")
   @@index([sellerId], map: "idx_property_sales_seller")
@@ -953,6 +955,36 @@ model PropertySale {
   @@index([companyId], map: "idx_property_sales_company")
   @@index([currentStage], map: "idx_property_sales_stage")
   @@map("property_sales")
+  @@schema("sales")
+}
+
+model SaleBuyer {
+  id      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId  String       @map("sale_id") @db.Uuid
+  userId  String       @map("user_id") @db.Uuid
+  addedBy String       @map("added_by") @db.Uuid
+  addedAt DateTime     @default(now()) @map("added_at") @db.Timestamptz(6)
+  sale    PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([saleId, userId], name: "uq_sale_buyer")
+  @@index([saleId], map: "idx_sale_buyers_sale")
+  @@index([userId], map: "idx_sale_buyers_user")
+  @@map("sale_buyers")
+  @@schema("sales")
+}
+
+model SaleSeller {
+  id      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId  String       @map("sale_id") @db.Uuid
+  userId  String       @map("user_id") @db.Uuid
+  addedBy String       @map("added_by") @db.Uuid
+  addedAt DateTime     @default(now()) @map("added_at") @db.Timestamptz(6)
+  sale    PropertySale @relation(fields: [saleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([saleId, userId], name: "uq_sale_seller")
+  @@index([saleId], map: "idx_sale_sellers_sale")
+  @@index([userId], map: "idx_sale_sellers_user")
+  @@map("sale_sellers")
   @@schema("sales")
 }
 
@@ -1071,6 +1103,207 @@ model SalesAuditLog {
   @@map("audit_logs")
   @@schema("sales")
 }
+
+// ─── Sprint 04 Enhanced ────────────────────────────────────────────────────
+
+model OfferToPurchase {
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId                    String    @map("sale_id") @db.Uuid
+  otpReference              String    @unique @map("otp_reference") @db.VarChar(50)
+  version                   Int       @default(1) @db.SmallInt
+  isCounterOffer            Boolean   @default(false) @map("is_counter_offer")
+  parentOtpId               String?   @map("parent_otp_id") @db.Uuid
+  offeredPrice              Decimal   @map("offered_price") @db.Decimal(18, 2)
+  currency                  String    @db.Char(3)
+  depositAmount             Decimal?  @map("deposit_amount") @db.Decimal(18, 2)
+  depositDueDays            Int       @default(7) @map("deposit_due_days") @db.SmallInt
+  occupationalDate          DateTime? @map("occupational_date") @db.Date
+  occupationalRentalPerDay  Decimal?  @map("occupational_rental_per_day") @db.Decimal(10, 2)
+  bondCondition             Boolean   @default(true) @map("bond_condition")
+  bondAmount                Decimal?  @map("bond_amount") @db.Decimal(18, 2)
+  bondInstitution           String?   @map("bond_institution") @db.VarChar(100)
+  bondDeadlineDays          Int       @default(30) @map("bond_deadline_days") @db.SmallInt
+  inspectionCondition       Boolean   @default(false) @map("inspection_condition")
+  inspectionDeadlineDays    Int?      @map("inspection_deadline_days") @db.SmallInt
+  subjectToSale             Boolean   @default(false) @map("subject_to_sale")
+  subjectToSaleDeadlineDate DateTime? @map("subject_to_sale_deadline_date") @db.Date
+  voetstoetsAccepted        Boolean   @default(false) @map("voetstoots_accepted")
+  sellerDisclosureUrl       String?   @map("seller_disclosure_url") @db.Text
+  offerValidUntil           DateTime  @map("offer_valid_until") @db.Timestamptz(6)
+  buyerId                   String?   @map("buyer_id") @db.Uuid
+  sellerId                  String?   @map("seller_id") @db.Uuid
+  buyerSignedAt             DateTime? @map("buyer_signed_at") @db.Timestamptz(6)
+  sellerSignedAt            DateTime? @map("seller_signed_at") @db.Timestamptz(6)
+  buyerSignatureUrl         String?   @map("buyer_signature_url") @db.Text
+  sellerSignatureUrl        String?   @map("seller_signature_url") @db.Text
+  status                    String    @default("pending") @db.VarChar(20)
+  rejectedReason            String?   @map("rejected_reason") @db.Text
+  acceptedAt                DateTime? @map("accepted_at") @db.Timestamptz(6)
+  rejectedAt                DateTime? @map("rejected_at") @db.Timestamptz(6)
+  otpDocumentUrl            String?   @map("otp_document_url") @db.Text
+  hash                      String?   @db.VarChar(64)
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  negotiations OtpNegotiation[]
+
+  @@index([saleId, version], map: "idx_otp_sale_version")
+  @@map("offer_to_purchase")
+  @@schema("sales")
+}
+
+model OtpNegotiation {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId              String   @map("sale_id") @db.Uuid
+  roundNumber         Int      @map("round_number") @db.SmallInt
+  otpId               String   @map("otp_id") @db.Uuid
+  submittedById       String   @map("submitted_by_id") @db.Uuid
+  submittedByRole     String   @map("submitted_by_role") @db.VarChar(20)
+  summary             String?  @db.Text
+  changesFromPrevious Json?    @map("changes_from_previous") @db.JsonB
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  otp OfferToPurchase @relation(fields: [otpId], references: [id])
+
+  @@index([saleId], map: "idx_otp_negotiations_sale")
+  @@map("otp_negotiations")
+  @@schema("sales")
+}
+
+model DealRoomMessage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId      String   @map("sale_id") @db.Uuid
+  otpId       String?  @map("otp_id") @db.Uuid
+  threadType  String   @map("thread_type") @db.VarChar(20)
+  senderId    String   @map("sender_id") @db.Uuid
+  content     String   @db.Text
+  attachments Json     @default("[]") @db.JsonB
+  visibleTo   Json     @map("visible_to") @db.JsonB
+  readBy      Json     @default("{}") @map("read_by") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([saleId, threadType], map: "idx_deal_room_sale_thread")
+  @@index([otpId], map: "idx_deal_room_otp")
+  @@map("deal_room_messages")
+  @@schema("sales")
+}
+
+model BondApplication {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId              String    @map("sale_id") @db.Uuid
+  buyerId             String    @map("buyer_id") @db.Uuid
+  mortgageBrokerId    String?   @map("mortgage_broker_id") @db.Uuid
+  banksAppliedTo      Json      @default("[]") @map("banks_applied_to") @db.JsonB
+  originator          String?   @db.VarChar(100)
+  loanAmount          Decimal?  @map("loan_amount") @db.Decimal(18, 2)
+  propertyValueUsed   Decimal?  @map("property_value_used") @db.Decimal(18, 2)
+  ltvPct              Decimal?  @map("ltv_pct") @db.Decimal(5, 2)
+  status              String    @default("in_progress") @db.VarChar(30)
+  approvedAmount      Decimal?  @map("approved_amount") @db.Decimal(18, 2)
+  interestRatePct     Decimal?  @map("interest_rate_pct") @db.Decimal(6, 4)
+  loanTermYears       Int?      @map("loan_term_years") @db.SmallInt
+  conditions          Json      @default("[]") @db.JsonB
+  grantCertificateUrl String?   @map("grant_certificate_url") @db.Text
+  approvedAt          DateTime? @map("approved_at") @db.Timestamptz(6)
+  declinedReason      String?   @map("declined_reason") @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([saleId], map: "idx_bond_app_sale")
+  @@index([buyerId], map: "idx_bond_app_buyer")
+  @@map("bond_applications")
+  @@schema("sales")
+}
+
+model ComplianceRequirement {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId        String    @map("sale_id") @db.Uuid
+  certType      String    @map("cert_type") @db.VarChar(50)
+  isRequired    Boolean   @default(true) @map("is_required")
+  requiredBy    String?   @map("required_by") @db.VarChar(20)
+  dueByStage    Int?      @map("due_by_stage") @db.SmallInt
+  status        String    @default("pending") @db.VarChar(20)
+  certificateId String?   @map("certificate_id") @db.Uuid
+  deadlineDate  DateTime? @map("deadline_date") @db.Date
+  waiverReason  String?   @map("waiver_reason") @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([saleId, certType])
+  @@index([saleId], map: "idx_compliance_req_sale")
+  @@map("compliance_requirements")
+  @@schema("sales")
+}
+
+model DisbursementInstruction {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId                  String    @map("sale_id") @db.Uuid
+  conveyancerId           String    @map("conveyancer_id") @db.Uuid
+  totalProceeds           Decimal   @map("total_proceeds") @db.Decimal(18, 2)
+  existingBondSettlement  Decimal   @default(0) @map("existing_bond_settlement") @db.Decimal(18, 2)
+  transferDutyPaid        Decimal   @default(0) @map("transfer_duty_paid") @db.Decimal(18, 2)
+  conveyancerFees         Decimal   @default(0) @map("conveyancer_fees") @db.Decimal(18, 2)
+  agentCommission         Decimal   @default(0) @map("agent_commission") @db.Decimal(18, 2)
+  ratesClearancePayment   Decimal   @default(0) @map("rates_clearance_payment") @db.Decimal(18, 2)
+  otherDeductions         Json      @default("[]") @map("other_deductions") @db.JsonB
+  netProceedsToSeller     Decimal?  @map("net_proceeds_to_seller") @db.Decimal(18, 2)
+  status                  String    @default("draft") @db.VarChar(20)
+  approvedAt              DateTime? @map("approved_at") @db.Timestamptz(6)
+  disbursedAt             DateTime? @map("disbursed_at") @db.Timestamptz(6)
+  disbursementReference   String?   @map("disbursement_reference") @db.VarChar(100)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([saleId], map: "idx_disbursement_sale")
+  @@map("disbursement_instructions")
+  @@schema("sales")
+}
+
+model PostSaleChecklist {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId                   String    @unique @map("sale_id") @db.Uuid
+  keysHandoverConfirmed    Boolean   @default(false) @map("keys_handover_confirmed")
+  keysHandoverAt           DateTime? @map("keys_handover_at") @db.Timestamptz(6)
+  titleDeedReceivedByBuyer Boolean   @default(false) @map("title_deed_received_by_buyer")
+  titleDeedReceivedAt      DateTime? @map("title_deed_received_at") @db.Timestamptz(6)
+  newBondRegistered        Boolean   @default(false) @map("new_bond_registered")
+  sellerProceedsPaid       Boolean   @default(false) @map("seller_proceeds_paid")
+  agentCommissionPaid      Boolean   @default(false) @map("agent_commission_paid")
+  listingArchived          Boolean   @default(false) @map("listing_archived")
+  ownershipRegistryUpdated Boolean   @default(false) @map("ownership_registry_updated")
+  buyerReviewSubmitted     Boolean   @default(false) @map("buyer_review_submitted")
+  sellerReviewSubmitted    Boolean   @default(false) @map("seller_review_submitted")
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("post_sale_checklist")
+  @@schema("sales")
+}
+
+model SellerDisclosure {
+  id                              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId                          String    @unique @map("sale_id") @db.Uuid
+  sellerId                        String    @map("seller_id") @db.Uuid
+  structuralDefectsKnown          Boolean?  @map("structural_defects_known")
+  structuralDefectsDescription    String?   @map("structural_defects_description") @db.Text
+  waterLeakHistory                Boolean?  @map("water_leak_history")
+  waterLeakDescription            String?   @map("water_leak_description") @db.Text
+  pestInfestationHistory          Boolean?  @map("pest_infestation_history")
+  pestDescription                 String?   @map("pest_description") @db.Text
+  boundaryDisputes                Boolean?  @map("boundary_disputes")
+  neighbourRelationsNotes         String?   @map("neighbour_relations_notes") @db.Text
+  bodyCorporateDisputes           Boolean?  @map("body_corporate_disputes")
+  outstandingLevies               Decimal?  @map("outstanding_levies") @db.Decimal(10, 2)
+  interdictsOrCourtOrders         Boolean   @default(false) @map("interdicts_or_court_orders")
+  pendingLitigation               Boolean   @default(false) @map("pending_litigation")
+  approvedBuildingPlans           Boolean?  @map("approved_building_plans")
+  unauthorisedStructures          Boolean?  @map("unauthorised_structures")
+  unauthorisedStructuresDescription String? @map("unauthorised_structures_description") @db.Text
+  signedBySellerAt                DateTime? @map("signed_by_seller_at") @db.Timestamptz(6)
+  disclosureDocumentUrl           String?   @map("disclosure_document_url") @db.Text
+  hash                            String?   @db.VarChar(64)
+  createdAt                       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("seller_disclosures")
+  @@schema("sales")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 model user_business_profiles {
   user_id          String       @id @db.Uuid

@@ -1,1 +1,1 @@
-export { default } from '@/views/PropertySaleWorkspace';
+export { default } from '@/views/PropertySaleWorkspaceEnhanced';

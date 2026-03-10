@@ -73,12 +73,12 @@ describe('SalesService', () => {
       mockPrisma.$queryRaw
         .mockResolvedValueOnce([{ id: propertyId, agent_id: agentId }]) // property check
         .mockResolvedValueOnce([baseSale]);                               // INSERT sale
-      mockPrisma.$executeRaw.mockResolvedValue(1);                        // generate_series insert
+      mockPrisma.$executeRaw.mockResolvedValue(1);                        // stage rows + seller/buyer junction
 
       const result = await service.initiateSale(agentId, ['agent'], dto);
 
       expect(result).toEqual(baseSale);
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2); // stage rows + seller junction
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'sale.initiated' }),
       );
@@ -116,17 +116,26 @@ describe('SalesService', () => {
   describe('getSale', () => {
     it('returns sale with stages for a participant', async () => {
       mockPrisma.$queryRaw
-        .mockResolvedValueOnce([baseSale])  // findSaleOrThrow
-        .mockResolvedValueOnce([{ stage_number: 1, status: 'in_progress' }]); // stages
+        .mockResolvedValueOnce([baseSale])                                   // findSaleOrThrow
+        .mockResolvedValueOnce([])                                           // fetchSalePartyUsers buyers
+        .mockResolvedValueOnce([])                                           // fetchSalePartyUsers sellers
+        .mockResolvedValueOnce([{ title: 'Test Property', address_line1: '1 Main St', city: 'JHB' }])  // property
+        .mockResolvedValueOnce([{ stage_number: 1, status: 'in_progress' }])                           // stages
+        .mockResolvedValueOnce([]);                                                                     // mandate (commission)
 
       const result = await service.getSale(saleId, agentId, ['agent']) as any;
 
       expect(result.id).toBe(saleId);
       expect(result.stages).toBeDefined();
+      expect(result.buyers).toEqual([]);
+      expect(result.sellers).toEqual([]);
     });
 
     it('throws ForbiddenException for a non-participant', async () => {
-      mockPrisma.$queryRaw.mockResolvedValueOnce([baseSale]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseSale])  // findSaleOrThrow
+        .mockResolvedValueOnce([])          // fetchSalePartyUsers buyers (stranger not in list)
+        .mockResolvedValueOnce([]);         // fetchSalePartyUsers sellers
 
       await expect(service.getSale(saleId, 'stranger-uuid', ['buyer'])).rejects.toThrow(
         ForbiddenException,

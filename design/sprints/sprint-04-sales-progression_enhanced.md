@@ -1,6 +1,19 @@
 # Sprint 04 Enhanced — Sales Progression & Legal Workflow
 **Addendum to sprint-04-sales-progression.md**
 **Added: March 2026 — Based on real-estate-platform-guide.md**
+**Status: ✅ Implemented 2026-03-10 | Updated 2026-03-10 (parties junction + capital gains stage)**
+
+**Implemented migrations:**
+- `20260310000001_sale_parties_junction` — `sales.sale_buyers` + `sales.sale_sellers` M:N junction tables (multi-buyer/co-purchaser & multi-seller/co-owner support); backfills from legacy `buyer_id`/`seller_id` FK columns
+- `202603100020_add_capital_gains_stage` — ZA Stage 13 "Capital Gains / Income Tax Clearance" (SARS, `conveyancer`-responsible, `is_blocker=TRUE`); existing stages 13→14 and 14→15 renumbered; `TOTAL_STAGES` = 15 for ZA  
+- `20260310000001`–`202603100021` — OTP, Deal Room, Bond, Compliance, Disbursement, Seller Disclosure, Post-Sale Checklist Prisma models (via `prisma db push` + manual migrations)
+
+**Implemented endpoints (added to `sales.controller.ts`):**
+- `PATCH /api/v1/sales/:id/assign-buyer` — add a co-buyer
+- `DELETE /api/v1/sales/:id/buyers/:userId` — remove a buyer
+- `PATCH /api/v1/sales/:id/assign-seller` — add a co-seller
+- `DELETE /api/v1/sales/:id/sellers/:userId` — remove a seller
+- `GET /api/v1/users/search?q=&role=` (identity module) — party lookup for the workspace UI
 
 ---
 
@@ -418,15 +431,15 @@ GET  /api/v1/sales/:id/bond-application               [buyer, agent, conveyancer
 
 ## Additional Acceptance Criteria
 
-- [ ] OTP auto-populated from property and buyer/seller data
-- [ ] Suspensive conditions configurable per offer (bond, inspection, subject-to-sale)
-- [ ] Counter-offer creates new OTP version linked to parent
-- [ ] Seller can view all competing offers side-by-side
-- [ ] Deal room threads visible only to role-appropriate parties
+- [x] OTP auto-populated from property and buyer/seller data
+- [x] Suspensive conditions configurable per offer (bond, inspection, subject-to-sale)
+- [x] Counter-offer creates new OTP version linked to parent
+- [x] Seller can view all competing offers side-by-side
+- [x] Deal room threads visible only to role-appropriate parties
 - [ ] Bond approval event automatically marks Stage 7 + Stage 10 as complete
-- [ ] Transfer duty calculation configurable per country (SA defaults loaded)
-- [ ] Disbursement instruction breakdown correct (all deductions itemised)
-- [ ] Post-sale checklist triggers commission release only when all items confirmed
+- [x] Transfer duty calculation configurable per country (SA defaults loaded)
+- [x] Disbursement instruction breakdown correct (all deductions itemised)
+- [x] Post-sale checklist triggers commission release only when all items confirmed
 - [ ] Listing status updates to sold/archived automatically
 - [ ] Comparable sale entry created in `property.comparable_sales` after registration
 

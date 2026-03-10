@@ -258,6 +258,32 @@ services:
       - pribec-network
     restart: unless-stopped
 
+  # MindsDB — Predictive ML layer (speaks SQL, trains on PostgreSQL data)
+  # Studio UI:  http://localhost:47334
+  # MySQL wire: localhost:47335
+  mindsdb:
+    image: mindsdb/mindsdb:latest
+    container_name: pribec-mindsdb
+    environment:
+      MINDSDB_DB_CON: "postgresql://pribec:pribec_dev_password@postgres:5432/pribec_dev"
+    ports:
+      - '47334:47334'  # HTTP REST API + Studio UI
+      - '47335:47335'  # MySQL wire protocol
+    volumes:
+      - mindsdb_data:/root/mindsdb_storage
+      - ./mindsdb/init:/docker-entrypoint-initdb.d:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:47334/api/status || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
@@ -269,6 +295,7 @@ volumes:
   grafana_data:
   vault_data:
   mailpit_data:
+  mindsdb_data:
 
 networks:
   pribec-network:

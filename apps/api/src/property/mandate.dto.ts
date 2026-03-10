@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsIn,
   IsNotEmpty,
@@ -50,6 +51,31 @@ export class CreateMandateDto {
   @IsOptional()
   @IsUUID()
   brokerageId?: string;
+
+  /** Seller contact info — required when seller is not a platform user */
+  @IsOptional()
+  @IsString()
+  sellerName?: string;
+
+  @IsOptional()
+  @IsString()
+  sellerEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  sellerPhone?: string;
+
+  /** Defaults to true. Set to false when the seller has no platform account. */
+  @IsOptional()
+  @IsBoolean()
+  sellerIsPlatformUser?: boolean;
+}
+
+/** Used by agents to confirm an offline seller has signed a physical agreement. */
+export class MarkSellerSignedOfflineDto {
+  @IsString()
+  @IsNotEmpty()
+  documentUrl!: string;
 }
 
 export class SignMandateDto {

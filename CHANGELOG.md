@@ -13,6 +13,69 @@ Related docs:
 ## [Unreleased]
 
 ### Added
+- **Sale Parties Junction — multi-buyer / multi-seller support (2026-03-10)**
+  - **Migration `20260310000001_sale_parties_junction`** — adds `sales.sale_buyers` and `sales.sale_sellers` M:N junction tables. Each row has `sale_id`, `user_id`, `added_by`, `added_at`; unique constraint per `(sale_id, user_id)`. Backfills existing rows from the legacy `buyer_id`/`seller_id` FK columns.
+  - **`sales.service.ts`** — `addBuyer()`, `removeBuyer()`, `addSeller()`, `removeSeller()` methods using the junction tables; `getById()` extended to resolve full buyer and seller arrays via `fetchSalePartyUsers()`; `listForUser()` updated to check both the legacy FK column _and_ the junction table so multi-party participants see their sale.
+  - **`sales.controller.ts`** — 4 new party-management endpoints: `PATCH /api/v1/sales/:id/assign-buyer`, `DELETE /api/v1/sales/:id/buyers/:userId`, `PATCH /api/v1/sales/:id/assign-seller`, `DELETE /api/v1/sales/:id/sellers/:userId` (agent/admin only).
+  - **`users.service.ts`** — `searchUsers(q, role?)` method: ILIKE search on email and full name, optional role filter via JOIN on `identity.user_roles`, returns up to 10 active users (parameterised, no SQL injection risk).
+  - **`users.controller.ts`** — `GET /api/v1/users/search?q=&role=` endpoint (agent/admin/conveyancer) for picking parties in the sale workspace.
+
+- **Capital Gains / Income Tax Clearance stage (2026-03-10)**
+  - **Migration `202603100020_add_capital_gains_stage`** — inserts new ZA Stage 13 "Capital Gains / Income Tax Clearance" (`conveyancer`-responsible, `is_blocker=TRUE`, SARS dept, 14 days). Existing stages 13 → 14 and 14 → 15 via: (1) drop unique constraint, (2) UPDATE stage_configs, (3) re-add constraint, (4) INSERT new stage 13. Also renumbers any in-flight `sale_stage_progress`, `stage_documents`, and `government_interactions` rows to keep consistency.
+  - SA property transfers now reflect the mandatory SARS capital gains and income tax compliance certificate required before deeds registration.
+
+- **Mandate offline seller signing flow (2026-03-11)**
+  - **DB migration** (`202603100021_mandate_seller_fields`) — adds `seller_name`, `seller_email`, `seller_phone`, `seller_is_platform_user` (default `true`), and `agreement_document_url` to `property.mandates`.
+  - **`MarkSellerSignedOfflineDto`** — new DTO in `mandate.dto.ts` accepting `documentUrl`.
+  - **`MandateService.markSellerSignedOffline()`** — agent records an offline seller signature: verifies `seller_is_platform_user = false`, stores `agreement_document_url`, sets `signed_by_seller_at`, activates mandate when both parties have signed.
+  - **`POST /properties/:propertyId/mandate/:mId/seller-offline-sign`** — new agent-only endpoint.
+  - **`CreateMandateDto`** — extended with optional `sellerName`, `sellerEmail`, `sellerPhone`, `sellerIsPlatformUser` fields.
+  - **Frontend** — `MandateRecord` type updated with new fields and corrected `signed_by_agent_at`/`signed_by_seller_at` column names (previously misnamed); `CreateMandatePayload` extended; `mandateApi.markSellerSignedOffline()` added.
+  - **`PropertyDetailEnhanced.tsx`** — "Sign as Agent" button now visible for `pending_signature` mandates (was incorrectly gated to `active` only); create mandate form adds "seller on platform" toggle with conditional name/email/phone fields; "Mark Seller Signed (Offline)" inline flow for non-platform sellers.
+  - **`AgentDashboardEnhanced.tsx`** — fixed `signed_by_agent_at`/`signed_by_seller_at` field references.
+  - **Tests** — 5 new unit tests for `markSellerSignedOffline` (happy path × 2, `BadRequestException` × 2, `ForbiddenException`); `baseMandate` mock updated to current schema. 569 tests total, all passing.
+
+### Added
+- **Frontend UI Gap-Fill — Sprints 01–04 (2026-03-10)**
+  - **`SalesDashboard.tsx`** (`apps/web/src/views/`) — Role-aware sales pipeline listing page. Calls `agentSalesApi`, `conveyancerApi`, or `adminSalesApi` depending on the logged-in user's role. Displays stats row (active / completed / disputed), search by address or buyer name, filter by status, and sale cards linking to `/workspace/[id]`. Route: `/app/sales`.
+  - **`PropertySaleWorkspaceEnhanced.tsx`** (`apps/web/src/views/`) — Full API-connected sale workspace replacing the hardcoded mock original. 11 tabs: Timeline, Documents, OTP, Deal Room, Bond, Compliance, Disbursement, Parties, Escrow, Issues, Post-Sale Checklist. Loads real sale + stage data from `salesApi`; lazy-loads tab data on tab switch; uses `saleId` from Next.js route params. Route: `/workspace/[id]`.
+  - **`SessionsView.tsx`** (`apps/web/src/views/`) — Active session management page (Sprint 02 Enhanced). Lists sessions with device icons, IP address, and last-active timestamp; supports per-session revoke and "Sign Out All Devices" with confirmation. Uses `sessionsApi`. Route: `/app/sessions`.
+  - **`/app/app/sales/page.tsx`** — Route entry point for `SalesDashboard`.
+  - **`/app/app/sessions/page.tsx`** — Route entry point for `SessionsView`.
+  - **`salesApi`, `agentSalesApi`, `conveyancerApi`, `adminSalesApi`, `sessionsApi`** added to `apps/web/src/lib/api-client.ts` (≈ 400 lines). Covers all 25 enhanced sales endpoints (OTP, Deal Room, Bond, Compliance, Disbursement, Seller Disclosure, Post-Sale Checklist) plus sessions CRUD. New types: `Sale`, `SaleStage`, `SaleDocument`, `OTPVersion`, `DealRoomMessage`, `BondApplication`, `ComplianceStatus`, `ComplianceItem`, `DisbursementInstruction`, `SellerDisclosure`, `PostSaleChecklist`, `UserSession`, `ConveyancerCase`.
+
+### Changed
+- **`/agent/properties/new/page.tsx`** — Replaced static HTML stub with the fully-implemented `CreateListing` component. On close redirects to `/app/agent`; on success redirects to `/app/property/[id]`.
+- **`ConveyancerView.tsx`** — Replaced hardcoded mock case list with live `conveyancerApi.getCases(token)` call. Stats and status filter updated to match `ConveyancerCase` type (`disputed` replaces old `blocked`/`pending` buckets). Government applications tracker retained as representative fixture.
+- **`AppSidebar.tsx`** — Added "My Sales" (`/app/sales`, `Kanban` icon) to `selfNavigation` and `agentNavigation`. Added "Sessions" (`/app/sessions`, `History` icon) to `selfNavigation`. Imported `History` icon from `lucide-react`.
+
+- **Sprint 04 Enhanced — OTP, Deal Room, Bond App, Compliance, Disbursement, Seller Disclosure, Post-Sale Checklist (2026-03-10)**
+  - **8 new Prisma models** added to `sales` schema: `OfferToPurchase`, `OtpNegotiation`, `DealRoomMessage`, `BondApplication`, `ComplianceRequirement`, `DisbursementInstruction`, `PostSaleChecklist`, `SellerDisclosure`. Schema pushed via `prisma db push`.
+  - **7 new service files** under `apps/api/src/sales/`:
+    - `otp.service.ts` — Full OTP lifecycle: generate, list versions, buyer/seller signing, counter-offer with `OtpNegotiation` round logging, withdraw, compare offers (seller view).
+    - `deal-room.service.ts` — Per-sale private messaging; 5 thread types with role-based visibility enforcement (`offer_negotiation`, `general`, `conveyancer_only`, `agent_only`, `compliance`); mark-as-read via JSON field update.
+    - `bond-application.service.ts` — Bond/mortgage application per sale; one-per-sale constraint; status progression (in_progress → approved/declined).
+    - `compliance.service.ts` — Compliance certificate tracking (electrical, plumbing, gas, electric_fence, beetle, rates_clearance); upsert-based setup; status flow (pending → booked → received → verified → waived).
+    - `disbursement.service.ts` — Disbursement instruction with auto-computed `netProceedsToSeller`; SA SARS 2024/25 transfer duty schedule (`calculateTransferDuty` pure function with progressive brackets); two-step draft → approve flow.
+    - `seller-disclosure.service.ts` — SA Consumer Protection Act seller disclosure form; one-per-sale constraint; digital signing with document URL + hash.
+    - `post-sale-checklist.service.ts` — Post-sale completion checklist (keys handover, title deed, bond registration, commission, ownership registry, reviews); auto-creates on first GET.
+  - **`sales-enhanced.dto.ts`** — 15 DTOs for all new services with `class-validator` decorators.
+  - **`sales-enhanced.controller.ts`** — 22 new REST endpoints under `/api/v1/sales/:saleId/` covering all enhanced services; JWT-guarded.
+  - **`sales.module.ts`** updated — registers 7 new providers and `SalesEnhancedController`.
+  - **`sales.constants.ts`** updated — `TOTAL_STAGES` raised from 14 → 16; added `OTP_STATUSES`, `BOND_APP_STATUSES`, `COMPLIANCE_CERT_TYPES`, `CERT_STATUSES`, `DEAL_ROOM_THREAD_TYPES`, `DISBURSEMENT_STATUSES` type-safe const arrays.
+  - **51 new unit tests** in 4 spec files: `otp.service.spec.ts` (24 tests), `disbursement.service.spec.ts` (14 tests), `compliance.service.spec.ts` (8 tests), `bond-application.service.spec.ts` (10 tests). Full suite: **564 tests, 44 suites, 0 failures**. TypeScript compiles clean (`tsc --noEmit` exits 0).
+
+- **MindsDB — Predictive ML Layer (Sprint 11 foundation) (2026-03-09)**
+  - Docker service `pribec-mindsdb` added to `docker/docker-compose.yml` (MindsDB latest; HTTP REST + Studio UI on port 47334, MySQL wire on 47335; auto-connects to `pribec-postgres` via `MINDSDB_DB_CON`; `mindsdb_data` volume).
+  - Init SQL in `docker/mindsdb/init/`: `01_connect_postgres.sql` registers the PRIBEC PostgreSQL integration; `02_create_models.sql` defines four models: `property_valuation` (regression), `contractor_risk` (classification), `material_price_forecast` (time-series statsforecast, 7-period horizon), `project_delay_risk` (binary classification).
+  - `MindsDBService` (`src/mindsdb/mindsdb.service.ts`) — HTTP client over MindsDB `/api/sql/query`; implements `OnModuleInit` to probe health and ensure the data source exists at startup; gracefully degrades (`ServiceUnavailableException`) when MindsDB is unreachable. All query parameters are sanitised before interpolation (UUID validation, string allowlist, numeric `isFinite` check) to prevent SQL injection. Methods: `predictPropertyValue`, `scoreContractorRisk`, `forecastMaterialPrice`, `predictProjectDelay`, `isAvailable`.
+  - `MindsDBModule` (`src/mindsdb/mindsdb.module.ts`) — NestJS module; exports `MindsDBService` for use in analytics, property, construction, and marketplace modules (Sprint 11+).
+  - DTOs in `src/mindsdb/dto/prediction-query.dto.ts` — `PropertyValuationQueryDto`, `MaterialForecastQueryDto`; result interfaces `PropertyValuationResult`, `ContractorRiskResult`, `MaterialForecastRow`, `ProjectDelayResult`.
+  - Env vars: `MINDSDB_URL` (default `http://localhost:47334`), `MINDSDB_TIMEOUT_MS` (default 30000). Both added to `.env`, `env.validation.ts` (Joi, optional).
+  - `MindsDBModule` registered in `AppModule`.
+  - 20 unit tests in `mindsdb.service.spec.ts` covering happy paths, malformed JSON explain, empty result sets, SQL injection attempts, UUID validation, and availability guard.
+  - Sprint 11 design doc updated with MindsDB integration section.
+
 - **LLM Gateway — multi-provider AI integration (PDR-007) (2026-03-08)**
   - **`LlmGatewayService`** (`ai-intelligence/llm/`) — Multi-provider LLM abstraction using native `fetch` (no new npm dependency). Supports OpenAI (`gpt-4o-mini`), Anthropic (`claude-3-haiku-20240307`), and Gemini (`gemini-1.5-flash`). Primary + optional fallback provider chain; 15 s `AbortController` timeout per request; JSON-mode support per provider (OpenAI uses `response_format:json_object`, Anthropic/Gemini append instruction to system prompt). `isEnabled` is `false` when no `LLM_API_KEY` is set — platform degrades gracefully to the existing keyword router with no config required.
   - **`LlmGatewayTypes`** (`ai-intelligence/llm/llm-gateway.types.ts`) — Shared `LlmProvider`, `LlmMessage`, `LlmCompletionOptions`, `LlmCompletion` types.

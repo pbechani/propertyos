@@ -89,6 +89,10 @@ export const envValidationSchema = Joi.object({
   LLM_FALLBACK_PROVIDER: Joi.string().valid('openai', 'anthropic', 'gemini').optional(),
   LLM_FALLBACK_API_KEY: Joi.string().optional(),
   LLM_FALLBACK_MODEL: Joi.string().optional(),
+
+  // MindsDB — Predictive ML layer (Sprint 11, all optional — service degrades gracefully)
+  MINDSDB_URL: Joi.string().uri().default('http://localhost:47334'),
+  MINDSDB_TIMEOUT_MS: Joi.number().integer().min(1000).default(30000),
 });
 
 export const envValidationOptions = {

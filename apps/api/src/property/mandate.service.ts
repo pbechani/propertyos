@@ -9,6 +9,7 @@ import { PrismaService } from '../database';
 import { PropertyAuditService } from './property-audit.service';
 import {
   CreateMandateDto,
+  MarkSellerSignedOfflineDto,
   SignMandateDto,
   CancelMandateDto,
   MandateSigningParty,
@@ -31,6 +32,11 @@ export type MandateRecord = {
   status: string;
   cancellation_reason: string | null;
   created_at: Date;
+  seller_name: string | null;
+  seller_email: string | null;
+  seller_phone: string | null;
+  seller_is_platform_user: boolean;
+  agreement_document_url: string | null;
 };
 
 @Injectable()
@@ -77,11 +83,14 @@ export class MandateService {
     const startDate = dto.startDate;
     const endDate = dto.endDate;
 
+    const sellerIsPlatformUser = dto.sellerIsPlatformUser !== false; // default true
+
     const rows = await this.prisma.$queryRaw<MandateRecord[]>`
       INSERT INTO property.mandates (
         property_id, agent_id, brokerage_id, mandate_type,
         commission_rate, commission_vat_inclusive,
-        start_date, end_date, auto_renewal, terms_document_url
+        start_date, end_date, auto_renewal, terms_document_url,
+        seller_name, seller_email, seller_phone, seller_is_platform_user
       ) VALUES (
         ${propertyId}::uuid,
         ${agentId}::uuid,
@@ -92,7 +101,11 @@ export class MandateService {
         ${startDate}::date,
         ${endDate}::date,
         ${dto.autoRenewal ?? false},
-        ${dto.termsDocumentUrl ?? null}
+        ${dto.termsDocumentUrl ?? null},
+        ${dto.sellerName ?? null},
+        ${dto.sellerEmail ?? null},
+        ${dto.sellerPhone ?? null},
+        ${sellerIsPlatformUser}
       )
       RETURNING *
     `;
@@ -241,6 +254,77 @@ export class MandateService {
     });
 
     return rows[0];
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // OFFLINE SELLER SIGNING
+  // ──────────────────────────────────────────────────────────
+
+  async markSellerSignedOffline(
+    propertyId: string,
+    mandateId: string,
+    dto: MarkSellerSignedOfflineDto,
+    agentId: string,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<MandateRecord> {
+    const existing = await this.findMandateOrThrow(mandateId, propertyId);
+
+    if (existing.seller_is_platform_user) {
+      throw new BadRequestException(
+        'Seller is a platform user — they must sign digitally via their own account.',
+      );
+    }
+
+    if (existing.signed_by_seller_at) {
+      throw new BadRequestException('Seller has already signed this mandate.');
+    }
+
+    if (!['pending_signature', 'active'].includes(existing.status)) {
+      throw new BadRequestException('Mandate is not in a signable state.');
+    }
+
+    if (existing.agent_id !== agentId) {
+      throw new ForbiddenException('Only the mandate agent can record an offline seller signature.');
+    }
+
+    const now = new Date();
+
+    const rows = await this.prisma.$queryRaw<MandateRecord[]>`
+      UPDATE property.mandates
+      SET signed_by_seller_at = ${now},
+          agreement_document_url = ${dto.documentUrl}
+      WHERE id = ${mandateId}::uuid
+      RETURNING *
+    `;
+
+    const updated = rows[0];
+    let finalMandate = updated;
+
+    if (updated.signed_by_seller_at && updated.signed_by_agent_at) {
+      const activated = await this.prisma.$queryRaw<MandateRecord[]>`
+        UPDATE property.mandates
+        SET status = 'active'
+        WHERE id = ${mandateId}::uuid
+        RETURNING *
+      `;
+      finalMandate = activated[0];
+    }
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: 'agent',
+      companyId: companyId ?? null,
+      action: 'mandate.seller_signed_offline',
+      resourceType: 'mandate',
+      resourceId: mandateId,
+      payload: { documentUrl: dto.documentUrl, signedAt: now },
+      ipAddress,
+      userAgent,
+    });
+
+    return finalMandate;
   }
 
   // ──────────────────────────────────────────────────────────

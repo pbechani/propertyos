@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -50,6 +51,22 @@ export class UsersController {
     private readonly authService: AuthService,
     private readonly documentStorageService: DocumentStorageService,
   ) {}
+
+  /**
+   * GET /api/v1/users/search?q=<email_or_name>&role=<optional_role>
+   * Search users for party assignment. [agent, admin, conveyancer]
+   */
+  @Get('search')
+  @Roles('agent', 'admin', 'conveyancer')
+  async searchUsers(
+    @Query('q') q: string,
+    @Query('role') role?: string,
+  ) {
+    if (!q || q.trim().length < 2) {
+      return [];
+    }
+    return this.usersService.searchUsers(q.trim(), role?.trim() || undefined);
+  }
 
   @Get('me')
   @Permissions({ resource: 'users', action: 'self' })

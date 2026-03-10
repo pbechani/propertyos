@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MandateService } from './mandate.service';
 import { PropertyAuditService } from './property-audit.service';
 import { PrismaService } from '../database';
@@ -24,16 +24,24 @@ describe('MandateService', () => {
     id: mandateId,
     property_id: propertyId,
     agent_id: agentId,
-    owner_id: ownerId,
-    mandate_type: 'exclusive',
+    brokerage_id: null,
+    mandate_type: 'sole',
     status: 'pending',
-    commission_rate: 5,
+    commission_rate: '5',
+    commission_vat_inclusive: false,
     start_date: new Date('2026-06-01'),
-    expiry_date: new Date('2026-12-01'),
+    end_date: new Date('2026-12-01'),
+    auto_renewal: false,
+    terms_document_url: null,
+    cancellation_reason: null,
     created_at: new Date(),
-    updated_at: new Date(),
-    agent_signed_at: null,
-    owner_signed_at: null,
+    signed_by_agent_at: null,
+    signed_by_seller_at: null,
+    seller_name: null,
+    seller_email: null,
+    seller_phone: null,
+    seller_is_platform_user: true,
+    agreement_document_url: null,
   };
 
   beforeEach(async () => {
@@ -127,6 +135,71 @@ describe('MandateService', () => {
       await expect(
         service.sign(propertyId, mandateId, 'seller', ownerId, 'buyer_seller', { party: 'seller' }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('markSellerSignedOffline', () => {
+    const offlineSellerMandate = {
+      ...baseMandate,
+      status: 'pending_signature',
+      seller_is_platform_user: false,
+      seller_name: 'John Smith',
+    };
+    const dto = { documentUrl: 'https://storage.example.com/signed-agreement.pdf' };
+
+    it('records offline seller signature and activates when agent already signed', async () => {
+      const agentSignedMandate = { ...offlineSellerMandate, signed_by_agent_at: new Date() };
+      const afterSellerSign = { ...agentSignedMandate, signed_by_seller_at: new Date(), agreement_document_url: dto.documentUrl };
+      const activated = { ...afterSellerSign, status: 'active' };
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce([agentSignedMandate]); // findMandateOrThrow
+      mockPrisma.$queryRaw.mockResolvedValueOnce([afterSellerSign]);     // UPDATE signed_by_seller_at
+      mockPrisma.$queryRaw.mockResolvedValueOnce([activated]);           // UPDATE status active
+
+      const result = await service.markSellerSignedOffline(propertyId, mandateId, dto, agentId);
+
+      expect(result).toMatchObject({ status: 'active', agreement_document_url: dto.documentUrl });
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'mandate.seller_signed_offline' }),
+      );
+    });
+
+    it('records offline seller signature (does not activate if agent has not yet signed)', async () => {
+      const afterSellerSign = { ...offlineSellerMandate, signed_by_seller_at: new Date(), agreement_document_url: dto.documentUrl };
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce([offlineSellerMandate]); // findMandateOrThrow
+      mockPrisma.$queryRaw.mockResolvedValueOnce([afterSellerSign]);       // UPDATE signed_by_seller_at — agent not signed, no activation
+
+      const result = await service.markSellerSignedOffline(propertyId, mandateId, dto, agentId);
+
+      expect(result).toMatchObject({ status: 'pending_signature', agreement_document_url: dto.documentUrl });
+    });
+
+    it('throws BadRequestException if seller is a platform user', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...offlineSellerMandate, seller_is_platform_user: true }]);
+
+      await expect(
+        service.markSellerSignedOffline(propertyId, mandateId, dto, agentId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if seller has already signed', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{
+        ...offlineSellerMandate,
+        signed_by_seller_at: new Date(),
+      }]);
+
+      await expect(
+        service.markSellerSignedOffline(propertyId, mandateId, dto, agentId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ForbiddenException if caller is not the mandate agent', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([offlineSellerMandate]); // agent_id !== differentAgentId
+
+      await expect(
+        service.markSellerSignedOffline(propertyId, mandateId, dto, 'different-agent-id'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

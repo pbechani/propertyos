@@ -73,6 +73,25 @@ export class AssignConveyancerDto {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Assign Agent
+// ─────────────────────────────────────────────────────────────────────────────
+
+export class AssignAgentDto {
+  @IsUUID()
+  agentId!: string;
+}
+
+export class AssignBuyerDto {
+  @IsUUID()
+  buyerId!: string;
+}
+
+export class AssignSellerDto {
+  @IsUUID()
+  sellerId!: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Stage Actions
 // ─────────────────────────────────────────────────────────────────────────────
 

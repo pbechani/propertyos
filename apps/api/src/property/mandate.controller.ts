@@ -16,6 +16,7 @@ import { MandateService } from './mandate.service';
 import {
   CancelMandateDto,
   CreateMandateDto,
+  MarkSellerSignedOfflineDto,
   MANDATE_SIGNING_PARTIES,
   MandateSigningParty,
 } from './mandate.dto';
@@ -85,6 +86,29 @@ export class MandateController {
       req.user.sub,
       req.user.roles[0] ?? 'agent',
       { party: party as MandateSigningParty },
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  /**
+   * POST /api/v1/properties/:propertyId/mandate/:mId/seller-offline-sign
+   * Agent uploads proof document and marks an off-platform seller as signed.
+   */
+  @Roles('agent', 'admin')
+  @Post(':mId/seller-offline-sign')
+  async sellerOfflineSign(
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+    @Param('mId', ParseUUIDPipe) mId: string,
+    @Body() dto: MarkSellerSignedOfflineDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.mandateService.markSellerSignedOffline(
+      propertyId,
+      mId,
+      dto,
+      req.user.sub,
       req.ip,
       req.headers['user-agent'],
       req.user.active_company_id,

@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper } from "lucide-react";
+import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper, Plus, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { getAccessToken } from "@/lib/auth-session";
-import { ApiError, propertiesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing } from "@/lib/api-client";
+import { getAccessToken, getStoredUser } from "@/lib/auth-session";
+import { ApiError, propertiesApi, salesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing, type Sale } from "@/lib/api-client";
 import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -134,6 +134,8 @@ type ListingCard = {
   title: string;
   location: string;
   price: string;
+  currency: string;
+  rawPrice: number;
   beds: number;
   baths: number;
   garage: number;
@@ -145,6 +147,7 @@ type ListingCard = {
   verified: boolean;
   fraudFlagged: boolean;
   agent: string;
+  agentId: string | null;
   agentCompany: string;
   agentAvatarUrl: string | null;
   agentCompanyLogoUrl: string | null;
@@ -332,6 +335,8 @@ function mapPropertyToListingCard(
     title: property.title,
     location,
     price: Number.isFinite(numericPrice) ? formatPrice(numericPrice, property.currency) : formatPrice(0, property.currency),
+    currency: property.currency,
+    rawPrice: Number.isFinite(numericPrice) ? numericPrice : 0,
     beds: property.bedrooms ?? 0,
     baths: property.bathrooms ?? 0,
     garage: property.parking_spaces ?? 0,
@@ -343,6 +348,7 @@ function mapPropertyToListingCard(
     verified: property.verification_status === "verified",
     fraudFlagged: property.verification_status === "flagged",
     agent: profileAgentName || "Verified Agent",
+    agentId: property.agent_id ?? null,
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
@@ -657,6 +663,18 @@ export default function Listings() {
   const [savingPropertyIds, setSavingPropertyIds] = useState<Set<string>>(new Set());
   const [featuredAgents, setFeaturedAgents] = useState<FeaturedAgentCard[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+
+  // ── Current user (for "Initiate Sale" button on own listings) ────────────
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Map of propertyId → active Sale (populated for own listings once user loads)
+  const [propertySaleMap, setPropertySaleMap] = useState<Record<string, Sale>>({});
+  const [initiateCardProp, setInitiateCardProp] = useState<{ id: string; title: string; price: number; currency: string } | null>(null);
+  const [initCardAgreedPrice, setInitCardAgreedPrice] = useState('');
+  const [initCardCurrency, setInitCardCurrency] = useState('ZAR');
+  const [initCardBuyerId, setInitCardBuyerId] = useState('');
+  const [initCardDeposit, setInitCardDeposit] = useState('');
+  const [submittingInitCard, setSubmittingInitCard] = useState(false);
+  const [initCardError, setInitCardError] = useState<string | null>(null);
   const [agentsError, setAgentsError] = useState("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
@@ -1144,6 +1162,50 @@ export default function Listings() {
       return lower.includes(normalizedInput);
     }).slice(0, 6);
   }, [locationInput, pendingFilters.locations]);
+
+  // Load current user ID once, then non-blockingly load any existing sales
+  useEffect(() => {
+    const user = getStoredUser();
+    setCurrentUserId(user?.id ?? null);
+    const token = getAccessToken();
+    if (!token) return;
+    salesApi.getMySales(token).then((sales) => {
+      const map: Record<string, Sale> = {};
+      for (const sale of sales) {
+        if (sale.status !== 'cancelled') {
+          map[sale.propertyId] = sale;
+        }
+      }
+      setPropertySaleMap(map);
+    }).catch(() => { /* non-critical */ });
+  }, []);
+
+  const handleInitCardSaleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!initiateCardProp) return;
+    const token = getAccessToken();
+    if (!token) { setInitCardError('Please log in to continue.'); return; }
+    const user = getStoredUser();
+    if (!user?.id) { setInitCardError('Session expired — please log in again.'); return; }
+    setSubmittingInitCard(true);
+    setInitCardError(null);
+    try {
+      const sale = await salesApi.create(token, {
+        propertyId: initiateCardProp.id,
+        sellerId: user.id,
+        buyerId: initCardBuyerId.trim() || undefined,
+        agreedPrice: Number(initCardAgreedPrice),
+        currency: initCardCurrency,
+        ...(initCardDeposit ? { depositAmount: Number(initCardDeposit) } : {}),
+      });
+      setInitiateCardProp(null);
+      navigate(`/workspace/${sale.id}`);
+    } catch (err) {
+      setInitCardError(err instanceof Error ? err.message : 'Failed to initiate sale.');
+    } finally {
+      setSubmittingInitCard(false);
+    }
+  };
 
   const handleAddToFavourites = async (propertyId: string) => {
     const token = getAccessToken();
@@ -3364,6 +3426,45 @@ export default function Listings() {
                             <div className="text-xs font-medium text-gray-700 mt-1 max-w-24 truncate" title={property.agent}>{property.agent}</div>
                           </div>
                         </div>
+                        {property.agentId && property.agentId === currentUserId && (() => {
+                          const activeSale = propertySaleMap[property.id];
+                          if (activeSale) {
+                            return (
+                              <div className="mt-3 space-y-1.5">
+                                <div className="w-full text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 flex items-center justify-center gap-1.5">
+                                  <Shield className="w-3.5 h-3.5 shrink-0" />
+                                  Sale in Progress · Stage {activeSale.currentStage}
+                                </div>
+                                <Link
+                                  to={`/workspace/${activeSale.id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  View Workspace →
+                                </Link>
+                              </div>
+                            );
+                          }
+                          return (
+                            <button
+                              type="button"
+                              className="mt-3 w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setInitiateCardProp({ id: property.id, title: property.title, price: property.rawPrice, currency: property.currency });
+                                setInitCardAgreedPrice(String(property.rawPrice));
+                                setInitCardCurrency(property.currency);
+                                setInitCardBuyerId('');
+                                setInitCardDeposit('');
+                                setInitCardError(null);
+                              }}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Initiate Sale
+                            </button>
+                          );
+                        })()}
                       </div>
                     </Card>
                       );
@@ -3526,6 +3627,58 @@ export default function Listings() {
         </div>
       </div>
     </div>
+
+    {/* Initiate Sale Modal (own listing cards) */}
+    {initiateCardProp && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          <div className="flex items-center justify-between p-5 border-b">
+            <div>
+              <h2 className="text-lg font-bold">Initiate Sale</h2>
+              <p className="text-sm text-gray-500 truncate max-w-xs">{initiateCardProp.title}</p>
+            </div>
+            <button onClick={() => setInitiateCardProp(null)} className="p-1 hover:bg-gray-100 rounded-full">
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <form onSubmit={handleInitCardSaleSubmit} className="p-5 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price *</label>
+                <input type="number" min="1" step="0.01" value={initCardAgreedPrice} onChange={e => setInitCardAgreedPrice(e.target.value)} required placeholder="e.g. 1500000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Currency *</label>
+                <select value={initCardCurrency} onChange={e => setInitCardCurrency(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                  <option value="ZAR">ZAR</option>
+                  <option value="USD">USD</option>
+                  <option value="ZWL">ZWL</option>
+                  <option value="BWP">BWP</option>
+                  <option value="KES">KES</option>
+                  <option value="GBP">GBP</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Deposit Amount <span className="text-gray-400">(optional)</span></label>
+              <input type="number" min="0" step="0.01" value={initCardDeposit} onChange={e => setInitCardDeposit(e.target.value)} placeholder="e.g. 150000" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Buyer ID <span className="text-gray-400">(optional)</span></label>
+              <input type="text" value={initCardBuyerId} onChange={e => setInitCardBuyerId(e.target.value)} placeholder="Buyer's user UUID" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+            </div>
+            {initCardError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{initCardError}</p>}
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setInitiateCardProp(null)}>Cancel</Button>
+              <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600" disabled={submittingInitCard}>
+                {submittingInitCard ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                {submittingInitCard ? 'Creating…' : 'Initiate Sale'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
     </div>
   );
 }

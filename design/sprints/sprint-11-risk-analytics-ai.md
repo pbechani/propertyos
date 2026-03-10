@@ -4,6 +4,34 @@
 ## Goal
 Build the risk scoring engine, predictive analytics, and the full AI infrastructure layer (LLM gateway, document AI, RAG system, legal compliance engine). This is the intelligence backbone of the platform.
 
+### MindsDB Integration (added 2026-03-09)
+MindsDB is the predictive ML layer that connects directly to PostgreSQL and exposes trained models via SQL. This replaces the hand-coded scoring formulas below with auto-trained models and adds time-series forecasting.
+
+**Infrastructure:**
+- Docker service: `pribec-mindsdb` (ports 47334 HTTP/Studio, 47335 MySQL wire)
+- Studio UI: http://localhost:47334
+- NestJS module: `src/mindsdb/` — `MindsDBModule` + `MindsDBService`
+- Init SQL: `docker/mindsdb/init/01_connect_postgres.sql`, `02_create_models.sql`
+
+**Models deployed:**
+| Model | Type | Predicts |
+|---|---|---|
+| `mindsdb.property_valuation` | Regression (LightWood) | Property `asking_price` |
+| `mindsdb.contractor_risk` | Classification (LightWood) | `risk_level` (low/medium/high/critical) |
+| `mindsdb.material_price_forecast` | Time-series (statsforecast) | `unit_price` for next 7 periods |
+| `mindsdb.project_delay_risk` | Binary classification | `delayed` (boolean) |
+
+**Usage (inject in any NestJS module):**
+```typescript
+import { MindsDBModule } from '../mindsdb/mindsdb.module';
+// imports: [MindsDBModule]
+// constructor(private mindsdb: MindsDBService) {}
+await this.mindsdb.predictPropertyValue({ propertyType: 'house', bedrooms: 3, ... });
+await this.mindsdb.scoreContractorRisk(contractorId);
+await this.mindsdb.forecastMaterialPrice(materialId, 'Gauteng');
+await this.mindsdb.predictProjectDelay(projectId);
+```
+
 ---
 
 ## Deliverables Checklist

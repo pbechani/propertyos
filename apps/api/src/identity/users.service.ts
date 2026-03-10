@@ -328,6 +328,42 @@ export class UsersService {
     `;
   }
 
+  async searchUsers(
+    q: string,
+    role?: string,
+  ): Promise<Array<{ id: string; firstName: string; lastName: string; email: string }>> {
+    const likePattern = `%${q.toLowerCase()}%`;
+    type Row = { id: string; first_name: string; last_name: string; email: string };
+    const rows: Row[] = role
+      ? await this.prisma.$queryRaw<Row[]>`
+          SELECT DISTINCT u.id, u.first_name, u.last_name, u.email
+          FROM identity.users u
+          JOIN identity.user_roles ur ON ur.user_id = u.id
+          JOIN identity.roles r ON r.id = ur.role_id
+          WHERE (LOWER(u.email) LIKE ${likePattern}
+             OR LOWER(u.first_name || ' ' || u.last_name) LIKE ${likePattern})
+          AND r.name = ${role}
+          AND u.status = 'active'
+          ORDER BY u.first_name, u.last_name
+          LIMIT 10
+        `
+      : await this.prisma.$queryRaw<Row[]>`
+          SELECT u.id, u.first_name, u.last_name, u.email
+          FROM identity.users u
+          WHERE (LOWER(u.email) LIKE ${likePattern}
+             OR LOWER(u.first_name || ' ' || u.last_name) LIKE ${likePattern})
+          AND u.status = 'active'
+          ORDER BY u.first_name, u.last_name
+          LIMIT 10
+        `;
+    return rows.map(r => ({
+      id:        r.id,
+      firstName: r.first_name,
+      lastName:  r.last_name,
+      email:     r.email,
+    }));
+  }
+
   sanitizeUser(user: UserRecord): Record<string, unknown> {
     return {
       id: user.id,

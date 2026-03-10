@@ -1,77 +1,37 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@/lib/router-compat";
 import {
   FileText, Clock, CheckCircle2, AlertCircle, Building,
-  Search, Filter, Eye, ExternalLink
+  Search, Filter, Eye, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { conveyancerApi, type ConveyancerCase } from "@/lib/api-client";
+import { getAccessToken } from "@/lib/auth-session";
 
 export default function ConveyancerView() {
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "pending" | "blocked">("all");
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "completed" | "disputed">("all");
+  const [activeCases, setActiveCases] = useState<ConveyancerCase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeCases = [
-    {
-      id: 1,
-      property: "88 Sunset Boulevard, Camps Bay",
-      buyer: "John & Mary Smith",
-      seller: "David Thompson",
-      price: "R 12,500,000",
-      currentStage: 7,
-      stageName: "Compliance Certificates",
-      daysInStage: 8,
-      status: "active",
-      priority: "high",
-      nextAction: "Chase electrical certificate",
-      completionPercentage: 50,
-    },
-    {
-      id: 2,
-      property: "204 Sky View, Sea Point",
-      buyer: "Sarah Williams",
-      seller: "Estate of J. Roberts",
-      price: "R 4,250,000",
-      currentStage: 11,
-      stageName: "Transfer Duty Payment",
-      daysInStage: 2,
-      status: "pending",
-      priority: "medium",
-      nextAction: "Await payment confirmation",
-      completionPercentage: 78,
-    },
-    {
-      id: 3,
-      property: "15 Ocean Drive, Clifton",
-      buyer: "Investment Property Co",
-      seller: "Luxury Homes Ltd",
-      price: "R 18,900,000",
-      currentStage: 9,
-      stageName: "FICA Documents",
-      daysInStage: 15,
-      status: "blocked",
-      priority: "high",
-      nextAction: "Outstanding corporate docs",
-      completionPercentage: 64,
-    },
-    {
-      id: 4,
-      property: "22 Mountain View, Constantia",
-      buyer: "Michael Chen",
-      seller: "Estate Agency Trust",
-      price: "R 6,500,000",
-      currentStage: 5,
-      stageName: "Bond Application",
-      daysInStage: 5,
-      status: "active",
-      priority: "medium",
-      nextAction: "Bank review in progress",
-      completionPercentage: 35,
-    },
-  ];
+  const token = getAccessToken();
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    conveyancerApi
+      .getCases(token)
+      .then(setActiveCases)
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : "Failed to load cases")
+      )
+      .finally(() => setLoading(false));
+  }, [token]);
 
   const governmentApplications = [
     {
@@ -116,17 +76,19 @@ export default function ConveyancerView() {
     },
   ];
 
-  const filteredCases = activeCases.filter(c => 
+  const filteredCases = activeCases.filter(c =>
     selectedFilter === "all" || c.status === selectedFilter
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "bg-green-100 text-green-700";
-      case "active": case "in-progress": return "bg-blue-100 text-blue-700";
-      case "pending": return "bg-yellow-100 text-yellow-700";
-      case "blocked": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
+      case "completed":  return "bg-green-100 text-green-700";
+      case "active":     return "bg-blue-100 text-blue-700";
+      case "in-progress": return "bg-blue-100 text-blue-700";
+      case "disputed":   return "bg-red-100 text-red-700";
+      case "cancelled":  return "bg-gray-200 text-gray-600";
+      case "pending":    return "bg-yellow-100 text-yellow-700";
+      default:           return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -167,16 +129,16 @@ export default function ConveyancerView() {
             <div className="text-2xl font-bold">{activeCases.filter(c => c.status === "active").length}</div>
           </Card>
           <Card className="p-4">
-            <div className="text-sm text-gray-600 mb-1">Pending Action</div>
-            <div className="text-2xl font-bold text-yellow-600">{activeCases.filter(c => c.status === "pending").length}</div>
+            <div className="text-sm text-gray-600 mb-1">Completed</div>
+            <div className="text-2xl font-bold text-green-600">{activeCases.filter(c => c.status === "completed").length}</div>
           </Card>
           <Card className="p-4">
-            <div className="text-sm text-gray-600 mb-1">Blocked</div>
-            <div className="text-2xl font-bold text-red-600">{activeCases.filter(c => c.status === "blocked").length}</div>
+            <div className="text-sm text-gray-600 mb-1">Disputed</div>
+            <div className="text-2xl font-bold text-red-600">{activeCases.filter(c => c.status === "disputed").length}</div>
           </Card>
           <Card className="p-4">
-            <div className="text-sm text-gray-600 mb-1">Avg. Turnaround</div>
-            <div className="text-2xl font-bold text-green-600">68 days</div>
+            <div className="text-sm text-gray-600 mb-1">Total Cases</div>
+            <div className="text-2xl font-bold text-purple-600">{activeCases.length}</div>
           </Card>
         </div>
       </div>
@@ -191,12 +153,12 @@ export default function ConveyancerView() {
                 {[
                   { id: "all", label: "All" },
                   { id: "active", label: "Active" },
-                  { id: "pending", label: "Pending" },
-                  { id: "blocked", label: "Blocked" },
+                  { id: "completed", label: "Completed" },
+                  { id: "disputed", label: "Disputed" },
                 ].map((filter) => (
                   <button
                     key={filter.id}
-                    onClick={() => setSelectedFilter(filter.id as "all" | "active" | "pending" | "blocked")}
+                    onClick={() => setSelectedFilter(filter.id as "all" | "active" | "completed" | "disputed")}
                     className={`
                       px-3 py-1.5 rounded text-sm font-medium transition-colors
                       ${selectedFilter === filter.id 
@@ -217,15 +179,27 @@ export default function ConveyancerView() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredCases.map((case_) => (
+            {loading ? (
+              <div className="col-span-2 flex items-center justify-center py-20">
+                <RefreshCw className="w-6 h-6 animate-spin text-gray-400 mr-3" />
+                <span className="text-gray-500">Loading cases…</span>
+              </div>
+            ) : error ? (
+              <div className="col-span-2 text-center py-10 text-red-600">{error}</div>
+            ) : filteredCases.length === 0 ? (
+              <div className="col-span-2 text-center py-10 text-gray-500">No cases found.</div>
+            ) : null}
+            {!loading && !error && filteredCases.map((case_) => (
               <Card key={case_.id} className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold mb-1 truncate">{case_.property}</h3>
+                    <h3 className="font-semibold mb-1 truncate">{case_.propertyAddress}</h3>
                     <div className="text-sm text-gray-600 mb-2">
                       {case_.buyer} → {case_.seller}
                     </div>
-                    <div className="font-bold text-blue-600">{case_.price}</div>
+                    <div className="font-bold text-blue-600">
+                      {case_.currency} {case_.purchasePrice.toLocaleString()}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge className={getPriorityColor(case_.priority)}>
@@ -240,9 +214,9 @@ export default function ConveyancerView() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
-                    <span className="font-medium">{case_.completionPercentage}%</span>
+                    <span className="font-medium">{Math.round(case_.currentStage / 14 * 100)}%</span>
                   </div>
-                  <Progress value={case_.completionPercentage} className="h-2 bg-gray-200" />
+                  <Progress value={Math.round(case_.currentStage / 14 * 100)} className="h-2 bg-gray-200" />
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg mb-4">
@@ -253,15 +227,7 @@ export default function ConveyancerView() {
                   <div className="font-medium mb-1">{case_.stageName}</div>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <Clock className="w-3 h-3" />
-                    {case_.daysInStage} days in stage
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg mb-4">
-                  <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-sm font-medium text-blue-900">Next Action:</div>
-                    <div className="text-sm text-blue-700">{case_.nextAction}</div>
+                    {case_.daysOpen} days open
                   </div>
                 </div>
 
@@ -380,7 +346,7 @@ export default function ConveyancerView() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {governmentApplications.filter(a => a.status === "completed").length}
+                {governmentApplications.filter((a: { status: string }) => a.status === "completed").length}
               </div>
               <div className="text-sm text-gray-600">Completed</div>
             </div>

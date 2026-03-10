@@ -51,12 +51,21 @@ export class AgentSalesDashboardController {
          sp.started_at    AS stage_started_at,
          sp.days_in_stage,
          sc.stage_name    AS current_stage_name,
-         sc.responsible_role AS current_stage_owner
+         sc.responsible_role AS current_stage_owner,
+         CASE WHEN prop.id IS NOT NULL THEN
+           jsonb_build_object(
+             'title',        prop.title,
+             'addressLine1', loc.address_line1,
+             'city',         loc.city
+           )
+         ELSE NULL END AS property
        FROM sales.property_sales ps
        LEFT JOIN sales.sale_stage_progress sp
                ON sp.sale_id = ps.id AND sp.stage_number = ps.current_stage
        LEFT JOIN sales.stage_configs sc
                ON sc.country = ps.country AND sc.stage_number = ps.current_stage
+       LEFT JOIN property.properties prop ON prop.id = ps.property_id
+       LEFT JOIN property.property_locations loc ON loc.property_id = ps.property_id
        WHERE ps.agent_id = $1
        ORDER BY ps.updated_at DESC
        LIMIT $2 OFFSET $3`,
