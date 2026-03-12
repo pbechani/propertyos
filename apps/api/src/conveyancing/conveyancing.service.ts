@@ -36,6 +36,20 @@ export type CaseRow = {
   updated_at: Date;
 };
 
+export type CaseListRow = CaseRow & {
+  days_active: number;
+  display_status: string;
+  progress_pct: number;
+  agreed_price: string;
+  currency: string;
+  current_stage: number;
+  property_address: string;
+  buyer_name: string;
+  seller_name: string;
+  blocker_count: number;
+  total_count: string;
+};
+
 @Injectable()
 export class ConveyancingService {
   constructor(
@@ -115,7 +129,7 @@ export class ConveyancingService {
     status?: string,
     page = 1,
     limit = 20,
-  ): Promise<{ data: CaseRow[]; total: number }> {
+  ): Promise<{ data: CaseListRow[]; total: number }> {
     const isAdmin = actorRoles.includes('admin');
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const offset = (Math.max(page, 1) - 1) * safeLimit;
@@ -123,14 +137,62 @@ export class ConveyancingService {
     const firmFilter = !isAdmin && firmId ? firmId : null;
     const convFilter = actorRoles.includes('conveyancer') && !isAdmin && conveyancerId ? conveyancerId : null;
 
-    const rows = await this.prisma.$queryRaw<(CaseRow & { total_count: string })[]>`
-      SELECT *, COUNT(*) OVER () AS total_count
-      FROM conveyancing.cases
+    const rows = await this.prisma.$queryRaw<CaseListRow[]>`
+      SELECT
+        c.id,
+        c.case_reference,
+        c.sale_id,
+        c.firm_id,
+        c.lead_conveyancer_id,
+        c.support_staff_ids,
+        c.case_type,
+        c.priority,
+        c.status,
+        c.opened_at,
+        c.target_registration_date,
+        c.actual_registration_date,
+        c.country,
+        c.notes,
+        c.metadata,
+        c.created_at,
+        c.updated_at,
+        EXTRACT(DAY FROM NOW() - c.opened_at)::int  AS days_active,
+        CASE
+          WHEN c.status IN ('closed', 'cancelled')  THEN c.status
+          WHEN c.target_registration_date IS NOT NULL
+           AND c.target_registration_date < CURRENT_DATE THEN 'delayed'
+          ELSE 'on_track'
+        END                                          AS display_status,
+        ROUND((ps.current_stage::numeric / 14.0) * 100)::int AS progress_pct,
+        ps.agreed_price::text,
+        ps.currency,
+        ps.current_stage,
+        COALESCE(
+          pl.address_line1 || CASE WHEN pl.city IS NOT NULL THEN ', ' || pl.city ELSE '' END,
+          p.title,
+          'Unknown'
+        )                                            AS property_address,
+        COALESCE(buyer_u.first_name  || ' ' || buyer_u.last_name,  'Unknown') AS buyer_name,
+        COALESCE(seller_u.first_name || ' ' || seller_u.last_name, 'Unknown') AS seller_name,
+        (
+          SELECT COUNT(*)::int
+          FROM conveyancing.case_tasks ct
+          WHERE ct.case_id = c.id
+            AND ct.is_blocker = true
+            AND ct.status NOT IN ('completed', 'waived')
+        )                                            AS blocker_count,
+        COUNT(*) OVER ()                             AS total_count
+      FROM conveyancing.cases c
+      JOIN sales.property_sales ps        ON ps.id  = c.sale_id
+      JOIN property.properties p          ON p.id   = ps.property_id
+      LEFT JOIN property.property_locations pl ON pl.property_id = p.id
+      LEFT JOIN identity.users buyer_u    ON buyer_u.id  = ps.buyer_id
+      LEFT JOIN identity.users seller_u   ON seller_u.id = ps.seller_id
       WHERE
-        (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
-        AND (${convFilter}::uuid IS NULL OR lead_conveyancer_id = ${convFilter}::uuid)
-        AND (${status ?? null}::varchar IS NULL OR status = ${status ?? null})
-      ORDER BY opened_at DESC
+        (${firmFilter}::uuid IS NULL OR c.firm_id = ${firmFilter}::uuid)
+        AND (${convFilter}::uuid IS NULL OR c.lead_conveyancer_id = ${convFilter}::uuid)
+        AND (${status ?? null}::varchar IS NULL OR c.status = ${status ?? null})
+      ORDER BY c.opened_at DESC
       LIMIT ${safeLimit} OFFSET ${offset}
     `;
 

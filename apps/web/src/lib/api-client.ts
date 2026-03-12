@@ -3460,17 +3460,24 @@ export const agentSalesApi = {
 
 export type ConveyancerCase = {
   id: string;
-  propertyAddress: string;
-  buyer: string;
-  seller: string;
-  currentStage: number;
-  stageName: string;
-  status: 'active' | 'completed' | 'cancelled' | 'disputed';
-  priority: 'high' | 'medium' | 'low';
-  daysOpen: number;
-  purchasePrice: number;
+  case_reference: string;
+  case_type: string;
+  sale_id: string;
+  firm_id: string;
+  status: string;
+  display_status: string;
+  priority: string;
+  days_active: number;
+  progress_pct: number;
+  agreed_price: string;
   currency: string;
-  sale?: Sale;
+  current_stage: number;
+  property_address: string;
+  buyer_name: string;
+  seller_name: string;
+  blocker_count: number;
+  target_registration_date: string | null;
+  opened_at: string;
 };
 
 export type ConveyancerDashboardTask = {
@@ -3508,9 +3515,14 @@ export type ConveyancerDashboard = {
 };
 
 export const conveyancerApi = {
-  getCases: (token: string) =>
-    apiRequest<{ data: ConveyancerCase[]; total: number; page: number; limit: number }>('/conveyancer/cases', { authToken: token })
-      .then(r => r.data),
+  getCases: (token: string, params?: { status?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.page)   qs.set('page',   String(params.page));
+    if (params?.limit)  qs.set('limit',  String(params.limit));
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<{ data: ConveyancerCase[]; total: number }>(`/conveyancing/cases${query}`, { authToken: token });
+  },
 
   getDashboard: (token: string) =>
     apiRequest<ConveyancerDashboard>('/conveyancing/cases/dashboard', { authToken: token }),

@@ -26,7 +26,7 @@ export default function ConveyancerView() {
     setLoading(true);
     conveyancerApi
       .getCases(token)
-      .then(setActiveCases)
+      .then(result => setActiveCases(result.data))
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : "Failed to load cases")
       )
@@ -193,12 +193,12 @@ export default function ConveyancerView() {
               <Card key={case_.id} className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold mb-1 truncate">{case_.propertyAddress}</h3>
+                    <h3 className="font-semibold mb-1 truncate">{case_.property_address}</h3>
                     <div className="text-sm text-gray-600 mb-2">
-                      {case_.buyer} → {case_.seller}
+                      {case_.buyer_name} → {case_.seller_name}
                     </div>
                     <div className="font-bold text-blue-600">
-                      {case_.currency} {case_.purchasePrice.toLocaleString()}
+                      {case_.currency} {Number(case_.agreed_price).toLocaleString()}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -214,20 +214,20 @@ export default function ConveyancerView() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
-                    <span className="font-medium">{Math.round(case_.currentStage / 14 * 100)}%</span>
+                    <span className="font-medium">{case_.progress_pct}%</span>
                   </div>
-                  <Progress value={Math.round(case_.currentStage / 14 * 100)} className="h-2 bg-gray-200" />
+                  <Progress value={case_.progress_pct} className="h-2 bg-gray-200" />
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-lg mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Current Stage:</span>
-                    <span className="font-medium">Stage {case_.currentStage}/14</span>
+                    <span className="font-medium">Stage {case_.current_stage}/14</span>
                   </div>
-                  <div className="font-medium mb-1">{case_.stageName}</div>
+                  <div className="font-medium mb-1">{case_.case_type}</div>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <Clock className="w-3 h-3" />
-                    {case_.daysOpen} days open
+                    {case_.days_active} days open
                   </div>
                 </div>
 
