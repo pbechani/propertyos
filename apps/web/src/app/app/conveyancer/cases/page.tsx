@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, AlertCircle, RefreshCw, X } from "lucide-react";
+import { Search, Plus, AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { conveyancerApi, type ConveyancerCase, type CreateCasePayload } from "@/lib/api-client";
-import { getAccessToken, getActiveCompanyContext, getStoredUser } from "@/lib/auth-session";
+import { conveyancerApi, type ConveyancerCase } from "@/lib/api-client";
+import { getAccessToken } from "@/lib/auth-session";
 
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: "text-red-600",
@@ -24,33 +24,10 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   registered: { label: "Registered", cls: "bg-purple-100 text-purple-700" },
 };
 
-const CASE_TYPES = [
-  { value: "transfer",          label: "Transfer" },
-  { value: "bond_registration", label: "Bond Registration" },
-  { value: "bond_cancellation", label: "Bond Cancellation" },
-  { value: "sectional_title",   label: "Sectional Title" },
-  { value: "development",       label: "Development" },
-];
-
-const PRIORITIES = [
-  { value: "normal", label: "Normal" },
-  { value: "low",    label: "Low" },
-  { value: "high",   label: "High" },
-  { value: "urgent", label: "Urgent" },
-];
-
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
-
-const EMPTY_FORM = {
-  saleId: "",
-  caseType: "transfer",
-  priority: "normal",
-  targetRegistrationDate: "",
-  notes: "",
-};
 
 export default function Page() {
   const router = useRouter();
@@ -61,12 +38,6 @@ export default function Page() {
   const [error, setError]       = useState<string | null>(null);
   const [searchTerm, setSearchTerm]     = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  // New Case modal
-  const [showModal, setShowModal]       = useState(false);
-  const [form, setForm]                 = useState(EMPTY_FORM);
-  const [formError, setFormError]       = useState<string | null>(null);
-  const [submitting, setSubmitting]     = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,47 +56,6 @@ export default function Page() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const openModal = () => {
-    setForm(EMPTY_FORM);
-    setFormError(null);
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-
-    const token = getAccessToken();
-    if (!token) { setFormError("Not authenticated"); return; }
-
-    const firm = getActiveCompanyContext();
-    const user = getStoredUser();
-    if (!firm?.id) { setFormError("No active company context — please re-login."); return; }
-    if (!user?.id) { setFormError("User session missing — please re-login."); return; }
-    if (!form.saleId.trim()) { setFormError("Sale ID is required."); return; }
-
-    const payload: CreateCasePayload = {
-      saleId:              form.saleId.trim(),
-      firmId:              firm.id,
-      leadConveyancerId:   user.id,
-      caseType:            form.caseType,
-      priority:            form.priority || undefined,
-      targetRegistrationDate: form.targetRegistrationDate || undefined,
-      notes:               form.notes || undefined,
-    };
-
-    setSubmitting(true);
-    try {
-      const created = await conveyancerApi.createCase(token, payload);
-      setShowModal(false);
-      router.push(`/app/conveyancer/cases/${created.id}`);
-    } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Failed to create case");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const filtered = cases.filter((c) => {
     const term = searchTerm.toLowerCase();
@@ -162,7 +92,7 @@ export default function Page() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button
-            onClick={openModal}
+            onClick={() => router.push('/app/conveyancer/cases/new')}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -289,107 +219,6 @@ export default function Page() {
         </div>
       )}
 
-      {/* New Case modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold text-gray-900">Open New Case</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {formError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{formError}</div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sale ID <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="UUID of the associated property sale"
-                  value={form.saleId}
-                  onChange={(e) => setForm(f => ({ ...f, saleId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Case Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={form.caseType}
-                  onChange={(e) => setForm(f => ({ ...f, caseType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  {CASE_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select
-                    value={form.priority}
-                    onChange={(e) => setForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  >
-                    {PRIORITIES.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Registration Date</label>
-                  <input
-                    type="date"
-                    value={form.targetRegistrationDate}
-                    onChange={(e) => setForm(f => ({ ...f, targetRegistrationDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  rows={3}
-                  value={form.notes}
-                  onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Optional opening notes…"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {submitting ? "Creating…" : "Create Case"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
