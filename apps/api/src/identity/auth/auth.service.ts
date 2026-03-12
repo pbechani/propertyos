@@ -242,8 +242,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active');
+    if (user.status === 'suspended' || user.status === 'deleted') {
+      throw new UnauthorizedException('Account is suspended. Please contact support.');
     }
 
     await this.redisService.del(this.getFailedLoginKey(requestContext.ip));
@@ -338,8 +338,8 @@ export class AuthService {
     `;
 
     const user = await this.usersService.findById(tokenRow.user_id);
-    if (user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active');
+    if (user.status === 'suspended' || user.status === 'deleted') {
+      throw new UnauthorizedException('Account is suspended. Please contact support.');
     }
 
     const roles = await this.usersService.getUserRoleNames(user.id);
@@ -364,7 +364,7 @@ export class AuthService {
         WHERE cm.user_id = ${user.id}::uuid
           AND cm.company_id = ${tokenRow.active_company_id}::uuid
           AND cm.status = 'active'
-          AND c.status != 'deactivated'
+          AND c.status = 'active'
         LIMIT 1
       `;
       if (memberRows[0]) {
@@ -374,7 +374,7 @@ export class AuthService {
           active_company_is_admin: memberRows[0].is_admin,
         };
       } else {
-        // Membership revoked or company deactivated — fall back to Self so the
+        // Membership revoked or company deactivated/suspended — fall back to Self so the
         // refreshed token always has a valid company context.
         companyCtx = await this.resolveSelfCompanyCtx(user.id);
       }
@@ -392,7 +392,7 @@ export class AuthService {
           : await this.resolveSelfCompanyCtx(user.id);
     }
 
-    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx, requestContext);
+    const tokens = await this.issueTokens(user.id, user.email, roles, companyCtx, requestContext, refreshHash);
 
     await this.auditService.log({
       eventId: 'user.refresh',
@@ -481,7 +481,7 @@ export class AuthService {
     requestContext: { ip: string; userAgent?: string | null },
   ): Promise<void> {
     const user = await this.usersService.findByEmail(email);
-    if (!user || user.status !== 'active') {
+    if (!user || user.status === 'suspended' || user.status === 'deleted') {
       // silently return — do not reveal whether account exists or is suspended
       return;
     }
@@ -575,8 +575,8 @@ export class AuthService {
     `;
 
     const user = rows[0];
-    if (!user || user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active');
+    if (!user || user.status === 'suspended' || user.status === 'deleted') {
+      throw new UnauthorizedException('Account is suspended. Please contact support.');
     }
 
     if (!user.password_hash) {
@@ -733,8 +733,8 @@ export class AuthService {
       throw new UnauthorizedException('Unable to process OAuth login');
     }
 
-    if (user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active');
+    if (user.status === 'suspended' || user.status === 'deleted') {
+      throw new UnauthorizedException('Account is suspended. Please contact support.');
     }
 
     const roles = await this.usersService.getUserRoleNames(user.id);
@@ -817,7 +817,7 @@ export class AuthService {
       WHERE cm.user_id = ${userId}::uuid
         AND cm.company_id = ${companyId}::uuid
         AND cm.status = 'active'
-        AND c.status != 'deactivated'
+        AND c.status = 'active'
       LIMIT 1
     `;
 
@@ -876,7 +876,7 @@ export class AuthService {
       JOIN identity.companies c ON c.id = cm.company_id
       WHERE cm.user_id = ${userId}::uuid
         AND cm.status = 'active'
-        AND c.status != 'deactivated'
+        AND c.status = 'active'
       ORDER BY c.is_system DESC, c.name
     `;
   }
@@ -985,10 +985,32 @@ export class AuthService {
       active_company_is_admin: boolean;
     },
     requestContext?: { ip?: string | null; userAgent?: string | null },
+    /** Hash of the old refresh token being rotated. When provided the existing
+     *  session row is updated in-place rather than inserting a new one. */
+    oldRefreshHash?: string,
   ): Promise<AuthTokens> {
     const roles =
       prefetchedRoles ?? (await this.usersService.getUserRoleNames(userId));
     const kycStatus = await this.usersService.getLatestKycStatus(userId);
+
+    const refreshToken = randomUUID() + randomUUID();
+    const refreshHash = this.hashToken(refreshToken);
+    const refreshExpiresAt = this.resolveExpiryDate(this.refreshTokenExpiry);
+
+    const sessionInput = {
+      userId,
+      sessionTokenHash: refreshHash,
+      ipAddress: requestContext?.ip ?? null,
+      deviceName: requestContext?.userAgent
+        ? requestContext.userAgent.slice(0, 100)
+        : null,
+      expiresAt: refreshExpiresAt,
+    };
+
+    // Rotate an existing session row or create a new one
+    const { id: sessionId } = oldRefreshHash
+      ? await this.sessionsService.rotate(oldRefreshHash, sessionInput)
+      : await this.sessionsService.create(sessionInput);
 
     const payload: JwtPayload = {
       sub: userId,
@@ -998,15 +1020,12 @@ export class AuthService {
       active_company_id: companyCtx?.active_company_id ?? null,
       active_company_role: companyCtx?.active_company_role ?? null,
       active_company_is_admin: companyCtx?.active_company_is_admin ?? false,
+      session_id: sessionId,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: this.accessTokenExpiry,
     });
-
-    const refreshToken = randomUUID() + randomUUID();
-    const refreshHash = this.hashToken(refreshToken);
-    const refreshExpiresAt = this.resolveExpiryDate(this.refreshTokenExpiry);
 
     const activeCompanyId = companyCtx?.active_company_id ?? null;
     const refreshRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
@@ -1017,20 +1036,8 @@ export class AuthService {
 
     const refreshTokenId = refreshRows[0].id;
 
-    // Persist device session record for session management UI
-    await this.sessionsService.create({
-      userId,
-      sessionTokenHash: refreshHash,
-      ipAddress: requestContext?.ip ?? null,
-      deviceName: requestContext?.userAgent
-        ? requestContext.userAgent.slice(0, 100)
-        : null,
-      expiresAt: refreshExpiresAt,
-    });
-
     await this.redisService.setJson(
       `session:${userId}:${refreshTokenId}`,
-
       {
         userId,
         issuedAt: new Date().toISOString(),

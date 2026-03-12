@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["ai_engine", "analytics", "audit", "common", "construction", "financial", "identity", "inspection", "logistics", "marketplace", "property", "sales"]
+  schemas  = ["ai_engine", "analytics", "audit", "common", "construction", "conveyancing", "financial", "identity", "inspection", "logistics", "marketplace", "property", "sales"]
 }
 
 model Country {
@@ -937,6 +937,7 @@ model PropertySale {
   currentStage           Int                     @default(1) @map("current_stage") @db.SmallInt
   country                String                  @default("ZA") @db.Char(2)
   companyId              String?                 @map("company_id") @db.Uuid
+  escrowAccountId        String?                 @map("escrow_account_id") @db.Uuid
   createdAt              DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt              DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   governmentInteractions GovernmentInteraction[]
@@ -1462,4 +1463,489 @@ model leads {
   @@index([temperature], map: "idx_leads_temperature")
   @@index([type], map: "idx_leads_type")
   @@schema("sales")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FINANCIAL SCHEMA — Sprint 05
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FinancialAccount {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountNumber String   @unique @map("account_number") @db.VarChar(30)
+  accountType   String   @map("account_type") @db.VarChar(30)
+  ownerId       String?  @map("owner_id") @db.Uuid
+  ownerType     String?  @map("owner_type") @db.VarChar(30)
+  referenceId   String?  @map("reference_id") @db.Uuid
+  companyId     String?  @map("company_id") @db.Uuid
+  currency      String   @default("USD") @db.Char(3)
+  status        String   @default("active") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ledgerDebits           LedgerEntry[]    @relation("DebitAccount")
+  ledgerCredits          LedgerEntry[]    @relation("CreditAccount")
+  escrowConditions       EscrowCondition[]
+  releasesAsEscrow       EscrowRelease[]  @relation("EscrowAccount")
+  releasesAsDestination  EscrowRelease[]  @relation("DestinationAccount")
+  paymentRequests        PaymentRequest[]
+
+  @@index([ownerId], map: "idx_financial_accounts_owner")
+  @@index([referenceId], map: "idx_financial_accounts_ref")
+  @@index([companyId], map: "idx_financial_accounts_company")
+  @@map("accounts")
+  @@schema("financial")
+}
+
+model LedgerEntry {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryReference     String   @unique @map("entry_reference") @db.VarChar(100)
+  entryType          String   @map("entry_type") @db.VarChar(50)
+  debitAccountId     String   @map("debit_account_id") @db.Uuid
+  creditAccountId    String   @map("credit_account_id") @db.Uuid
+  amount             Decimal  @db.Decimal(18, 8)
+  currency           String   @db.Char(3)
+  exchangeRate       Decimal  @default(1) @map("exchange_rate") @db.Decimal(18, 8)
+  baseCurrencyAmount Decimal  @map("base_currency_amount") @db.Decimal(18, 8)
+  description        String?  @db.Text
+  metadata           Json?    @db.JsonB
+  initiatedBy        String?  @map("initiated_by") @db.Uuid
+  approvedBy         String?  @map("approved_by") @db.Uuid
+  status             String   @default("completed") @db.VarChar(20)
+  idempotencyKey     String?  @unique @map("idempotency_key") @db.VarChar(100)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  debitAccount  FinancialAccount @relation("DebitAccount",  fields: [debitAccountId],  references: [id])
+  creditAccount FinancialAccount @relation("CreditAccount", fields: [creditAccountId], references: [id])
+
+  @@index([debitAccountId, createdAt], map: "idx_ledger_debit")
+  @@index([creditAccountId, createdAt], map: "idx_ledger_credit")
+  @@index([status, createdAt], map: "idx_ledger_status")
+  @@index([entryType, createdAt], map: "idx_ledger_type")
+  @@map("ledger_entries")
+  @@schema("financial")
+}
+
+model EscrowCondition {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  escrowAccountId  String    @map("escrow_account_id") @db.Uuid
+  conditionType    String    @map("condition_type") @db.VarChar(50)
+  conditionDetails Json?     @map("condition_details") @db.JsonB
+  isSatisfied      Boolean   @default(false) @map("is_satisfied")
+  satisfiedAt      DateTime? @map("satisfied_at") @db.Timestamptz(6)
+  satisfiedBy      String?   @map("satisfied_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  escrowAccount FinancialAccount @relation(fields: [escrowAccountId], references: [id])
+
+  @@index([escrowAccountId, isSatisfied], map: "idx_escrow_conditions")
+  @@map("escrow_conditions")
+  @@schema("financial")
+}
+
+model PaymentRequest {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId        String    @map("account_id") @db.Uuid
+  amount           Decimal   @db.Decimal(18, 2)
+  currency         String    @db.Char(3)
+  paymentMethod    String?   @map("payment_method") @db.VarChar(30)
+  gatewayReference String?   @unique @map("gateway_reference") @db.VarChar(255)
+  gatewayStatus    String?   @map("gateway_status") @db.VarChar(30)
+  gatewayResponse  Json?     @map("gateway_response") @db.JsonB
+  status           String    @default("pending") @db.VarChar(20)
+  initiatedBy      String?   @map("initiated_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  account FinancialAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, status], map: "idx_payment_requests_account")
+  @@map("payment_requests")
+  @@schema("financial")
+}
+
+model EscrowRelease {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  escrowAccountId      String    @map("escrow_account_id") @db.Uuid
+  releaseAmount        Decimal   @map("release_amount") @db.Decimal(18, 2)
+  currency             String    @db.Char(3)
+  destinationAccountId String    @map("destination_account_id") @db.Uuid
+  reason               String?   @db.Text
+  status               String    @default("pending") @db.VarChar(20)
+  requestedBy          String    @map("requested_by") @db.Uuid
+  requestedAt          DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  buyerApprovedAt      DateTime? @map("buyer_approved_at") @db.Timestamptz(6)
+  adminApprovedAt      DateTime? @map("admin_approved_at") @db.Timestamptz(6)
+  adminApproverId      String?   @map("admin_approver_id") @db.Uuid
+  releasedAt           DateTime? @map("released_at") @db.Timestamptz(6)
+  mfaVerified          Boolean   @default(false) @map("mfa_verified")
+  rejectionReason      String?   @map("rejection_reason") @db.Text
+
+  escrowAccount      FinancialAccount @relation("EscrowAccount",      fields: [escrowAccountId],      references: [id])
+  destinationAccount FinancialAccount @relation("DestinationAccount", fields: [destinationAccountId], references: [id])
+
+  @@index([escrowAccountId, status], map: "idx_escrow_releases_escrow")
+  @@index([requestedBy, status], map: "idx_escrow_releases_requester")
+  @@map("escrow_releases")
+  @@schema("financial")
+}
+
+model ExchangeRateSnapshot {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  base      String   @default("USD") @db.Char(3)
+  target    String   @db.Char(3)
+  rate      Decimal  @db.Decimal(18, 8)
+  source    String   @default("open_exchange_rates") @db.VarChar(50)
+  fetchedAt DateTime @default(now()) @map("fetched_at") @db.Timestamptz(6)
+
+  @@index([base, target, fetchedAt(sort: Desc)], map: "idx_fx_snapshots")
+  @@map("exchange_rate_snapshots")
+  @@schema("financial")
+}
+
+model FinancialAuditLog {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId      String    @default(dbgenerated("gen_random_uuid()")) @map("event_id") @db.Uuid
+  actorId      String    @map("actor_id") @db.Uuid
+  action       String    @db.VarChar(100)
+  resourceType String?   @map("resource_type") @db.VarChar(50)
+  resourceId   String?   @map("resource_id") @db.Uuid
+  amount       Decimal?  @db.Decimal(18, 8)
+  currency     String?   @db.Char(3)
+  metadata     Json?     @db.JsonB
+  ipAddress    String?   @map("ip_address") @db.Inet
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([actorId, createdAt], map: "idx_financial_audit_actor")
+  @@index([resourceId, createdAt], map: "idx_financial_audit_resource")
+  @@map("audit_logs")
+  @@schema("financial")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVEYANCING SCHEMA  (Sprint 05-b)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ConveyancingCase {
+  id                     String    @id @default(uuid()) @map("id") @db.Uuid
+  caseReference          String    @unique @map("case_reference") @db.VarChar(50)
+  saleId                 String    @map("sale_id") @db.Uuid
+  firmId                 String    @map("firm_id") @db.Uuid
+  leadConveyancerId      String    @map("lead_conveyancer_id") @db.Uuid
+  supportStaffIds        Json      @default("[]") @map("support_staff_ids") @db.JsonB
+  caseType               String    @default("transfer") @map("case_type") @db.VarChar(30)
+  priority               String    @default("normal") @map("priority") @db.VarChar(20)
+  status                 String    @default("open") @map("status") @db.VarChar(30)
+  openedAt               DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  targetRegistrationDate DateTime? @map("target_registration_date") @db.Date
+  actualRegistrationDate DateTime? @map("actual_registration_date") @db.Date
+  country                String    @default("ZA") @map("country") @db.Char(2)
+  notes                  String?   @map("notes")
+  metadata               Json      @default("{}") @map("metadata") @db.JsonB
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tasks             CaseTask[]
+  caseNotes         CaseNote[]
+  deadlines         ConveyancingDeadline[]
+  trustLedgerEntries TrustLedgerEntry[]
+  invoices          ConveyancingInvoice[]
+  generatedDocuments GeneratedDocument[]
+  clientPortalAccess ClientPortalAccess[]
+
+  @@index([firmId, status], map: "idx_conv_cases_firm_status")
+  @@index([leadConveyancerId], map: "idx_conv_cases_conveyancer")
+  @@index([saleId], map: "idx_conv_cases_sale_id")
+  @@map("cases")
+  @@schema("conveyancing")
+}
+
+model TaskTemplate {
+  id                           String   @id @default(uuid()) @db.Uuid
+  firmId                       String?  @map("firm_id") @db.Uuid
+  country                      String   @default("ZA") @db.Char(2)
+  caseType                     String   @default("transfer") @map("case_type") @db.VarChar(30)
+  stageNumber                  Int      @map("stage_number") @db.SmallInt
+  title                        String   @db.VarChar(255)
+  description                  String?
+  defaultDueDaysFromStageOpen  Int?     @map("default_due_days_from_stage_open") @db.SmallInt
+  responsibleRole              String?  @map("responsible_role") @db.VarChar(50)
+  isBlocker                    Boolean  @default(false) @map("is_blocker")
+  sortOrder                    Int      @default(0) @map("sort_order") @db.SmallInt
+  isActive                     Boolean  @default(true) @map("is_active")
+  createdAt                    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  caseTasks CaseTask[]
+
+  @@index([country, caseType, stageNumber], map: "idx_conv_task_templates_lookup")
+  @@map("task_templates")
+  @@schema("conveyancing")
+}
+
+model CaseTask {
+  id               String    @id @default(uuid()) @db.Uuid
+  caseId           String    @map("case_id") @db.Uuid
+  templateTaskId   String?   @map("template_task_id") @db.Uuid
+  title            String    @db.VarChar(255)
+  description      String?
+  stageNumber      Int?      @map("stage_number") @db.SmallInt
+  responsibleId    String?   @map("responsible_id") @db.Uuid
+  responsibleRole  String?   @map("responsible_role") @db.VarChar(50)
+  dueDate          DateTime? @map("due_date") @db.Date
+  status           String    @default("pending") @db.VarChar(20)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  completedBy      String?   @map("completed_by") @db.Uuid
+  escalatedAt      DateTime? @map("escalated_at") @db.Timestamptz(6)
+  escalationReason String?   @map("escalation_reason")
+  priority         String    @default("normal") @db.VarChar(20)
+  isBlocker        Boolean   @default(false) @map("is_blocker")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case         ConveyancingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  template     TaskTemplate?    @relation(fields: [templateTaskId], references: [id])
+  deadlines    ConveyancingDeadline[]
+
+  @@index([caseId, status], map: "idx_conv_tasks_case_status")
+  @@index([responsibleId, dueDate], map: "idx_conv_tasks_responsible")
+  @@map("case_tasks")
+  @@schema("conveyancing")
+}
+
+model CaseNote {
+  id          String   @id @default(uuid()) @db.Uuid
+  caseId      String   @map("case_id") @db.Uuid
+  authorId    String   @map("author_id") @db.Uuid
+  content     String
+  attachments Json     @default("[]") @db.JsonB
+  isPinned    Boolean  @default(false) @map("is_pinned")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case ConveyancingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt(sort: Desc)], map: "idx_conv_notes_case_id")
+  @@map("case_notes")
+  @@schema("conveyancing")
+}
+
+model ConveyancingDeadline {
+  id               String    @id @default(uuid()) @db.Uuid
+  caseId           String    @map("case_id") @db.Uuid
+  taskId           String?   @map("task_id") @db.Uuid
+  deadlineType     String    @map("deadline_type") @db.VarChar(50)
+  description      String?   @db.VarChar(255)
+  dueDate          DateTime  @map("due_date") @db.Date
+  status           String    @default("active") @db.VarChar(20)
+  extensionReason  String?   @map("extension_reason")
+  extendedDueDate  DateTime? @map("extended_due_date") @db.Date
+  reminderSentAt   DateTime? @map("reminder_sent_at") @db.Timestamptz(6)
+  escalatedAt      DateTime? @map("escalated_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case ConveyancingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  task CaseTask?         @relation(fields: [taskId], references: [id])
+
+  @@index([caseId, dueDate], map: "idx_conv_deadlines_case_due")
+  @@map("deadlines")
+  @@schema("conveyancing")
+}
+
+model TrustAccount {
+  id               String   @id @default(uuid()) @db.Uuid
+  firmId           String   @map("firm_id") @db.Uuid
+  accountName      String   @map("account_name") @db.VarChar(100)
+  accountNumberEnc String?  @map("account_number_enc") @db.VarChar(255)
+  bankName         String?  @map("bank_name") @db.VarChar(100)
+  currency         String   @default("ZAR") @db.Char(3)
+  status           String   @default("active") @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ledgerEntries TrustLedgerEntry[]
+
+  @@unique([firmId, currency], map: "uq_trust_account_firm_currency")
+  @@map("trust_accounts")
+  @@schema("conveyancing")
+}
+
+model TrustLedgerEntry {
+  id             String   @id @default(uuid()) @db.Uuid
+  trustAccountId String   @map("trust_account_id") @db.Uuid
+  caseId         String   @map("case_id") @db.Uuid
+  entryType      String   @map("entry_type") @db.VarChar(50)
+  description    String
+  amount         Decimal  @db.Decimal(18, 2)
+  currency       String   @default("ZAR") @db.Char(3)
+  direction      String   @db.VarChar(10)
+  reference      String?  @db.VarChar(100)
+  receivedFrom   String?  @map("received_from") @db.VarChar(255)
+  paidTo         String?  @map("paid_to") @db.VarChar(255)
+  paymentDate    DateTime @map("payment_date") @db.Date
+  recordedBy     String   @map("recorded_by") @db.Uuid
+  approvedBy     String?  @map("approved_by") @db.Uuid
+  idempotencyKey String?  @unique @map("idempotency_key") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  trustAccount TrustAccount     @relation(fields: [trustAccountId], references: [id])
+  case         ConveyancingCase @relation(fields: [caseId], references: [id])
+
+  @@index([trustAccountId, paymentDate], map: "idx_conv_trust_ledger_account")
+  @@index([caseId], map: "idx_conv_trust_ledger_case")
+  @@map("trust_ledger_entries")
+  @@schema("conveyancing")
+}
+
+model FeeSchedule {
+  id            String    @id @default(uuid()) @db.Uuid
+  country       String    @db.Char(2)
+  scheduleName  String    @map("schedule_name") @db.VarChar(100)
+  feeType       String    @map("fee_type") @db.VarChar(30)
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  currency      String    @default("ZAR") @db.Char(3)
+  bands         Json      @db.JsonB
+  vatRate       Decimal   @default(0.15) @map("vat_rate") @db.Decimal(5, 4)
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([country, feeType, effectiveFrom], map: "idx_conv_fee_schedules_lookup")
+  @@map("fee_schedules")
+  @@schema("conveyancing")
+}
+
+model ConveyancingInvoice {
+  id            String    @id @default(uuid()) @db.Uuid
+  invoiceNumber String    @unique @map("invoice_number") @db.VarChar(50)
+  caseId        String    @map("case_id") @db.Uuid
+  firmId        String    @map("firm_id") @db.Uuid
+  billedToId    String    @map("billed_to_id") @db.Uuid
+  invoiceType   String    @map("invoice_type") @db.VarChar(30)
+  subtotal      Decimal   @db.Decimal(18, 2)
+  vatAmount     Decimal   @default(0) @map("vat_amount") @db.Decimal(18, 2)
+  totalAmount   Decimal   @map("total_amount") @db.Decimal(18, 2)
+  currency      String    @default("ZAR") @db.Char(3)
+  status        String    @default("draft") @db.VarChar(20)
+  issueDate     DateTime? @map("issue_date") @db.Date
+  dueDate       DateTime? @map("due_date") @db.Date
+  paidAmount    Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  paidAt        DateTime? @map("paid_at") @db.Timestamptz(6)
+  documentUrl   String?   @map("document_url")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case      ConveyancingCase      @relation(fields: [caseId], references: [id])
+  lineItems InvoiceLineItem[]
+
+  @@index([caseId], map: "idx_conv_invoices_case")
+  @@index([firmId, status], map: "idx_conv_invoices_firm")
+  @@index([billedToId], map: "idx_conv_invoices_billed")
+  @@map("invoices")
+  @@schema("conveyancing")
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  invoiceId   String   @map("invoice_id") @db.Uuid
+  description String   @db.VarChar(255)
+  lineType    String   @map("line_type") @db.VarChar(50)
+  quantity    Decimal  @default(1) @db.Decimal(8, 2)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(18, 2)
+  amount      Decimal  @db.Decimal(18, 2)
+  sortOrder   Int      @default(0) @map("sort_order") @db.SmallInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice ConveyancingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId], map: "idx_conv_line_items_invoice")
+  @@map("invoice_line_items")
+  @@schema("conveyancing")
+}
+
+model DocumentTemplate {
+  id                          String   @id @default(uuid()) @db.Uuid
+  firmId                      String?  @map("firm_id") @db.Uuid
+  country                     String   @default("ZA") @db.Char(2)
+  caseType                    String   @default("transfer") @map("case_type") @db.VarChar(30)
+  templateName                String   @map("template_name") @db.VarChar(100)
+  documentType                String   @map("document_type") @db.VarChar(50)
+  templateUrl                 String   @map("template_url")
+  requiredFields              Json     @default("[]") @map("required_fields") @db.JsonB
+  requiresBuyerSignature      Boolean  @default(false) @map("requires_buyer_signature")
+  requiresSellerSignature     Boolean  @default(false) @map("requires_seller_signature")
+  requiresConveyancerSignature Boolean @default(false) @map("requires_conveyancer_signature")
+  version                     Int      @default(1) @db.SmallInt
+  isActive                    Boolean  @default(true) @map("is_active")
+  createdAt                   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  generatedDocuments GeneratedDocument[]
+
+  @@map("document_templates")
+  @@schema("conveyancing")
+}
+
+model GeneratedDocument {
+  id              String    @id @default(uuid()) @db.Uuid
+  caseId          String    @map("case_id") @db.Uuid
+  templateId      String?   @map("template_id") @db.Uuid
+  documentName    String    @map("document_name") @db.VarChar(255)
+  documentType    String    @map("document_type") @db.VarChar(50)
+  generatedBy     String    @map("generated_by") @db.Uuid
+  documentUrl     String?   @map("document_url")
+  status          String    @default("draft") @db.VarChar(20)
+  fieldValues     Json      @default("{}") @map("field_values") @db.JsonB
+  signatures      Json      @default("[]") @db.JsonB
+  fullySigned     DateTime? @map("fully_signed_at") @db.Timestamptz(6)
+  hash            String?   @db.VarChar(64)
+  esignProvider   String?   @map("esign_provider") @db.VarChar(30)
+  esignEnvelopeId String?   @unique @map("esign_envelope_id") @db.VarChar(255)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case     ConveyancingCase  @relation(fields: [caseId], references: [id])
+  template DocumentTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([caseId, documentType], map: "idx_conv_docs_case_type")
+  @@map("generated_documents")
+  @@schema("conveyancing")
+}
+
+model ClientPortalAccess {
+  id             String    @id @default(uuid()) @db.Uuid
+  caseId         String    @map("case_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  partyRole      String    @map("party_role") @db.VarChar(20)
+  tokenHash      String    @unique @map("token_hash") @db.VarChar(64)
+  tokenExpiresAt DateTime  @map("token_expires_at") @db.Timestamptz(6)
+  lastAccessedAt DateTime? @map("last_accessed_at") @db.Timestamptz(6)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdBy      String    @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case ConveyancingCase @relation(fields: [caseId], references: [id])
+
+  @@index([caseId, isActive], map: "idx_conv_portal_case")
+  @@map("client_portal_access")
+  @@schema("conveyancing")
+}
+
+model ConveyancingAuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  eventId      String   @default(uuid()) @map("event_id") @db.Uuid
+  actorId      String?  @map("actor_id") @db.Uuid
+  actorRole    String?  @map("actor_role") @db.VarChar(50)
+  firmId       String?  @map("firm_id") @db.Uuid
+  action       String   @db.VarChar(100)
+  resourceType String?  @map("resource_type") @db.VarChar(100)
+  resourceId   String?  @map("resource_id") @db.Uuid
+  payload      Json?    @db.JsonB
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([resourceType, resourceId], map: "idx_conv_audit_resource")
+  @@index([actorId], map: "idx_conv_audit_actor")
+  @@index([action], map: "idx_conv_audit_action")
+  @@index([createdAt(sort: Desc)], map: "idx_conv_audit_created")
+  @@map("audit_logs")
+  @@schema("conveyancing")
 }

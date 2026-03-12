@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, Flame, TrendingUp, DollarSign, Phone, Mail, MessageSquare, Calendar, CheckSquare, Loader2 } from 'lucide-react';
+import { Users, Flame, TrendingUp, DollarSign, Phone, Mail, MessageSquare, Calendar, CheckSquare, Loader2, AlertCircle, CheckCircle2, BarChart3 } from 'lucide-react';
 import { leadsApi, type LeadDashboardResponse } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,60 +99,52 @@ export default function LeadDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Leads</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{totalLeads}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-blue-600 to-blue-700 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Users className="h-5 w-5" />
             </div>
-          </CardContent>
+            <TrendingUp className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Total Leads</p>
+          <p className="text-2xl font-bold">{totalLeads}</p>
+          <p className="text-xs opacity-75 mt-1">All tracked leads</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Hot Leads</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{hotLeads}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-red-50 flex items-center justify-center">
-                <Flame className="h-6 w-6 text-red-500" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-red-500 to-red-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Flame className="h-5 w-5" />
             </div>
-          </CardContent>
+            <AlertCircle className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Hot Leads</p>
+          <p className="text-2xl font-bold">{hotLeads}</p>
+          <p className="text-xs opacity-75 mt-1">High priority</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Deals</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{activeDeals}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-green-500 to-green-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-5 w-5" />
             </div>
-          </CardContent>
+            <CheckCircle2 className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Active Deals</p>
+          <p className="text-2xl font-bold">{activeDeals}</p>
+          <p className="text-xs opacity-75 mt-1">In progress</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pipeline Value</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{formattedPipelineValue}</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-purple-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-purple-500 to-purple-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5" />
             </div>
-          </CardContent>
+            <BarChart3 className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Pipeline Value</p>
+          <p className="text-2xl font-bold">{formattedPipelineValue}</p>
+          <p className="text-xs opacity-75 mt-1">Total opportunity</p>
         </Card>
       </div>
 

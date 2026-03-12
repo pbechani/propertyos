@@ -402,6 +402,23 @@ export const usersApi = {
 };
 
 export const adminUsersApi = {
+  list: (
+    authToken: string,
+    params: { limit?: number; offset?: number; role?: string; status?: string; search?: string } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params.offset !== undefined) qs.set('offset', String(params.offset));
+    if (params.role) qs.set('role', params.role);
+    if (params.status) qs.set('status', params.status);
+    if (params.search) qs.set('search', params.search);
+    const query = qs.toString();
+    return apiRequest<{ data: AdminUserRecord[]; total: number }>(
+      `/admin/users${query ? `?${query}` : ''}`,
+      { authToken },
+    );
+  },
+
   getUser: (authToken: string, id: string) =>
     apiRequest<AuthUser>(`/users/${id}`, {
       method: 'GET',
@@ -418,6 +435,28 @@ export const adminUsersApi = {
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
+    }),
+
+  investigate: (authToken: string, id: string, reason?: string) =>
+    apiRequest<AuthUser>(`/admin/users/${id}/investigate`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
+
+  suspend: (authToken: string, id: string, reason?: string) =>
+    apiRequest<AuthUser>(`/admin/users/${id}/suspend`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
+
+  reinstate: (authToken: string, id: string) =>
+    apiRequest<AuthUser>(`/admin/users/${id}/reinstate`, {
+      method: 'POST',
+      authToken,
     }),
 };
 
@@ -485,7 +524,8 @@ export type KycRecord = {
   submittedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  // user fields joined by listPending
+  docsCount?: number;
+  // user fields joined by listAll / listPending
   user?: {
     id: string;
     email: string;
@@ -513,6 +553,21 @@ export const adminKycApi = {
       method: 'GET',
       authToken,
     }),
+
+  list: (
+    authToken: string,
+    params: { status?: string; limit?: number; offset?: number } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    if (params.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params.offset !== undefined) qs.set('offset', String(params.offset));
+    const query = qs.toString();
+    return apiRequest<KycRecord[]>(`/admin/kyc${query ? `?${query}` : ''}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
 
   getById: (authToken: string, id: string) =>
     apiRequest<KycRecord>(`/admin/kyc/${id}`, {
@@ -554,6 +609,124 @@ export const adminKycApi = {
         authToken,
       },
     ),
+};
+
+// ─── Admin Platform Stats ─────────────────────────────────────────────────────
+
+export type PlatformStats = {
+  totalUsers: number;
+  activeCompanies: number;
+  pendingCompanies: number;
+  kycPendingCount: number;
+  activeListings: number;
+  activeSales: number;
+};
+
+export const adminStatsApi = {
+  get: (authToken: string) =>
+    apiRequest<PlatformStats>('/admin/stats', {
+      method: 'GET',
+      authToken,
+    }),
+};
+
+// ─── Admin Users ──────────────────────────────────────────────────────────────
+
+export type AdminUserRecord = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  role: string | null;
+  kycStatus: string | null;
+  status: string;
+  companyCount: number;
+  createdAt: string;
+};
+
+// ─── Admin Companies ──────────────────────────────────────────────────────────
+
+export type AdminCompany = {
+  id: string;
+  name: string;
+  slug?: string | null;
+  category: string;
+  status: string;
+  verification_status: string;
+  email?: string | null;
+  phone?: string | null;
+  registration_number?: string | null;
+  logo_url?: string | null;
+  address?: { city?: string | null; country?: string | null; region?: string | null; [key: string]: unknown } | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminCompanyListResponse = {
+  data: AdminCompany[];
+  page: number;
+  limit: number;
+};
+
+export const adminCompaniesApi = {
+  list: (
+    authToken: string,
+    params: { status?: string; category?: string; page?: number; limit?: number } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    if (params.category) qs.set('category', params.category);
+    if (params.page != null) qs.set('page', String(params.page));
+    if (params.limit != null) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return apiRequest<AdminCompanyListResponse>(
+      `/admin/companies${query ? `?${query}` : ''}`,
+      { method: 'GET', authToken },
+    );
+  },
+
+  verify: (authToken: string, id: string) =>
+    apiRequest<AdminCompany>(`/admin/companies/${id}/verify`, {
+      method: 'POST',
+      authToken,
+    }),
+
+  reject: (authToken: string, id: string, reason: string) =>
+    apiRequest<AdminCompany>(`/admin/companies/${id}/reject`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
+
+  getById: (authToken: string, id: string) =>
+    apiRequest<CompanyDetail>(`/admin/companies/${id}`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  suspend: (authToken: string, id: string, reason: string) =>
+    apiRequest<AdminCompany>(`/admin/companies/${id}/suspend`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
+
+  reinstate: (authToken: string, id: string) =>
+    apiRequest<AdminCompany>(`/admin/companies/${id}/reinstate`, {
+      method: 'POST',
+      authToken,
+    }),
+
+  investigate: (authToken: string, id: string, reason: string) =>
+    apiRequest<AdminCompany>(`/admin/companies/${id}/investigate`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
 };
 
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
@@ -625,6 +798,7 @@ export const auditApi = {
     params: {
       actorId?: string;
       resourceType?: string;
+      action?: string;
       from?: string;
       to?: string;
       limit?: number;
@@ -634,6 +808,7 @@ export const auditApi = {
     const qs = new URLSearchParams();
     if (params.actorId) qs.set('actor_id', params.actorId);
     if (params.resourceType) qs.set('resource_type', params.resourceType);
+    if (params.action) qs.set('action', params.action);
     if (params.from) qs.set('from', params.from);
     if (params.to) qs.set('to', params.to);
     if (params.limit != null) qs.set('limit', String(params.limit));
@@ -691,6 +866,8 @@ export type PropertyListing = {
   company_name?: string | null;
   /** Logo URL of the company the listing was created under. */
   company_logo_url?: string | null;
+  /** Status of the company the listing was created under (e.g. 'under_investigation'). */
+  company_status?: string | null;
   created_at: string;
   updated_at: string;
   /** ISO timestamp of the next scheduled open house for this property, if any. */
@@ -841,6 +1018,62 @@ export type CreateFraudReportPayload = {
     | 'other';
   description: string;
   evidenceUrls?: string[];
+};
+
+// ─── Admin Fraud Reports ──────────────────────────────────────────────────────
+
+export type FraudReport = {
+  id: string;
+  property_id: string;
+  property_title: string;
+  reporter_id: string;
+  report_type: string;
+  description: string;
+  evidence_urls: string[];
+  status: 'submitted' | 'under_investigation' | 'resolved' | 'dismissed';
+  resolver_id: string | null;
+  resolution_notes: string | null;
+  resolved_at: string | null;
+  company_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FraudReportsResponse = {
+  data: FraudReport[];
+  total: number;
+};
+
+export const adminFraudApi = {
+  /** GET /admin/fraud-reports */
+  list: (
+    authToken: string,
+    params: { status?: string; limit?: number; offset?: number } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    if (params.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params.offset !== undefined) qs.set('offset', String(params.offset));
+    const query = qs.toString();
+    return apiRequest<FraudReportsResponse>(
+      `/admin/fraud-reports${query ? `?${query}` : ''}`,
+      { authToken },
+    );
+  },
+
+  /** PATCH /admin/fraud-reports/:id/resolve */
+  resolve: (
+    authToken: string,
+    id: string,
+    resolution: 'resolved' | 'dismissed',
+    resolutionNotes?: string,
+  ) =>
+    apiRequest<FraudReport>(`/admin/fraud-reports/${id}/resolve`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolution, resolutionNotes }),
+    }),
 };
 
 function buildQueryString(params: Record<string, unknown>): string {
@@ -2027,6 +2260,12 @@ export const companiesApi = {
       method: 'DELETE',
       authToken,
     }),
+
+  resendInvitation: (authToken: string, companyId: string, inviteId: string) =>
+    apiRequest<{ success: boolean; expires_at: string }>(
+      `/companies/${companyId}/invitations/${inviteId}/resend`,
+      { method: 'POST', authToken },
+    ),
 };
 
 // ---------------------------------------------------------------------------
@@ -3275,4 +3514,256 @@ export const sessionsApi = {
       method: 'DELETE',
       authToken: token,
     }),
+};
+
+// ─── Sprint 05: Escrow & Financial Ledger ───────────────────────────────────
+
+export type EscrowAccount = {
+  id: string;
+  accountType: string;
+  currency: string;
+  saleId?: string | null;
+  ownerId?: string | null;
+  label?: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type LedgerEntry = {
+  id: string;
+  accountId: string;
+  entryType: string;
+  amount: number;
+  currency: string;
+  description?: string | null;
+  reference?: string | null;
+  createdAt: string;
+};
+
+export type EscrowReleaseRequest = {
+  id: string;
+  escrowAccountId: string;
+  requestedBy: string;
+  releaseAmount: number;
+  currency: string;
+  reason: string | null;
+  /** Backend status values from ESCROW_RELEASE_STATUS constants */
+  status: 'pending' | 'buyer_approved' | 'approved' | 'released' | 'rejected';
+  buyerApprovedAt: string | null;
+  adminApprovedAt: string | null;
+  adminApproverId: string | null;
+  releasedAt: string | null;
+  mfaVerified: boolean;
+  rejectionReason: string | null;
+  /** Mapped from requestedAt on the backend */
+  requestedAt: string;
+};
+
+export type PendingDeposit = {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type EscrowSummary = {
+  account: EscrowAccount;
+  balance: number;
+  pendingReleases: EscrowReleaseRequest[];
+  recentTransactions: LedgerEntry[];
+  pendingDeposits: PendingDeposit[];
+};
+
+export type PaymentResult = {
+  paymentRequestId: string;
+  status: string;
+  redirectUrl?: string | null;
+  reference?: string | null;
+};
+
+export type FxRateResult = { from: string; to: string; rate: number };
+
+export type CommissionBreakdown = {
+  salePrice: number;
+  currency: string;
+  platformFee: number;
+  platformFeePct: number;
+  agentCommission: number;
+  agentCommissionPct: number;
+  total: number;
+};
+
+export const escrowApi = {
+  /** POST /escrow/deposit — accepts { saleId, amount, currency, gateway } */
+  initiateDeposit: (
+    token: string,
+    payload: { saleId: string; amount: number; currency: string; gateway: string; metadata?: Record<string, unknown> },
+  ) =>
+    apiRequest<PaymentResult>('/escrow/deposit', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      // Map frontend `gateway` field → backend `paymentMethod`
+      body: JSON.stringify({ saleId: payload.saleId, amount: payload.amount, currency: payload.currency, paymentMethod: payload.gateway }),
+    }),
+
+  /** GET /escrow/by-sale/:saleId — summary including recentTransactions */
+  getSummary: (token: string, saleId: string) =>
+    apiRequest<EscrowSummary>(`/escrow/by-sale/${saleId}`, { authToken: token }),
+
+  /** POST /escrow/release/request — maps `amount` → `releaseAmount` */
+  requestRelease: (
+    token: string,
+    payload: { escrowAccountId: string; amount: number; currency: string; reason: string; saleId?: string },
+  ) =>
+    apiRequest<EscrowReleaseRequest>('/escrow/release/request', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        escrowAccountId: payload.escrowAccountId,
+        releaseAmount: payload.amount,
+        currency: payload.currency,
+        reason: payload.reason,
+      }),
+    }),
+
+  /** POST /escrow/release/:releaseId/buyer-approve */
+  approveRelease: (token: string, releaseId: string) =>
+    apiRequest<EscrowReleaseRequest>(`/escrow/release/${releaseId}/buyer-approve`, {
+      method: 'POST',
+      authToken: token,
+    }),
+
+  /** GET /escrow/release/:releaseId */
+  getRelease: (token: string, releaseId: string) =>
+    apiRequest<EscrowReleaseRequest>(`/escrow/release/${releaseId}`, { authToken: token }),
+};
+
+export const financialApi = {
+  createAccount: (
+    token: string,
+    payload: { accountType: string; currency: string; saleId?: string; ownerId?: string; label?: string },
+  ) =>
+    apiRequest<EscrowAccount>('/financial/accounts', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getAccount: (token: string, accountId: string) =>
+    apiRequest<EscrowAccount & { balance: number }>(`/financial/accounts/${accountId}`, {
+      authToken: token,
+    }),
+
+  getLedgerEntries: (token: string, accountId: string, params?: { page?: number; limit?: number }) => {
+    const qs = params ? `?page=${params.page ?? 1}&limit=${params.limit ?? 20}` : '';
+    return apiRequest<{ data: LedgerEntry[]; total: number }>(
+      `/financial/ledger/${accountId}${qs}`,
+      { authToken: token },
+    );
+  },
+
+  getFxRate: (token: string, from: string, to: string) =>
+    apiRequest<FxRateResult>(`/financial/fx/rate?from=${from}&to=${to}`, { authToken: token }),
+
+  convertAmount: (
+    token: string,
+    payload: { amount: number; fromCurrency: string; toCurrency: string },
+  ) =>
+    apiRequest<{ result: number; rate: number; from: string; to: string }>('/financial/fx/convert', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  calculateCommission: (
+    token: string,
+    payload: { salePrice: number; currency: string; agentId?: string },
+  ) =>
+    apiRequest<CommissionBreakdown>('/financial/commission/calculate', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+};
+
+export type AdminPendingDeposit = PendingDeposit & {
+  account: { id: string; referenceId: string | null; currency: string };
+};
+
+export type CompanyEscrowAccount = {
+  id: string;
+  accountNumber: string;
+  accountType: string;
+  referenceId: string | null;
+  currency: string;
+  status: string;
+  createdAt: string;
+  balance: number;
+  recentTransactions: Array<{
+    id: string;
+    entryType: string;
+    amount: number;
+    currency: string;
+    description: string | null;
+    createdAt: string;
+    debitAccountId: string;
+    creditAccountId: string;
+  }>;
+};
+
+export const adminFinanceApi = {
+  /** GET /admin/finance/deposits/pending — list all unconfirmed deposits */
+  getPendingDeposits: (token: string) =>
+    apiRequest<AdminPendingDeposit[]>('/admin/finance/deposits/pending', { authToken: token }),
+
+  /** GET /admin/finance/accounts/:id/balance */
+  getBalance: (token: string, accountId: string) =>
+    apiRequest<{ balance: number; accountId: string }>(
+      `/admin/finance/accounts/${accountId}/balance`,
+      { authToken: token },
+    ),
+
+  /** POST /admin/finance/deposit/confirm */
+  confirmDeposit: (token: string, payload: { paymentRequestId: string; gatewayReference?: string; gatewayStatus?: string }) =>
+    apiRequest<void>('/admin/finance/deposit/confirm', {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, gatewayReference: payload.gatewayReference ?? payload.paymentRequestId }),
+    }),
+
+  /** POST /admin/finance/release/:id/approve */
+  approveRelease: (token: string, releaseId: string, notes?: string) =>
+    apiRequest<EscrowReleaseRequest>(`/admin/finance/release/${releaseId}/approve`, {
+      method: 'POST',
+      authToken: token,
+      headers: notes ? { 'Content-Type': 'application/json' } : undefined,
+      body: notes ? JSON.stringify({ notes }) : undefined,
+    }),
+
+  /** POST /admin/finance/release/:id/reject */
+  rejectRelease: (token: string, releaseId: string, reason: string) =>
+    apiRequest<EscrowReleaseRequest>(`/admin/finance/release/${releaseId}/reject`, {
+      method: 'POST',
+      authToken: token,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }),
+
+  /** GET /admin/finance/escrow-accounts — company escrow accounts with balances and recent transactions */
+  getCompanyEscrowAccounts: (token: string) =>
+    apiRequest<CompanyEscrowAccount[]>('/admin/finance/escrow-accounts', { authToken: token }),
+
+  /** GET /admin/finance/releases — list release requests, optionally filtered by status */
+  listReleases: (token: string, status?: string) => {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return apiRequest<EscrowReleaseRequest[]>(`/admin/finance/releases${qs}`, { authToken: token });
+  },
 };

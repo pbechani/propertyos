@@ -106,7 +106,8 @@ describe('AuthService', () => {
   };
 
   const mockSessions = {
-    create: jest.fn().mockResolvedValue(undefined),
+    create: jest.fn().mockResolvedValue({ id: 'session-uuid-001' }),
+    rotate: jest.fn().mockResolvedValue({ id: 'session-uuid-001' }),
   };
 
   const requestCtx = { ip: '127.0.0.1', userAgent: 'jest' };
@@ -267,6 +268,41 @@ describe('AuthService', () => {
       ).rejects.toThrow(
         expect.objectContaining({ status: HttpStatus.TOO_MANY_REQUESTS }),
       );
+    });
+
+    it('throws UnauthorizedException when account is suspended', async () => {
+      const hash = bcrypt.hashSync(PASSWORD, 1);
+      mockRedis.get.mockResolvedValueOnce(null);
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        status: 'suspended',
+        password_hash: hash,
+      });
+
+      await expect(
+        service.login({ email: EMAIL, password: PASSWORD }, requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('allows login when account is under_investigation', async () => {
+      const hash = bcrypt.hashSync(PASSWORD, 1);
+      mockRedis.get.mockResolvedValueOnce(null);
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        status: 'under_investigation',
+        password_hash: hash,
+      });
+      mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'co-uuid', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }])
+        .mockResolvedValueOnce([{ id: 'refresh-id' }]);
+
+      const result = await service.login(
+        { email: EMAIL, password: PASSWORD },
+        requestCtx,
+      );
+
+      expect('tokens' in result).toBe(true);
     });
   });
 

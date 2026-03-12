@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Phone, Mail, DollarSign, Loader2 } from 'lucide-react';
+import { Phone, Mail, DollarSign, Loader2, Users, Zap, CheckCircle2, TrendingUp, FileSignature, Trophy } from 'lucide-react';
 import { leadsApi, type LeadRow, type LeadPipelineStage } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 
-const STAGES: Array<{ id: string; label: string; color: string; headerColor: string }> = [
-  { id: 'new',            label: 'New',            color: 'bg-gray-50 border-gray-200',      headerColor: 'bg-gray-100 text-gray-700' },
-  { id: 'contacted',      label: 'Contacted',      color: 'bg-blue-50 border-blue-200',      headerColor: 'bg-blue-100 text-blue-700' },
-  { id: 'qualified',      label: 'Qualified',      color: 'bg-indigo-50 border-indigo-200',  headerColor: 'bg-indigo-100 text-indigo-700' },
-  { id: 'active',         label: 'Active',         color: 'bg-green-50 border-green-200',    headerColor: 'bg-green-100 text-green-700' },
-  { id: 'under_contract', label: 'Under Contract', color: 'bg-orange-50 border-orange-200',  headerColor: 'bg-orange-100 text-orange-700' },
-  { id: 'closed',         label: 'Closed',         color: 'bg-emerald-50 border-emerald-200', headerColor: 'bg-emerald-100 text-emerald-700' },
+const STAGES: Array<{ id: string; label: string; color: string; headerColor: string; gradient: string; icon: React.ElementType }> = [
+  { id: 'new',            label: 'New',            color: 'bg-gray-50 border-gray-200',       headerColor: 'bg-gray-100 text-gray-700',    gradient: 'bg-linear-to-br from-slate-500 to-slate-600',   icon: Users },
+  { id: 'contacted',      label: 'Contacted',      color: 'bg-blue-50 border-blue-200',       headerColor: 'bg-blue-100 text-blue-700',    gradient: 'bg-linear-to-br from-blue-600 to-blue-700',    icon: Zap },
+  { id: 'qualified',      label: 'Qualified',      color: 'bg-indigo-50 border-indigo-200',   headerColor: 'bg-indigo-100 text-indigo-700', gradient: 'bg-linear-to-br from-indigo-500 to-indigo-600', icon: CheckCircle2 },
+  { id: 'active',         label: 'Active',         color: 'bg-green-50 border-green-200',     headerColor: 'bg-green-100 text-green-700',  gradient: 'bg-linear-to-br from-green-500 to-green-600',  icon: TrendingUp },
+  { id: 'under_contract', label: 'Under Contract', color: 'bg-orange-50 border-orange-200',   headerColor: 'bg-orange-100 text-orange-700', gradient: 'bg-linear-to-br from-amber-500 to-amber-600',  icon: FileSignature },
+  { id: 'closed',         label: 'Closed',         color: 'bg-emerald-50 border-emerald-200', headerColor: 'bg-emerald-100 text-emerald-700', gradient: 'bg-linear-to-br from-emerald-500 to-emerald-600', icon: Trophy },
 ];
 
 const temperatureColors: Record<string, string> = {
@@ -83,17 +83,19 @@ export default function LeadPipeline() {
           const s = stageMap.get(stage.id);
           const count = s?.count ?? 0;
           const val = s?.totalValue ? parseFloat(String(s.totalValue)) : 0;
+          const Icon = stage.icon;
           return (
-            <Card key={stage.id} className="rounded-2xl border-border text-center">
-              <CardContent className="pt-4 pb-3">
-                <p className="text-xs font-medium text-muted-foreground">{stage.label}</p>
-                <p className="text-2xl font-semibold text-foreground mt-1">{count}</p>
-                {val > 0 && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {val >= 1_000_000 ? `R${(val / 1_000_000).toFixed(1)}M` : `R${(val / 1_000).toFixed(0)}K`}
-                  </p>
-                )}
-              </CardContent>
+            <Card key={stage.id} className={`p-4 ${stage.gradient} text-white border-0 rounded-2xl`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-8 w-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Icon className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-xs opacity-90 mb-0.5">{stage.label}</p>
+              <p className="text-2xl font-bold">{count}</p>
+              <p className="text-xs opacity-75 mt-0.5">
+                {val > 0 ? (val >= 1_000_000 ? `R${(val / 1_000_000).toFixed(1)}M` : `R${(val / 1_000).toFixed(0)}K`) : 'No value'}
+              </p>
             </Card>
           );
         })}

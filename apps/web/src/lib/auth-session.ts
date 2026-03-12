@@ -178,6 +178,15 @@ export function getIsAdminFromToken(): boolean {
 }
 
 /**
+ * Returns whether the logged-in user is the platform-level system admin.
+ * Checks JWT `roles` for the 'admin' value — distinct from company-level admin
+ * (`active_company_is_admin`) which any company admin also carries.
+ */
+export function getIsPlatformAdminFromToken(): boolean {
+  return getSessionClaims()?.roles?.includes('admin') === true;
+}
+
+/**
  * Returns the active company ID embedded in the current JWT token.
  */
 export function getActiveCompanyIdFromToken(): string | null {

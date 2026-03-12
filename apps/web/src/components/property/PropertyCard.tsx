@@ -17,6 +17,7 @@ export interface PropertyCardData {
   agentTier?: 'gold' | 'silver' | 'bronze';
   imageUrl?: string;
   fraudAlert?: boolean;
+  underInvestigation?: boolean;
 }
 
 const TIER_STYLES = {
@@ -75,6 +76,11 @@ export default function PropertyCard({
           {property.fraudAlert && (
             <span className="flex items-center gap-1 bg-[#F59E0B] text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
               ⚠ Unverified
+            </span>
+          )}
+          {property.underInvestigation && (
+            <span className="flex items-center gap-1 bg-yellow-400 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-full shadow">
+              ⚠ Caution: Under Investigation
             </span>
           )}
         </div>

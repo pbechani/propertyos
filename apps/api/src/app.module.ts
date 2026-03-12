@@ -15,6 +15,8 @@ import { SalesModule } from './sales/sales.module';
 import { LeadsModule } from './leads/leads.module';
 import { AIIntelligenceModule } from './ai-intelligence/ai-intelligence.module';
 import { MindsDBModule } from './mindsdb/mindsdb.module';
+import { FinancialModule } from './financial/financial.module';
+import { ConveyancingModule } from './conveyancing/conveyancing.module';
 
 @Module({
   imports: [
@@ -39,17 +41,13 @@ import { MindsDBModule } from './mindsdb/mindsdb.module';
       token: process.env.VAULT_TOKEN,
     }),
 
-    // Rate limiting - 100 requests per minute default
+    // Rate limiting - 100 requests per minute global default
+    // Auth-specific limit (10/min) is applied via @Throttle on AuthController only
     ThrottlerModule.forRoot([
       {
         name: 'default',
         ttl: 60000,
         limit: 100,
-      },
-      {
-        name: 'auth',
-        ttl: 60000,
-        limit: 10,
       },
     ]),
 
@@ -65,6 +63,8 @@ import { MindsDBModule } from './mindsdb/mindsdb.module';
     LeadsModule,
     AIIntelligenceModule,
     MindsDBModule,
+    FinancialModule,
+    ConveyancingModule,
   ],
   providers: [
     {

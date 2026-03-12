@@ -56,6 +56,7 @@ export class AuditService {
   async findAdminLogs(filters: {
     actorId?: string;
     resourceType?: string;
+    action?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -69,6 +70,10 @@ export class AuditService {
 
     if (filters.resourceType) {
       conditions.push(Prisma.sql`resource_type = ${filters.resourceType}`);
+    }
+
+    if (filters.action) {
+      conditions.push(Prisma.sql`action = ${filters.action}`);
     }
 
     if (filters.from) {

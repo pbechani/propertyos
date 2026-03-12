@@ -117,6 +117,78 @@ describe('KycService', () => {
     });
   });
 
+  // ─── listAll ──────────────────────────────────────────────────────────────
+
+  const baseKycWithUser = {
+    ...baseKyc,
+    user_email: 'user@example.com',
+    user_first_name: 'Jane',
+    user_last_name: 'Doe',
+    user_phone: null,
+  };
+
+  describe('listAll', () => {
+    it('returns all records with user data when no status filter given', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([baseKycWithUser]);
+      const result = await service.listAll();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ user_email: 'user@example.com' });
+    });
+
+    it('returns only records matching the status filter when status is provided', async () => {
+      const approvedRow = { ...baseKycWithUser, status: 'approved' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([approvedRow]);
+      const result = await service.listAll({ status: 'approved' });
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('approved');
+    });
+
+    it('returns empty array when no records match', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      const result = await service.listAll({ status: 'rejected' });
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── sanitizeWithUser ─────────────────────────────────────────────────────
+
+  describe('sanitizeWithUser', () => {
+    it('includes user object in output', () => {
+      const result = service.sanitizeWithUser(baseKycWithUser);
+      expect(result.user).toEqual({
+        id: baseKyc.user_id,
+        email: 'user@example.com',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        phone: null,
+      });
+    });
+
+    it('computes docsCount from non-null document URLs', () => {
+      const rowWithDocs = {
+        ...baseKycWithUser,
+        id_document_url: 'https://storage/id.pdf',
+        address_proof_url: 'https://storage/address.pdf',
+        business_registration_url: null,
+        selfie_url: null,
+      };
+      const result = service.sanitizeWithUser(rowWithDocs);
+      expect(result.docsCount).toBe(2);
+    });
+
+    it('reports docsCount of 0 when all document URLs are null', () => {
+      const rowNoDocs = {
+        ...baseKycWithUser,
+        id_document_url: null,
+        address_proof_url: null,
+        business_registration_url: null,
+        selfie_url: null,
+      };
+      const result = service.sanitizeWithUser(rowNoDocs);
+      expect(result.docsCount).toBe(0);
+    });
+  });
+
   // ─── getById ──────────────────────────────────────────────────────────────
 
   describe('getById', () => {

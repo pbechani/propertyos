@@ -172,4 +172,113 @@ describe('CompaniesService', () => {
       expect(result).toHaveProperty('verification_status', 'rejected');
     });
   });
+
+  // ─── suspend ──────────────────────────────────────────────────────────────
+
+  describe('suspend', () => {
+    it('sets company status to suspended and logs audit', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseCompany]) // findById (guard)
+        .mockResolvedValueOnce([{ ...baseCompany, status: 'suspended' }]) // findById after update
+        .mockResolvedValueOnce([]); // notifyCompanyAdmin → no admins
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined);
+
+      const result = await service.suspend(COMPANY_ID, 'Fraudulent activity', USER_ID, requestCtx);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'company.suspended', action: 'suspend' }),
+      );
+      expect(result).toHaveProperty('status', 'suspended');
+    });
+  });
+
+  // ─── reinstate ────────────────────────────────────────────────────────────
+
+  describe('reinstate', () => {
+    it('sets suspended company status back to active and logs audit', async () => {
+      const suspendedCompany = { ...baseCompany, status: 'suspended' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([suspendedCompany]) // findById (guard)
+        .mockResolvedValueOnce([{ ...suspendedCompany, status: 'active' }]) // findById after update
+        .mockResolvedValueOnce([]); // notifyCompanyAdmin → no admins
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined);
+
+      const result = await service.reinstate(COMPANY_ID, USER_ID, requestCtx);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'company.reinstated', action: 'reinstate' }),
+      );
+      expect(result).toHaveProperty('status', 'active');
+    });
+
+    it('reinstates an under_investigation company back to active', async () => {
+      const investigatedCompany = { ...baseCompany, status: 'under_investigation' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([investigatedCompany]) // findById (guard)
+        .mockResolvedValueOnce([{ ...investigatedCompany, status: 'active' }]) // findById after update
+        .mockResolvedValueOnce([]); // notifyCompanyAdmin → no admins
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined);
+
+      const result = await service.reinstate(COMPANY_ID, USER_ID, requestCtx);
+      expect(result).toHaveProperty('status', 'active');
+    });
+
+    it('throws BadRequestException when company is not suspended', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([baseCompany]); // status = 'pending_verification'
+
+      await expect(
+        service.reinstate(COMPANY_ID, USER_ID, requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when company is already active', async () => {
+      const activeCompany = { ...baseCompany, status: 'active' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([activeCompany]);
+
+      await expect(
+        service.reinstate(COMPANY_ID, USER_ID, requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  // ─── placeUnderInvestigation ───────────────────────────────────────────────
+
+  describe('placeUnderInvestigation', () => {
+    it('sets company status to under_investigation and logs audit', async () => {
+      const activeCompany = { ...baseCompany, status: 'active' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([activeCompany]) // findById (guard)
+        .mockResolvedValueOnce([{ ...activeCompany, status: 'under_investigation' }]) // findById after update
+        .mockResolvedValueOnce([]); // notifyCompanyAdmin → no admins
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined);
+
+      const result = await service.placeUnderInvestigation(COMPANY_ID, 'Suspected fraud', USER_ID, requestCtx);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'company.under_investigation', action: 'investigate' }),
+      );
+      expect(result).toHaveProperty('status', 'under_investigation');
+    });
+
+    it('throws BadRequestException when company is already under investigation', async () => {
+      const investigatedCompany = { ...baseCompany, status: 'under_investigation' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([investigatedCompany]);
+
+      await expect(
+        service.placeUnderInvestigation(COMPANY_ID, 'Duplicate investigation', USER_ID, requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('can place a suspended company under investigation', async () => {
+      const suspendedCompany = { ...baseCompany, status: 'suspended' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([suspendedCompany]) // findById (guard)
+        .mockResolvedValueOnce([{ ...suspendedCompany, status: 'under_investigation' }]) // findById after update
+        .mockResolvedValueOnce([]); // notifyCompanyAdmin
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined);
+
+      const result = await service.placeUnderInvestigation(COMPANY_ID, 'New evidence', USER_ID, requestCtx);
+      expect(result).toHaveProperty('status', 'under_investigation');
+    });
+  });
 });

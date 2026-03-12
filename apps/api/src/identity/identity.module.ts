@@ -8,6 +8,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { OAuthVerificationService } from './auth/oauth-verification.service';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
+import { AdminPlatformController } from './users.controller';
 import { RolesGuard } from './rbac/roles.guard';
 import { PermissionsGuard } from './rbac/permissions.guard';
 import { KycController, AdminKycController } from './kyc.controller';
@@ -66,6 +67,7 @@ import { NotificationPreferencesService } from './notification-preferences/notif
   controllers: [
     AuthController,
     UsersController,
+    AdminPlatformController,
     KycController,
     AdminKycController,
     AuditController,

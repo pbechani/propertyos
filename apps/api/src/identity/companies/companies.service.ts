@@ -374,6 +374,85 @@ export class CompaniesService {
     return updated;
   }
 
+  async reinstate(
+    id: string,
+    actorId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ) {
+    const existing = await this.findById(id) as Record<string, unknown>;
+
+    if (!['suspended', 'under_investigation'].includes(existing['status'] as string)) {
+      throw new BadRequestException('Company is not suspended or under investigation');
+    }
+
+    await this.prisma.$executeRaw`
+      UPDATE identity.companies
+      SET status = 'active', updated_at = NOW()
+      WHERE id = ${id}::uuid
+    `;
+
+    await this.auditService.log({
+      eventId: 'company.reinstated',
+      actorId,
+      actorRole: 'admin',
+      action: 'reinstate',
+      resourceType: 'company',
+      resourceId: id,
+      payload: { company_id: id },
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent,
+    });
+
+    const updated = await this.findById(id) as Record<string, unknown>;
+    void this.notifyCompanyAdmin(id, updated,
+      'Your company has been reinstated',
+      `Your company "${updated['name']}" has been reinstated and is now active. You may resume normal operations.`,
+      false,
+    );
+
+    return updated;
+  }
+
+  async placeUnderInvestigation(
+    id: string,
+    reason: string,
+    actorId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ) {
+    const existing = await this.findById(id) as Record<string, unknown>;
+
+    if (existing['status'] === 'under_investigation') {
+      throw new BadRequestException('Company is already under investigation');
+    }
+
+    await this.prisma.$executeRaw`
+      UPDATE identity.companies
+      SET status = 'under_investigation', updated_at = NOW()
+      WHERE id = ${id}::uuid
+    `;
+
+    await this.auditService.log({
+      eventId: 'company.under_investigation',
+      actorId,
+      actorRole: 'admin',
+      action: 'investigate',
+      resourceType: 'company',
+      resourceId: id,
+      payload: { company_id: id, reason },
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent,
+    });
+
+    const updated = await this.findById(id) as Record<string, unknown>;
+    void this.notifyCompanyAdmin(id, updated,
+      'Your company is under investigation',
+      `Your company "${updated['name']}" has been placed under investigation. Reason: ${reason}. Users may still log in, but please note your listings will carry a public advisory badge. Contact support for more information.`,
+      false,
+    );
+
+    return updated;
+  }
+
   async deactivate(
     id: string,
     actorId: string,

@@ -4,9 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
-import { getIsAdminFromToken } from '@/lib/auth-session';
+import { getIsPlatformAdminFromToken } from '@/lib/auth-session';
 
 interface AppSidebarProps {
   pathname: string;
@@ -19,6 +19,31 @@ interface AppSidebarProps {
   activeCompany?: CompanyContext | null;
   hasMultipleCompanies?: boolean;
 }
+
+/** Navigation shown for the platform admin (role = 'admin') under Platform Admin Cockpit. */
+const platformAdminNavigation = [
+  { name: 'Overview', href: '/app/admin', icon: LayoutDashboard },
+  { name: 'Companies', href: '/app/admin/companies', icon: Building2 },
+  { name: 'KYC Queue', href: '/app/admin/kyc', icon: ShieldCheck },
+  { name: 'Users', href: '/app/admin/users', icon: Users },
+  { name: 'Platform Finance', href: '/app/admin/finance', icon: DollarSign },
+  { name: 'Fraud Reports', href: '/app/admin/fraud-reports', icon: ShieldAlert },
+  { name: 'Audit Logs', href: '/app/admin/audit', icon: ClipboardList },
+  { name: 'AI Command Center', href: '/admin/ai-command-center', icon: Brain },
+];
+
+/** Navigation shown for the conveyancer role under Conveyancer Cockpit. */
+const conveyancerNavigation = [
+  { name: 'Command Center', href: '/app/conveyancer/command-center', icon: Gauge },
+  { name: 'Cases', href: '/app/conveyancer/cases', icon: Briefcase },
+  { name: 'Clients', href: '/app/conveyancer/clients', icon: Users },
+  { name: 'Properties', href: '/app/conveyancer/properties', icon: Building2 },
+  { name: 'Documents', href: '/app/conveyancer/documents', icon: FileText },
+  { name: 'Financials', href: '/app/conveyancer/financials', icon: DollarSign },
+  { name: 'Reports', href: '/app/conveyancer/reports', icon: BarChart3 },
+  { name: 'Calendar', href: '/app/conveyancer/calendar', icon: Calendar },
+  { name: 'Settings', href: '/app/conveyancer/settings', icon: Settings },
+];
 
 /** Navigation shown when the active company is the built-in "Self" personal context. */
 const selfNavigation = [
@@ -68,6 +93,7 @@ const adminCompanyNavigation = [
   { name: 'Permissions', href: '/company/permissions', icon: Shield },
   { name: 'Activity Logs', href: '/company/activities', icon: Activity },
   { name: 'Revoked Users', href: '/company/revoked-pool', icon: UserX },
+  { name: 'Escrow & Finance', href: '/admin/finance', icon: DollarSign },
   { name: 'AI Command Center', href: '/admin/ai-command-center', icon: Brain },
 ];
 
@@ -84,11 +110,13 @@ const quickLinks = [
   { name: 'Risk & Analytics', href: '/risk-analytics' },
   { name: 'AI Design Studio', href: '/ai-design-studio' },
   { name: 'Property Lifecycle', href: '/property-lifecycle' },
-  { name: 'Compare Properties', href: '/compare' },
+  { name: 'Compare Properties', href: '/app/compare' },
 ];
 
 function isActive(pathname: string, href: string) {
+  // Exact-match roots to prevent parent paths from always staying active
   if (href === '/app') return pathname === '/app';
+  if (href === '/app/admin') return pathname === '/app/admin';
   return pathname.startsWith(href);
 }
 
@@ -106,17 +134,19 @@ export function AppSidebar({
   const router = useRouter();
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [showAdminGroup, setShowAdminGroup] = useState(true);
+  const [showPlatformAdminCockpit, setShowPlatformAdminCockpit] = useState(true);
   const [showAgentCockpit, setShowAgentCockpit] = useState(true);
   const [showLeadManagement, setShowLeadManagement] = useState(true);
+  const [showConveyancerCockpit, setShowConveyancerCockpit] = useState(true);
 
   const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
   const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
-  // JWT is the authoritative source — set by the backend at context-selection
-  // time and resistant to stale localStorage values. Also cross-check against
-  // the stored company context (covers single-company logins where activeCompany
-  // is set) and guard against self-company which is always non-admin.
+  // isPlatformAdmin is TRUE only for the system-level admin (JWT roles includes 'admin').
+  // getIsAdminFromToken() checks active_company_is_admin, which is also true for any
+  // company-level admin — we must NOT use that for the platform admin gate.
+  const isPlatformAdmin = getIsPlatformAdminFromToken();
   const isAdmin =
-    getIsAdminFromToken() ||
+    isPlatformAdmin ||
     (activeCompany?.slug !== 'self' && (activeCompany?.is_admin ?? false));
   const companyLogoUrl = activeCompany?.logo_url ?? null;
   // Only show role badge when the role is not 'admin' — the amber Admin badge already covers that case
@@ -124,10 +154,13 @@ export function AppSidebar({
   // An admin is *never* in the self-company context (the self company always has is_admin=false).
   const isSelfCompany = !isAdmin && (activeCompany?.slug === 'self' || (!activeCompany && !hasMultipleCompanies));
   const isAgentRole = !isAdmin && companyRole?.toLowerCase() === 'agent';
+  const isConveyancerRole = !isAdmin && companyRole?.toLowerCase() === 'conveyancer';
   const navigation = isAdmin
     ? adminCompanyNavigation
     : isAgentRole
     ? agentNavigation
+    : isConveyancerRole
+    ? conveyancerNavigation
     : isSelfCompany
     ? selfNavigation
     : companyNavigation;
@@ -148,9 +181,9 @@ export function AppSidebar({
         {/* Logo row */}
         <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
           <Link
-            href={isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
+            href={isPlatformAdmin ? '/app/admin' : isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
             className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2'} text-foreground`}
-            aria-label={isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
+            aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
             title="PropertyOS"
           >
             <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
@@ -232,7 +265,43 @@ export function AppSidebar({
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
-          {isAdmin && !isSelfCompany ? (
+          {isPlatformAdmin ? (
+            <div>
+              <button
+                onClick={() => setShowPlatformAdminCockpit((v) => !v)}
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors text-amber-600 hover:bg-amber-50`}
+                title="Platform Admin"
+              >
+                <ShieldCheck className="w-5 h-5 shrink-0" />
+                {!isSidebarCollapsed && (
+                  <>
+                    <span className="font-medium flex-1 text-left">Platform Admin</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showPlatformAdminCockpit ? 'rotate-180' : ''}`} />
+                  </>
+                )}
+              </button>
+              {showPlatformAdminCockpit && (
+                <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-amber-200 pl-2 mt-1 space-y-1'}`}>
+                  {platformAdminNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        isActive(pathname, item.href)
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : isAdmin && !isSelfCompany ? (
             <div>
               <button
                 onClick={() => setShowAdminGroup((v) => !v)}
@@ -250,6 +319,42 @@ export function AppSidebar({
               {showAdminGroup && (
                 <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
                   {adminCompanyNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        isActive(pathname, item.href)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title={item.name}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : isConveyancerRole ? (
+            <div>
+              <button
+                onClick={() => setShowConveyancerCockpit((v) => !v)}
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent`}
+                title="Conveyancer Cockpit"
+              >
+                <Scale className="w-5 h-5 shrink-0" />
+                {!isSidebarCollapsed && (
+                  <>
+                    <span className="font-medium flex-1 text-left">Conveyancer Cockpit</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showConveyancerCockpit ? 'rotate-180' : ''}`} />
+                  </>
+                )}
+              </button>
+              {showConveyancerCockpit && (
+                <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                  {conveyancerNavigation.map((item) => (
                     <Link
                       key={item.name}
                       href={item.href}
@@ -375,8 +480,8 @@ export function AppSidebar({
           )}
         </nav>
 
-        {/* Quick links */}
-        {!isSidebarCollapsed && (
+        {/* Quick links — only show for non-admin roles (dev/prototype navigation) */}
+        {!isSidebarCollapsed && !isPlatformAdmin && (
           <div className="p-4 border-t border-border">
             <div className="mt-2">
               {quickLinks.map((link) => (
@@ -402,10 +507,10 @@ export function AppSidebar({
             {/* Logo row */}
             <div className="p-6 border-b border-border flex items-center justify-between gap-2">
               <Link
-                href={isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
+                href={isPlatformAdmin ? '/app/admin' : isAdmin && !isSelfCompany ? '/company/dashboard' : '/app/my-dashboard'}
                 onClick={() => setShowMobileMenu(false)}
                 className="flex items-center gap-2 text-foreground"
-                aria-label={isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
+                aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
               >
                 <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
                   <Home className="w-4 h-4 text-white" />
@@ -473,7 +578,38 @@ export function AppSidebar({
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto" aria-label="Mobile main navigation">
-              {isAdmin && !isSelfCompany ? (
+              {isPlatformAdmin ? (
+                <div>
+                  <button
+                    onClick={() => setShowPlatformAdminCockpit((v) => !v)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-amber-600 hover:bg-amber-50"
+                  >
+                    <ShieldCheck className="w-5 h-5 shrink-0" />
+                    <span className="font-medium flex-1 text-left">Platform Admin</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showPlatformAdminCockpit ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showPlatformAdminCockpit && (
+                    <div className="ml-3 border-l border-amber-200 pl-2 mt-1 space-y-1">
+                      {platformAdminNavigation.map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive(pathname, item.href)
+                              ? 'bg-amber-50 text-amber-700'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : isAdmin && !isSelfCompany ? (
                 <div>
                   <button
                     onClick={() => setShowAdminGroup((v) => !v)}
@@ -486,6 +622,37 @@ export function AppSidebar({
                   {showAdminGroup && (
                     <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
                       {adminCompanyNavigation.map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          onClick={() => setShowMobileMenu(false)}
+                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            isActive(pathname, item.href)
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : isConveyancerRole ? (
+                <div>
+                  <button
+                    onClick={() => setShowConveyancerCockpit((v) => !v)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-accent"
+                  >
+                    <Scale className="w-5 h-5 shrink-0" />
+                    <span className="font-medium flex-1 text-left">Conveyancer Cockpit</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showConveyancerCockpit ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showConveyancerCockpit && (
+                    <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                      {conveyancerNavigation.map((item) => (
                         <Link
                           key={item.name}
                           href={item.href}

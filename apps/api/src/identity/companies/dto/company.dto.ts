@@ -32,6 +32,7 @@ export type CompanyStatus =
   | 'pending_verification'
   | 'active'
   | 'suspended'
+  | 'under_investigation'
   | 'deactivated';
 
 export type CompanyVerificationStatus =
@@ -159,6 +160,13 @@ export class RejectCompanyDto {
 }
 
 export class SuspendCompanyDto {
+  @IsString()
+  reason!: string;
+}
+
+export class ReinstateCompanyDto {}
+
+export class InvestigateCompanyDto {
   @IsString()
   reason!: string;
 }

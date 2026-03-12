@@ -52,6 +52,7 @@ type ApiPropertyListing = {
   bathrooms?: number | null;
   area_sqm?: string | null;
   verification_status: string;
+  company_status?: string | null;
   location?: {
     city?: string | null;
     region?: string | null;
@@ -108,6 +109,7 @@ async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
         propertyType: item.property_type.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()),
         verified: item.verification_status === 'verified',
         fraudAlert: item.verification_status === 'flagged',
+        underInvestigation: item.company_status === 'under_investigation',
         imageUrl,
       };
     });

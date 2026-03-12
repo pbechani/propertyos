@@ -306,3 +306,106 @@ export class UsersController {
     return { success: true };
   }
 }
+
+@ApiTags('Admin Platform')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@Roles('admin')
+@Controller()
+export class AdminPlatformController {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+    private readonly auditService: AuditService,
+  ) {}
+
+  @Get('admin/stats')
+  @Permissions({ resource: 'users', action: 'full' })
+  getPlatformStats() {
+    return this.usersService.getPlatformStats();
+  }
+
+  @Get('admin/users')
+  @Permissions({ resource: 'users', action: 'full' })
+  listUsers(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.usersService.listUsers({
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+      role: role || undefined,
+      status: status || undefined,
+      search: search || undefined,
+    });
+  }
+
+  @Post('admin/users/:id/investigate')
+  @Permissions({ resource: 'users', action: 'full' })
+  async investigateUser(
+    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: { reason?: string },
+  ) {
+    const user = await this.usersService.investigateUser(id, body.reason);
+    await this.auditService.log({
+      eventId: 'user.investigated',
+      actorId: req.user.sub,
+      actorRole: 'admin',
+      action: 'investigate',
+      resourceType: 'user',
+      resourceId: id,
+      payload: { reason: body.reason ?? null },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return this.usersService.sanitizeUser(user);
+  }
+
+  @Post('admin/users/:id/suspend')
+  @Permissions({ resource: 'users', action: 'full' })
+  async suspendUser(
+    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: { reason?: string },
+  ) {
+    const user = await this.usersService.suspendUser(id, body.reason);
+    await this.authService.revokeAllSessions(id);
+    await this.auditService.log({
+      eventId: 'user.suspended',
+      actorId: req.user.sub,
+      actorRole: 'admin',
+      action: 'suspend',
+      resourceType: 'user',
+      resourceId: id,
+      payload: { reason: body.reason ?? null },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return this.usersService.sanitizeUser(user);
+  }
+
+  @Post('admin/users/:id/reinstate')
+  @Permissions({ resource: 'users', action: 'full' })
+  async reinstateUser(
+    @Req() req: { user: RequestUser; ip: string; headers: Record<string, string> },
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    const user = await this.usersService.reinstateUser(id);
+    await this.auditService.log({
+      eventId: 'user.reinstated',
+      actorId: req.user.sub,
+      actorRole: 'admin',
+      action: 'reinstate',
+      resourceType: 'user',
+      resourceId: id,
+      payload: {},
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return this.usersService.sanitizeUser(user);
+  }
+}

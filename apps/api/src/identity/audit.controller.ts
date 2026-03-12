@@ -24,6 +24,7 @@ export class AuditController {
   adminLogs(
     @Query('actor_id') actorId?: string,
     @Query('resource_type') resourceType?: string,
+    @Query('action') action?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('limit') limit?: string,
@@ -32,6 +33,7 @@ export class AuditController {
     return this.auditService.findAdminLogs({
       actorId,
       resourceType,
+      action,
       from,
       to,
       limit: limit ? parseInt(limit, 10) : undefined,

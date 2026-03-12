@@ -33,10 +33,10 @@ export class SessionsService {
   /**
    * Create a session record when tokens are issued.
    * Called from AuthService.issueTokens after a successful login/refresh.
-   * Idempotent — ON CONFLICT DO NOTHING avoids duplicates on rare race conditions.
+   * Returns the new session ID.
    */
-  async create(input: CreateSessionInput): Promise<void> {
-    await this.prisma.$executeRaw`
+  async create(input: CreateSessionInput): Promise<{ id: string }> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
       INSERT INTO identity.user_sessions
         (user_id, session_token_hash, device_fingerprint, device_name,
          ip_address, country_code, expires_at)
@@ -48,8 +48,38 @@ export class SessionsService {
          ${input.ipAddress ?? null}::inet,
          ${input.countryCode ?? null},
          ${input.expiresAt})
-      ON CONFLICT (session_token_hash) DO NOTHING
+      ON CONFLICT (session_token_hash) DO UPDATE
+        SET last_active_at = NOW()
+      RETURNING id
     `;
+    return rows[0];
+  }
+
+  /**
+   * Rotate a session during token refresh: replace the old refresh token hash
+   * with the new one so the same session row is reused rather than duplicated.
+   * Returns the session ID (needed to embed in the new JWT).
+   * Falls back to creating a new row if the old session is not found (e.g. first
+   * refresh after a migration).
+   */
+  async rotate(
+    oldHash: string,
+    newInput: CreateSessionInput,
+  ): Promise<{ id: string }> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      UPDATE identity.user_sessions
+      SET session_token_hash = ${newInput.sessionTokenHash},
+          last_active_at     = NOW(),
+          expires_at         = ${newInput.expiresAt},
+          ip_address         = ${newInput.ipAddress ?? null}::inet,
+          device_name        = COALESCE(${newInput.deviceName ?? null}, device_name)
+      WHERE session_token_hash = ${oldHash}
+        AND revoked_at IS NULL
+      RETURNING id
+    `;
+    if (rows.length > 0) return rows[0];
+    // Old session not found — create fresh (covers first-login-after-migration edge case)
+    return this.create(newInput);
   }
 
   /** List active (non-revoked, non-expired) sessions for a user. */
@@ -88,7 +118,20 @@ export class SessionsService {
     return { revoked: result.length > 0 };
   }
 
-  /** Revoke all sessions for a user *except* the one identified by currentTokenHash. */
+  /** Revoke all sessions for a user *except* the one identified by session UUID. */
+  async revokeAllOtherById(userId: string, currentSessionId: string): Promise<{ count: number }> {
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      UPDATE identity.user_sessions
+      SET revoked_at = NOW()
+      WHERE user_id = ${userId}::uuid
+        AND id != ${currentSessionId}::uuid
+        AND revoked_at IS NULL
+      RETURNING id
+    `;
+    return { count: rows.length };
+  }
+
+  /** @deprecated Use revokeAllOtherById — kept for backwards compat during migration. */
   async revokeAllOther(userId: string, currentTokenHash: string): Promise<{ count: number }> {
     const result = await this.prisma.$queryRaw<Array<{ id: string }>>`
       UPDATE identity.user_sessions

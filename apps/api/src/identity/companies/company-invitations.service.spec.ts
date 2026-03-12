@@ -195,4 +195,57 @@ describe('CompanyInvitationsService', () => {
       );
     });
   });
+
+  // ─── resend ───────────────────────────────────────────────────────────────
+
+  describe('resend', () => {
+    it('generates new token, updates expiry, and sends reminder email', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: baseInvitation.id, status: 'pending', invited_email: INVITEE_EMAIL, role: 'agent' }]) // invitation lookup
+        .mockResolvedValueOnce([{ name: 'Test Co' }]); // company name
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // UPDATE token_hash/expires_at
+
+      const result = await service.resend(baseInvitation.id, COMPANY_ID, INVITER_ID, requestCtx);
+
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockNotification.sendEmail).toHaveBeenCalledWith(
+        INVITEE_EMAIL,
+        expect.stringContaining('Reminder'),
+        expect.stringContaining('Test Co'),
+      );
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'company_invitation.resent' }),
+      );
+      expect(result).toHaveProperty('success', true);
+      expect(result).toHaveProperty('expires_at');
+    });
+
+    it('throws NotFoundException when invitation does not belong to company', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]); // not found
+
+      await expect(
+        service.resend('no-such-id', COMPANY_ID, INVITER_ID, requestCtx),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException for a revoked invitation', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: baseInvitation.id, status: 'revoked', invited_email: INVITEE_EMAIL, role: 'agent' },
+      ]);
+
+      await expect(
+        service.resend(baseInvitation.id, COMPANY_ID, INVITER_ID, requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException for an already accepted invitation', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { id: baseInvitation.id, status: 'accepted', invited_email: INVITEE_EMAIL, role: 'agent' },
+      ]);
+
+      await expect(
+        service.resend(baseInvitation.id, COMPANY_ID, INVITER_ID, requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });

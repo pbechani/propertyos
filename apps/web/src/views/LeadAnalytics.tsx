@@ -63,66 +63,52 @@ export default function LeadAnalytics() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{data?.conversionRate ?? 0}%</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Leads closed</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Target className="h-6 w-6 text-blue-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-blue-600 to-blue-700 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Target className="h-5 w-5" />
             </div>
-          </CardContent>
+            <TrendingUp className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Conversion Rate</p>
+          <p className="text-2xl font-bold">{data?.conversionRate ?? 0}%</p>
+          <p className="text-xs opacity-75 mt-1">Leads closed</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Closed Revenue</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">
-                  {data?.closedRevenue ? formatRevenue(data.closedRevenue) : 'R0'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">This period</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-green-500 to-green-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-5 w-5" />
             </div>
-          </CardContent>
+            <Target className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Closed Revenue</p>
+          <p className="text-2xl font-bold">{data?.closedRevenue ? formatRevenue(data.closedRevenue) : 'R0'}</p>
+          <p className="text-xs opacity-75 mt-1">This period</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Response Time</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">4.2h</p>
-                <p className="text-xs text-green-600 mt-0.5">↓ 0.8h vs last month</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-orange-50 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-orange-500" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-amber-500 to-amber-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Clock className="h-5 w-5" />
             </div>
-          </CardContent>
+            <TrendingUp className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Avg Response Time</p>
+          <p className="text-2xl font-bold">4.2h</p>
+          <p className="text-xs opacity-75 mt-1">↓ 0.8h vs last month</p>
         </Card>
 
-        <Card className="rounded-2xl border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Leads</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{data?.activeLeads ?? 0}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">In pipeline now</p>
-              </div>
-              <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
+        <Card className="p-5 bg-linear-to-br from-purple-500 to-purple-600 text-white border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-10 w-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Users className="h-5 w-5" />
             </div>
-          </CardContent>
+            <Target className="h-4 w-4 text-white/60" />
+          </div>
+          <p className="text-xs opacity-90 mb-1">Active Leads</p>
+          <p className="text-2xl font-bold">{data?.activeLeads ?? 0}</p>
+          <p className="text-xs opacity-75 mt-1">In pipeline now</p>
         </Card>
       </div>
 

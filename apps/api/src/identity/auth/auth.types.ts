@@ -7,6 +7,8 @@ export type JwtPayload = {
   active_company_id: string | null;
   active_company_role: string | null;
   active_company_is_admin: boolean;
+  /** UUID of the identity.user_sessions row — used to mark the current session in the UI */
+  session_id?: string;
 };
 
 /** Returned instead of tokens when user belongs to multiple companies.

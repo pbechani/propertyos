@@ -16,6 +16,7 @@ import {
   Shield,
   Mail,
   Ban,
+  RefreshCw,
 } from "lucide-react";
 
 function memberName(m: CompanyMember): string {
@@ -47,6 +48,7 @@ export default function CompanyUserManagement() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "suspended" | "revoked">("all");
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeCompany || activeCompany.slug === 'self') {
@@ -67,6 +69,26 @@ export default function CompanyUserManagement() {
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load members'))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleResendInvitation = async (inviteId: string) => {
+    const token = getAccessToken();
+    if (!token || !activeCompany) return;
+    setResending(inviteId);
+    try {
+      const result = await companiesApi.resendInvitation(token, activeCompany.id, inviteId);
+      setInvitations(prev =>
+        prev.map(inv =>
+          inv.id === inviteId
+            ? { ...inv, expires_at: result.expires_at }
+            : inv,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend invitation');
+    } finally {
+      setResending(null);
+    }
+  };
 
   const handleRevokeInvitation = async (inviteId: string) => {
     const token = getAccessToken();
@@ -314,14 +336,24 @@ export default function CompanyUserManagement() {
                         {new Date(inv.expires_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleRevokeInvitation(inv.id)}
-                          disabled={revoking === inv.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Ban className="w-3.5 h-3.5" />
-                          {revoking === inv.id ? 'Revoking…' : 'Revoke'}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleResendInvitation(inv.id)}
+                            disabled={resending === inv.id || revoking === inv.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            {resending === inv.id ? 'Sending…' : 'Resend'}
+                          </button>
+                          <button
+                            onClick={() => handleRevokeInvitation(inv.id)}
+                            disabled={revoking === inv.id || resending === inv.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            {revoking === inv.id ? 'Revoking…' : 'Revoke'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -332,7 +364,7 @@ export default function CompanyUserManagement() {
 
           {/* Revoked / Expired Invitations */}
           {revokedOrExpiredInvitations.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
               <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <span className="text-sm font-medium text-gray-600">Revoked &amp; Expired ({revokedOrExpiredInvitations.length})</span>
               </div>
@@ -344,6 +376,7 @@ export default function CompanyUserManagement() {
                     <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wide">Status</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wide">Invited By</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase tracking-wide">Sent</th>
+                    <th className="px-6 py-3 text-right text-xs text-gray-500 uppercase tracking-wide">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -369,6 +402,18 @@ export default function CompanyUserManagement() {
                       <td className="px-6 py-4 text-sm text-gray-600">{invitedByName(inv)}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {new Date(inv.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {isExpired(inv) && (
+                          <button
+                            onClick={() => handleResendInvitation(inv.id)}
+                            disabled={resending === inv.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            {resending === inv.id ? 'Sending…' : 'Resend'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

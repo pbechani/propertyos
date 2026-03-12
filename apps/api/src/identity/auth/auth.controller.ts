@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -29,6 +30,7 @@ type RequestMeta = {
 };
 
 @ApiTags('Auth')
+@Throttle({ default: { limit: 10, ttl: 60000 } }) // strict: 10 req/min for login, register, refresh
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

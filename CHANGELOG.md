@@ -12,7 +12,128 @@ Related docs:
 
 ## [Unreleased]
 
+### Changed
+- **Admin: Platform Finance page — removed all hardwired mock data (2026-03-12)**
+  - **`escrow.service.ts`** — added `listReleases(status?)` method: queries `financial.escrow_releases` filtered by optional status, returns up to 100 rows ordered by `requested_at DESC`.
+  - **`admin-finance.controller.ts`** — added `GET /admin/finance/releases?status=` endpoint (admin-only) backed by the new `listReleases()` service method.
+  - **`api-client.ts`** — added `adminFinanceApi.listReleases(token, status?)` — sets `?status=` query param when provided.
+  - **`admin/finance/page.tsx`** — fully rewritten: loads `getCompanyEscrowAccounts()`, `getPendingDeposits()`, and `listReleases('buyer_approved')` in parallel via `Promise.all`; stat cards show live escrow pool (summed balances), pending deposit count, pending releases count + total amount, and recent ledger entry count; revenue chart replaced with a "coming soon" placeholder (no backend revenue stats endpoint yet); conditional Pending Deposits table; conditional Pending Releases (buyer-approved, awaiting admin approval) table; ledger entries table (top 50, across all escrow accounts, sorted by date); loading spinner and error state with retry; Refresh button. Removed all imports of `mockAdminData`.
+
+- **Admin: Audit Logs page — removed all hardwired mock data (2026-03-12)**
+  - **`audit.service.ts`** — added `action` filter to `findAdminLogs()`: appends `action = $1` to the WHERE clause when provided.
+  - **`audit.controller.ts`** — exposed `@Query('action')` on `GET /admin/audit-logs`; forwarded to `findAdminLogs()`.
+  - **`api-client.ts`** — added `action?` to `auditApi.getAdminLogs()` params; sets `action=` query string when non-empty.
+  - **`admin/audit/page.tsx`** — fully rewritten: fetches `auditApi.getAdminLogs()` with server-side action filter and offset-based pagination (50 rows/page + 1 for `hasMore` detection); event type dropdown triggers a new server request (resets to page 0); free-text search filters client-side over `actorId`, `resourceType`, `resourceId`, `action`, `ipAddress`; Previous / Next pagination controls; loading spinner; error state with retry; Refresh button; `reinstate` action type added to `ACTION_STYLES`; shows live `actorId` + `actorRole` instead of the old mock `actor` name + email. Removed all imports of `mockAdminData`.
+
+### Fixed
+- **Admin users page duplicate-content compile error (2026-03-12)**
+  - Previous session left old page.tsx content appended after the new implementation, causing duplicate `ROLE_STYLES` / `KYC_STYLES` / `Page()` declarations and a Next.js build error. Removed the duplicate tail; file is now a single 443-line implementation.
+
 ### Added
+- **Company Invitations: resend invitation (2026-03-12)**
+  - **`company-invitations.service.ts`** — new `resend()` method: looks up invitation by `inviteId` + `companyId` (throws `NotFoundException` if missing), validates `status === 'pending'` (throws `BadRequestException` for revoked/accepted), generates a fresh `rawToken` + `tokenHash`, sets `expiresAt = now + 72 h`, updates those two columns in DB, fetches company name, logs `company_invitation.resent` audit event, sends reminder email via `sendEmail()`. Also handles expired invitations (still `pending` in DB, since expiry is computed client-side) — effectively un-expires them by issuing a new 72-hour window.
+  - **`companies.controller.ts`** — added `POST /companies/:id/invitations/:inviteId/resend` endpoint, protected by `CompanyContextGuard` + `CompanyAdminGuard`.
+  - **`api-client.ts`** — added `companiesApi.resendInvitation(authToken, companyId, inviteId)` returning `{ success: boolean; expires_at: string }`.
+  - **`CompanyUserManagement.tsx`** — added `RefreshCw` lucide icon; added `resending: string | null` state; added `handleResendInvitation()` handler (optimistic `expires_at` update in state); Pending invitation rows now show **Resend** (indigo) + **Revoke** (red) buttons side by side, mutually disabled during each other's operation; Expired invitations in the revoked/expired table show a **Resend**-only button; added `Actions` column header to that table.
+  - **Tests** — 4 new unit tests in `company-invitations.service.spec.ts`: happy path (token refresh + email + audit), `NotFoundException` when invite not found, `BadRequestException` for revoked status, `BadRequestException` for accepted status. All 13 invitation service tests pass.
+
+- **Sprint 06-B design documents formatted (2026-03-12)**
+  - **`design/sprints/sprint-06-b-enhanced.md`** — AI-First Construction PM system specification: reformatted from flat paragraphs to proper markdown with table of contents, `##`/`###` heading hierarchy, bullet lists, tables for agents/services/storage, and fenced code blocks for schema/events/cascade rules.
+  - **`design/sprints/sprint-06-b-database-schema.md`** — Construction PM DB schema reference (sections 3–13): reformatted from tab-separated plain text to `| Field | Type |` tables with `###` per-table headings, `##` per-section headings, and a navigable table of contents.
+
+- **Admin: Fraud Reports page (2026-03-12)**
+  - **`api-client.ts`** — added `FraudReport` type, `FraudReportsResponse` type, and `adminFraudApi` namespace (`list`, `resolve`). Also added `role?: string | null` to the nested `user` object in `KycRecord` (was missing, caused a pre-existing TS error).
+  - **`admin/fraud-reports/page.tsx`** — new admin page with paginated table (20/page) of all fraud reports, status-tab filter (All / Submitted / Under Investigation / Resolved / Dismissed), free-text search over title/type/description, inline resolve/dismiss modal with optional notes, and pagination controls.
+  - **`admin/page.tsx`** — added `pendingFraudCount` state; fetches `adminFraudApi.list(token, { status: 'submitted', limit: 1 })` in the initial `loadAll()` call; renders a contextual action banner (red when reports are pending, neutral otherwise) with a **View Reports →** link to the new page.
+  - **`AppSidebar.tsx`** — added `Fraud Reports` nav entry (ShieldAlert icon) to `platformAdminNavigation` between Platform Finance and Audit Logs.
+- **Suspension side-effects: company membership revocation + listing management (2026-03-12)**
+  - **`prisma/migrations/202603120025_agent_suspended/migration.sql`**: adds `agent_suspended BOOLEAN NOT NULL DEFAULT FALSE` column to `property.properties`, plus a partial index on `(agent_id, agent_suspended) WHERE agent_suspended = TRUE`.
+  - **`property.service.ts`** — `PropertyRecord` type extended with `agent_suspended: boolean` field.
+  - **`users.service.ts`** — `suspendUser()` now performs three additional side-effects after status update:
+    1. Identifies the user's self (system) company.
+    2. Revokes all active non-self-company memberships (`status = 'revoked'`, `revoked_by = NULL`) so company admins can reassign work.
+    3. Sets `agent_suspended = true` on every listing owned by the user (disables contact/interaction widgets on non-self-company listings).
+    4. Sets `status = 'inactive'` on active self-company listings (hidden from search entirely).
+  - **`users.service.ts`** — `reinstateUser()` now performs two listing-restoration steps *before* updating the user status:
+    1. Restores self-company listings where `agent_suspended = true AND status = 'inactive'` back to `'active'`.
+    2. Clears `agent_suspended = false` on all the user's listings.
+  - **`users.service.spec.ts`** — updated all existing `suspendUser` / `reinstateUser` tests to account for new `$queryRaw`/`$executeRaw` call sequences; added 4 new tests covering: membership revocation with/without self company, graceful no-op when user has no listings, listing restoration on reinstatement, and NotFoundException when an invalid userId is passed to reinstate (now also after `$executeRaw` side-effects).
+
+- **Company Under-Investigation status (2026-03-12)**
+  - **`dto/company.dto.ts`** — added `'under_investigation'` to `CompanyStatus` union type; added `InvestigateCompanyDto` with required `reason` field.
+  - **`companies.service.ts`** — `placeUnderInvestigation(id, reason, actorId, ctx)`: validates company isn't already under investigation, sets `status = 'under_investigation'`, emits `company.under_investigation` audit event, notifies company admin with advisory message.
+  - **`companies.controller.ts`** — `POST /admin/companies/:id/investigate` route (admin-only, `RolesGuard`).
+  - **`property.service.ts`** — `search()`: added `(p.company_id IS NULL OR c.status != 'suspended')` as a fixed WHERE condition, also applied to `countQuery` (LEFT JOIN added there); added `c.status AS company_status` to the SELECT so listing cards can surface the investigation badge. `PropertyRecord` extended with `company_status: string | null`.
+  - **`auth.service.ts`** — `selectContext()` was already rejecting suspended/under-investigation company contexts because it queries `AND c.status = 'active'`. No code change needed; confirmed behaviour.
+  - **`apps/web/src/lib/api-client.ts`** — added `investigate(authToken, id, reason)` to `adminCompaniesApi`; added `company_status?: string | null` to `PropertyListing` type.
+  - **`admin/companies/[id]/page.tsx`** — added "Under Investigation" button (amber, `AlertTriangle` icon) and reason modal on active companies; added `Under Investigation` banner (amber) when `status === 'under_investigation'` with Suspend + Reinstate actions; updated status badge in header to show `under_investigation` in yellow.
+  - **`admin/companies/page.tsx`** — `StatusBadge` now renders a yellow `Under Investigation` pill for `status === 'under_investigation'`.
+  - **`PropertyCard.tsx`** — added `underInvestigation?: boolean` to `PropertyCardData` interface; renders `⚠ Caution: Under Investigation` yellow badge overlay when true.
+  - **`properties/search/page.tsx`** — `toCardData()` maps `company_status === 'under_investigation'` to `underInvestigation: true`.
+  - **`properties/page.tsx`** — `fetchFeaturedListings()` maps `company_status === 'under_investigation'` to `underInvestigation: true`.
+  - **Tests** — 5 new unit tests in `companies.service.spec.ts`: `placeUnderInvestigation` happy path, duplicate investigation guard, can investigate a suspended company; `reinstate` — new test confirming `under_investigation` companies can be reinstated. Total: 671 tests, 0 failures.
+
+### Changed
+- **`companies.service.ts`** — `reinstate()` guard updated from `status !== 'suspended'` to `!['suspended', 'under_investigation'].includes(status)`, allowing reinstatement from either status.
+- **`companies.controller.ts`** — `POST /admin/companies/:id/reinstate` now works for both `suspended` and `under_investigation` companies.
+- **`admin/companies/[id]/page.tsx`** — Suspended banner description updated to mention listing visibility; `Under Investigation` banner shows Suspend + Reinstate quick-action buttons.
+
+- **Platform Admin Cockpit UI — 7 screens (2026-03-12)**
+  - **`AppSidebar.tsx`** — added *Platform Admin Cockpit* collapsible group (role-gated to platform `admin` via `getIsAdminFromToken()`) with 7 submenu items in amber theme: Overview, Companies, KYC Queue, Users, Platform Finance, Audit Logs, AI Command Center — all linking to `/app/admin/*`. Company Administration section is now restricted to company-level admins only (`!isPlatformAdmin`).
+  - **`_data/mockAdminData.ts`** — shared mock data module for all admin pages: `platformStats`, `mockPendingCompanies` (4), `mockAllCompanies` (8), `mockKycQueue` (6), `mockAdminUsers` (8), `mockAuditLogs` (8), `mockRevenueData` (6 months), `mockEscrowTransactions` (5).
+  - **`admin/page.tsx`** — Overview dashboard: 8 KPI stat cards (users, companies, pending approvals, KYC queue, revenue, escrow pool, listings, active sales), pending company approvals panel, KYC awaiting review panel, recent admin activity feed.
+  - **`admin/companies/page.tsx`** — Company list with tab filter (Pending/Active/Rejected/All), search by name/owner/reg number, status badges, inline approve/reject icon actions, links to detail page.
+  - **`admin/companies/[id]/page.tsx`** — Company detail: info card, owner credentials, submitted documents checklist, status history timeline, action banner (Approve / Reject / Suspend) with confirmation modals for reject and suspend.
+  - **`admin/kyc/page.tsx`** — KYC queue with tab filter (Pending/In Review/Approved/All), summary stat cards, user table with tier badges (basic/enhanced/professional), approve/reject actions, rejection reason modal.
+  - **`admin/users/page.tsx`** — User management with search + role + KYC status filters, KYC status badges, account suspension status, stat cards, paginated table.
+  - **`admin/finance/page.tsx`** — Platform finance: 4 stat cards (monthly revenue, escrow pool, 6-month total, pending releases), `recharts` `BarChart` (commission vs escrow fees vs subscriptions trend), recent escrow transactions table.
+  - **`admin/audit/page.tsx`** — Immutable audit log table with search + event type filter, action icon badges (verify/approve=green, reject=red, suspend=orange), actor/resource/IP/event-ID columns, append-only notice.
+
+- **Conveyancer Cockpit UI — 10 screens ported to Next.js (2026-03-11)**
+  - **`AppSidebar.tsx`** — added *Conveyancer Cockpit* collapsible group (role-gated to `conveyancer`) with 9 submenu items: Command Center, Cases, Clients, Properties, Documents, Financials, Reports, Calendar, Settings — all linking to `/app/conveyancer/*`.
+  - **`_data/mockData.ts`** — shared mock data module for all conveyancer pages (`mockCases`, `mockClients`, `mockProperties`, `mockDocuments`, `mockFinancials`, `aiInsights`, `workflowStats`, `tasksList`, `activityLog`).
+  - **`_data/caseDetailData.ts`** — `getCaseDetail()` returning full case data (milestones, tasks, documents, financials, communications, timeline, AI insights) for detail drilldown.
+  - **`command-center/page.tsx`** — AI-powered dashboard: workflow stats, risk alerts, upcoming deadlines, recharts `PieChart` (cases by type) + `LineChart` (workload trend), recent activity feed.
+  - **`cases/page.tsx`** — case list with search + status filter, progress bars per stage, links to detail.
+  - **`cases/[id]/page.tsx`** — 6-tab case detail (Overview, Tasks, Documents, Financials, Communications, Timeline); AI insights panel, milestone tracker, party management, quick actions.
+  - **`clients/page.tsx`** — client grid with KYC badge, risk score, case count; search.
+  - **`clients/[id]/page.tsx`** — client detail: related cases, documents, activity timeline, compliance sidebar.
+  - **`properties/page.tsx`** — property grid with title/mortgage status, search.
+  - **`properties/[id]/page.tsx`** — property detail: ownership history, compliance certificates, related cases.
+  - **`documents/page.tsx`** — document table with type filter, AI document intelligence panel.
+  - **`financials/page.tsx`** — 3 stats cards, recharts `BarChart` (Revenue vs Expenses), transactions table.
+  - **`reports/page.tsx`** — `BarChart` (case completion), `LineChart` (revenue trend), `PieChart` (cases by type), staff performance table, report template buttons.
+  - **`calendar/page.tsx`** — interactive calendar grid with month navigation, inline deadline pills, upcoming deadlines sidebar, overdue alerts section.
+  - **`settings/page.tsx`** — 6-tab settings panel: Profile, Notifications, Security, Firm Details, Email Templates, Appearance.
+
+- **Sprint 05-B — Conveyancing Case Management (2026-03-11)**
+  - **Migration `202603110024_sprint05b_conveyancing`** — creates full `conveyancing.*` schema with 14 tables: `cases`, `task_templates`, `case_tasks`, `case_notes`, `deadlines`, `trust_accounts`, `trust_ledger_entries` (append-only trigger), `fee_schedules`, `invoices`, `invoice_line_items`, `document_templates`, `generated_documents`, `client_portal_access`, `audit_logs` (append-only trigger). Seeds South Africa LSSA Transfer and Bond Registration fee schedules (band JSON), plus 20 default ZA transfer task templates across stages 5–14.
+  - **`ConveyancingModule`** — NestJS module wired into `AppModule`; exports `ConveyancingService` and `TrustAccountService`. Eight services + four controllers.
+  - **`ConveyancingService`** — case CRUD scoped to firm; duplicate-sale guard; auto-seeds tasks from `task_templates` on case creation; `listCases()` with pagination using `COUNT(*) OVER()`.
+  - **`CaseTasksService`** — task creation, status transitions (auto-sets `completed_at` / `escalated_at`), notes management with JSONB attachment list.
+  - **`TrustAccountService`** — immutable append-only trust ledger: debit guard (rejects if insufficient balance), idempotency key enforcement, running balance computed from ledger entries. Append-only enforced by PostgreSQL trigger.
+  - **`InvoiceService`** — conveyancing invoices with line items; VAT computed at 15%; invoice numbers formatted as `INV-{timestamp}-{seq:05d}`; status lifecycle (`draft → sent → paid`).
+  - **`FeeCalculatorService`** — LSSA tariff band-based fee calculation for Transfer and Bond Registration; open-ended last band uses `(price − from) × pct_over_from` formula; returns full breakdown including VAT.
+  - **`DocumentWorkflowService`** — document generation from templates with SHA-256 content hash (not raw content stored); e-signature workflow tracks individual signer status; sets `fully_signed_at` when all signers have signed.
+  - **`ClientPortalService`** — token-based read-only portal for buyers / sellers / banks: rawToken (32 random bytes) returned once; SHA-256 hash stored in DB; token expiry (90-day default); `getPortalSummary()` returns case + tasks + documents + running trust balance.
+  - **`ConveyancingAuditService`** — append-only `conveyancing.audit_logs` inserts; mirrors `FinancialAuditService` pattern.
+  - **Controllers** — `ConveyancingCasesController` (`/api/v1/conveyancing/cases` — tasks, notes, trust ledger, invoices, documents, portal access), `FeeCalculatorController` (`/api/v1/conveyancing/fee-calculator`), `DocumentTemplatesController` (`/api/v1/conveyancing/document-templates`), `ClientPortalController` (`/api/v1/conveyancing/portal` — unauthenticated, token-validated).
+  - **Tests** — 27 new unit tests across 4 spec files (`fee-calculator.service.spec.ts` ×5, `conveyancing.service.spec.ts` ×7, `trust-account.service.spec.ts` ×7, `client-portal.service.spec.ts` ×8).
+
+- **Sprint 05 — Escrow & Financial Ledger (2026-03-11)**
+  - **Migration `202603110022_sprint05_financial_escrow`** — creates full `financial.*` schema: `financial.accounts`, `financial.ledger_entries` (append-only enforced by DB trigger `trg_ledger_immutable`), `financial.escrow_conditions`, `financial.payment_requests`, `financial.escrow_releases`, `financial.exchange_rate_snapshots`, `financial.audit_logs` (append-only trigger). Seeds 3 platform accounts (`PLATFORM_ESCROW_POOL`, `PLATFORM_REVENUE`, `PLATFORM_INCOMING`). Adds `escrow_account_id` to `sales.property_sales`.
+  - **`FinancialModule`** — NestJS module wired into `AppModule` exporting `AccountService`, `EscrowService`, `LedgerService`, `CommissionService`, `ExchangeRateService`.
+  - **`ExchangeRateService`** — Redis-cached FX rates (1-hour TTL) fetched from Open Exchange Rates; persists snapshots in DB; falls back to rate 1.0 when key not configured or API fails.
+  - **`AccountService`** — create/fetch escrow accounts; compute balance from ledger entries (CREDIT − DEBIT); find-or-create agent wallet.
+  - **`LedgerService`** — double-entry `post()` with optional idempotency key; `recordEscrowDeposit()`, `recordEscrowRelease()`, `recordCommission()` helpers; `listForAccount()` with pagination.
+  - **`PaymentGatewayService`** — Stripe + Flutterwave integration (bank transfer fallback); mock payment result when keys not set (dev-friendly).
+  - **`EscrowService`** — full multi-signature escrow lifecycle: `initiateDeposit()`, `confirmDeposit()`, `requestRelease()`, `buyerApproveRelease()`, `adminApproveRelease()`, `rejectRelease()`, `getEscrowSummary()`. Flags transactions ≥ `HIGH_VALUE_THRESHOLD_USD` for manual review.
+  - **`CommissionService`** — calculates and settles platform fee + agent commission; configurable percentages via `COMMISSION_PLATFORM_PCT` / `COMMISSION_AGENT_PCT` env vars.
+  - **`FinancialAuditService`** — immutable `financial.audit_logs` INSERT via `$executeRaw`.
+  - **Controllers** — `FinancialController` (accounts, ledger, FX, commission), `EscrowController` (deposit, release CRUD), `AdminFinanceController` (admin-only deposit confirm + account balance).
+  - **8 new environment variables**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FLUTTERWAVE_SECRET_KEY`, `FLUTTERWAVE_WEBHOOK_SECRET`, `OPEN_EXCHANGE_RATES_APP_ID`, `HIGH_VALUE_THRESHOLD_USD` (default 10000), `COMMISSION_PLATFORM_PCT` (default 1.5), `COMMISSION_AGENT_PCT` (default 1.0).
+  - **Tests** — 41 new tests across 5 spec files (`exchange-rate.service.spec.ts`, `account.service.spec.ts`, `ledger.service.spec.ts`, `commission.service.spec.ts`, `escrow.service.spec.ts`). Total: 610 tests, 0 failures.
+
 - **Sale Parties Junction — multi-buyer / multi-seller support (2026-03-10)**
   - **Migration `20260310000001_sale_parties_junction`** — adds `sales.sale_buyers` and `sales.sale_sellers` M:N junction tables. Each row has `sale_id`, `user_id`, `added_by`, `added_at`; unique constraint per `(sale_id, user_id)`. Backfills existing rows from the legacy `buyer_id`/`seller_id` FK columns.
   - **`sales.service.ts`** — `addBuyer()`, `removeBuyer()`, `addSeller()`, `removeSeller()` methods using the junction tables; `getById()` extended to resolve full buyer and seller arrays via `fetchSalePartyUsers()`; `listForUser()` updated to check both the legacy FK column _and_ the junction table so multi-party participants see their sale.

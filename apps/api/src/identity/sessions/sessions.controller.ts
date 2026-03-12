@@ -14,7 +14,7 @@ import { RolesGuard } from '../rbac/roles.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
 import { Permissions } from '../rbac/permissions.decorator';
 
-type RequestUser = { sub: string; roles: string[] };
+type RequestUser = { sub: string; roles: string[]; session_id?: string };
 
 @ApiTags('Sessions')
 @ApiBearerAuth()
@@ -26,24 +26,25 @@ export class SessionsController {
   @Get()
   @Permissions({ resource: 'users', action: 'self' })
   async listActive(@Req() req: { user: RequestUser }) {
-    return this.sessionsService.listActive(req.user.sub);
+    const rows = await this.sessionsService.listActive(req.user.sub);
+    const currentSessionId = req.user.session_id ?? null;
+    return rows.map((s) => ({
+      id: s.id,
+      deviceName: s.device_name ?? null,
+      ipAddress: s.ip_address ?? null,
+      lastActiveAt: s.last_active_at ? (s.last_active_at as Date).toISOString() : null,
+      createdAt: (s.created_at as Date).toISOString(),
+      expiresAt: (s.expires_at as Date).toISOString(),
+      current: s.id === currentSessionId,
+    }));
   }
 
   @Delete()
   @Permissions({ resource: 'users', action: 'self' })
-  async revokeAllOther(
-    @Req() req: { user: RequestUser; headers: Record<string, string> },
-  ) {
-    // The current session token hash is not directly available in JWT payload,
-    // so revokeAll except current — derive from Authorization header
-    const authHeader = req.headers['authorization'] ?? '';
-    const bearerToken = authHeader.replace(/^Bearer\s+/i, '');
-
-    // Hash the current access token to identify this session
-    const { createHash } = await import('crypto');
-    const currentHash = createHash('sha256').update(bearerToken).digest('hex');
-
-    return this.sessionsService.revokeAllOther(req.user.sub, currentHash);
+  async revokeAllOther(@Req() req: { user: RequestUser }) {
+    // Use the session_id embedded in the JWT to keep the current session
+    const currentSessionId = req.user.session_id ?? '';
+    return this.sessionsService.revokeAllOtherById(req.user.sub, currentSessionId);
   }
 
   @Delete(':id')

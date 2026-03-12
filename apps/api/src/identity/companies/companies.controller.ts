@@ -29,6 +29,7 @@ import {
   UpdateCompanyDto,
   RejectCompanyDto,
   SuspendCompanyDto,
+  InvestigateCompanyDto,
   ListCompaniesQueryDto,
 } from './dto/company.dto';
 import { InviteMemberDto, UpdateMemberPermissionsDto } from './dto/member.dto';
@@ -242,6 +243,30 @@ export class CompaniesController {
     });
   }
 
+  @Post('admin/companies/:id/reinstate')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  reinstate(@Req() req: RequestWithUser, @Param('id') id: string) {
+    return this.companiesService.reinstate(id, req.user.sub, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+  }
+
+  @Post('admin/companies/:id/investigate')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  investigate(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() body: InvestigateCompanyDto,
+  ) {
+    return this.companiesService.placeUnderInvestigation(id, body.reason, req.user.sub, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+  }
+
   // ----------------------------------------------------------------
   // Member Management
   // ----------------------------------------------------------------
@@ -343,6 +368,19 @@ export class CompaniesController {
     @Param('inviteId') inviteId: string,
   ) {
     return this.invitationsService.revoke(inviteId, id, req.user.sub, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+  }
+
+  @Post('companies/:id/invitations/:inviteId/resend')
+  @UseGuards(CompanyContextGuard, CompanyAdminGuard)
+  resendInvitation(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('inviteId') inviteId: string,
+  ) {
+    return this.invitationsService.resend(inviteId, id, req.user.sub, {
       ip: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });

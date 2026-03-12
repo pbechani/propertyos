@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   DollarSign, Lock, Shield, TrendingUp, Download,
   Eye, CheckCircle2, Clock, AlertCircle, ArrowUpRight, ArrowDownLeft,
   FileText, Building, Calendar,
-  X, Circle
+  X, Circle, Plus, Loader2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getAccessToken } from "@/lib/auth-session";
+import { adminFinanceApi, escrowApi } from "@/lib/api-client";
 
 type TransactionStatus = "completed" | "pending" | "processing" | "failed" | "scheduled";
 type ReleaseStatus = "pending" | "partial" | "approved" | "released";
@@ -54,6 +56,70 @@ export default function EscrowFinancialDashboard() {
   const [selectedRelease, setSelectedRelease] = useState<EscrowRelease | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | TransactionStatus>("all");
+  // Sprint 05 — real API state
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
+  const [showNewReleaseForm, setShowNewReleaseForm] = useState(false);
+  const [newReleaseForm, setNewReleaseForm] = useState({ escrowAccountId: '', amount: '', currency: 'ZAR', reason: '' });
+  const [newReleaseLoading, setNewReleaseLoading] = useState(false);
+  const [newReleaseError, setNewReleaseError] = useState<string | null>(null);
+
+  const handleApproveRelease = useCallback(async () => {
+    if (!selectedRelease) return;
+    const token = getAccessToken();
+    if (!token) { setApprovalError('Not authenticated'); return; }
+    setApprovalLoading(true);
+    setApprovalError(null);
+    try {
+      // Try admin approval first; fall back to buyer approval
+      const result = await adminFinanceApi.approveRelease(token, selectedRelease.id);
+      setApprovalTxHash(result?.id ?? selectedRelease.id);
+      setShowReleaseModal(false);
+      setShowConfirmation(true);
+    } catch {
+      // If admin endpoint fails (non-admin user) try buyer approval
+      try {
+        const token2 = getAccessToken();
+        if (token2) {
+          const result2 = await escrowApi.approveRelease(token2, selectedRelease.id);
+          setApprovalTxHash(result2?.id ?? selectedRelease.id);
+          setShowReleaseModal(false);
+          setShowConfirmation(true);
+          return;
+        }
+      } catch { /* fall through to show error */ }
+      setApprovalError('Failed to submit approval. Check your permissions.');
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [selectedRelease]);
+
+  const handleRequestRelease = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) { setNewReleaseError('Not authenticated'); return; }
+    const amount = parseFloat(newReleaseForm.amount);
+    if (!newReleaseForm.escrowAccountId || isNaN(amount) || amount <= 0 || !newReleaseForm.reason.trim()) {
+      setNewReleaseError('Please fill in all fields.');
+      return;
+    }
+    setNewReleaseLoading(true);
+    setNewReleaseError(null);
+    try {
+      await escrowApi.requestRelease(token, {
+        escrowAccountId: newReleaseForm.escrowAccountId,
+        amount,
+        currency: newReleaseForm.currency,
+        reason: newReleaseForm.reason,
+      });
+      setShowNewReleaseForm(false);
+      setNewReleaseForm({ escrowAccountId: '', amount: '', currency: 'ZAR', reason: '' });
+    } catch (err) {
+      setNewReleaseError(err instanceof Error ? err.message : 'Failed to request release.');
+    } finally {
+      setNewReleaseLoading(false);
+    }
+  }, [newReleaseForm]);
 
   const escrowSummary = {
     totalBalance: 45250000,
@@ -250,8 +316,8 @@ export default function EscrowFinancialDashboard() {
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              <DollarSign className="w-4 h-4 mr-2" />
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setShowNewReleaseForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               New Release
             </Button>
           </div>
@@ -878,15 +944,100 @@ export default function EscrowFinancialDashboard() {
               >
                 Cancel
               </Button>
+              {approvalError && (
+                <p className="flex-1 text-sm text-red-600 text-center px-2">{approvalError}</p>
+              )}
               <Button 
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => {
-                  setShowReleaseModal(false);
-                  setShowConfirmation(true);
-                }}
+                onClick={handleApproveRelease}
+                disabled={approvalLoading}
               >
-                <Lock className="w-4 h-4 mr-2" />
-                Approve & Sign
+                {approvalLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                {approvalLoading ? 'Submitting…' : 'Approve & Sign'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* New Release Request Modal */}
+      {showNewReleaseForm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-emerald-700 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-xl mb-1">Request Escrow Release</h3>
+                  <div className="text-sm opacity-90">Funds will be released upon multi-signature approval</div>
+                </div>
+                <button onClick={() => setShowNewReleaseForm(false)} className="text-white hover:bg-white/20 p-2 rounded-lg" aria-label="Close">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Escrow Account ID</label>
+                <input
+                  type="text"
+                  placeholder="UUID of the escrow account"
+                  value={newReleaseForm.escrowAccountId}
+                  onChange={e => setNewReleaseForm(f => ({ ...f, escrowAccountId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    value={newReleaseForm.amount}
+                    onChange={e => setNewReleaseForm(f => ({ ...f, amount: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <select
+                    value={newReleaseForm.currency}
+                    onChange={e => setNewReleaseForm(f => ({ ...f, currency: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                  >
+                    <option value="ZAR">ZAR</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Milestone</label>
+                <textarea
+                  placeholder="e.g. Transfer duty payment — Stage 12"
+                  rows={3}
+                  value={newReleaseForm.reason}
+                  onChange={e => setNewReleaseForm(f => ({ ...f, reason: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm resize-none"
+                />
+              </div>
+              {newReleaseError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {newReleaseError}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <Button onClick={() => setShowNewReleaseForm(false)} variant="outline" className="flex-1">Cancel</Button>
+              <Button
+                onClick={handleRequestRelease}
+                disabled={newReleaseLoading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {newReleaseLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <DollarSign className="w-4 h-4 mr-2" />}
+                {newReleaseLoading ? 'Submitting…' : 'Submit Release Request'}
               </Button>
             </div>
           </Card>
@@ -906,8 +1057,8 @@ export default function EscrowFinancialDashboard() {
                 Your approval has been cryptographically signed and recorded on the blockchain.
               </p>
               <div className="p-4 bg-gray-50 rounded-lg mb-6">
-                <div className="text-sm text-gray-600 mb-1">Transaction Hash</div>
-                <div className="font-mono text-xs text-blue-600 break-all">0x7a8f9e2c1d5b4a3c6e8f1a2b3c4d5e6f</div>
+                <div className="text-sm text-gray-600 mb-1">Release ID</div>
+                <div className="font-mono text-xs text-blue-600 break-all">{approvalTxHash ?? selectedRelease?.id ?? '—'}</div>
               </div>
               <Button 
                 className="w-full bg-blue-600 hover:bg-blue-700"

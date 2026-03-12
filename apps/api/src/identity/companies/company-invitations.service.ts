@@ -407,6 +407,62 @@ export class CompanyInvitationsService {
     `;
   }
 
+  async resend(
+    inviteId: string,
+    companyId: string,
+    actorId: string,
+    requestContext: { ip: string; userAgent?: string | null },
+  ) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ id: string; status: string; invited_email: string; role: string }>
+    >`
+      SELECT id, status, invited_email, role
+      FROM identity.company_invitations
+      WHERE id = ${inviteId}::uuid AND company_id = ${companyId}::uuid
+      LIMIT 1
+    `;
+    if (!rows[0]) throw new NotFoundException('Invitation not found');
+    if (rows[0].status !== 'pending') {
+      throw new BadRequestException('Only pending invitations can be resent');
+    }
+
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + INVITE_EXPIRY_HOURS * 60 * 60 * 1000);
+
+    await this.prisma.$executeRaw`
+      UPDATE identity.company_invitations
+      SET token_hash = ${tokenHash}, expires_at = ${expiresAt}
+      WHERE id = ${inviteId}::uuid
+    `;
+
+    const company = await this.prisma.$queryRaw<Array<{ name: string }>>`
+      SELECT name FROM identity.companies WHERE id = ${companyId}::uuid LIMIT 1
+    `;
+
+    await this.auditService.log({
+      eventId: 'company_invitation.resent',
+      actorId,
+      actorRole: 'admin',
+      action: 'resend_invitation',
+      resourceType: 'invitation',
+      resourceId: inviteId,
+      payload: { company_id: companyId, invitee_email: rows[0].invited_email },
+      ipAddress: requestContext.ip,
+      userAgent: requestContext.userAgent,
+    });
+
+    const companyName = company[0]?.name ?? 'your company';
+    const inviteLink = `${this.frontendUrl}/invitations/${rawToken}`;
+    void this.notificationService.sendEmail(
+      rows[0].invited_email,
+      `Reminder: You're invited to join ${companyName} on PRIBEC`,
+      `This is a reminder that you have been invited to join "${companyName}" as a ${rows[0].role}.\n\nAccept your invitation here (valid for ${INVITE_EXPIRY_HOURS} hours):\n${inviteLink}`,
+    );
+
+    return { success: true, expires_at: expiresAt };
+  }
+
   async revoke(
     inviteId: string,
     companyId: string,

@@ -43,12 +43,17 @@ export type PropertyRecord = {
   company_name: string | null;
   /** Logo URL of the company the listing was created under. */
   company_logo_url: string | null;
+  /** Status of the company the listing was created under. Used to show investigation badge. */
+  company_status: string | null;
   verification_status: string;
   verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
   /** Running count of authenticated non-owner page views. See migration 202603060017. */
   view_count: number;
+  /** True when the listing's agent has been platform-suspended. Non-self-company listings remain
+   * visible but have interactions disabled; self-company listings are also set to 'inactive'. */
+  agent_suspended: boolean;
   /** ISO timestamp of the next scheduled open house, if any. Injected by the search query. */
   next_open_house_at?: string | null;
 };
@@ -524,6 +529,7 @@ export class PropertyService {
 
     const conditions: string[] = [
       "p.status IN ('active', 'under_offer', 'sold')",
+      "(p.company_id IS NULL OR c.status != 'suspended')",
     ];
     const values: unknown[] = [];
     let idx = 1;
@@ -618,9 +624,9 @@ export class PropertyService {
     };
     const orderBy = orderMap[dto.sort ?? 'newest'];
 
-    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p LEFT JOIN identity.companies c ON c.id = p.company_id ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url,
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.status AS company_status,
         (SELECT MIN(oh.scheduled_at)::text FROM property.open_houses oh
           WHERE oh.property_id = p.id AND oh.status = 'scheduled' AND oh.scheduled_at > NOW()
         ) AS next_open_house_at

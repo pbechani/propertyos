@@ -43,6 +43,7 @@ function toCardData(property: PropertyListing): PropertyCardData {
     propertyType: toTitleCase(property.property_type),
     verified: property.verification_status === 'verified',
     fraudAlert: property.verification_status === 'flagged',
+    underInvestigation: property.company_status === 'under_investigation',
     imageUrl: primaryImage,
   };
 }
