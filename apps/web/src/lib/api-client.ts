@@ -3473,10 +3473,47 @@ export type ConveyancerCase = {
   sale?: Sale;
 };
 
+export type ConveyancerDashboardTask = {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  priority: string;
+  status: string;
+  isBlocker: boolean;
+  caseId: string;
+  caseReference: string;
+};
+
+export type ConveyancerActivityEntry = {
+  id: string;
+  actorId: string | null;
+  actorRole: string | null;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  createdAt: string;
+};
+
+export type ConveyancerDashboard = {
+  stats: {
+    activeCases: number;
+    delayedCases: number;
+    closedThisMonth: number;
+    invoicedThisMonth: number;
+  };
+  casesByStatus: { status: string; count: number }[];
+  revenueByMonth: { month: string; amount: number }[];
+  priorityTasks: ConveyancerDashboardTask[];
+  recentActivity: ConveyancerActivityEntry[];
+};
+
 export const conveyancerApi = {
   getCases: (token: string) =>
     apiRequest<{ data: ConveyancerCase[]; total: number; page: number; limit: number }>('/conveyancer/cases', { authToken: token })
       .then(r => r.data),
+
+  getDashboard: (token: string) =>
+    apiRequest<ConveyancerDashboard>('/conveyancing/cases/dashboard', { authToken: token }),
 };
 
 // ─── Admin Sales Dashboard ──────────────────────────────────────────────────

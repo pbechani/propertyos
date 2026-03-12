@@ -93,6 +93,14 @@ export class ConveyancingCasesController {
     );
   }
 
+  @Get('dashboard')
+  async getDashboard(@Request() req: AuthRequest) {
+    return this.conveyancingService.getDashboard(
+      req.user.roles,
+      req.user.active_company_id ?? undefined,
+    );
+  }
+
   @Get(':caseId')
   async getCase(
     @Request() req: AuthRequest,

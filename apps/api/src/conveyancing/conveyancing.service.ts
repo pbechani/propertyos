@@ -212,6 +212,155 @@ export class ConveyancingService {
   }
 
   // ─────────────────────────────────────────────────────────
+  // Dashboard / Command-Center summary
+  // ─────────────────────────────────────────────────────────
+
+  async getDashboard(
+    actorRoles: string[],
+    firmId?: string,
+  ): Promise<Record<string, unknown>> {
+    const isAdmin = actorRoles.includes('admin');
+    const firmFilter = !isAdmin && firmId ? firmId : null;
+
+    // ── Case stats ──────────────────────────────────────────
+    const statsRows = await this.prisma.$queryRaw<
+      { active_cases: string; delayed_cases: string; closed_this_month: string }[]
+    >`
+      SELECT
+        COUNT(*) FILTER (WHERE status NOT IN ('closed', 'cancelled'))            AS active_cases,
+        COUNT(*) FILTER (WHERE status NOT IN ('closed', 'cancelled')
+                           AND target_registration_date < NOW())                  AS delayed_cases,
+        COUNT(*) FILTER (WHERE status = 'closed'
+                           AND actual_registration_date >= date_trunc('month', NOW())) AS closed_this_month
+      FROM conveyancing.cases
+      WHERE (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
+    `;
+
+    // ── Cases grouped by status ─────────────────────────────
+    const casesByStatus = await this.prisma.$queryRaw<
+      { status: string; count: string }[]
+    >`
+      SELECT status, COUNT(*) AS count
+      FROM conveyancing.cases
+      WHERE (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
+      GROUP BY status
+      ORDER BY count DESC
+    `;
+
+    // ── Revenue by month (last 6 months, paid invoices) ─────
+    const revenueByMonth = await this.prisma.$queryRaw<
+      { month: string; amount: string }[]
+    >`
+      SELECT
+        to_char(date_trunc('month', paid_at), 'Mon') AS month,
+        COALESCE(SUM(total_amount), 0)               AS amount
+      FROM conveyancing.invoices
+      WHERE paid_at >= date_trunc('month', NOW()) - INTERVAL '5 months'
+        AND status = 'paid'
+        AND (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
+      GROUP BY date_trunc('month', paid_at)
+      ORDER BY date_trunc('month', paid_at)
+    `;
+
+    // ── Total invoiced this month ───────────────────────────
+    const invoicedRows = await this.prisma.$queryRaw<{ amount: string }[]>`
+      SELECT COALESCE(SUM(total_amount), 0) AS amount
+      FROM conveyancing.invoices
+      WHERE paid_at >= date_trunc('month', NOW())
+        AND status = 'paid'
+        AND (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
+    `;
+
+    // ── Priority tasks (open, due soon) ────────────────────
+    const priorityTasks = await this.prisma.$queryRaw<
+      {
+        id: string;
+        title: string;
+        due_date: Date | null;
+        priority: string;
+        status: string;
+        is_blocker: boolean;
+        case_id: string;
+        case_reference: string;
+      }[]
+    >`
+      SELECT
+        t.id, t.title, t.due_date, t.priority, t.status, t.is_blocker,
+        c.id AS case_id, c.case_reference
+      FROM conveyancing.case_tasks t
+      JOIN conveyancing.cases c ON c.id = t.case_id
+      WHERE t.status NOT IN ('completed', 'waived')
+        AND (${firmFilter}::uuid IS NULL OR c.firm_id = ${firmFilter}::uuid)
+      ORDER BY
+        CASE t.priority
+          WHEN 'urgent' THEN 1
+          WHEN 'high'   THEN 2
+          WHEN 'normal' THEN 3
+          ELSE 4
+        END,
+        t.due_date ASC NULLS LAST
+      LIMIT 5
+    `;
+
+    // ── Recent audit activity ───────────────────────────────
+    const recentActivity = await this.prisma.$queryRaw<
+      {
+        id: string;
+        actor_id: string | null;
+        actor_role: string | null;
+        action: string;
+        resource_type: string | null;
+        resource_id: string | null;
+        created_at: Date;
+      }[]
+    >`
+      SELECT id, actor_id, actor_role, action, resource_type, resource_id, created_at
+      FROM conveyancing.audit_logs
+      WHERE (${firmFilter}::uuid IS NULL OR firm_id = ${firmFilter}::uuid)
+      ORDER BY created_at DESC
+      LIMIT 10
+    `;
+
+    const stats = statsRows[0] ?? { active_cases: '0', delayed_cases: '0', closed_this_month: '0' };
+
+    return {
+      stats: {
+        activeCases:        parseInt(stats.active_cases,        10),
+        delayedCases:       parseInt(stats.delayed_cases,       10),
+        closedThisMonth:    parseInt(stats.closed_this_month,   10),
+        invoicedThisMonth:  parseFloat(String(invoicedRows[0]?.amount ?? '0')),
+      },
+      casesByStatus: casesByStatus.map((r) => ({
+        status: r.status,
+        count:  parseInt(r.count, 10),
+      })),
+      revenueByMonth: revenueByMonth.map((r) => ({
+        month:  r.month,
+        amount: parseFloat(String(r.amount)),
+      })),
+      priorityTasks: priorityTasks.map((t) => ({
+        id:            t.id,
+        title:         t.title,
+        dueDate:       t.due_date ? t.due_date.toISOString().split('T')[0] : null,
+        priority:      t.priority,
+        status:        t.status,
+        isBlocker:     t.is_blocker,
+        caseId:        t.case_id,
+        caseReference: t.case_reference,
+      })),
+      recentActivity: recentActivity.map((a) => ({
+        id:           a.id,
+        actorId:      a.actor_id,
+        actorRole:    a.actor_role,
+        action:       a.action,
+        resourceType: a.resource_type,
+        resourceId:   a.resource_id,
+        createdAt:    a.created_at,
+      })),
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────
   // Seed tasks from templates when case is created
   // ─────────────────────────────────────────────────────────
 

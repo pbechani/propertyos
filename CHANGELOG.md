@@ -13,6 +13,12 @@ Related docs:
 ## [Unreleased]
 
 ### Changed
+- **Conveyancer: Command Center page — removed all hardwired mock data (2026-03-12)**
+  - **`conveyancing.service.ts`** — added `getDashboard(actorRoles, firmId)` method: queries active cases count, delayed cases count, closed-this-month count, invoiced-this-month sum, cases-by-status breakdown, revenue-by-month (last 6 months paid invoices), top-5 priority open tasks, and last-10 audit log entries — all firm-scoped (admin bypasses firm filter).
+  - **`conveyancing.controller.ts`** — added `GET /conveyancing/cases/dashboard` route (placed before `GET :caseId` to avoid path-param collision); calls `getDashboard()` with the authenticated user's roles and active company ID.
+  - **`api-client.ts`** — added `ConveyancerDashboardTask`, `ConveyancerActivityEntry`, `ConveyancerDashboard` types and `conveyancerApi.getDashboard(token)` fetching `GET /conveyancing/cases/dashboard`.
+  - **`conveyancer/command-center/page.tsx`** — fully rewritten: calls `conveyancerApi.getDashboard()` on mount with loading/error state and a Refresh button; stat cards show live `activeCases`, `delayedCases`, `closedThisMonth`, and `invoicedThisMonth`; Alerts & Insights panel derives real-time alerts from delayed cases count + urgent/blocker tasks; Cases-by-Status pie chart uses live `casesByStatus`; Revenue Trend line chart uses live `revenueByMonth`; Priority Tasks panel uses live `priorityTasks` with priority badge, due date, case reference, and blocker flag; Recent Activity feed uses live `recentActivity` with formatted action strings and timestamps. Last-updated timestamp shown in header. Removed all imports of `mockData`.
+
 - **Admin: Platform Finance page — removed all hardwired mock data (2026-03-12)**
   - **`escrow.service.ts`** — added `listReleases(status?)` method: queries `financial.escrow_releases` filtered by optional status, returns up to 100 rows ordered by `requested_at DESC`.
   - **`admin-finance.controller.ts`** — added `GET /admin/finance/releases?status=` endpoint (admin-only) backed by the new `listReleases()` service method.
