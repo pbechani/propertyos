@@ -3514,6 +3514,17 @@ export type ConveyancerDashboard = {
   recentActivity: ConveyancerActivityEntry[];
 };
 
+export type CreateCasePayload = {
+  saleId: string;
+  firmId: string;
+  leadConveyancerId: string;
+  caseType: string;
+  priority?: string;
+  targetRegistrationDate?: string;
+  country?: string;
+  notes?: string;
+};
+
 export const conveyancerApi = {
   getCases: (token: string, params?: { status?: string; page?: number; limit?: number }) => {
     const qs = new URLSearchParams();
@@ -3523,6 +3534,13 @@ export const conveyancerApi = {
     const query = qs.toString() ? `?${qs.toString()}` : '';
     return apiRequest<{ data: ConveyancerCase[]; total: number }>(`/conveyancing/cases${query}`, { authToken: token });
   },
+
+  createCase: (token: string, payload: CreateCasePayload) =>
+    apiRequest<ConveyancerCase>('/conveyancing/cases', {
+      method: 'POST',
+      authToken: token,
+      body: JSON.stringify(payload),
+    }),
 
   getDashboard: (token: string) =>
     apiRequest<ConveyancerDashboard>('/conveyancing/cases/dashboard', { authToken: token }),

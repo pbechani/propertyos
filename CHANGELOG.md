@@ -13,6 +13,9 @@ Related docs:
 ## [Unreleased]
 
 ### Changed
+- **Conveyancer: New Case button — wired to modal form + POST /conveyancing/cases (2026-03-12)**
+  - **`api-client.ts`** — added `CreateCasePayload` type (saleId, firmId, leadConveyancerId, caseType; optional priority, targetRegistrationDate, country, notes) and `conveyancerApi.createCase(token, payload)` calling `POST /conveyancing/cases`.
+  - **`conveyancer/cases/page.tsx`** — New Case button now opens an inline modal form; firmId and leadConveyancerId auto-populated from session (`getActiveCompanyContext()`, `getStoredUser()`); form fields: Sale ID, Case Type (transfer/bond_registration/bond_cancellation/sectional_title/development), Priority, Target Registration Date, Notes; on success redirects to the new case detail page (`/app/conveyancer/cases/:id`).
 - **Conveyancer: Cases page — removed all hardwired mock data (2026-03-12)**
   - **`conveyancing.service.ts`** — added `CaseListRow` type; enriched `listCases` with 6-table JOIN: `conveyancing.cases` → `sales.property_sales` → `property.properties` → `property.property_locations` + `identity.users` (buyer) + `identity.users` (seller). Computes `property_address`, `buyer_name`, `seller_name`, `progress_pct` (current_stage / 14 × 100), `display_status` (on_track / delayed / closed / cancelled), `days_active`, and `blocker_count` (correlated subquery on `case_tasks`). Return type updated to `{ data: CaseListRow[]; total: number }`.
   - **`api-client.ts`** — updated `ConveyancerCase` type to snake_case matching backend (18 fields). Fixed `getCases` URL: `/conveyancer/cases` → `/conveyancing/cases`. Added optional `{ status?, page?, limit? }` params with `URLSearchParams` query string. Return type changed to `{ data: ConveyancerCase[]; total: number }`.
