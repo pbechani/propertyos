@@ -12,6 +12,12 @@ Related docs:
 
 ## [Unreleased]
 
+### Fixed
+- **Walk-In Check-In 500 Error (2026-03-17)**
+  - Applied 10 pending database migrations (`202603110023` → `202603170034`) that were missing from the running dev database
+  - `property.open_house_registrations` now has `buyer_id` nullable and the required columns: `guest_name`, `guest_email`, `guest_phone`, `interest_level`, `notes`, `checked_in_at`, `qr_token`
+  - Also added defensive `?? null` guard on `guestEmail` parameter in `viewing.service.ts` to match the pattern already used for `guestPhone` and `notes`
+
 ### Added
 - **Viewings Tab — Time-Aware Status Grouping (2026-03-17)**
   - Added `deriveViewingDisplayStatus` helper that computes display status from `scheduled_at`, `duration_minutes`, and `status`: `in-progress` (currently running), `upcoming` (future), `ended` (time elapsed but not yet completed), passed through for `completed`/`declined`/`cancelled`

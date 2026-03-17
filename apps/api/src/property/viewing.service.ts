@@ -672,7 +672,7 @@ The PropertyOS Team
         INSERT INTO property.open_house_registrations
           (open_house_id, attended, checked_in_at, guest_name, guest_email, guest_phone, interest_level, notes)
         VALUES
-          (${openHouseId}::uuid, true, ${now}, ${payload.guestName}, ${payload.guestEmail},
+          (${openHouseId}::uuid, true, ${now}, ${payload.guestName}, ${payload.guestEmail ?? null},
            ${payload.guestPhone ?? null}, ${interestLevel}, ${payload.notes ?? null})
         RETURNING *
       `;
