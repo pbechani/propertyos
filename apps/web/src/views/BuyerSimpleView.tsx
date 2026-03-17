@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { salesApi, type Sale, type SaleStage } from "@/lib/api-client";
 import { getAccessToken } from "@/lib/auth-session";
+import { formatMoney } from "@/lib/formatters";
 
 const ZA_STAGE_NAMES: Record<number, string> = {
   1: 'Offer Submitted',
@@ -49,10 +50,6 @@ function mapStageStatus(s: SaleStage['status']): DisplayStage['status'] {
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
 }
 
 // ─── Static placeholder data (real backend endpoints pending) ────────────────
@@ -184,7 +181,7 @@ export default function BuyerSimpleView() {
     selectedSale.property?.city,
   ].filter(Boolean).join(', ') || selectedSale.property?.title || 'Your Property';
 
-  const priceDisplay = formatCurrency(selectedSale.purchasePrice, selectedSale.currency);
+  const priceDisplay = formatMoney(selectedSale.purchasePrice, selectedSale.currency);
 
   return (
     <div className="min-h-screen bg-gray-50">

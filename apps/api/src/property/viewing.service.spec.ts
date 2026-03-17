@@ -212,6 +212,42 @@ describe('ViewingService', () => {
     });
   });
 
+  describe('propertyOpenHouses', () => {
+    it('returns open houses with marketing and preparation metadata', async () => {
+      const rows = [
+        {
+          id: openHouseId,
+          property_id: propertyId,
+          property_title: 'Test Property',
+          agent_id: agentId,
+          scheduled_at: new Date('2026-09-01T10:00:00Z'),
+          end_at: new Date('2026-09-01T12:00:00Z'),
+          max_attendees: 25,
+          description: 'Open viewing',
+          status: 'scheduled',
+          cancel_reason: null,
+          rescheduled_at: null,
+          rescheduled_reason: null,
+          preparation_checklist: [{ task: 'Install directional signage', completed: true }],
+          marketing_options: [{ channel: 'Website', enabled: true }],
+          created_at: new Date('2026-08-20T08:00:00Z'),
+        },
+      ];
+      mockPrisma.$queryRaw.mockResolvedValueOnce(rows);
+
+      const result = await service.propertyOpenHouses(propertyId);
+
+      expect(result).toEqual(rows);
+      expect(result[0].preparation_checklist).toEqual([{ task: 'Install directional signage', completed: true }]);
+      expect(result[0].marketing_options).toEqual([{ channel: 'Website', enabled: true }]);
+
+      const queryTemplate = mockPrisma.$queryRaw.mock.calls[0]?.[0] as TemplateStringsArray;
+      const sql = queryTemplate.join(' ');
+      expect(sql).not.toContain("oh.status = 'scheduled'");
+      expect(sql).not.toContain('oh.scheduled_at > NOW()');
+    });
+  });
+
   describe('cancelOpenHouse', () => {
     const scheduledOpenHouse = {
       id: openHouseId,

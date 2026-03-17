@@ -26,6 +26,11 @@ import {
   INVOICE_LINE_TYPES,
   PORTAL_PARTY_ROLES,
   FEE_TYPES,
+  GOV_DEPARTMENTS,
+  GOV_INTERACTION_TYPES,
+  GOV_INTERACTION_STATUSES,
+  LIFECYCLE_TRIGGERS,
+  REPORT_TYPES,
 } from './conveyancing.constants';
 
 // ─── Case ──────────────────────────────────────────────────────────────────
@@ -349,4 +354,85 @@ export class CreatePortalAccessDto {
 
   @IsIn(PORTAL_PARTY_ROLES)
   partyRole!: string;
+}
+
+// ─── Government Department Interactions ────────────────────────────────────
+
+export class CreateGovInteractionDto {
+  @IsIn(GOV_DEPARTMENTS)
+  department!: string;
+
+  @IsIn(GOV_INTERACTION_TYPES)
+  interactionType!: string;
+
+  @IsString()
+  @MaxLength(500)
+  description!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  referenceNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  submittedAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expectedResponseAt?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class UpdateGovInteractionDto {
+  @IsOptional()
+  @IsIn(GOV_INTERACTION_STATUSES)
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  referenceNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  resolvedAt?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// ─── Case Lifecycle Advancement ────────────────────────────────────────────
+
+export class AdvanceLifecycleDto {
+  @IsInt()
+  @Min(1)
+  toPhase!: number;
+
+  @IsIn(LIFECYCLE_TRIGGERS)
+  trigger!: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// ─── Reports ───────────────────────────────────────────────────────────────
+
+export class ReportQueryDto {
+  @IsOptional()
+  @IsIn(REPORT_TYPES)
+  type?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }

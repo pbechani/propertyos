@@ -418,6 +418,48 @@ describe('PropertyService', () => {
       const countCall = mockPrisma.$queryRawUnsafe.mock.calls[0];
       expect(countCall[1]).toBe(agentId);
     });
+
+    it('returns company_brand_color when company has one set', async () => {
+      const propertyWithBrandColor = {
+        ...baseProperty,
+        company_id: 'company-uuid-001',
+        company_is_system: false,
+        company_name: 'SurdoProp',
+        company_logo_url: '/storage/logos/surdoprop.png',
+        company_brand_color: '#4A9E8E',
+        company_status: 'active',
+      };
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([propertyWithBrandColor]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.search({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toHaveProperty('company_brand_color', '#4A9E8E');
+      expect(result.data[0]).toHaveProperty('company_name', 'SurdoProp');
+    });
+
+    it('returns null company_brand_color for private listings', async () => {
+      const privateListing = {
+        ...baseProperty,
+        company_id: 'self-co-uuid',
+        company_is_system: true,
+        company_name: 'Self',
+        company_logo_url: null,
+        company_brand_color: null,
+        company_status: 'active',
+      };
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([privateListing]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.search({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toHaveProperty('company_brand_color', null);
+      expect(result.data[0]).toHaveProperty('company_is_system', true);
+    });
   });
 
   // ─── addMedia ─────────────────────────────────────────────────────────────
@@ -584,6 +626,144 @@ describe('PropertyService', () => {
       await expect(service.getAgentProfile(agentId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  // ─── getOwnershipHistory ──────────────────────────────────────────────────
+
+  describe('getOwnershipHistory', () => {
+    it('returns ownership history records ordered by transfer date', async () => {
+      const mockHistory = [
+        {
+          id: 'oh-1',
+          owner_name: 'Alice Moyo',
+          transfer_date: '2024-03-15',
+          transfer_price: '1500000.00',
+          transfer_currency: 'ZAR',
+          title_deed_url: 'https://example.com/deed-1.pdf',
+          notes: 'Purchase',
+          created_at: '2024-03-15T10:00:00Z',
+        },
+        {
+          id: 'oh-2',
+          owner_name: 'Bob Nkosi',
+          transfer_date: '2020-08-01',
+          transfer_price: '1200000.00',
+          transfer_currency: 'ZAR',
+          title_deed_url: null,
+          notes: null,
+          created_at: '2020-08-01T10:00:00Z',
+        },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockHistory);
+
+      const result = await service.getOwnershipHistory(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].owner_name).toBe('Alice Moyo');
+      expect(result[1].owner_name).toBe('Bob Nkosi');
+    });
+
+    it('returns empty array when no history exists', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getOwnershipHistory(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── getPriceHistory ──────────────────────────────────────────────────────
+
+  describe('getPriceHistory', () => {
+    it('returns price history records ordered by date ascending', async () => {
+      const mockHistory = [
+        {
+          id: 'ph-1',
+          old_price: null,
+          new_price: '1000000.00',
+          currency: 'ZAR',
+          changed_by: agentId,
+          change_note: 'Initial listing',
+          created_at: '2024-01-15T10:00:00Z',
+        },
+        {
+          id: 'ph-2',
+          old_price: '1000000.00',
+          new_price: '1200000.00',
+          currency: 'ZAR',
+          changed_by: agentId,
+          change_note: 'Price increase',
+          created_at: '2024-06-20T10:00:00Z',
+        },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockHistory);
+
+      const result = await service.getPriceHistory(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].new_price).toBe('1000000.00');
+      expect(result[1].new_price).toBe('1200000.00');
+    });
+
+    it('returns empty array when no price history exists', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getPriceHistory(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── getFloorPlans ────────────────────────────────────────────────────────
+
+  describe('getFloorPlans', () => {
+    it('returns floor plan media ordered by display_order', async () => {
+      const mockPlans = [
+        { id: 'fm-1', url: '/floor1.png', thumbnail_url: '/floor1-thumb.png', display_order: 1, created_at: '2024-01-01T00:00:00Z' },
+        { id: 'fm-2', url: '/floor2.png', thumbnail_url: null, display_order: 2, created_at: '2024-01-02T00:00:00Z' },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockPlans);
+
+      const result = await service.getFloorPlans(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].display_order).toBe(1);
+      expect(result[1].thumbnail_url).toBeNull();
+    });
+
+    it('returns empty array when no floor plans exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getFloorPlans(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── update – price change logging ────────────────────────────────────────
+
+  describe('update – price change logging', () => {
+    it('inserts a price_history record when price changes', async () => {
+      const existingProperty = { ...baseProperty, price: '250000.00', currency: 'USD' };
+      const updatedProperty = { ...baseProperty, price: '300000.00', currency: 'USD' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([existingProperty])  // SELECT existing
+        .mockResolvedValueOnce(1);                   // INSERT price_history
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([updatedProperty]); // UPDATE
+
+      await service.update(propertyId, agentId, 'agent', { price: 300000 });
+
+      // $queryRaw called at least 2 times: SELECT existing + INSERT price_history
+      expect(mockPrisma.$queryRaw.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('does not insert price_history when price stays the same', async () => {
+      const existingProperty = { ...baseProperty, price: '250000.00' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([existingProperty]);
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([existingProperty]);
+
+      await service.update(propertyId, agentId, 'agent', { title: 'New Title' });
+
+      // $queryRaw called once for SELECT existing, no INSERT for price_history
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
     });
   });
 });

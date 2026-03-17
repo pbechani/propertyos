@@ -1,22 +1,40 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "@/lib/router-compat";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  MapPin, Bed, Bath, Car, Maximize, Share2, Phone, MessageSquare,
+  MapPin, Bed, Bath, Car, Maximize, Phone, MessageSquare,
   ChevronLeft, CheckCircle2, Shield, AlertTriangle,
   Calendar, Clock, History, Flag, ChevronRight, X, ZoomIn,
   Heart, Video, Info,
-  Eye, TrendingUp, Users, MessageCircle, BarChart2, Home, Loader2, AlertCircle, RefreshCw, Plus
+  Eye, TrendingUp, Users, MessageCircle, BarChart2, Home, Loader2, AlertCircle, RefreshCw, Plus,
+  Box, GraduationCap, Zap,
+  ClipboardCheck, Star, FileText, DollarSign, Handshake, CheckSquare
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, salesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type Sale } from "@/lib/api-client";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, salesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type Sale, type OwnershipHistoryRecord, type PriceHistoryRecord, type FloorPlanRecord } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
+import LeafletMapDynamic from "@/components/LeafletMapDynamic";
+import { formatMoney } from "@/lib/formatters";
+import PropertyMonthlyCosts from "@/components/property/PropertyMonthlyCosts";
+import PropertyDaysOnMarket from "@/components/property/PropertyDaysOnMarket";
+import PropertyShareButton from "@/components/property/PropertyShareButton";
+import PropertyVerificationChecklist from "@/components/property/PropertyVerificationChecklist";
+import PropertyOwnershipHistory from "@/components/property/PropertyOwnershipHistory";
+import StickyCtaBar from "@/components/property/StickyCtaBar";
+import BondCalculator from "@/components/property/BondCalculator";
+import PropertyBreadcrumb from "@/components/property/PropertyBreadcrumb";
+import FloorPlanViewer from "@/components/property/FloorPlanViewer";
+import PriceHistoryChart from "@/components/property/PriceHistoryChart";
+import PrintButton from "@/components/property/PrintButton";
+import ContactPreferences from "@/components/property/ContactPreferences";
+import FutureFeaturesCard from "@/components/property/FutureFeaturesCard";
+import "@/styles/print.css";
 
 
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500&h=400&fit=crop";
@@ -59,16 +77,6 @@ function getVerificationBadge(status: string) {
   }
 
   return { label: normalizedStatus || 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
-}
-
-function formatMoney(price: string, currency: string): string {
-  const value = Number(price);
-  const safeValue = Number.isFinite(value) ? value : 0;
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-    maximumFractionDigits: 0,
-  }).format(safeValue);
 }
 
 function toFeatureLabel(feature: string): string {
@@ -323,11 +331,20 @@ type PropertyDetailState = {
     companyLogoUrl: string | null;
   };
   verificationStatus: string;
+  verifiedAt: string | null;
   propertyType: string;
   listingStatus: string;
   isPrivateListing: boolean;
   createdAt: string;
   updatedAt: string;
+  monthlyLevy: number | null;
+  monthlyRates: number | null;
+  monthlyUtilities: number | null;
+  erfSize: number | null;
+  currency: string;
+  rawPrice: number;
+  city: string | null;
+  region: string | null;
 };
 
 function getEmptyPropertyDetail(): PropertyDetailState {
@@ -356,11 +373,20 @@ function getEmptyPropertyDetail(): PropertyDetailState {
       companyLogoUrl: null,
     },
     verificationStatus: "UNVERIFIED",
+    verifiedAt: null,
     propertyType: "",
     listingStatus: "",
     isPrivateListing: false,
     createdAt: "",
     updatedAt: "",
+    monthlyLevy: null,
+    monthlyRates: null,
+    monthlyUtilities: null,
+    erfSize: null,
+    currency: "ZAR",
+    rawPrice: 0,
+    city: null,
+    region: null,
   };
 }
 
@@ -370,8 +396,14 @@ export default function PropertyDetailEnhanced() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const propertyId = typeof id === "string" ? id : "";
+  const heroRef = useRef<HTMLDivElement>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [ownershipHistory, setOwnershipHistory] = useState<OwnershipHistoryRecord[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryRecord[]>([]);
+  const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
+  const [inquiryContactMethod, setInquiryContactMethod] = useState("");
+  const [inquiryContactTime, setInquiryContactTime] = useState("");
   const [isSavingProperty, setIsSavingProperty] = useState(false);
   const [agentPhone, setAgentPhone] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -445,7 +477,7 @@ export default function PropertyDetailEnhanced() {
   const [cancellingMandateId, setCancellingMandateId] = useState<string | null>(null);
   const [signingMandateId, setSigningMandateId] = useState<string | null>(null);
   const [offlineSignMandateId, setOfflineSignMandateId] = useState<string | null>(null);
-  const [offlineSignDocUrl, setOfflineSignDocUrl] = useState('');
+  const [offlineSignFile, setOfflineSignFile] = useState<File | null>(null);
   const [isSubmittingOfflineSign, setIsSubmittingOfflineSign] = useState(false);
 
   // ── Initiate Sale (owner/agent only) ─────────────────────────────────────
@@ -471,7 +503,7 @@ export default function PropertyDetailEnhanced() {
   const [isLoadingViewings, setIsLoadingViewings] = useState(false);
   const [listingInquiries, setListingInquiries] = useState<PropertyInquiryRecord[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
-  const [ownerTab, setOwnerTab] = useState<'viewings' | 'inquiries' | 'open_houses'>('viewings');
+  const [ownerTab, setOwnerTab] = useState<'viewings' | 'inquiries' | 'open_houses' | 'property_condition' | 'selling_points' | 'notes' | 'showings' | 'leads' | 'offers' | 'sale_details' | 'post_sale'>('viewings');
 
   // ── Viewing action state ──────────────────────────────────────────────────
   const [showDeclineViewingModal, setShowDeclineViewingModal] = useState(false);
@@ -675,9 +707,13 @@ export default function PropertyDetailEnhanced() {
       await propertiesApi.createInquiry(token, propertyId, {
         inquiryType: 'question',
         message: payloadMessage,
+        ...(inquiryContactMethod ? { preferredContactMethod: inquiryContactMethod as 'phone' | 'email' | 'whatsapp' } : {}),
+        ...(inquiryContactTime ? { bestContactTime: inquiryContactTime as 'morning' | 'afternoon' | 'evening' | 'anytime' } : {}),
       });
       setInquirySuccess("Inquiry sent successfully.");
       setInquiryMessage("");
+      setInquiryContactMethod("");
+      setInquiryContactTime("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to send inquiry right now.";
       setInquiryError(message);
@@ -1080,11 +1116,20 @@ export default function PropertyDetailEnhanced() {
           features: mappedFeatures,
           agent: mappedAgent,
           verificationStatus: listing.verification_status.toUpperCase(),
+          verifiedAt: listing.verified_at ?? null,
           propertyType: listing.property_type,
           listingStatus: listing.status,
           isPrivateListing,
           createdAt: listing.created_at,
           updatedAt: listing.updated_at,
+          monthlyLevy: listing.monthly_levy ? Number(listing.monthly_levy) : null,
+          monthlyRates: listing.monthly_rates ? Number(listing.monthly_rates) : null,
+          monthlyUtilities: listing.monthly_utilities ? Number(listing.monthly_utilities) : null,
+          erfSize: listing.erf_size_sqm ? Number(listing.erf_size_sqm) : null,
+          currency: listing.currency || 'ZAR',
+          rawPrice: listing.price ? Number(listing.price) : 0,
+          city: city || null,
+          region: region || null,
         }));
         setRawListingCurrency(listing.currency || 'ZAR');
         // Normalize null listing_type to 'for_sale' — legacy records without an
@@ -1118,6 +1163,30 @@ export default function PropertyDetailEnhanced() {
           setNeighbourhood(nbhd);
         } catch {
           // silently ignore — neighbourhood section simply won't render
+        }
+
+        // Load ownership history (non-blocking)
+        try {
+          const history = await propertiesApi.getOwnershipHistory(propertyId);
+          setOwnershipHistory(history);
+        } catch {
+          // silently ignore — ownership section simply won't render
+        }
+
+        // Load price history (non-blocking)
+        try {
+          const ph = await propertiesApi.getPriceHistory(propertyId);
+          setPriceHistory(ph);
+        } catch {
+          // silently ignore — price history section simply won't render
+        }
+
+        // Load floor plans (non-blocking)
+        try {
+          const fp = await propertiesApi.getFloorPlans(propertyId);
+          setFloorPlans(fp);
+        } catch {
+          // silently ignore — floor plan section simply won't render
         }
       } catch {
         setPropertyError("Unable to load property from database right now.");
@@ -1396,6 +1465,8 @@ export default function PropertyDetailEnhanced() {
         cancel_reason: null,
         rescheduled_at: null,
         rescheduled_reason: null,
+        preparation_checklist: null,
+        marketing_options: null,
         created_at: new Date().toISOString(),
       };
       setPropertyOpenHouses((prev) => [newRecord, ...prev]);
@@ -1486,14 +1557,21 @@ export default function PropertyDetailEnhanced() {
 
   const handleSellerOfflineSign = async (mandateId: string) => {
     const token = getAccessToken();
-    if (!token || !propertyId || !offlineSignDocUrl.trim()) return;
+    if (!token || !propertyId) {
+      setMandateError('Please sign in to record an offline signature.');
+      return;
+    }
+    if (!offlineSignFile) {
+      setMandateError('Please select a signed agreement file.');
+      return;
+    }
     setIsSubmittingOfflineSign(true);
     setMandateError("");
     try {
-      const updated = await mandateApi.markSellerSignedOffline(token, propertyId, mandateId, offlineSignDocUrl.trim());
+      const updated = await mandateApi.markSellerSignedOffline(token, propertyId, mandateId, offlineSignFile);
       setMandates((prev) => prev.map((m) => m.id === mandateId ? updated : m));
       setOfflineSignMandateId(null);
-      setOfflineSignDocUrl('');
+      setOfflineSignFile(null);
       setMandateSuccess('Seller offline signature recorded.');
     } catch (err) {
       setMandateError(err instanceof Error ? err.message : 'Failed to record offline signature.');
@@ -1504,13 +1582,20 @@ export default function PropertyDetailEnhanced() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Back Button */}
+      {/* Breadcrumb + Back */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
+          <button onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-500 hover:text-gray-900 shrink-0">
             <ChevronLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span className="text-sm">Back</span>
           </button>
+          <div className="h-4 w-px bg-gray-300" />
+          <PropertyBreadcrumb
+            propertyType={property.propertyType}
+            city={property.city}
+            region={property.region}
+            title={property.title || 'Property'}
+          />
         </div>
       </div>
 
@@ -1616,8 +1701,8 @@ export default function PropertyDetailEnhanced() {
             </div>
 
             {/* Tabs */}
-            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3">
-              <div className="flex gap-2">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 overflow-x-auto">
+              <div className="flex gap-2 min-w-max">
                 {/* Viewings tab */}
                 <button
                   onClick={() => setOwnerTab('viewings')}
@@ -1671,6 +1756,110 @@ export default function PropertyDetailEnhanced() {
                     </span>
                   )}
                 </button>
+
+                {/* Property Condition tab */}
+                <button
+                  onClick={() => setOwnerTab('property_condition')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'property_condition'
+                      ? 'bg-teal-600 text-white shadow-md shadow-teal-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600'
+                  }`}
+                >
+                  <ClipboardCheck className={`w-4 h-4 ${ownerTab === 'property_condition' ? 'text-teal-200' : 'text-teal-400'}`} />
+                  <span>Property Condition</span>
+                </button>
+
+                {/* Selling Points tab */}
+                <button
+                  onClick={() => setOwnerTab('selling_points')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'selling_points'
+                      ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-amber-300 hover:text-amber-600'
+                  }`}
+                >
+                  <Star className={`w-4 h-4 ${ownerTab === 'selling_points' ? 'text-amber-200' : 'text-amber-400'}`} />
+                  <span>Selling Points</span>
+                </button>
+
+                {/* Notes tab */}
+                <button
+                  onClick={() => setOwnerTab('notes')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'notes'
+                      ? 'bg-slate-600 text-white shadow-md shadow-slate-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  <FileText className={`w-4 h-4 ${ownerTab === 'notes' ? 'text-slate-300' : 'text-slate-400'}`} />
+                  <span>Notes</span>
+                </button>
+
+                {/* Showings tab */}
+                <button
+                  onClick={() => setOwnerTab('showings')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'showings'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                  }`}
+                >
+                  <Eye className={`w-4 h-4 ${ownerTab === 'showings' ? 'text-indigo-200' : 'text-indigo-400'}`} />
+                  <span>Showings</span>
+                </button>
+
+                {/* Leads tab */}
+                <button
+                  onClick={() => setOwnerTab('leads')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'leads'
+                      ? 'bg-cyan-600 text-white shadow-md shadow-cyan-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600'
+                  }`}
+                >
+                  <Users className={`w-4 h-4 ${ownerTab === 'leads' ? 'text-cyan-200' : 'text-cyan-400'}`} />
+                  <span>Leads</span>
+                </button>
+
+                {/* Offers tab */}
+                <button
+                  onClick={() => setOwnerTab('offers')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'offers'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
+                  }`}
+                >
+                  <DollarSign className={`w-4 h-4 ${ownerTab === 'offers' ? 'text-emerald-200' : 'text-emerald-400'}`} />
+                  <span>Offers</span>
+                </button>
+
+                {/* Sale Details tab */}
+                <button
+                  onClick={() => setOwnerTab('sale_details')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'sale_details'
+                      ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-rose-300 hover:text-rose-600'
+                  }`}
+                >
+                  <Handshake className={`w-4 h-4 ${ownerTab === 'sale_details' ? 'text-rose-200' : 'text-rose-400'}`} />
+                  <span>Sale Details</span>
+                </button>
+
+                {/* Post-Sale Activities tab */}
+                <button
+                  onClick={() => setOwnerTab('post_sale')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
+                    ownerTab === 'post_sale'
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-200'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600'
+                  }`}
+                >
+                  <CheckSquare className={`w-4 h-4 ${ownerTab === 'post_sale' ? 'text-violet-200' : 'text-violet-400'}`} />
+                  <span>Post-Sale Activities</span>
+                </button>
               </div>
             </div>
 
@@ -1688,7 +1877,7 @@ export default function PropertyDetailEnhanced() {
                       <p className="text-sm text-gray-500">No viewings booked yet</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
                       {listingViewings.map((v) => {
                         const statusColors: Record<string, string> = {
                           requested: 'bg-amber-100 text-amber-700',
@@ -1796,7 +1985,7 @@ export default function PropertyDetailEnhanced() {
                       <p className="text-sm text-gray-500">No enquiries received yet</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
                       {listingInquiries.map((inq) => {
                         const typeColors: Record<string, string> = {
                           viewing: 'bg-purple-100 text-purple-700',
@@ -1974,7 +2163,7 @@ export default function PropertyDetailEnhanced() {
                       <p className="text-sm text-gray-500">No open houses scheduled</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
                       {propertyOpenHouses.map((oh) => {
                         const statusColors: Record<string, string> = {
                           scheduled: 'bg-blue-100 text-blue-700',
@@ -2045,6 +2234,78 @@ export default function PropertyDetailEnhanced() {
                   )}
                 </div>
               )}
+
+              {/* Property Condition tab */}
+              {ownerTab === 'property_condition' && (
+                <div className="py-8 text-center">
+                  <ClipboardCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Property Condition</p>
+                  <p className="text-xs text-gray-400">Record overall condition, defects, recent renovations, and maintenance notes.</p>
+                </div>
+              )}
+
+              {/* Selling Points tab */}
+              {ownerTab === 'selling_points' && (
+                <div className="py-8 text-center">
+                  <Star className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Selling Points</p>
+                  <p className="text-xs text-gray-400">Highlight key features, unique attributes, and competitive advantages of this property.</p>
+                </div>
+              )}
+
+              {/* Notes tab */}
+              {ownerTab === 'notes' && (
+                <div className="py-8 text-center">
+                  <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Notes</p>
+                  <p className="text-xs text-gray-400">Add internal notes, reminders, and observations about this listing.</p>
+                </div>
+              )}
+
+              {/* Showings tab */}
+              {ownerTab === 'showings' && (
+                <div className="py-8 text-center">
+                  <Eye className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Showings</p>
+                  <p className="text-xs text-gray-400">Track property showings, attendee feedback, and follow-up actions.</p>
+                </div>
+              )}
+
+              {/* Leads tab */}
+              {ownerTab === 'leads' && (
+                <div className="py-8 text-center">
+                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Leads</p>
+                  <p className="text-xs text-gray-400">View and manage interested buyers and their engagement history.</p>
+                </div>
+              )}
+
+              {/* Offers tab */}
+              {ownerTab === 'offers' && (
+                <div className="py-8 text-center">
+                  <DollarSign className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Offers</p>
+                  <p className="text-xs text-gray-400">Review, compare, and respond to purchase offers on this property.</p>
+                </div>
+              )}
+
+              {/* Sale Details tab */}
+              {ownerTab === 'sale_details' && (
+                <div className="py-8 text-center">
+                  <Handshake className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Sale Details</p>
+                  <p className="text-xs text-gray-400">View accepted offer terms, sale price, conditions, and closing timeline.</p>
+                </div>
+              )}
+
+              {/* Post-Sale Activities tab */}
+              {ownerTab === 'post_sale' && (
+                <div className="py-8 text-center">
+                  <CheckSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700 mb-1">Post-Sale Activities</p>
+                  <p className="text-xs text-gray-400">Track handover tasks, key transfers, and post-completion follow-ups.</p>
+                </div>
+              )}
             </div>
           </Card>
         )}
@@ -2053,7 +2314,7 @@ export default function PropertyDetailEnhanced() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <div className="bg-white rounded-lg overflow-hidden">
+            <div ref={heroRef} className="bg-white rounded-lg overflow-hidden">
               <div className="relative group">
                 <img
                   src={property.images[selectedImage]}
@@ -2096,13 +2357,8 @@ export default function PropertyDetailEnhanced() {
                       ? <Heart className="w-5 h-5 text-red-500 fill-red-500" />
                       : <Heart className="w-5 h-5 text-gray-400" />}
                   </button>
-                  <button
-                    className="p-3 bg-white rounded-lg shadow-md hover:bg-gray-50"
-                    aria-label="Share property"
-                    title="Share property"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </button>
+                  <PropertyShareButton title={property.title} />
+                  <PrintButton />
                 </div>
                 {/* Image Counter */}
                 <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
@@ -2183,6 +2439,11 @@ export default function PropertyDetailEnhanced() {
               </div>
             </div>
 
+            {/* Floor Plans */}
+            {floorPlans.length > 0 && (
+              <FloorPlanViewer floorPlans={floorPlans} />
+            )}
+
             {/* Property Details */}
             <Card className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
@@ -2236,13 +2497,22 @@ export default function PropertyDetailEnhanced() {
               </div>
             </Card>
 
+            {/* Monthly Costs */}
+            <PropertyMonthlyCosts
+              monthlyLevy={property.monthlyLevy}
+              monthlyRates={property.monthlyRates}
+              monthlyUtilities={property.monthlyUtilities}
+              currency={property.currency}
+            />
+
             {/* Listing Timeline & Status */}
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <History className="w-5 h-5 text-green-600" />
                 <h3 className="font-semibold">Listing Timeline & Status</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+              <PropertyDaysOnMarket createdAt={property.createdAt} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Listing Status</span>
                   <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
@@ -2315,13 +2585,10 @@ export default function PropertyDetailEnhanced() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <iframe
-                      title="Property location map"
-                      src={locationMapSource.url}
-                      className="w-full h-full border-0"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      allowFullScreen
+                    <LeafletMapDynamic
+                      center={locationMapSource.center}
+                      zoom={locationMapSource.zoom}
+                      markers={locationMapSource.markers}
                     />
                   )
                 ) : isGeocodingAddress ? (
@@ -2339,6 +2606,18 @@ export default function PropertyDetailEnhanced() {
                 )}
               </div>
             </Card>
+
+            {/* Ownership History */}
+            <PropertyOwnershipHistory transfers={ownershipHistory} />
+
+            {/* Price History */}
+            {priceHistory.length > 0 && (
+              <PriceHistoryChart
+                entries={priceHistory}
+                currentPrice={property.rawPrice}
+                currency={property.currency}
+              />
+            )}
 
             {/* Fraud Report Section */}
             <Card className="p-6 border-2 border-red-100">
@@ -2538,6 +2817,7 @@ export default function PropertyDetailEnhanced() {
                           <div className="flex flex-wrap gap-2 mt-2">
                             {!m.signed_by_agent_at && (
                               <Button
+                                type="button"
                                 size="sm"
                                 variant="outline"
                                 className="text-xs h-7"
@@ -2549,33 +2829,47 @@ export default function PropertyDetailEnhanced() {
                             )}
                             {!m.signed_by_seller_at && !m.seller_is_platform_user && (
                               offlineSignMandateId === m.id ? (
-                                <div className="flex gap-1 w-full mt-1">
-                                  <input
-                                    type="url"
-                                    placeholder="Signed agreement document URL"
-                                    className="flex-1 text-xs border border-gray-300 rounded px-2 py-1"
-                                    value={offlineSignDocUrl}
-                                    onChange={(e) => setOfflineSignDocUrl(e.target.value)}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white"
-                                    disabled={isSubmittingOfflineSign || !offlineSignDocUrl.trim()}
-                                    onClick={() => void handleSellerOfflineSign(m.id)}
-                                  >
-                                    {isSubmittingOfflineSign ? 'Saving…' : 'Confirm'}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7"
-                                    onClick={() => { setOfflineSignMandateId(null); setOfflineSignDocUrl(''); }}
-                                  >
-                                    Cancel
-                                  </Button>
+                                <div className="w-full mt-1 p-2 bg-green-50 border border-green-200 rounded-lg space-y-2">
+                                  <p className="text-xs font-medium text-green-800">Upload signed agreement proof</p>
+                                  <label className="flex items-center gap-2 w-full text-xs border border-gray-300 rounded px-2 py-1.5 bg-white cursor-pointer hover:border-green-400 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                                    <span className="truncate text-gray-600">
+                                      {offlineSignFile ? offlineSignFile.name : 'Choose PDF, JPG, or PNG…'}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.jpg,.jpeg,.png,.heic,application/pdf,image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const f = e.target.files?.[0] ?? null;
+                                        setOfflineSignFile(f);
+                                      }}
+                                    />
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white"
+                                      disabled={isSubmittingOfflineSign || !offlineSignFile}
+                                      onClick={() => void handleSellerOfflineSign(m.id)}
+                                    >
+                                      {isSubmittingOfflineSign ? 'Uploading…' : 'Confirm'}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs h-7"
+                                      onClick={() => { setOfflineSignMandateId(null); setOfflineSignFile(null); }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
                               ) : (
                                 <Button
+                                  type="button"
                                   size="sm"
                                   variant="outline"
                                   className="text-xs h-7 text-green-700 border-green-300 hover:bg-green-50"
@@ -2586,6 +2880,7 @@ export default function PropertyDetailEnhanced() {
                               )
                             )}
                             <Button
+                              type="button"
                               size="sm"
                               variant="outline"
                               className="text-xs h-7 text-red-600 border-red-200 hover:bg-red-50"
@@ -2949,6 +3244,13 @@ export default function PropertyDetailEnhanced() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
+                <ContactPreferences
+                  preferredContactMethod={inquiryContactMethod}
+                  bestContactTime={inquiryContactTime}
+                  onContactMethodChange={setInquiryContactMethod}
+                  onContactTimeChange={setInquiryContactTime}
+                  disabled={isSoldListing}
+                />
                 {isSoldListing && (
                   <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                     This property is sold. New inquiries are disabled.
@@ -2995,6 +3297,35 @@ export default function PropertyDetailEnhanced() {
               </div>
               )}
             </Card>
+
+            {/* Verification Checklist */}
+            <PropertyVerificationChecklist
+              overallStatus={property.verificationStatus}
+              verifiedAt={property.verifiedAt}
+              propertyType={property.propertyType}
+            />
+
+            {/* Bond Calculator */}
+            {property.rawPrice > 0 && (
+              <BondCalculator price={property.rawPrice} currency={property.currency} />
+            )}
+
+            {/* Tier 4 — Future Features */}
+            <FutureFeaturesCard
+              title="3D Virtual Walkthrough"
+              description="Immersive Matterport-powered 3D tours so you can explore every room remotely."
+              icon={<Box className="w-5 h-5" />}
+            />
+            <FutureFeaturesCard
+              title="School Catchment Mapping"
+              description="See nearby schools, catchment zones, and ratings overlaid on an interactive map."
+              icon={<GraduationCap className="w-5 h-5" />}
+            />
+            <FutureFeaturesCard
+              title="Energy Efficiency Rating"
+              description="Detailed energy performance certificate with estimated monthly utility costs."
+              icon={<Zap className="w-5 h-5" />}
+            />
 
             {/* Neighbourhood Insights */}
             {neighbourhood && (
@@ -3092,6 +3423,20 @@ export default function PropertyDetailEnhanced() {
           </div>
         </div>
       </div>
+
+      {/* Sticky CTA Bar */}
+      {!isOwnListing && (
+        <StickyCtaBar
+          heroRef={heroRef}
+          propertyTitle={property.title}
+          price={property.price}
+          isSaved={isSaved}
+          onContactAgent={() => { void handleCallAgent(); }}
+          onScheduleViewing={() => setShowScheduleModal(true)}
+          onToggleSave={() => { void handleAddToFavourites(); }}
+          disabled={isSoldListing}
+        />
+      )}
 
       {/* Decline Viewing Modal */}
       {showDeclineViewingModal && (

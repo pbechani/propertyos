@@ -32,14 +32,16 @@ export class InquiryService {
 
     const result = await this.prisma.$queryRaw`
       INSERT INTO property.inquiries
-        (property_id, buyer_id, inquiry_type, message, preferred_date, company_id)
+        (property_id, buyer_id, inquiry_type, message, preferred_date, company_id, preferred_contact_method, best_contact_time)
       VALUES (
         ${propertyId}::uuid,
         ${buyerId}::uuid,
         ${dto.inquiryType},
         ${dto.message ?? null},
         ${dto.preferredDate ? new Date(dto.preferredDate) : null}::timestamptz,
-        ${companyId ?? null}::uuid
+        ${companyId ?? null}::uuid,
+        ${dto.preferredContactMethod ?? null},
+        ${dto.bestContactTime ?? null}
       )
       RETURNING *
     `;

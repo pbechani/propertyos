@@ -8,12 +8,15 @@ import { TrustAccountService } from './trust-account.service';
 import { InvoiceService } from './invoice.service';
 import { DocumentWorkflowService } from './document-workflow.service';
 import { ClientPortalService } from './client-portal.service';
+import { GovernmentInteractionsService } from './government-interactions.service';
+import { ReportsService } from './reports.service';
 import {
   ConveyancingCasesController,
   FeeCalculatorController,
   DocumentTemplatesController,
   ClientPortalController,
 } from './conveyancing.controller';
+import { ReportsController } from './reports.controller';
 
 @Module({
   imports: [],
@@ -22,6 +25,7 @@ import {
     FeeCalculatorController,
     DocumentTemplatesController,
     ClientPortalController,
+    ReportsController,
   ],
   providers: [
     ConveyancingAuditService,
@@ -32,6 +36,8 @@ import {
     InvoiceService,
     DocumentWorkflowService,
     ClientPortalService,
+    GovernmentInteractionsService,
+    ReportsService,
   ],
   exports: [ConveyancingService, TrustAccountService],
 })

@@ -184,6 +184,45 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
+**File:** `apps/web/src/lib/formatters.ts`
+
+Shared formatting utilities extracted from duplicate implementations across 8+ view files:
+
+- `formatMoney(price, currency)` — locale-aware currency formatting (default ZAR)
+- `formatCompactCurrency(value, prefix)` — compact K/M/B notation
+- `formatRelativeTime(iso)` — human-readable relative timestamps ("2 hours ago")
+
+**File:** `apps/web/src/lib/status-colors.ts`
+
+Shared status-to-Tailwind-class mappings extracted from 6+ view files:
+
+- `getStatusColor(status)` — returns badge classes for common statuses (active, pending, completed, etc.)
+- `getPriorityColor(priority)` — returns badge classes for priority levels
+- `getPriorityTextColor(priority)` — returns text color classes for priority levels
+- `getSeverityColor(severity)` — returns badge classes for severity levels
+- `getRiskColor(score)` / `getRiskLabel(score)` — risk score color mapping
+
+**File:** `apps/web/src/lib/constants.ts`
+
+Shared constants extracted from duplicate definitions in sales/lead dashboards:
+
+- `STAGE_NAMES` — 15-stage property purchase pipeline labels
+- `TEMPERATURE_CONFIG` — lead temperature display config (hot/warm/cold/unknown)
+- `LEAD_TYPE_LABELS` / `LEAD_TYPE_COLORS` — lead type display mappings
+
+**Reusable UI Components:** `apps/web/src/components/ui/`
+
+Common UI patterns extracted into shared components:
+
+| Component | File | Purpose |
+|---|---|---|
+| `KpiCard` | `kpi-card.tsx` | Gradient KPI card with 7 preset color schemes |
+| `StatCard` | `stat-card.tsx` | Simple stat card (non-gradient) |
+| `LoadingSpinner` / `PageLoadingSpinner` | `loading-spinner.tsx` | Consistent loading indicators (sm/md/lg) |
+| `EmptyState` | `empty-state.tsx` | Empty state with icon, title, description, action slot |
+| `ErrorMessage` | `error-message.tsx` | Centered red error message display |
+| `PageHeader` | `page-header.tsx` | Page header with title, description, action buttons |
+
 ---
 
 ### 6. CSS Global Styles Fix

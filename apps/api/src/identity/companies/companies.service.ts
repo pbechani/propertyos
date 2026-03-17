@@ -60,7 +60,7 @@ export class CompaniesService {
     const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
       INSERT INTO identity.companies (
         name, slug, category, registration_number, tax_number,
-        website, phone, email, address, logo_url, description, created_by
+        website, phone, email, address, logo_url, brand_color, description, created_by
       ) VALUES (
         ${dto.name},
         ${slug},
@@ -72,6 +72,7 @@ export class CompaniesService {
         ${dto.email},
         ${JSON.stringify(dto.address ?? {})}::jsonb,
         ${dto.logo_url ?? null},
+        ${dto.brand_color ?? null},
         ${dto.description ?? null},
         ${createdBy}::uuid
       )
@@ -167,6 +168,10 @@ export class CompaniesService {
     if (dto.logo_url !== undefined) {
       setClauses.push(`logo_url = $${values.length + 1}`);
       values.push(dto.logo_url);
+    }
+    if (dto.brand_color !== undefined) {
+      setClauses.push(`brand_color = $${values.length + 1}`);
+      values.push(dto.brand_color);
     }
     if (dto.description !== undefined) {
       setClauses.push(`description = $${values.length + 1}`);

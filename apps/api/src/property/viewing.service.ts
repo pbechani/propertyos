@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as QRCode from 'qrcode';
 import { PrismaService } from '../database';
 import { PropertyAuditService } from './property-audit.service';
 import { NotificationService } from '../identity/notification.service';
@@ -45,9 +46,16 @@ export type ViewingRecord = {
   created_at: Date;
 };
 
+export type ViewingWithBuyerRecord = ViewingRecord & {
+  buyer_first_name: string | null;
+  buyer_last_name: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
+};
 export type OpenHouseRecord = {
   id: string;
   property_id: string;
+  property_title?: string;
   agent_id: string;
   scheduled_at: Date;
   end_at: Date;
@@ -57,6 +65,8 @@ export type OpenHouseRecord = {
   cancel_reason: string | null;
   rescheduled_at: Date | null;
   rescheduled_reason: string | null;
+  preparation_checklist?: { task: string; completed: boolean }[] | null;
+  marketing_options?: { channel: string; enabled: boolean }[] | null;
   created_at: Date;
 };
 
@@ -67,6 +77,27 @@ export type OpenHouseRegistrationRecord = {
   registered_at: Date;
   attended: boolean | null;
   feedback: unknown;
+  qr_token: string;
+};
+
+export type OpenHouseAttendeeRow = {
+  id: string;
+  open_house_id: string;
+  buyer_id: string | null;
+  registered_at: Date;
+  attended: boolean | null;
+  checked_in_at: Date | null;
+  interest_level: 'high' | 'medium' | 'low' | null;
+  notes: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
+  guest_phone: string | null;
+  qr_token: string;
+  // joined from identity.users
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 export type UserNotificationRecord = {
@@ -167,11 +198,17 @@ export class ViewingService {
   // LIST for a property (agent)
   // ──────────────────────────────────────────────────────────
 
-  async findByProperty(propertyId: string): Promise<ViewingRecord[]> {
-    return this.prisma.$queryRaw<ViewingRecord[]>`
-      SELECT * FROM property.viewings
-      WHERE property_id = ${propertyId}::uuid
-      ORDER BY scheduled_at ASC
+  async findByProperty(propertyId: string): Promise<ViewingWithBuyerRecord[]> {
+    return this.prisma.$queryRaw<ViewingWithBuyerRecord[]>`
+      SELECT v.*,
+             u.first_name  AS buyer_first_name,
+             u.last_name   AS buyer_last_name,
+             u.email       AS buyer_email,
+             u.phone       AS buyer_phone
+      FROM property.viewings v
+      LEFT JOIN identity.users u ON u.id = v.buyer_id
+      WHERE v.property_id = ${propertyId}::uuid
+      ORDER BY v.scheduled_at ASC
     `;
   }
 
@@ -347,12 +384,11 @@ export class ViewingService {
 
   async propertyOpenHouses(propertyId: string): Promise<OpenHouseRecord[]> {
     return this.prisma.$queryRaw<OpenHouseRecord[]>`
-      SELECT id, property_id, agent_id, scheduled_at, end_at, max_attendees, description, status, created_at
-      FROM property.open_houses
-      WHERE property_id = ${propertyId}::uuid
-        AND status = 'scheduled'
-        AND scheduled_at > NOW()
-      ORDER BY scheduled_at ASC
+      SELECT oh.*, p.title as property_title
+      FROM property.open_houses oh
+      JOIN property.properties p ON p.id = oh.property_id
+      WHERE oh.property_id = ${propertyId}::uuid
+      ORDER BY oh.scheduled_at ASC
     `;
   }
 
@@ -389,14 +425,16 @@ export class ViewingService {
 
     const rows = await this.prisma.$queryRaw<OpenHouseRecord[]>`
       INSERT INTO property.open_houses (
-        property_id, agent_id, scheduled_at, end_at, max_attendees, description
+        property_id, agent_id, scheduled_at, end_at, max_attendees, description, preparation_checklist, marketing_options
       ) VALUES (
         ${propertyId}::uuid,
         ${agentId}::uuid,
         ${dto.scheduledAt}::timestamptz,
         ${dto.endAt}::timestamptz,
         ${dto.maxAttendees ?? null},
-        ${dto.description ?? null}
+        ${dto.description ?? null},
+        ${dto.preparationChecklist ? JSON.stringify(dto.preparationChecklist) : null}::jsonb,
+        ${dto.marketingOptions ? JSON.stringify(dto.marketingOptions) : null}::jsonb
       )
       RETURNING *
     `;
@@ -455,23 +493,204 @@ export class ViewingService {
 
       if (!rows.length) throw new ConflictException('Already registered for this open house');
 
+      const registration = rows[0];
+
       await this.audit.log({
         actorId: buyerId,
         actorRole: 'buyer',
         companyId: companyId ?? null,
         action: 'open_house.registered',
         resourceType: 'open_house_registration',
-        resourceId: rows[0].id,
+        resourceId: registration.id,
         payload: { openHouseId },
         ipAddress,
         userAgent,
       });
 
-      return rows[0];
+      // Send confirmation email with QR code to the buyer
+      void this.sendRegistrationConfirmationEmail(registration, oh[0]);
+
+      return registration;
     } catch (err: unknown) {
       if (err instanceof ConflictException) throw err;
       throw new BadRequestException('Could not complete registration');
     }
+  }
+
+  /**
+   * Generates a QR code PNG (base64) encoding the registration's qr_token.
+   * The token is resolved to a registration during check-in via lookupByQrToken.
+   */
+  async getRegistrationQrCode(registrationId: string, requesterId: string): Promise<string> {
+    const rows = await this.prisma.$queryRaw<Array<{ qr_token: string; buyer_id: string }>>`
+      SELECT qr_token, buyer_id FROM property.open_house_registrations
+      WHERE id = ${registrationId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Registration not found');
+    if (rows[0].buyer_id !== requesterId) throw new ForbiddenException('Not your registration');
+    return QRCode.toDataURL(rows[0].qr_token, { width: 300, margin: 2 });
+  }
+
+  private async sendRegistrationConfirmationEmail(
+    registration: OpenHouseRegistrationRecord,
+    oh: OpenHouseRecord,
+  ): Promise<void> {
+    try {
+      const buyerRows = await this.prisma.$queryRaw<Array<{ email: string; first_name: string }>>`
+        SELECT email, first_name FROM identity.users WHERE id = ${registration.buyer_id}::uuid LIMIT 1
+      `;
+      if (!buyerRows.length) return;
+
+      const buyer = buyerRows[0];
+      const qrDataUrl = await QRCode.toDataURL(registration.qr_token, { width: 250, margin: 2 });
+      // Convert data URL to base64 portion for inline CID embedding
+      const base64Img = qrDataUrl.replace(/^data:image\/png;base64,/, '');
+
+      const eventDate = new Date(oh.scheduled_at).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
+      const startTime = new Date(oh.scheduled_at).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit',
+      });
+      const endTime = new Date(oh.end_at).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit',
+      });
+
+      const subject = `Your Open House Confirmation – ${eventDate}`;
+      const body = `
+Hi ${buyer.first_name},
+
+You're registered for the open house on ${eventDate} from ${startTime} to ${endTime}.
+
+Your check-in QR code is attached below. Please present it at the door on the day.
+
+[QR CODE IMAGE: data:image/png;base64,${base64Img}]
+
+Registration ID: ${registration.id}
+
+See you there!
+The PropertyOS Team
+      `.trim();
+
+      await this.notifications.sendEmail(buyer.email, subject, body);
+    } catch {
+      // Non-fatal — registration was saved; email failure is logged by NotificationService
+    }
+  }
+
+  async getOpenHouseRegistrations(
+    openHouseId: string,
+    agentId: string,
+  ): Promise<OpenHouseAttendeeRow[]> {
+    // Verify ownership
+    const oh = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM property.open_houses WHERE id = ${openHouseId}::uuid AND agent_id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!oh.length) throw new NotFoundException('Open house not found');
+
+    return this.prisma.$queryRaw<OpenHouseAttendeeRow[]>`
+      SELECT
+        r.id,
+        r.open_house_id,
+        r.buyer_id,
+        r.registered_at,
+        r.attended,
+        r.checked_in_at,
+        r.interest_level,
+        r.notes,
+        r.guest_name,
+        r.guest_email,
+        r.guest_phone,
+        r.qr_token,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.phone
+      FROM property.open_house_registrations r
+      LEFT JOIN identity.users u ON u.id = r.buyer_id
+      WHERE r.open_house_id = ${openHouseId}::uuid
+      ORDER BY r.registered_at ASC
+    `;
+  }
+
+  async checkInAttendee(
+    openHouseId: string,
+    agentId: string,
+    payload: {
+      registrationId?: string;
+      qrToken?: string;
+      guestName?: string;
+      guestEmail?: string;
+      guestPhone?: string;
+      interestLevel?: 'high' | 'medium' | 'low';
+      notes?: string;
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<OpenHouseAttendeeRow> {
+    const oh = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM property.open_houses WHERE id = ${openHouseId}::uuid AND agent_id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!oh.length) throw new NotFoundException('Open house not found');
+
+    const now = new Date();
+    let row: OpenHouseAttendeeRow;
+
+    if (payload.qrToken) {
+      // QR scan path — resolve qr_token to a registration
+      const rows = await this.prisma.$queryRaw<OpenHouseAttendeeRow[]>`
+        UPDATE property.open_house_registrations
+        SET attended = true,
+            checked_in_at = ${now},
+            interest_level = COALESCE(${payload.interestLevel ?? null}, interest_level),
+            notes = COALESCE(${payload.notes ?? null}, notes)
+        WHERE qr_token = ${payload.qrToken}::uuid AND open_house_id = ${openHouseId}::uuid
+        RETURNING *
+      `;
+      if (!rows.length) throw new NotFoundException('QR code not recognised for this open house');
+      row = rows[0];
+    } else if (payload.registrationId) {
+      // Mark existing registration as attended
+      const rows = await this.prisma.$queryRaw<OpenHouseAttendeeRow[]>`
+        UPDATE property.open_house_registrations
+        SET attended = true,
+            checked_in_at = ${now},
+            interest_level = COALESCE(${payload.interestLevel ?? null}, interest_level),
+            notes = COALESCE(${payload.notes ?? null}, notes)
+        WHERE id = ${payload.registrationId}::uuid AND open_house_id = ${openHouseId}::uuid
+        RETURNING *
+      `;
+      if (!rows.length) throw new NotFoundException('Registration not found');
+      row = rows[0];
+    } else {
+      // Walk-in guest — insert new record
+      if (!payload.guestName) {
+        throw new BadRequestException('Guest name is required for walk-in check-in');
+      }
+      const interestLevel = payload.interestLevel ?? 'medium';
+      const rows = await this.prisma.$queryRaw<OpenHouseAttendeeRow[]>`
+        INSERT INTO property.open_house_registrations
+          (open_house_id, attended, checked_in_at, guest_name, guest_email, guest_phone, interest_level, notes)
+        VALUES
+          (${openHouseId}::uuid, true, ${now}, ${payload.guestName}, ${payload.guestEmail},
+           ${payload.guestPhone ?? null}, ${interestLevel}, ${payload.notes ?? null})
+        RETURNING *
+      `;
+      row = rows[0];
+    }
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: 'agent',
+      action: 'open_house.checked_in',
+      resourceType: 'open_house_registration',
+      resourceId: row.id,
+      payload: { openHouseId },
+      ipAddress,
+      userAgent,
+    });
+
+    return row;
   }
 
   async cancelOpenHouse(

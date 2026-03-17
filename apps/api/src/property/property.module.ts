@@ -13,6 +13,7 @@ import { PropertyAuditService } from './property-audit.service';
 import { VerificationStorageService } from './verification-storage.service';
 import { MandateService } from './mandate.service';
 import { MandateController, AgentMandateController } from './mandate.controller';
+import { DocumentStorageService } from '../identity/document-storage.service';
 import { ValuationService } from './valuation.service';
 import { ValuationController, ValuerController, ValuersController } from './valuation.controller';
 import { ViewingService } from './viewing.service';
@@ -22,6 +23,7 @@ import {
   AgentViewingCalendarController,
   AgentOpenHouseController,
   OpenHouseController,
+  BuyerOpenHouseController,
   BuyerViewingController,
   NotificationsController,
 } from './viewing.controller';
@@ -46,6 +48,7 @@ import { SellerDashboardService } from './seller-dashboard.service';
     SavedPropertiesController,
     NotificationsController,
     BuyerViewingController,
+    BuyerOpenHouseController,
     PropertyController,
     AgentDashboardController,
     SellerDashboardController,
@@ -78,6 +81,7 @@ import { SellerDashboardService } from './seller-dashboard.service';
     PropertyAuditService,
     VerificationStorageService,
     MandateService,
+    DocumentStorageService,
     ValuationService,
     ViewingService,
     NeighbourhoodService,

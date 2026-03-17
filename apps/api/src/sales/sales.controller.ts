@@ -36,16 +36,7 @@ import {
   UploadDocumentDto,
   InitiateSaleDto,
 } from './sales.dto';
-
-type AuthRequest = {
-  user: {
-    sub: string;
-    roles: string[];
-    active_company_id?: string | null;
-  };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sales controller  — /api/v1/sales

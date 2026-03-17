@@ -14,12 +14,7 @@ import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { ValuationService } from './valuation.service';
 import { ValuationRequestDto, SubmitValuationReportDto } from './mandate.dto';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 /**
  * POST  /api/v1/properties/:id/valuation-request

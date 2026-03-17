@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -108,6 +109,11 @@ export class CreateCompanyDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'brand_color must be a valid hex colour (e.g. #4A9E8E)' })
+  brand_color?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 }
 
@@ -148,6 +154,11 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsString()
   logo_url?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'brand_color must be a valid hex colour (e.g. #4A9E8E)' })
+  brand_color?: string;
 
   @IsOptional()
   @IsString()

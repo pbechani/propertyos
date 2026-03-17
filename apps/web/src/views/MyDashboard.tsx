@@ -41,17 +41,9 @@ type DashboardListing = {
   daysOnMarket: number;
 };
 
-const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
+import { formatMoney } from "@/lib/formatters";
 
-function formatMoney(price: string, currency: string): string {
-  const value = Number(price);
-  const safeValue = Number.isFinite(value) ? value : 0;
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-    maximumFractionDigits: 0,
-  }).format(safeValue);
-}
+const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
 
 function mapPropertyToDashboardListing(property: PropertyListing): DashboardListing {
   const city = property.location?.city ?? "";
@@ -103,6 +95,8 @@ export default function MyDashboard() {
   const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "favourites" | "my-properties" | "my-projects" | "my-orders" | "my-viewings">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
+  // Unfiltered snapshot used exclusively for overview metrics — never changed by status filter
+  const [allRawListings, setAllRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState("");
   const [listingStatusFilter, setListingStatusFilter] = useState<"all" | "draft" | "active" | "under_offer" | "sold" | "withdrawn">("all");
@@ -148,11 +142,11 @@ export default function MyDashboard() {
   // Status counts derived from the full (unfiltered) listing set
   const listingsByStatus = useMemo(() => {
     const counts: Record<string, number> = {};
-    activeListings.forEach((l) => {
+    allRawListings.forEach((l) => {
       counts[l.status] = (counts[l.status] ?? 0) + 1;
     });
     return counts;
-  }, [activeListings]);
+  }, [allRawListings]);
 
   // User profile
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -172,12 +166,11 @@ export default function MyDashboard() {
 
   // Listing value per property (top 5) — real portfolio data
   const listingValueData = useMemo(() =>
-    activeListings.slice(0, 5).map((l) => ({
-      name: l.address.length > 14 ? `${l.address.slice(0, 14)}…` : l.address,
-      value: Number(l.price.replace(/[^\d]/g, "")),
-      status: l.status,
-    })),
-    [activeListings],
+    allRawListings.slice(0, 5).map((l) => {
+      const label = l.title.length > 14 ? `${l.title.slice(0, 14)}…` : l.title;
+      return { name: label, value: Number(l.price), status: l.status };
+    }),
+    [allRawListings],
   );
 
   const handleDuplicateListing = async (listingId: string) => {
@@ -259,6 +252,10 @@ export default function MyDashboard() {
       setRawListings(result.data);
       setActiveListings(result.data.map(mapPropertyToDashboardListing));
       setTotalListings(result.total);
+      // Keep the all-statuses snapshot fresh for overview metrics
+      if (!statusFilter || statusFilter === 'all') {
+        setAllRawListings(result.data);
+      }
     } catch {
       setActiveListings([]);
       setRawListings([]);
@@ -441,8 +438,8 @@ export default function MyDashboard() {
   };
 
   const totalPortfolioValue = useMemo(
-    () => activeListings.reduce((sum, listing) => sum + Number(listing.price.replace(/[^\d]/g, "")), 0),
-    [activeListings],
+    () => allRawListings.reduce((sum, listing) => sum + Number(listing.price), 0),
+    [allRawListings],
   );
 
   return (
@@ -593,7 +590,7 @@ export default function MyDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Total Listings</div>
-                    <div className="text-3xl font-bold">{activeListings.length}</div>
+                    <div className="text-3xl font-bold">{allRawListings.length}</div>
                     <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
                       <TrendingUp className="w-3 h-3" />
                       Live from database

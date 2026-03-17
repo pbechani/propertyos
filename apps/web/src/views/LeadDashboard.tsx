@@ -6,13 +6,8 @@ import { Users, Flame, TrendingUp, DollarSign, Phone, Mail, MessageSquare, Calen
 import { leadsApi, type LeadDashboardResponse } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-const temperatureConfig: Record<string, { label: string; color: string }> = {
-  hot: { label: 'Hot', color: 'bg-red-100 text-red-700 border-red-200' },
-  warm: { label: 'Warm', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  cold: { label: 'Cold', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  nurture: { label: 'Nurture', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-};
+import { TEMPERATURE_CONFIG, LEAD_TYPE_LABELS, LEAD_TYPE_COLORS } from '@/lib/constants';
+import { getPriorityTextColor } from '@/lib/status-colors';
 
 const activityIcons: Record<string, React.ReactNode> = {
   email: <Mail className="h-4 w-4 text-blue-500" />,
@@ -20,26 +15,6 @@ const activityIcons: Record<string, React.ReactNode> = {
   sms: <MessageSquare className="h-4 w-4 text-purple-500" />,
   meeting: <Calendar className="h-4 w-4 text-orange-500" />,
   stage_change: <TrendingUp className="h-4 w-4 text-indigo-500" />,
-};
-
-const priorityColors: Record<string, string> = {
-  high: 'text-red-600',
-  medium: 'text-orange-500',
-  low: 'text-green-500',
-};
-
-const typeLabels: Record<string, string> = {
-  buyer: 'Buyers',
-  seller: 'Sellers',
-  investor: 'Investors',
-  renter: 'Renters',
-};
-
-const typeColors: Record<string, string> = {
-  buyer: 'bg-blue-500',
-  seller: 'bg-green-500',
-  investor: 'bg-purple-500',
-  renter: 'bg-orange-500',
 };
 
 const EMPTY: LeadDashboardResponse = {
@@ -168,7 +143,7 @@ export default function LeadDashboard() {
                   <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 capitalize">{task.type.replace(/_/g, ' ')}</p>
                 </div>
-                <span className={`text-xs font-medium capitalize ${priorityColors[task.priority] ?? 'text-gray-500'}`}>
+                <span className={`text-xs font-medium capitalize ${getPriorityTextColor(task.priority)}`}>
                   {task.priority}
                 </span>
               </div>
@@ -216,9 +191,9 @@ export default function LeadDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(typeLabels).map(([key, label]) => (
+            {Object.entries(LEAD_TYPE_LABELS).map(([key, label]) => (
               <div key={key} className="rounded-xl bg-muted/50 p-4 text-center">
-                <div className={`mx-auto h-3 w-3 rounded-full ${typeColors[key] ?? 'bg-gray-400'} mb-2`} />
+                <div className={`mx-auto h-3 w-3 rounded-full ${LEAD_TYPE_COLORS[key] ?? 'bg-gray-400'} mb-2`} />
                 <p className="text-2xl font-semibold text-foreground">{byType[key] ?? 0}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">{label}</p>
               </div>
@@ -229,7 +204,7 @@ export default function LeadDashboard() {
           <div className="mt-6">
             <p className="text-sm font-medium text-muted-foreground mb-3">By Temperature</p>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(temperatureConfig).map(([key, cfg]) => (
+              {Object.entries(TEMPERATURE_CONFIG).map(([key, cfg]) => (
                 <span
                   key={key}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${cfg.color}`}

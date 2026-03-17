@@ -428,7 +428,30 @@ common.*         # Shared lookup tables
 /
 ├── apps/
 │   ├── api/              # NestJS backend
+│   │   └── src/
+│   │       ├── common/           # Shared backend utilities
+│   │       │   ├── types.ts      # AuthRequest, PublicRequest types
+│   │       │   ├── base-audit.service.ts  # Abstract audit service base
+│   │       │   └── index.ts      # Barrel export
+│   │       ├── property/         # Property module
+│   │       ├── sales/            # Sales progression module
+│   │       ├── conveyancing/     # Conveyancing module
+│   │       ├── financial/        # Financial/escrow module
+│   │       └── ai-intelligence/  # AI intelligence module
 │   ├── web/              # Next.js frontend
+│   │   └── src/
+│   │       ├── lib/              # Shared frontend utilities
+│   │       │   ├── formatters.ts     # formatMoney, formatRelativeTime
+│   │       │   ├── status-colors.ts  # getStatusColor, getPriorityColor
+│   │       │   └── constants.ts      # STAGE_NAMES, TEMPERATURE_CONFIG
+│   │       ├── components/ui/    # Reusable UI components
+│   │       │   ├── kpi-card.tsx      # Gradient KPI card
+│   │       │   ├── stat-card.tsx     # Simple stat card
+│   │       │   ├── loading-spinner.tsx
+│   │       │   ├── empty-state.tsx
+│   │       │   ├── error-message.tsx
+│   │       │   └── page-header.tsx
+│   │       └── views/            # Page view components
 │   └── mobile/           # React Native app
 ├── packages/
 │   ├── shared-types/     # TypeScript interfaces

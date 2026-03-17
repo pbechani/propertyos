@@ -25,16 +25,7 @@ import {
   CreateLeadTaskDto,
   UpdateLeadTaskDto,
 } from './leads.dto';
-
-type AuthRequest = {
-  user: {
-    sub: string;
-    roles: string[];
-    active_company_id?: string | null;
-  };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Leads controller  — /api/v1/leads

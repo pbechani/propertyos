@@ -11,6 +11,7 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -73,9 +74,9 @@ export class CreateMandateDto {
 
 /** Used by agents to confirm an offline seller has signed a physical agreement. */
 export class MarkSellerSignedOfflineDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  documentUrl!: string;
+  documentUrl?: string;
 }
 
 export class SignMandateDto {
@@ -281,6 +282,22 @@ export class RescheduleViewingDto {
   reason?: string;
 }
 
+export class MarketingOptionDto {
+  @IsString()
+  channel!: string;
+
+  @IsBoolean()
+  enabled!: boolean;
+}
+
+export class PreparationChecklistItemDto {
+  @IsString()
+  task!: string;
+
+  @IsBoolean()
+  completed!: boolean;
+}
+
 export class CreateOpenHouseDto {
   @IsDateString()
   scheduledAt!: string;
@@ -297,6 +314,18 @@ export class CreateOpenHouseDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PreparationChecklistItemDto)
+  preparationChecklist?: PreparationChecklistItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MarketingOptionDto)
+  marketingOptions?: MarketingOptionDto[];
 }
 
 export class CancelOpenHouseDto {
@@ -315,4 +344,34 @@ export class RescheduleOpenHouseDto {
   @IsOptional()
   @IsString()
   reason?: string;
+}
+
+export class CheckInAttendeeDto {
+  @IsOptional()
+  @IsUUID()
+  registrationId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  qrToken?: string;
+
+  @IsOptional()
+  @IsString()
+  guestName?: string;
+
+  @IsOptional()
+  @IsString()
+  guestEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  guestPhone?: string;
+
+  @IsOptional()
+  @IsIn(['high', 'medium', 'low'])
+  interestLevel?: 'high' | 'medium' | 'low';
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

@@ -418,6 +418,14 @@ export class CreateInquiryDto {
   @IsOptional()
   @IsDateString()
   preferredDate?: string;
+
+  @IsOptional()
+  @IsIn(['phone', 'email', 'whatsapp'])
+  preferredContactMethod?: string;
+
+  @IsOptional()
+  @IsIn(['morning', 'afternoon', 'evening', 'anytime'])
+  bestContactTime?: string;
 }
 
 export class RespondInquiryDto {

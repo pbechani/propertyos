@@ -7,8 +7,12 @@ import {
   Patch,
   Post,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { DocumentStorageService } from '../identity/document-storage.service';
 import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
@@ -21,17 +25,15 @@ import {
   MandateSigningParty,
 } from './mandate.dto';
 import { BadRequestException } from '@nestjs/common';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 @Controller('properties/:propertyId/mandate')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MandateController {
-  constructor(private readonly mandateService: MandateService) {}
+  constructor(
+    private readonly mandateService: MandateService,
+    private readonly documentStorageService: DocumentStorageService,
+  ) {}
 
   /**
    * POST /api/v1/properties/:propertyId/mandate
@@ -98,16 +100,34 @@ export class MandateController {
    */
   @Roles('agent', 'admin')
   @Post(':mId/seller-offline-sign')
+  @UseInterceptors(FileInterceptor('file'))
   async sellerOfflineSign(
     @Param('propertyId', ParseUUIDPipe) propertyId: string,
     @Param('mId', ParseUUIDPipe) mId: string,
     @Body() dto: MarkSellerSignedOfflineDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Request() req: AuthRequest,
   ) {
+    let documentUrl = dto.documentUrl;
+
+    if (file) {
+      const uploaded = await this.documentStorageService.upload({
+        context: 'mandate-agreements',
+        userId: req.user.sub,
+        documentType: 'seller_signed_agreement',
+        file,
+      });
+      documentUrl = uploaded.publicUrl;
+    }
+
+    if (!documentUrl) {
+      throw new BadRequestException('Either a file upload or documentUrl is required');
+    }
+
     return this.mandateService.markSellerSignedOffline(
       propertyId,
       mId,
-      dto,
+      { documentUrl },
       req.user.sub,
       req.ip,
       req.headers['user-agent'],

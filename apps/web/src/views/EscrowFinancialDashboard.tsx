@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken } from "@/lib/auth-session";
 import { adminFinanceApi, escrowApi } from "@/lib/api-client";
+import { getStatusColor } from "@/lib/status-colors";
 
 type TransactionStatus = "completed" | "pending" | "processing" | "failed" | "scheduled";
 type ReleaseStatus = "pending" | "partial" | "approved" | "released";
@@ -267,16 +268,6 @@ export default function EscrowFinancialDashboard() {
   const filteredTransactions = filterStatus === "all" 
     ? transactions 
     : transactions.filter(t => t.status === filterStatus);
-
-  const getStatusColor = (status: TransactionStatus | ReleaseStatus) => {
-    switch (status) {
-      case "completed": case "released": case "approved": return "bg-green-100 text-green-700";
-      case "processing": case "partial": return "bg-blue-100 text-blue-700";
-      case "pending": case "scheduled": return "bg-yellow-100 text-yellow-700";
-      case "failed": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
 
   const getStatusIcon = (status: TransactionStatus | ReleaseStatus) => {
     switch (status) {

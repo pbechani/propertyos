@@ -32,5 +32,8 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "packageManager": "npm@10.2.0"
+  "packageManager": "npm@10.2.0",
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1"
+  }
 }

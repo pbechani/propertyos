@@ -13,12 +13,7 @@ import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { NeighbourhoodService, SyndicationService } from './neighbourhood.service';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 /**
  * Neighbourhood stats — accessible on listing detail.

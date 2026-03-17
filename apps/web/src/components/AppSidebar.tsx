@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert, HardHat } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
 import { getIsPlatformAdminFromToken } from '@/lib/auth-session';
 
@@ -48,10 +48,11 @@ const conveyancerNavigation = [
 /** Navigation shown when the active company is the built-in "Self" personal context. */
 const selfNavigation = [
   { name: 'My Dashboard', href: '/app/my-dashboard', icon: LayoutDashboard },
+  { name: 'My Listings', href: '/app/my-listings', icon: ClipboardList },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'My Sales', href: '/app/sales', icon: Kanban },
   { name: 'Service Providers', href: '/service-providers', icon: Users },
-  { name: 'Project Management', href: '/construction', icon: ClipboardList },
+  { name: 'Construction', href: '/construction', icon: HardHat },
   { name: 'Safety', href: '/app/safety', icon: Shield },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Company Registration', href: '/app/my-companies', icon: Briefcase },
@@ -61,6 +62,7 @@ const selfNavigation = [
 /** Navigation shown when the active user's role is 'agent'. */
 const agentNavigation = [
   { name: 'Agent Dashboard', href: '/app/agent', icon: User },
+  { name: 'My Listings', href: '/app/my-listings', icon: ClipboardList },
   { name: 'Listings', href: '/app/listings', icon: Building2 },
   { name: 'My Sales', href: '/app/sales', icon: Kanban },
   { name: 'Safety', href: '/app/safety', icon: Shield },
@@ -74,6 +76,14 @@ const leadManagementNavigation = [
   { name: 'Leads', href: '/app/leads', icon: Users },
   { name: 'Pipeline', href: '/app/leads/pipeline', icon: Kanban },
   { name: 'Analytics', href: '/app/leads/analytics', icon: BarChart3 },
+];
+
+/** Sub-navigation nested under My Listings. */
+const myListingsNavigation = [
+  { name: 'Dashboard', href: '/app/my-listings', icon: LayoutDashboard },
+  { name: 'Calendar', href: '/app/my-listings/calendar', icon: Calendar },
+  { name: 'Reports', href: '/app/my-listings/reports', icon: BarChart3 },
+  { name: 'Settings', href: '/app/my-listings/settings', icon: Settings },
 ];
 
 /** Navigation shown when the user is operating under a real company context (non-admin, non-agent). */
@@ -117,6 +127,7 @@ function isActive(pathname: string, href: string) {
   // Exact-match roots to prevent parent paths from always staying active
   if (href === '/app') return pathname === '/app';
   if (href === '/app/admin') return pathname === '/app/admin';
+  if (href === '/app/my-listings') return pathname === '/app/my-listings';
   return pathname.startsWith(href);
 }
 
@@ -138,6 +149,7 @@ export function AppSidebar({
   const [showAgentCockpit, setShowAgentCockpit] = useState(true);
   const [showLeadManagement, setShowLeadManagement] = useState(true);
   const [showConveyancerCockpit, setShowConveyancerCockpit] = useState(true);
+  const [showMyListings, setShowMyListings] = useState(true);
 
   const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
   const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
@@ -390,22 +402,74 @@ export function AppSidebar({
               </button>
               {showAgentCockpit && (
                 <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
-                  {agentNavigation.slice(0, 2).map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                      className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
-                        isActive(pathname, item.href)
+                  {/* Agent Dashboard */}
+                  <Link
+                    href="/app/agent"
+                    aria-current={isActive(pathname, '/app/agent') ? 'page' : undefined}
+                    className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                      isActive(pathname, '/app/agent')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="Agent Dashboard"
+                  >
+                    <User className="w-4 h-4" />
+                    {!isSidebarCollapsed && <span className="text-sm font-medium">Agent Dashboard</span>}
+                  </Link>
+                  {/* My Listings (collapsible) */}
+                  <div>
+                    <button
+                      onClick={() => setShowMyListings((v) => !v)}
+                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        pathname.startsWith('/app/my-listings')
                           ? 'bg-blue-50 text-blue-600'
                           : 'text-muted-foreground hover:bg-accent'
                       }`}
-                      title={item.name}
+                      title="My Listings"
                     >
-                      <item.icon className="w-4 h-4" />
-                      {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
-                    </Link>
-                  ))}
+                      <ClipboardList className="w-4 h-4 shrink-0" />
+                      {!isSidebarCollapsed && (
+                        <>
+                          <span className="text-sm font-medium flex-1 text-left">My Listings</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
+                        </>
+                      )}
+                    </button>
+                    {showMyListings && (
+                      <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                        {myListingsNavigation.map((item) => (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                            className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
+                              isActive(pathname, item.href)
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-muted-foreground hover:bg-accent'
+                            }`}
+                            title={item.name}
+                          >
+                            <item.icon className="w-3.5 h-3.5" />
+                            {!isSidebarCollapsed && <span className="text-xs font-medium">{item.name}</span>}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Listings */}
+                  <Link
+                    href="/app/listings"
+                    aria-current={isActive(pathname, '/app/listings') ? 'page' : undefined}
+                    className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                      isActive(pathname, '/app/listings')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="Listings"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    {!isSidebarCollapsed && <span className="text-sm font-medium">Listings</span>}
+                  </Link>
                   <div>
                     <button
                       onClick={() => setShowLeadManagement((v) => !v)}
@@ -441,7 +505,7 @@ export function AppSidebar({
                       </div>
                     )}
                   </div>
-                  {agentNavigation.slice(2).map((item) => (
+                  {agentNavigation.slice(3).map((item) => (
                     <Link
                       key={item.name}
                       href={item.href}
@@ -462,6 +526,47 @@ export function AppSidebar({
             </div>
           ) : (
             navigation.map((item) => (
+              item.href === '/app/my-listings' ? (
+                <div key={item.name}>
+                  <button
+                    onClick={() => setShowMyListings((v) => !v)}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
+                      pathname.startsWith('/app/my-listings')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="My Listings"
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    {!isSidebarCollapsed && (
+                      <>
+                        <span className="font-medium flex-1 text-left">My Listings</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
+                      </>
+                    )}
+                  </button>
+                  {showMyListings && (
+                    <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                      {myListingsNavigation.map((subItem) => (
+                        <Link
+                          key={subItem.name}
+                          href={subItem.href}
+                          aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
+                          className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
+                            isActive(pathname, subItem.href)
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                          title={subItem.name}
+                        >
+                          <subItem.icon className="w-4 h-4" />
+                          {!isSidebarCollapsed && <span className="text-sm font-medium">{subItem.name}</span>}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
               <Link
                 key={item.name}
                 href={item.href}
@@ -476,6 +581,7 @@ export function AppSidebar({
                 <item.icon className="w-5 h-5" />
                 {!isSidebarCollapsed && <span className="font-medium">{item.name}</span>}
               </Link>
+              )
             ))
           )}
         </nav>
@@ -683,22 +789,69 @@ export function AppSidebar({
                   </button>
                   {showAgentCockpit && (
                     <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
-                      {agentNavigation.slice(0, 2).map((item) => (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          onClick={() => setShowMobileMenu(false)}
-                          aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                            isActive(pathname, item.href)
+                      {/* Agent Dashboard */}
+                      <Link
+                        href="/app/agent"
+                        onClick={() => setShowMobileMenu(false)}
+                        aria-current={isActive(pathname, '/app/agent') ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive(pathname, '/app/agent')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <User className="w-4 h-4" />
+                        <span className="text-sm font-medium">Agent Dashboard</span>
+                      </Link>
+                      {/* My Listings (collapsible) */}
+                      <div>
+                        <button
+                          onClick={() => setShowMyListings((v) => !v)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            pathname.startsWith('/app/my-listings')
                               ? 'bg-blue-50 text-blue-600'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
                         >
-                          <item.icon className="w-4 h-4" />
-                          <span className="text-sm font-medium">{item.name}</span>
-                        </Link>
-                      ))}
+                          <ClipboardList className="w-4 h-4 shrink-0" />
+                          <span className="text-sm font-medium flex-1 text-left">My Listings</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showMyListings && (
+                          <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                            {myListingsNavigation.map((item) => (
+                              <Link
+                                key={item.name}
+                                href={item.href}
+                                onClick={() => setShowMobileMenu(false)}
+                                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                  isActive(pathname, item.href)
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-muted-foreground hover:bg-accent'
+                                }`}
+                              >
+                                <item.icon className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{item.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {/* Listings */}
+                      <Link
+                        href="/app/listings"
+                        onClick={() => setShowMobileMenu(false)}
+                        aria-current={isActive(pathname, '/app/listings') ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive(pathname, '/app/listings')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Listings</span>
+                      </Link>
                       <div>
                         <button
                           onClick={() => setShowLeadManagement((v) => !v)}
@@ -729,7 +882,7 @@ export function AppSidebar({
                           </div>
                         )}
                       </div>
-                      {agentNavigation.slice(2).map((item) => (
+                      {agentNavigation.slice(3).map((item) => (
                         <Link
                           key={item.name}
                           href={item.href}
@@ -750,6 +903,42 @@ export function AppSidebar({
                 </div>
               ) : (
                 navigation.map((item) => (
+                  item.href === '/app/my-listings' ? (
+                    <div key={item.name}>
+                      <button
+                        onClick={() => setShowMyListings((v) => !v)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                          pathname.startsWith('/app/my-listings')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <item.icon className="w-5 h-5 shrink-0" />
+                        <span className="font-medium flex-1 text-left">My Listings</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showMyListings && (
+                        <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                          {myListingsNavigation.map((subItem) => (
+                            <Link
+                              key={subItem.name}
+                              href={subItem.href}
+                              onClick={() => setShowMobileMenu(false)}
+                              aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                isActive(pathname, subItem.href)
+                                  ? 'bg-blue-50 text-blue-600'
+                                  : 'text-muted-foreground hover:bg-accent'
+                              }`}
+                            >
+                              <subItem.icon className="w-4 h-4" />
+                              <span className="text-sm font-medium">{subItem.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -764,6 +953,7 @@ export function AppSidebar({
                     <item.icon className="w-5 h-5" />
                     <span className="font-medium">{item.name}</span>
                   </Link>
+                  )
                 ))
               )}
             </nav>

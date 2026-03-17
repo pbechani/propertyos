@@ -89,6 +89,51 @@ describe('InquiryService', () => {
         }),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('creates an inquiry with contact preferences', async () => {
+      const inquiryWithPrefs = {
+        ...baseInquiry,
+        preferred_contact_method: 'whatsapp',
+        best_contact_time: 'morning',
+      };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId, agent_id: agentId }])
+        .mockResolvedValueOnce([inquiryWithPrefs]);
+
+      const result = await service.create(
+        propertyId,
+        buyerId,
+        'buyer_seller',
+        {
+          inquiryType: 'viewing',
+          message: 'Looking to view',
+          preferredContactMethod: 'whatsapp',
+          bestContactTime: 'morning',
+        },
+      );
+
+      expect((result as typeof inquiryWithPrefs).preferred_contact_method).toBe('whatsapp');
+      expect((result as typeof inquiryWithPrefs).best_contact_time).toBe('morning');
+    });
+
+    it('creates an inquiry with null contact preferences when not provided', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId, agent_id: agentId }])
+        .mockResolvedValueOnce([baseInquiry]);
+
+      await service.create(
+        propertyId,
+        buyerId,
+        'buyer_seller',
+        { inquiryType: 'question' },
+      );
+
+      // The actual SQL will use NULL for missing preferences –
+      // verify the audit was still logged (means create succeeded)
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.inquiry.created' }),
+      );
+    });
   });
 
   describe('respond', () => {

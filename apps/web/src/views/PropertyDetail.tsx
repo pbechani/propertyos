@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
+import LeafletMapDynamic from "@/components/LeafletMapDynamic";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
@@ -221,13 +222,10 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <iframe
-                    title="Property location map"
-                    src={locationMapSource.url}
-                    className="w-full h-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    allowFullScreen
+                  <LeafletMapDynamic
+                    center={locationMapSource.center}
+                    zoom={locationMapSource.zoom}
+                    markers={locationMapSource.markers}
                   />
                 )}
               </div>

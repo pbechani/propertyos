@@ -39,17 +39,9 @@ type DashboardListing = {
   daysOnMarket: number;
 };
 
-const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
+import { formatMoney } from "@/lib/formatters";
 
-function formatMoney(price: string, currency: string): string {
-  const value = Number(price);
-  const safeValue = Number.isFinite(value) ? value : 0;
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-    maximumFractionDigits: 0,
-  }).format(safeValue);
-}
+const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
 
 function mapPropertyToDashboardListing(property: PropertyListing): DashboardListing {
   const city = property.location?.city ?? "";

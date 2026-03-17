@@ -849,6 +849,7 @@ export type PropertyListing = {
   title: string;
   description?: string | null;
   property_type: 'land' | 'residential' | 'commercial' | 'off_plan';
+  property_subtype?: string | null;
   listing_type?: 'for_sale' | 'to_rent' | 'development' | null;
   status: PropertyStatus;
   agent_id?: string | null;
@@ -857,7 +858,18 @@ export type PropertyListing = {
   bedrooms?: number | null;
   bathrooms?: number | null;
   parking_spaces?: number | null;
+  garages?: number | null;
+  carports?: number | null;
   area_sqm?: string | null;
+  erf_size_sqm?: string | null;
+  floor_area_sqm?: string | null;
+  monthly_levy?: string | null;
+  monthly_rates?: string | null;
+  monthly_utilities?: string | null;
+  title_type?: string | null;
+  listing_reference?: string | null;
+  view_count?: number;
+  verified_at?: string | null;
   features?: string[] | null;
   verification_status: PropertyVerificationStatus;
   /** True = system (Self) company, false = real company, null/undefined = no company set. All non-false values mean privately listed. */
@@ -866,6 +878,8 @@ export type PropertyListing = {
   company_name?: string | null;
   /** Logo URL of the company the listing was created under. */
   company_logo_url?: string | null;
+  /** Brand color hex (e.g. "#4A9E8E") for the company. Used for property card header theming. */
+  company_brand_color?: string | null;
   /** Status of the company the listing was created under (e.g. 'under_investigation'). */
   company_status?: string | null;
   created_at: string;
@@ -944,6 +958,33 @@ export type AgentDashboardResponse = {
   inquiryResponseRatePct: number;
 };
 
+export type AgentDashboardSummaryResponse = {
+  totalListings: number;
+  byStatus: Record<string, { count: number; totalValue: number }>;
+  activeMandates: number;
+  pendingMandates: number;
+  upcomingViewings: number;
+  viewingsToday: number;
+  pipelineValue: number;
+  recentDeals: Array<{ property_id: string; title: string; price: string; stage_name: string | null }>;
+};
+
+export type AgentListingPerformanceRow = {
+  id: string;
+  title: string;
+  status: string;
+  price: string;
+  currency: string;
+  created_at: string;
+  days_on_market: number;
+  views: number;
+  saves: number;
+  inquiries: number;
+  completed_viewings: number;
+  city: string | null;
+  region: string | null;
+};
+
 export type PropertySearchParams = {
   agentId?: string;
   agent_id?: string;
@@ -969,6 +1010,8 @@ export type CreateInquiryPayload = {
   inquiryType: 'viewing' | 'offer' | 'question';
   message?: string;
   preferredDate?: string;
+  preferredContactMethod?: 'phone' | 'email' | 'whatsapp';
+  bestContactTime?: 'morning' | 'afternoon' | 'evening' | 'anytime';
 };
 
 export type ContactAgentPayload = {
@@ -1114,6 +1157,18 @@ export const propertiesApi = {
       authToken,
     }),
 
+  getAgentDashboardSummary: (authToken: string) =>
+    apiRequest<AgentDashboardSummaryResponse>('/agent/dashboard/summary', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getAgentListingsPerformance: (authToken: string) =>
+    apiRequest<AgentListingPerformanceRow[]>('/agent/listings/performance', {
+      method: 'GET',
+      authToken,
+    }),
+
   getMyListings: (authToken: string, status?: string) =>
     apiRequest<PropertySearchResponse>(
       `/agent/my-listings${status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`,
@@ -1179,6 +1234,21 @@ export const propertiesApi = {
 
   getPropertyOpenHouses: (id: string) =>
     apiRequest<OpenHouseRecord[]>(`/properties/${id}/open-houses`, {
+      method: 'GET',
+    }),
+
+  getOwnershipHistory: (id: string) =>
+    apiRequest<OwnershipHistoryRecord[]>(`/properties/${id}/ownership-history`, {
+      method: 'GET',
+    }),
+
+  getPriceHistory: (id: string) =>
+    apiRequest<PriceHistoryRecord[]>(`/properties/${id}/price-history`, {
+      method: 'GET',
+    }),
+
+  getFloorPlans: (id: string) =>
+    apiRequest<FloorPlanRecord[]>(`/properties/${id}/floor-plans`, {
       method: 'GET',
     }),
 
@@ -1366,6 +1436,8 @@ export type CreateOpenHousePayload = {
   endAt: string;
   maxAttendees?: number;
   description?: string;
+  preparationChecklist?: { task: string; completed: boolean }[];
+  marketingOptions?: { channel: string; enabled: boolean }[];
 };
 
 export type CancelOpenHousePayload = {
@@ -1376,6 +1448,34 @@ export type RescheduleOpenHousePayload = {
   scheduledAt: string;
   endAt: string;
   reason?: string;
+};
+
+export type OwnershipHistoryRecord = {
+  id: string;
+  owner_name: string | null;
+  transfer_date: string | null;
+  transfer_price: string | null;
+  transfer_currency: string | null;
+  title_deed_url: string | null;
+  notes: string | null;
+};
+
+export type PriceHistoryRecord = {
+  id: string;
+  old_price: string | null;
+  new_price: string;
+  currency: string;
+  changed_by: string | null;
+  change_note: string | null;
+  created_at: string;
+};
+
+export type FloorPlanRecord = {
+  id: string;
+  url: string;
+  thumbnail_url: string | null;
+  display_order: number;
+  created_at: string | null;
 };
 
 export type OpenHouseRecord = {
@@ -1391,10 +1491,39 @@ export type OpenHouseRecord = {
   cancel_reason: string | null;
   rescheduled_at: string | null;
   rescheduled_reason: string | null;
+  preparation_checklist: { task: string; completed: boolean }[] | null;
+  marketing_options: { channel: string; enabled: boolean }[] | null;
   created_at: string;
 };
 
-// ─── Mandate types ────────────────────────────────────────────────────────────
+export type OpenHouseAttendee = {
+  id: string;
+  open_house_id: string;
+  buyer_id: string | null;
+  registered_at: string;
+  attended: boolean | null;
+  checked_in_at: string | null;
+  interest_level: 'high' | 'medium' | 'low' | null;
+  notes: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
+  guest_phone: string | null;
+  // joined from identity.users (only when buyer_id is set)
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+export type CheckInAttendeePayload = {
+  registrationId?: string;
+  qrToken?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  interestLevel?: 'high' | 'medium' | 'low';
+  notes?: string;
+};
 
 export type MandateRecord = {
   id: string;
@@ -1448,6 +1577,8 @@ export type PropertyStats = {
   viewings_declined: number;
   viewings_cancelled: number;
   open_houses_scheduled: number;
+  documents_count: number;
+  leads_count: number;
   days_on_market: number;
 };
 
@@ -1559,7 +1690,7 @@ export const agentApi = {
   },
 
   createOpenHouse: (authToken: string, propertyId: string, payload: CreateOpenHousePayload) =>
-    apiRequest<{ id: string }>(`/properties/${propertyId}/open-houses`, {
+    apiRequest<OpenHouseRecord>(`/properties/${propertyId}/open-houses`, {
       method: 'POST',
       authToken,
       headers: { 'Content-Type': 'application/json' },
@@ -1629,6 +1760,26 @@ export const viewingActionsApi = {
       method: 'POST',
       authToken,
     }),
+
+  getRegistrationQrCode: (authToken: string, registrationId: string) =>
+    apiRequest<{ dataUrl: string }>(`/buyer/open-houses/${registrationId}/qr-code`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getOpenHouseRegistrations: (authToken: string, openHouseId: string) =>
+    apiRequest<OpenHouseAttendee[]>(`/open-houses/${openHouseId}/registrations`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  checkInAttendee: (authToken: string, openHouseId: string, payload: CheckInAttendeePayload) =>
+    apiRequest<OpenHouseAttendee>(`/open-houses/${openHouseId}/check-in`, {
+      method: 'POST',
+      authToken,
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    }),
 };
 
 export const mandateApi = {
@@ -1666,17 +1817,19 @@ export const mandateApi = {
     authToken: string,
     propertyId: string,
     mandateId: string,
-    documentUrl: string,
-  ) =>
-    apiRequest<MandateRecord>(
+    file: File,
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiRequest<MandateRecord>(
       `/properties/${propertyId}/mandate/${mandateId}/seller-offline-sign`,
       {
         method: 'POST',
         authToken,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentUrl }),
+        body: formData,
       },
-    ),
+    );
+  },
 };
 
 // ─── Agent CRM ────────────────────────────────────────────────────────────────
@@ -1992,6 +2145,7 @@ export type CompanyDetail = {
   website?: string | null;
   description?: string | null;
   logo_url?: string | null;
+  brand_color?: string | null;
   status: string;
   verification_status: string;
   is_system: boolean;
@@ -2141,6 +2295,7 @@ export const companiesApi = {
       description?: string;
       registration_number?: string;
       tax_number?: string;
+      brand_color?: string;
       address?: {
         line1?: string;
         line2?: string;
@@ -3525,6 +3680,129 @@ export type CreateCasePayload = {
   notes?: string;
 };
 
+export type ConveyancerCaseDetail = {
+  id: string;
+  case_reference: string;
+  sale_id: string;
+  firm_id: string;
+  lead_conveyancer_id: string;
+  case_type: string;
+  priority: string;
+  status: string;
+  opened_at: string;
+  target_registration_date: string | null;
+  actual_registration_date: string | null;
+  country: string;
+  notes: string | null;
+  lifecycle_phase: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConveyancerTask = {
+  id: string;
+  case_id: string;
+  title: string;
+  description: string | null;
+  stage_number: number | null;
+  responsible_role: string | null;
+  due_date: string | null;
+  status: string;
+  completed_at: string | null;
+  priority: string;
+  is_blocker: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ConveyancerDeadline = {
+  id: string;
+  case_id: string;
+  deadline_type: string;
+  description: string | null;
+  due_date: string;
+  status: string;
+  extension_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConveyancerGovInteraction = {
+  id: string;
+  case_id: string;
+  department: string;
+  interaction_type: string;
+  reference_number: string | null;
+  description: string;
+  submitted_at: string | null;
+  expected_response_at: string | null;
+  resolved_at: string | null;
+  status: string;
+  notes: string | null;
+  recorded_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConveyancerLifecycleEvent = {
+  id: string;
+  case_id: string;
+  from_phase: number | null;
+  to_phase: number;
+  from_status: string | null;
+  to_status: string;
+  triggered_by: string;
+  trigger: string;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ConveyancerLifecycleResponse = {
+  history: ConveyancerLifecycleEvent[];
+  currentPhase: number;
+  phaseLabel: string;
+};
+
+export type ConveyancerTurnaroundRow = {
+  case_reference: string;
+  case_type: string;
+  status: string;
+  lifecycle_phase: number;
+  opened_at: string;
+  target_registration_date: string | null;
+  actual_registration_date: string | null;
+  days_open: number;
+};
+
+export type ConveyancerOutstandingTaskRow = {
+  case_id: string;
+  case_reference: string;
+  task_id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  is_blocker: boolean;
+  days_overdue: number | null;
+};
+
+export type ConveyancerFeeCollectionRow = {
+  case_reference: string;
+  invoice_type: string;
+  total_amount: string;
+  paid_amount: string;
+  outstanding_amount: string;
+  invoice_status: string;
+};
+
+export type ConveyancerCaseloadRow = {
+  conveyancer_id: string;
+  total_cases: string;
+  open_cases: string;
+  lodged_cases: string;
+  registered_cases: string;
+  closed_cases: string;
+};
+
 export const conveyancerApi = {
   getCases: (token: string, params?: { status?: string; page?: number; limit?: number }) => {
     const qs = new URLSearchParams();
@@ -3535,6 +3813,9 @@ export const conveyancerApi = {
     return apiRequest<{ data: ConveyancerCase[]; total: number }>(`/conveyancing/cases${query}`, { authToken: token });
   },
 
+  getCase: (token: string, caseId: string) =>
+    apiRequest<ConveyancerCaseDetail>(`/conveyancing/cases/${caseId}`, { authToken: token }),
+
   createCase: (token: string, payload: CreateCasePayload) =>
     apiRequest<ConveyancerCase>('/conveyancing/cases', {
       method: 'POST',
@@ -3544,6 +3825,94 @@ export const conveyancerApi = {
 
   getDashboard: (token: string) =>
     apiRequest<ConveyancerDashboard>('/conveyancing/cases/dashboard', { authToken: token }),
+
+  // ── Tasks ──────────────────────────────────────────────────────────────────
+
+  listTasks: (token: string, caseId: string, status?: string) => {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return apiRequest<ConveyancerTask[]>(`/conveyancing/cases/${caseId}/tasks${qs}`, { authToken: token });
+  },
+
+  // ── Deadlines ──────────────────────────────────────────────────────────────
+
+  listDeadlines: (token: string, caseId: string) =>
+    apiRequest<ConveyancerDeadline[]>(`/conveyancing/cases/${caseId}/deadlines`, { authToken: token }),
+
+  createDeadline: (token: string, caseId: string, dto: { deadlineType: string; dueDate: string; description?: string }) =>
+    apiRequest<ConveyancerDeadline>(`/conveyancing/cases/${caseId}/deadlines`, {
+      method: 'POST',
+      authToken: token,
+      body: JSON.stringify(dto),
+    }),
+
+  extendDeadline: (token: string, caseId: string, deadlineId: string, dto: { status: string; extendedDueDate?: string; extensionReason?: string }) =>
+    apiRequest<ConveyancerDeadline>(`/conveyancing/cases/${caseId}/deadlines/${deadlineId}/extend`, {
+      method: 'PATCH',
+      authToken: token,
+      body: JSON.stringify(dto),
+    }),
+
+  // ── Government Interactions ────────────────────────────────────────────────
+
+  listGovInteractions: (token: string, caseId: string, department?: string) => {
+    const qs = department ? `?department=${encodeURIComponent(department)}` : '';
+    return apiRequest<ConveyancerGovInteraction[]>(`/conveyancing/cases/${caseId}/government-interactions${qs}`, { authToken: token });
+  },
+
+  createGovInteraction: (token: string, caseId: string, dto: { department: string; interactionType: string; description: string; referenceNumber?: string; submittedAt?: string; expectedResponseAt?: string; notes?: string }) =>
+    apiRequest<ConveyancerGovInteraction>(`/conveyancing/cases/${caseId}/government-interactions`, {
+      method: 'POST',
+      authToken: token,
+      body: JSON.stringify(dto),
+    }),
+
+  updateGovInteraction: (token: string, caseId: string, interactionId: string, dto: { status?: string; referenceNumber?: string; resolvedAt?: string; notes?: string }) =>
+    apiRequest<ConveyancerGovInteraction>(`/conveyancing/cases/${caseId}/government-interactions/${interactionId}`, {
+      method: 'PATCH',
+      authToken: token,
+      body: JSON.stringify(dto),
+    }),
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+  getLifecycleHistory: (token: string, caseId: string) =>
+    apiRequest<ConveyancerLifecycleResponse>(`/conveyancing/cases/${caseId}/lifecycle`, { authToken: token }),
+
+  advanceLifecycle: (token: string, caseId: string, dto: { toPhase: number; trigger?: string; notes?: string }) =>
+    apiRequest<ConveyancerLifecycleResponse>(`/conveyancing/cases/${caseId}/lifecycle/advance`, {
+      method: 'POST',
+      authToken: token,
+      body: JSON.stringify(dto),
+    }),
+
+  // ── Reports ───────────────────────────────────────────────────────────────
+
+  getTurnaroundReport: (token: string, params?: { fromDate?: string; toDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.fromDate) qs.set('fromDate', params.fromDate);
+    if (params?.toDate)   qs.set('toDate',   params.toDate);
+    const q = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<ConveyancerTurnaroundRow[]>(`/conveyancing/reports/turnaround${q}`, { authToken: token });
+  },
+
+  getOutstandingTasksReport: (token: string, params?: { fromDate?: string; toDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.fromDate) qs.set('fromDate', params.fromDate);
+    if (params?.toDate)   qs.set('toDate',   params.toDate);
+    const q = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<ConveyancerOutstandingTaskRow[]>(`/conveyancing/reports/outstanding-tasks${q}`, { authToken: token });
+  },
+
+  getFeeCollectionReport: (token: string, params?: { fromDate?: string; toDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.fromDate) qs.set('fromDate', params.fromDate);
+    if (params?.toDate)   qs.set('toDate',   params.toDate);
+    const q = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<ConveyancerFeeCollectionRow[]>(`/conveyancing/reports/fee-collection${q}`, { authToken: token });
+  },
+
+  getCaseloadReport: (token: string) =>
+    apiRequest<ConveyancerCaseloadRow[]>('/conveyancing/reports/caseload', { authToken: token }),
 };
 
 // ─── Admin Sales Dashboard ──────────────────────────────────────────────────

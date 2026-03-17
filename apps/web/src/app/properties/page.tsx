@@ -52,6 +52,10 @@ type ApiPropertyListing = {
   bathrooms?: number | null;
   area_sqm?: string | null;
   verification_status: string;
+  company_is_system?: boolean | null;
+  company_name?: string | null;
+  company_logo_url?: string | null;
+  company_brand_color?: string | null;
   company_status?: string | null;
   location?: {
     city?: string | null;
@@ -111,6 +115,10 @@ async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
         fraudAlert: item.verification_status === 'flagged',
         underInvestigation: item.company_status === 'under_investigation',
         imageUrl,
+        isPrivateListing: item.company_is_system !== false,
+        companyLogoUrl: item.company_logo_url,
+        companyName: item.company_name,
+        companyBrandColor: item.company_brand_color,
       };
     });
   } catch {

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { PrismaService } from '../../database';
 import { AuditService } from '../audit.service';
@@ -94,6 +94,28 @@ describe('CompaniesService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('creates company with brand_color when provided', async () => {
+      const companyWithColor = { ...baseCompany, brand_color: '#4A9E8E' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // slug exists? → no
+        .mockResolvedValueOnce([{ id: COMPANY_ID }]) // INSERT RETURNING id
+        .mockResolvedValueOnce([companyWithColor]); // findById
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // member insert
+
+      const result = await service.create(
+        {
+          name: 'Acme Realty',
+          category: 'agent',
+          email: 'hello@acme.com',
+          brand_color: '#4A9E8E',
+        },
+        USER_ID,
+        requestCtx,
+      );
+
+      expect(result).toHaveProperty('brand_color', '#4A9E8E');
+    });
   });
 
   // ─── findById ─────────────────────────────────────────────────────────────
@@ -108,6 +130,51 @@ describe('CompaniesService', () => {
     it('throws NotFoundException when not found', async () => {
       mockPrisma.$queryRaw.mockResolvedValueOnce([]);
       await expect(service.findById(COMPANY_ID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ─── update ───────────────────────────────────────────────────────────────
+
+  describe('update', () => {
+    it('updates brand_color and logs audit event', async () => {
+      const updatedCompany = { ...baseCompany, brand_color: '#FF5733' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseCompany]) // findById (guard)
+        .mockResolvedValueOnce([updatedCompany]); // findById after update
+      mockPrisma.$executeRawUnsafe.mockResolvedValueOnce(undefined); // UPDATE
+
+      const result = await service.update(
+        COMPANY_ID,
+        { brand_color: '#FF5733' },
+        USER_ID,
+        requestCtx,
+      );
+
+      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(1);
+      const sql = mockPrisma.$executeRawUnsafe.mock.calls[0][0] as string;
+      expect(sql).toContain('brand_color');
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'company.updated', action: 'update' }),
+      );
+      expect(result).toHaveProperty('brand_color', '#FF5733');
+    });
+
+    it('returns company unchanged when no fields provided', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([baseCompany]); // findById (guard)
+
+      const result = await service.update(COMPANY_ID, {}, USER_ID, requestCtx);
+
+      expect(mockPrisma.$executeRawUnsafe).not.toHaveBeenCalled();
+      expect(result).toEqual(baseCompany);
+    });
+
+    it('throws ForbiddenException for system companies', async () => {
+      const systemCompany = { ...baseCompany, is_system: true };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([systemCompany]);
+
+      await expect(
+        service.update(COMPANY_ID, { brand_color: '#000000' }, USER_ID, requestCtx),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

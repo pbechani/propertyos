@@ -1,1 +1,3 @@
-export { default } from '@/views/ConstructionProjectDashboard';
+'use client';
+
+export { Dashboard as default } from '@/views/construction/Dashboard';

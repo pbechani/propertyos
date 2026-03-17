@@ -228,6 +228,7 @@ model Company {
   email                              String                 @db.VarChar(255)
   address                            Json?                  @default("{}")
   logoUrl                            String?                @map("logo_url")
+  brandColor                         String?                @map("brand_color") @db.VarChar(7)
   description                        String?
   status                             String                 @default("pending_verification") @db.VarChar(30)
   verificationStatus                 String?                @default("unverified") @map("verification_status") @db.VarChar(30)
@@ -531,6 +532,7 @@ model Property {
   property_media     PropertyMedia[]
   saved_properties   SavedProperty[]
   verifications      PropertyVerification[]
+  price_history      PriceHistory[]
 
   @@index([agentId], map: "idx_properties_agent")
   @@index([status], map: "idx_properties_status")
@@ -626,11 +628,13 @@ model PropertyInquiry {
   preferredDate DateTime? @map("preferred_date") @db.Timestamptz(6)
   status        String?   @default("pending") @db.VarChar(20)
   response      String?
-  respondedAt   DateTime? @map("responded_at") @db.Timestamptz(6)
-  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  respondedAt            DateTime? @map("responded_at") @db.Timestamptz(6)
+  createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   /// Company the buyer was acting under at the time of inquiry (from JWT active_company_id)
-  companyId     String?   @map("company_id") @db.Uuid
-  properties    Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  companyId              String?   @map("company_id") @db.Uuid
+  preferredContactMethod String?   @map("preferred_contact_method") @db.VarChar(20)
+  bestContactTime        String?   @map("best_contact_time") @db.VarChar(30)
+  properties             Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([propertyId], map: "idx_inquiries_property")
   @@index([buyerId], map: "idx_inquiries_buyer")
@@ -648,6 +652,22 @@ model SavedProperty {
   @@id([userId, propertyId])
   @@index([userId], map: "idx_saved_properties_user")
   @@map("saved_properties")
+  @@schema("property")
+}
+
+model PriceHistory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId String    @map("property_id") @db.Uuid
+  oldPrice   Decimal?  @map("old_price") @db.Decimal(18, 2)
+  newPrice   Decimal   @map("new_price") @db.Decimal(18, 2)
+  currency   String    @default("ZAR") @db.Char(3)
+  changedBy  String?   @map("changed_by") @db.Uuid
+  changeNote String?   @map("change_note")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  properties Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([propertyId, createdAt], map: "idx_price_history_property_date")
+  @@map("price_history")
   @@schema("property")
 }
 
@@ -1643,13 +1663,17 @@ model ConveyancingCase {
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  tasks             CaseTask[]
-  caseNotes         CaseNote[]
-  deadlines         ConveyancingDeadline[]
-  trustLedgerEntries TrustLedgerEntry[]
-  invoices          ConveyancingInvoice[]
-  generatedDocuments GeneratedDocument[]
-  clientPortalAccess ClientPortalAccess[]
+  lifecyclePhase             Int       @default(1) @map("lifecycle_phase") @db.SmallInt
+
+  tasks                    CaseTask[]
+  caseNotes                CaseNote[]
+  deadlines                ConveyancingDeadline[]
+  trustLedgerEntries       TrustLedgerEntry[]
+  invoices                 ConveyancingInvoice[]
+  generatedDocuments       GeneratedDocument[]
+  clientPortalAccess       ClientPortalAccess[]
+  govInteractions          ConveyancingGovInteraction[]
+  lifecycleHistory         CaseLifecycleHistory[]
 
   @@index([firmId, status], map: "idx_conv_cases_firm_status")
   @@index([leadConveyancerId], map: "idx_conv_cases_conveyancer")
@@ -1947,5 +1971,58 @@ model ConveyancingAuditLog {
   @@index([action], map: "idx_conv_audit_action")
   @@index([createdAt(sort: Desc)], map: "idx_conv_audit_created")
   @@map("audit_logs")
+  @@schema("conveyancing")
+}
+
+// ─── Government Department Interactions  (Sprint 05-c gap) ────────────────────
+
+model ConveyancingGovInteraction {
+  id                String    @id @default(uuid()) @db.Uuid
+  caseId            String    @map("case_id") @db.Uuid
+  department        String    @db.VarChar(50)
+  // e.g. deeds_office | sars | municipality | land_registry | body_corporate
+  interactionType   String    @map("interaction_type") @db.VarChar(50)
+  // e.g. submission | query | follow_up | receipt | rejection
+  referenceNumber   String?   @map("reference_number") @db.VarChar(100)
+  description       String    @db.VarChar(500)
+  submittedAt       DateTime? @map("submitted_at") @db.Timestamptz(6)
+  expectedResponseAt DateTime? @map("expected_response_at") @db.Date
+  resolvedAt        DateTime? @map("resolved_at") @db.Timestamptz(6)
+  status            String    @default("pending") @db.VarChar(30)
+  // pending | submitted | acknowledged | approved | rejected | escalated
+  notes             String?
+  recordedBy        String    @map("recorded_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case ConveyancingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, department], map: "idx_conv_gov_case_dept")
+  @@index([status, expectedResponseAt], map: "idx_conv_gov_status_due")
+  @@map("government_interactions")
+  @@schema("conveyancing")
+}
+
+// ─── Case Lifecycle History  (Sprint 05-c Part 3 — 13-phase state machine) ───
+
+model CaseLifecycleHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  caseId        String   @map("case_id") @db.Uuid
+  fromPhase     Int?     @map("from_phase") @db.SmallInt
+  toPhase       Int      @map("to_phase") @db.SmallInt
+  // 1–13 per sprint-05-c Part 3 lifecycle phases
+  fromStatus    String?  @map("from_status") @db.VarChar(30)
+  toStatus      String   @map("to_status") @db.VarChar(30)
+  triggeredBy   String   @map("triggered_by") @db.Uuid
+  // references identity.users(id)
+  trigger       String   @db.VarChar(50)
+  // manual | task_completion | webhook | system
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case ConveyancingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt(sort: Desc)], map: "idx_conv_lifecycle_case")
+  @@map("case_lifecycle_history")
   @@schema("conveyancing")
 }

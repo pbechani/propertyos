@@ -201,6 +201,44 @@ describe('MandateService', () => {
         service.markSellerSignedOffline(propertyId, mandateId, dto, 'different-agent-id'),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('throws BadRequestException if mandate is not in a signable state (expired)', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{
+        ...offlineSellerMandate,
+        status: 'expired',
+      }]);
+
+      await expect(
+        service.markSellerSignedOffline(propertyId, mandateId, dto, agentId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if mandate is not in a signable state (cancelled)', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{
+        ...offlineSellerMandate,
+        status: 'cancelled',
+      }]);
+
+      await expect(
+        service.markSellerSignedOffline(propertyId, mandateId, dto, agentId),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('records offline seller signature for active mandate', async () => {
+      const activeMandate = { ...offlineSellerMandate, status: 'active', signed_by_agent_at: new Date() };
+      const afterSellerSign = { ...activeMandate, signed_by_seller_at: new Date(), agreement_document_url: dto.documentUrl };
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce([activeMandate]);       // findMandateOrThrow
+      mockPrisma.$queryRaw.mockResolvedValueOnce([afterSellerSign]);      // UPDATE signed_by_seller_at
+      mockPrisma.$queryRaw.mockResolvedValueOnce([afterSellerSign]);      // both signed → re-activate UPDATE
+
+      const result = await service.markSellerSignedOffline(propertyId, mandateId, dto, agentId);
+
+      expect(result).toMatchObject({ agreement_document_url: dto.documentUrl });
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'mandate.seller_signed_offline' }),
+      );
+    });
   });
 
   describe('cancel', () => {

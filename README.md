@@ -68,7 +68,20 @@ A financial-grade digital infrastructure for property buying, construction manag
 /
 ├── apps/
 │   ├── api/              # NestJS backend
+│   │   └── src/
+│   │       ├── common/       # Shared types (AuthRequest) & BaseAuditService
+│   │       ├── property/     # Property module (listings, verification, fraud, etc.)
+│   │       ├── sales/        # Sales progression module (14-stage pipeline)
+│   │       ├── conveyancing/ # Conveyancer case management
+│   │       ├── financial/    # Escrow, ledger, payments (event-sourced)
+│   │       ├── identity/     # Auth, RBAC, KYC, companies
+│   │       ├── leads/        # Lead management & pipeline
+│   │       └── ai-intelligence/ # AI engine & LLM orchestration
 │   ├── web/              # Next.js frontend
+│   │   └── src/
+│   │       ├── lib/          # Shared utilities (formatters, status-colors, constants)
+│   │       ├── components/ui/# Reusable UI primitives (KpiCard, StatCard, LoadingSpinner, etc.)
+│   │       └── views/        # Page-level view components
 │   └── mobile/           # React Native app
 ├── packages/
 │   ├── shared-types/     # TypeScript interfaces

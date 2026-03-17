@@ -25,6 +25,7 @@ import {
   Camera,
   ExternalLink,
   Plus,
+  Palette,
 } from "lucide-react";
 
 type EditFormData = {
@@ -35,6 +36,7 @@ type EditFormData = {
   description: string;
   registration_number: string;
   tax_number: string;
+  brand_color: string;
   address_line1: string;
   address_city: string;
   address_region: string;
@@ -138,7 +140,7 @@ export default function CompanyProfile() {
   };
   const [editForm, setEditForm] = useState<EditFormData>({
     name: '', email: '', phone: '', website: '', description: '',
-    registration_number: '', tax_number: '',
+    registration_number: '', tax_number: '', brand_color: '',
     address_line1: '', address_city: '', address_region: '', address_country: '', address_postal_code: '',
   });
 
@@ -156,6 +158,7 @@ export default function CompanyProfile() {
       description: company.description ?? '',
       registration_number: company.registration_number ?? '',
       tax_number: company.tax_number ?? '',
+      brand_color: company.brand_color ?? '',
       address_line1: company.address?.line1 ?? '',
       address_city: company.address?.city ?? '',
       address_region: company.address?.region ?? '',
@@ -187,6 +190,7 @@ export default function CompanyProfile() {
         description: editForm.description || undefined,
         registration_number: editForm.registration_number || undefined,
         tax_number: editForm.tax_number || undefined,
+        brand_color: editForm.brand_color || undefined,
         address: {
           line1: editForm.address_line1 || undefined,
           city: editForm.address_city || undefined,
@@ -236,6 +240,7 @@ export default function CompanyProfile() {
             description: data.description ?? '',
             registration_number: data.registration_number ?? '',
             tax_number: data.tax_number ?? '',
+            brand_color: data.brand_color ?? '',
             address_line1: data.address?.line1 ?? '',
             address_city: data.address?.city ?? '',
             address_region: data.address?.region ?? '',
@@ -439,6 +444,24 @@ export default function CompanyProfile() {
               <div className="col-span-2">
                 <Field icon={<Globe className="w-5 h-5 text-gray-400" />} label="Website" value={company.website ?? '—'} />
               </div>
+              {/* Brand Color */}
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">Brand Colour</label>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Palette className="w-5 h-5 text-gray-400" />
+                  {company.brand_color ? (
+                    <>
+                      <div
+                        className="w-8 h-8 rounded-lg border border-gray-300 shrink-0"
+                        style={{ backgroundColor: company.brand_color }}
+                      />
+                      <span className="text-sm font-mono">{company.brand_color}</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-400">No brand colour set</span>
+                  )}
+                </div>
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs text-gray-500 mb-1">Description</label>
                 <p className="text-sm text-gray-800 leading-relaxed">{company.description ?? '—'}</p>
@@ -457,6 +480,47 @@ export default function CompanyProfile() {
               <EditField label="Region / State" value={editForm.address_region} onChange={updateField('address_region')} />
               <EditField label="Country" value={editForm.address_country} onChange={updateField('address_country')} />
               <EditField label="Postal Code" value={editForm.address_postal_code} onChange={updateField('address_postal_code')} />
+              {/* Brand Colour picker */}
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">Brand Colour</label>
+                <p className="text-xs text-gray-400 mb-2">This colour is used on your property card headers and other branded elements.</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={editForm.brand_color || '#4A9E8E'}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, brand_color: e.target.value }))}
+                    className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={editForm.brand_color}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === '' || /^#[0-9a-fA-F]{0,6}$/.test(v)) {
+                        setEditForm((prev) => ({ ...prev, brand_color: v }));
+                      }
+                    }}
+                    placeholder="#4A9E8E"
+                    maxLength={7}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {editForm.brand_color && (
+                    <div
+                      className="w-10 h-10 rounded-lg border border-gray-300 shrink-0"
+                      style={{ backgroundColor: editForm.brand_color }}
+                    />
+                  )}
+                  {editForm.brand_color && (
+                    <button
+                      type="button"
+                      onClick={() => setEditForm((prev) => ({ ...prev, brand_color: '' }))}
+                      className="text-xs text-gray-400 hover:text-red-500"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs text-gray-500 mb-1">Description</label>
                 <textarea

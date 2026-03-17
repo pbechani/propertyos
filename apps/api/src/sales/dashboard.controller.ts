@@ -5,10 +5,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { SalesService } from './sales.service';
 import { PrismaService } from '../database';
 import { ListSalesQueryDto } from './sales.dto';
-
-type AuthRequest = {
-  user: { sub: string; roles: string[] };
-};
+import { AuthRequest } from '../common/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Agent Sales Dashboard  — GET /api/v1/agent/sales

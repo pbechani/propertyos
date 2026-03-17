@@ -19,12 +19,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { VerificationService } from './verification.service';
 import { AdminRejectDto, AdminVerifyDto, SubmitVerificationDto } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 /**
  * Agent verification request endpoint.

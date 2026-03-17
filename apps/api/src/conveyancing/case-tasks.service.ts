@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database';
 import { ConveyancingAuditService } from './conveyancing-audit.service';
-import { CreateTaskDto, UpdateTaskDto } from './conveyancing.dto';
+import { CreateTaskDto, UpdateTaskDto, CreateDeadlineDto, ExtendDeadlineDto } from './conveyancing.dto';
 import { TASK_STATUSES } from './conveyancing.constants';
 
 export type TaskRow = {
@@ -180,5 +180,97 @@ export class CaseTasksService {
       WHERE id = ${caseId}::uuid AND firm_id = ${firmId}::uuid LIMIT 1
     `;
     if (!rows.length) throw new NotFoundException('Conveyancing case not found');
+  }
+
+  // ─── Deadline management ────────────────────────────────────────────────────
+
+  async listDeadlines(caseId: string): Promise<Record<string, unknown>[]> {
+    return this.prisma.$queryRaw`
+      SELECT * FROM conveyancing.deadlines
+      WHERE case_id = ${caseId}::uuid
+      ORDER BY due_date ASC NULLS LAST
+    `;
+  }
+
+  async createDeadline(
+    actorId: string,
+    actorRole: string,
+    firmId: string,
+    caseId: string,
+    dto: CreateDeadlineDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Record<string, unknown>> {
+    await this.assertCaseExists(caseId, firmId);
+
+    const rows = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      INSERT INTO conveyancing.deadlines
+        (case_id, deadline_type, description, due_date)
+      VALUES (
+        ${caseId}::uuid,
+        ${dto.deadlineType},
+        ${dto.description ?? null},
+        ${dto.dueDate}::date
+      )
+      RETURNING *
+    `;
+    const deadline = rows[0];
+
+    await this.audit.log({
+      actorId,
+      actorRole,
+      firmId,
+      action: 'deadline.created',
+      resourceType: 'deadline',
+      resourceId: deadline['id'] as string,
+      payload: { caseId, deadlineType: dto.deadlineType, dueDate: dto.dueDate },
+      ipAddress,
+      userAgent,
+    });
+
+    return deadline;
+  }
+
+  async extendDeadline(
+    actorId: string,
+    actorRole: string,
+    firmId: string,
+    deadlineId: string,
+    dto: ExtendDeadlineDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<Record<string, unknown>> {
+    const existing = await this.prisma.$queryRaw<{ id: string; case_id: string }[]>`
+      SELECT d.id, d.case_id FROM conveyancing.deadlines d
+      JOIN conveyancing.cases c ON c.id = d.case_id
+      WHERE d.id = ${deadlineId}::uuid AND c.firm_id = ${firmId}::uuid
+      LIMIT 1
+    `;
+    if (!existing.length) throw new NotFoundException('Deadline not found');
+
+    const rows = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      UPDATE conveyancing.deadlines
+      SET
+        status           = ${dto.status},
+        due_date         = COALESCE(${dto.extendedDueDate ?? null}::date, due_date),
+        extension_reason = COALESCE(${dto.extensionReason ?? null}, extension_reason),
+        updated_at       = NOW()
+      WHERE id = ${deadlineId}::uuid
+      RETURNING *
+    `;
+
+    await this.audit.log({
+      actorId,
+      actorRole,
+      firmId,
+      action: 'deadline.extended',
+      resourceType: 'deadline',
+      resourceId: deadlineId,
+      payload: { changes: dto },
+      ipAddress,
+      userAgent,
+    });
+
+    return rows[0];
   }
 }

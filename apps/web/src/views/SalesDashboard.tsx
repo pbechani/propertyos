@@ -11,34 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { salesApi, agentSalesApi, adminSalesApi, propertiesApi, type Sale, type PropertyListing } from '@/lib/api-client';
 import { getAccessToken, getStoredUser } from '@/lib/auth-session';
-
-const STAGE_NAMES: Record<number, string> = {
-  1: 'Property Search & Viewing',
-  2: 'Offer Submission',
-  3: 'Offer Accepted / Negotiation',
-  4: 'Sale Agreement (OTP)',
-  5: 'Deposit & Escrow',
-  6: 'Title Deed Search & Verification',
-  7: 'Mortgage / Financing Approval',
-  8: 'Property Inspection & Due Diligence',
-  9: 'Compliance Certificates',
-  10: 'Transfer Documentation',
-  11: 'Deeds Office Submission',
-  12: 'Transfer Duty Payment',
-  13: 'Capital Gains / Income Tax Clearance',
-  14: 'Deeds Office Registration',
-  15: 'Final Payment & Handover',
-};
-
-function statusBadgeClass(status: Sale['status']) {
-  switch (status) {
-    case 'active':    return 'bg-blue-100 text-blue-700';
-    case 'completed': return 'bg-green-100 text-green-700';
-    case 'cancelled': return 'bg-gray-100 text-gray-600';
-    case 'disputed':  return 'bg-red-100 text-red-700';
-    default:          return 'bg-gray-100 text-gray-600';
-  }
-}
+import { STAGE_NAMES } from '@/lib/constants';
+import { getStatusColor } from '@/lib/status-colors';
 
 export default function SalesDashboard() {
   const router = useRouter();
@@ -321,7 +295,7 @@ export default function SalesDashboard() {
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5">
-                      <Badge className={statusBadgeClass(sale.status)}>
+                      <Badge className={getStatusColor(sale.status)}>
                         {sale.status.toUpperCase()}
                       </Badge>
                       <span className="text-xs text-gray-400">

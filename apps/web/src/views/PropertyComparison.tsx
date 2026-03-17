@@ -12,18 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { propertiesApi, type ComparisonProperty, type PropertyComparison } from "@/lib/api-client";
 
+import { formatMoney } from "@/lib/formatters";
+
 const DEFAULT_PROPERTY_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop";
 const MAX_COMPARE = 4;
-
-function formatMoney(price: string, currency: string) {
-  const value = parseFloat(price);
-  if (!Number.isFinite(value)) return price;
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: currency || "ZAR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export default function PropertyComparison() {
   const searchParams = useSearchParams();

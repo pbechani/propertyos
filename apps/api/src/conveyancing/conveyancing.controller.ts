@@ -20,10 +20,13 @@ import { InvoiceService } from './invoice.service';
 import { DocumentWorkflowService } from './document-workflow.service';
 import { ClientPortalService } from './client-portal.service';
 import { FeeCalculatorService } from './fee-calculator.service';
+import { GovernmentInteractionsService } from './government-interactions.service';
 import {
+  AdvanceLifecycleDto,
   CalculateFeeDto,
   CreateCaseDto,
   CreateDeadlineDto,
+  CreateGovInteractionDto,
   CreateInvoiceDto,
   CreateNoteDto,
   CreatePortalAccessDto,
@@ -33,19 +36,11 @@ import {
   GenerateDocumentDto,
   RequestSignatureDto,
   UpdateCaseDto,
+  UpdateGovInteractionDto,
   UpdateInvoiceStatusDto,
   UpdateTaskDto,
 } from './conveyancing.dto';
-
-type AuthRequest = {
-  user: {
-    sub: string;
-    roles: string[];
-    active_company_id?: string | null;
-  };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Conveyancing Cases  /api/v1/conveyancing/cases
@@ -62,6 +57,7 @@ export class ConveyancingCasesController {
     private readonly invoiceService: InvoiceService,
     private readonly docService: DocumentWorkflowService,
     private readonly portalService: ClientPortalService,
+    private readonly govService: GovernmentInteractionsService,
   ) {}
 
   @Post()
@@ -360,6 +356,122 @@ export class ConveyancingCasesController {
       req.user.roles[0] ?? 'conveyancer',
       firmId,
       accessId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  // ── Deadlines ──────────────────────────────────────────────────────────────
+
+  @Get(':caseId/deadlines')
+  async listDeadlines(@Param('caseId', ParseUUIDPipe) caseId: string) {
+    return this.tasksService.listDeadlines(caseId);
+  }
+
+  @Post(':caseId/deadlines')
+  async createDeadline(
+    @Request() req: AuthRequest,
+    @Param('caseId', ParseUUIDPipe) caseId: string,
+    @Body() dto: CreateDeadlineDto,
+  ) {
+    const firmId = req.user.active_company_id ?? '';
+    return this.tasksService.createDeadline(
+      req.user.sub,
+      req.user.roles[0] ?? 'conveyancer',
+      firmId,
+      caseId,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  @Patch(':caseId/deadlines/:deadlineId/extend')
+  async extendDeadline(
+    @Request() req: AuthRequest,
+    @Param('caseId', ParseUUIDPipe) _caseId: string,
+    @Param('deadlineId', ParseUUIDPipe) deadlineId: string,
+    @Body() dto: ExtendDeadlineDto,
+  ) {
+    const firmId = req.user.active_company_id ?? '';
+    return this.tasksService.extendDeadline(
+      req.user.sub,
+      req.user.roles[0] ?? 'conveyancer',
+      firmId,
+      deadlineId,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  // ── Government Interactions ────────────────────────────────────────────────
+
+  @Get(':caseId/government-interactions')
+  async listGovInteractions(
+    @Param('caseId', ParseUUIDPipe) caseId: string,
+    @Query('department') department?: string,
+  ) {
+    return this.govService.listInteractions(caseId, department);
+  }
+
+  @Post(':caseId/government-interactions')
+  async createGovInteraction(
+    @Request() req: AuthRequest,
+    @Param('caseId', ParseUUIDPipe) caseId: string,
+    @Body() dto: CreateGovInteractionDto,
+  ) {
+    const firmId = req.user.active_company_id ?? '';
+    return this.govService.createInteraction(
+      req.user.sub,
+      req.user.roles[0] ?? 'conveyancer',
+      firmId,
+      caseId,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  @Patch(':caseId/government-interactions/:interactionId')
+  async updateGovInteraction(
+    @Request() req: AuthRequest,
+    @Param('caseId', ParseUUIDPipe) _caseId: string,
+    @Param('interactionId', ParseUUIDPipe) interactionId: string,
+    @Body() dto: UpdateGovInteractionDto,
+  ) {
+    const firmId = req.user.active_company_id ?? '';
+    return this.govService.updateInteraction(
+      req.user.sub,
+      req.user.roles[0] ?? 'conveyancer',
+      firmId,
+      interactionId,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  // ── Case Lifecycle ─────────────────────────────────────────────────────────
+
+  @Get(':caseId/lifecycle')
+  async getLifecycleHistory(@Param('caseId', ParseUUIDPipe) caseId: string) {
+    return this.govService.getLifecycleHistory(caseId);
+  }
+
+  @Post(':caseId/lifecycle/advance')
+  async advanceLifecycle(
+    @Request() req: AuthRequest,
+    @Param('caseId', ParseUUIDPipe) caseId: string,
+    @Body() dto: AdvanceLifecycleDto,
+  ) {
+    const firmId = req.user.active_company_id ?? '';
+    return this.govService.advanceLifecycle(
+      req.user.sub,
+      req.user.roles[0] ?? 'conveyancer',
+      firmId,
+      caseId,
+      dto,
       req.ip,
       req.headers['user-agent'],
     );

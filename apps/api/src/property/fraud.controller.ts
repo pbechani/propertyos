@@ -16,12 +16,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { FraudService } from './fraud.service';
 import { CreateFraudReportDto, ResolveFraudReportDto } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 /**
  * Public + authenticated fraud reporting.

@@ -105,18 +105,18 @@ These features exist in `apps/api/src/sales/` and the `sales.*` schema — **ref
 - [ ] SMS/email notification triggers
 
 ### Government Department Tracking
-- [ ] Structured government task per department (Deeds Office, SARS, Municipality, Land Registry)
-- [ ] Reference number tracking per submission
-- [ ] Expected turnaround dates per department (configurable per country)
-- [ ] Status history per department interaction
+- [x] Structured government task per department (Deeds Office, SARS, Municipality, Land Registry)
+- [x] Reference number tracking per submission
+- [x] Expected turnaround dates per department (configurable per country)
+- [x] Status history per department interaction
 
 ### Reporting
-- [ ] Case turnaround time per stage (firm-level)
-- [ ] Outstanding tasks report (all active cases × overdue tasks)
-- [ ] Monthly fee collection report
-- [ ] Active vs completed cases dashboard
-- [ ] Attorney workload report (cases per attorney)
-- [ ] CSV / PDF export for all reports
+- [x] Case turnaround time per stage (firm-level)
+- [x] Outstanding tasks report (all active cases × overdue tasks)
+- [x] Monthly fee collection report
+- [x] Active vs completed cases dashboard (caseload report)
+- [x] Attorney workload report (cases per attorney — caseload endpoint)
+- [ ] CSV / PDF export for all reports *(deferred — sprint-05-c gap, Phase 2)*
 
 ---
 
@@ -744,9 +744,9 @@ The following tasks are auto-created when a case opens in South Africa for a tra
 - [ ] Portal token expires at the configured time and access is denied thereafter
 
 ### Reporting
-- [ ] Turnaround report includes average days per stage for closed cases
-- [ ] Outstanding tasks report groups by attorney with SLA breach flag
-- [ ] CSV export of fee collection report includes invoice number, case reference, amount, status
+- [x] Turnaround report includes average days per stage for closed cases
+- [x] Outstanding tasks report groups by attorney with SLA breach flag
+- [ ] CSV export of fee collection report includes invoice number, case reference, amount, status *(deferred — Phase 2)*
 
 ---
 

@@ -71,3 +71,63 @@ export type SupportedCountry = typeof SUPPORTED_COUNTRIES[number];
 
 export const PORTAL_TOKEN_TTL_DAYS = 90;
 export const PORTAL_TOKEN_BYTES = 32;
+
+// ─── Government Department Interactions (sprint-05-c gaps) ────────────────────
+
+export const GOV_DEPARTMENTS = [
+  'deeds_office',
+  'sars',
+  'municipality',
+  'land_registry',
+  'body_corporate',
+] as const;
+export type GovDepartment = typeof GOV_DEPARTMENTS[number];
+
+export const GOV_INTERACTION_TYPES = [
+  'submission',
+  'query',
+  'follow_up',
+  'receipt',
+  'rejection',
+  'resubmission',
+] as const;
+export type GovInteractionType = typeof GOV_INTERACTION_TYPES[number];
+
+export const GOV_INTERACTION_STATUSES = [
+  'pending',
+  'submitted',
+  'acknowledged',
+  'approved',
+  'rejected',
+  'escalated',
+] as const;
+export type GovInteractionStatus = typeof GOV_INTERACTION_STATUSES[number];
+
+// ─── Case Lifecycle Phases (sprint-05-c Part 3 — 13-phase state machine) ──────
+
+export const LIFECYCLE_PHASES: Record<number, string> = {
+  1: 'Case Intake',
+  2: 'Legal Verification',
+  3: 'Seller Compliance',
+  4: 'Buyer Compliance',
+  5: 'Financial Structure',
+  6: 'Bond Cancellation',
+  7: 'Compliance Certificates',
+  8: 'Transfer Duty',
+  9: 'Transfer Document Preparation',
+  10: 'Deeds Office Lodgement',
+  11: 'Registration',
+  12: 'Financial Settlement',
+  13: 'Case Closure',
+} as const;
+
+export const LIFECYCLE_TRIGGERS = ['manual', 'task_completion', 'webhook', 'system'] as const;
+export type LifecycleTrigger = typeof LIFECYCLE_TRIGGERS[number];
+
+export const REPORT_TYPES = [
+  'turnaround',
+  'outstanding_tasks',
+  'fee_collection',
+  'caseload',
+] as const;
+export type ReportType = typeof REPORT_TYPES[number];

@@ -20,15 +20,7 @@ class AssistantQueryDto {
   pageContext?: string;
 }
 
-type AuthRequest = {
-  user: {
-    sub: string;
-    roles: string[];
-    active_company_id?: string | null;
-    active_company_role?: string | null;
-    active_company_is_admin?: boolean;
-  };
-};
+import { AuthRequest } from '../common/types';
 
 /** Static guardrail rules derived from AiGuardrailsService definitions. */
 const SAFETY_RULES = [

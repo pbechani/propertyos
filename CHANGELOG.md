@@ -12,6 +12,248 @@ Related docs:
 
 ## [Unreleased]
 
+### Added
+- **Viewings Tab — Time-Aware Status Grouping (2026-03-17)**
+  - Added `deriveViewingDisplayStatus` helper that computes display status from `scheduled_at`, `duration_minutes`, and `status`: `in-progress` (currently running), `upcoming` (future), `ended` (time elapsed but not yet completed), passed through for `completed`/`declined`/`cancelled`
+  - List view now has three labelled sections: **In Progress** (amber), **Upcoming** (blue), **Past** (gray) — mirroring the open house grouping pattern
+  - Each card badge continues to show the real DB status (Confirmed, Requested, Declined, etc.) with colour coding, while the section heading reflects the time-derived group
+  - Five new tests in `ScheduledViewings.test.tsx` covering all grouping cases
+- **Open House — Cancel Event Now Functional (2026-03-17)**
+  - "Cancel Event" button in the footer of `OpenHouseDetailModal` was previously a no-op placeholder
+  - Clicking the button now reveals an inline confirmation form with a required reason textarea
+  - Submitting calls `agentApi.cancelOpenHouse` (PATCH `/open-houses/:id/cancel`) with the entered reason
+  - On success: modal closes and the cancelled open house is immediately moved to the **Past** section in the list (status updated to `'cancelled'` in local React state) — no page reload needed
+  - On API error: error message shown inline; form stays open for correction
+  - "Back" dismisses the confirmation form without performing any action
+- **Open House — Dynamic Preparation Checklist (2026-03-17)**  - Replaced four static checkboxes (`prepareMaterials`, `installSignage`, `refreshments`, `photographyRequired`) with a single `checklistItems` array in `ScheduleOpenHouseModal` form state
+  - Step 4 "Materials & Setup" now renders checklist items dynamically from state; each item has a toggle checkbox and a trash button to remove it
+  - Agents can add custom tasks via a text input + "Add" button (or press Enter); new tasks are appended with `completed: false`
+  - `DEFAULT_CHECKLIST_ITEMS` constant provides the five original tasks as shared defaults for new, reset, and edit flows
+  - When editing an existing open house, the saved `preparation_checklist` is loaded directly; falls back to defaults if the saved list is empty
+  - Five new tests in `ScheduleOpenHouseModal.test.tsx` cover: default task rendering, add via button, add via Enter, remove, pre-load saved checklist, and empty-checklist fallback
+- **Open House — Time-Aware Status Grouping (2026-03-17)**
+  - Added `deriveDisplayStatus` helper that derives display status from both `status` and real time: `upcoming` (future), `in-progress` (currently running), `ended` (scheduled but time elapsed), `completed`, `cancelled`
+  - List view now has three sections: "In Progress" (amber heading), "Upcoming", and "Past"
+  - Card badge and detail modal header badge use the derived label ("In Progress", "Ended", etc.) instead of the raw DB `status` field
+  - `OpenHouseDetailModal` status type widened to include `'in-progress' | 'ended'`; Edit, Check-In, Marketing Status, Preparation Checklist, and Cancel Event are shown for both `upcoming` and `in-progress` events
+  - Two new regression tests: past-scheduled → "Past" section, currently-running → "In Progress" section
+- **My Listings — Open House List and Calendar Views (2026-03-17)**
+  - Added a list/calendar toggle to the open house tab on listing detail pages
+  - Introduced a month calendar with per-day open house counts, selected-day detail panel, and month summary
+  - Kept the existing grouped Upcoming/Past list view intact for agents who prefer the current workflow
+- **Company Brand Colour — Color Picker & Property Card Theming (2026-03-15)**
+- **Mandate File Upload for Offline Signing (2026-03-15)**
+  - Upload signed agreement proof via file picker (PDF, JPG, PNG, HEIC) instead of pasting a URL
+- **Property Detail — 8 New Agent Tabs (2026-03-15)**
+  - Property Condition, Selling Points, Notes, Showings, Leads, Offers, Sale Details, Post-Sale Activities
+  - Horizontal-scrollable tab bar with color-coded buttons and placeholder content panels
+  - Backend accepts multipart file upload, stores via DocumentStorageService
+  - Frontend uses native file dialog with drag-friendly label button
+
+### Fixed
+- **Open House Metadata Serialization — Checklist/Marketing Saved as Empty Arrays (2026-03-17)**
+  - Added nested DTO metadata on `CreateOpenHouseDto` (`@ValidateNested({ each: true })` + `@Type(...)`) for `preparationChecklist` and `marketingOptions`
+  - Prevents implicit conversion from coercing nested objects into malformed `[]` array items during request validation/transform
+  - Normalized malformed local rows in `property.open_houses` where JSONB items were stored as arrays (`[[], ...]`) so existing detail views can render labels/status again
+- **Open Houses List — Only One Upcoming Entry Showing (2026-03-17)**
+  - Removed hard filters in `propertyOpenHouses` (`status = 'scheduled'` and `scheduled_at > NOW()`) so the endpoint returns the full property open-house timeline
+  - Restores expected UI behavior where the list can show both Upcoming and Past sections instead of collapsing to only future scheduled records
+  - Added regression assertion in `viewing.service.spec.ts` to guard against reintroducing those filters
+- **Open House Details — Marketing Status & Preparation Checklist Missing (2026-03-17)**
+  - `propertyOpenHouses` now selects `oh.*` (including JSONB `preparation_checklist` and `marketing_options`) and joins `property_title`, instead of returning a reduced column set
+  - Existing open houses loaded from the property list endpoint now populate Marketing Status and Preparation Checklist in the detail modal
+  - Added backend regression test in `viewing.service.spec.ts` to verify these metadata fields are returned
+- **Open House — Edit Modal Pre-Populates All Captured Fields (2026-03-17)**
+  - `ScheduleOpenHouseModal` now accepts the full `OpenHouseRecord` (`openHouseRecord` prop) instead of the old date-only `initialData` shape
+  - `useEffect` derives all form fields from the record: date/time, max attendees, marketing channel toggles (MLS, Website, Social Media, Email Blast, Facebook Event), preparation checklist checkboxes (signage, materials, refreshments, photography), and special/parking instructions from the stored description
+  - Opening the modal fresh (create mode) now resets the form to defaults, preventing stale data from a prior edit session bleeding through
+  - Regression test added: `'pre-populates description and max attendees when editing an open house'`
+- **Open House — New Entry Appears Immediately After Scheduling (2026-03-17)**
+  - `agentApi.createOpenHouse` return type corrected from `{ id: string }` to `OpenHouseRecord` so the full record is available on the frontend after creation
+  - `ScheduleOpenHouseModal.onSuccess` callback now receives the full `OpenHouseRecord` instead of just the ID string
+  - `OpenHouses.tsx` replaces the cache-prone `loadOpenHouses()` refetch with `handleOpenHouseSuccess`, which merges the returned record directly into local React state (prepend on create, deep-merge on reschedule)
+  - Regression test added: `'shows a newly created open house immediately after scheduling'`
+- **Open House Scheduling — 500 Internal Server Error (2026-03-17)**
+  - Applied two pending database migrations to the local `pribec-postgres` container:
+    - `202603160031_open_house_preparation_checklist`: adds `preparation_checklist JSONB` column to `property.open_houses`
+    - `202603160032_open_house_marketing_options`: adds `marketing_options JSONB` column to `property.open_houses`
+  - The `createOpenHouse` INSERT referenced these columns before they existed in the live schema, causing Postgres to return a column-not-found error propagated as a 500
+- **Mandate "Mark Seller Signed (Offline)" Button Fix (2026-03-15)**
+  - Button component now defaults to `type="button"` preventing accidental form-submit behavior
+  - Replaced `type="url"` input with `type="text"` to avoid confusing browser URL validation
+  - Offline-sign inline form redesigned: green background panel with label, clearer layout
+  - `handleSellerOfflineSign` now shows explicit error messages instead of silently returning
+  - Added `type="button"` to all mandate card action buttons (Sign as Agent, Cancel, Confirm)
+  - 3 new backend tests (mandate offline sign: expired/cancelled state, active mandate flow)
+  - 6 new frontend Button component tests (type default, override, onClick, disabled, asChild)
+- **Map 403 "Access Blocked" — Replace OSM iframe embeds with Leaflet (2026-03-15)**
+  - OpenStreetMap `export/embed.html` was returning 403 due to tile usage policy violations
+  - Installed `leaflet`, `react-leaflet`, and `@types/leaflet`
+  - Created `LeafletMap` component with CARTO Voyager tile layer and proper OSM/CARTO attribution
+  - Created `LeafletMapDynamic` wrapper using `next/dynamic` (SSR-safe, Leaflet requires DOM)
+  - Updated `map-utils.ts` to return structured leaflet data (`center`, `zoom`, `markers`) instead of iframe URLs
+  - Replaced iframe map rendering in PropertyDetail, PropertyDetailEnhanced, and Listings views
+  - Listings map now uses native Leaflet markers with title/price popups instead of absolute-positioned overlays
+  - All 739 backend + 99 frontend tests still passing
+  - Added `brand_color` field to company profile (hex value, e.g. `#4A9E8E`)
+  - Native colour picker + hex text input on the Company Profile edit form with live preview swatch
+  - Brand colour displayed on the view-mode profile with swatch + hex code
+  - Backend DTO validation: must be valid 7-char hex (`#RRGGBB`), regex-enforced
+  - Company service `create()` and `update()` now persist `brand_color`
+  - `CompanyDetail` type and `updateCompany` API payload include `brand_color`
+  - Colour flows through to `PropertyCardHeader` on listing cards (already wired)
+  - 13 new backend tests: 9 DTO validation tests + 4 service update tests (739 total)
+- **Multi-Agent Listing Feature — Address-Based Grouping with Selection Dialog (2026-03-15)**
+  - When the same property address is listed by multiple agents, the listing card shows a "Listed by N Estate Agencies" badge
+  - Clicking a multi-agent card opens a selection dialog showing all listings for that address, each with agency header, thumbnail, price, specs
+  - Selecting a listing from the dialog navigates to the property detail page
+  - Client-side grouping by normalized `address_line1 + city` — no backend changes required
+  - Added `MultiListingDialog` component using Radix Dialog with scrollable listing cards
+  - Updated `ListingCard` type with `addressLine1` and `addressCity` fields for grouping
+  - Deduplicated display: multi-agent properties show once in the grid (first listing), with badge indicating count
+  - Applied to both in-app listings (`/app/listings`) and public search results (`/properties/search`)
+  - Updated `PropertyCardData` interface with optional `addressLine1` / `addressCity` fields
+  - 17 new frontend tests for MultiListingDialog (rendering, click handlers, specs display, singular/plural text)
+  - Test totals: 99 frontend / 726 backend — all passing
+
+- **Property Detail — Tier 3 & 4 Features: Floor Plans, Price History, Print View, Contact Preferences, Future Feature Placeholders (2026-03-15)**
+  - **Backend: Price History & Floor Plans**
+    - Added `PriceHistory` Prisma model (property_id, old_price, new_price, currency, changed_by, change_note) with index on (property_id, created_at)
+    - Added `getPriceHistory(propertyId)` method to `PropertyService` — raw SQL query ordered by created_at ASC
+    - Added `getFloorPlans(propertyId)` method to `PropertyService` — filters PropertyMedia by media_type = 'floor_plan'
+    - Added automatic price change logging in `update()` — when price changes, inserts a record into price_history
+    - Added `GET /api/v1/properties/:id/price-history` and `GET /api/v1/properties/:id/floor-plans` public routes
+    - Added `preferredContactMethod` and `bestContactTime` optional fields to `CreateInquiryDto`
+    - Updated `InquiryService.create()` to persist contact preferences
+    - Created migration: `202603150030_tier3_price_history_contact_prefs`
+  - **Frontend: 5 new components + print stylesheet**
+    - `FloorPlanViewer` — expandable accordion with thumbnail grid, click-to-zoom lightbox overlay
+    - `PriceHistoryChart` — pure SVG line chart with gradient fill, percentage change indicator, price change list
+    - `PrintButton` — triggers window.print(), hidden during actual printing via `print:hidden`
+    - `ContactPreferences` — two select dropdowns (preferred contact method + best time) for inquiry form
+    - `FutureFeaturesCard` — dashed-border placeholder card with icon, title, description, "Coming Soon" badge
+    - `print.css` — @media print stylesheet (A4 page, hidden interactive elements, clean layout)
+  - **API Client updates**
+    - Added `PriceHistoryRecord` and `FloorPlanRecord` types
+    - Added `getPriceHistory` and `getFloorPlans` methods to `propertiesApi`
+    - Updated `CreateInquiryPayload` with optional `preferredContactMethod` and `bestContactTime`
+  - **PropertyDetailEnhanced.tsx integration**
+    - Floor plan viewer inserted before Property Details card
+    - Price history chart inserted after Ownership History section
+    - Contact preferences dropdowns added to inquiry form (before Send button)
+    - Print button added alongside Share button in hero actions
+    - 3 Tier 4 future feature placeholders in sidebar (3D Walkthrough, School Catchment, Energy Rating)
+  - **Tests: 27 new frontend + 7 new backend tests (82 frontend / 726 backend total)**
+  - Zero TypeScript errors confirmed (both API and web)
+
+- **Property Detail — Tier 2 Features: Ownership History, Sticky CTA, Bond Calculator, Breadcrumbs (2026-03-15)**
+  - **Backend: Ownership History endpoint**
+    - Added `getOwnershipHistory(propertyId)` method to `PropertyService` — raw SQL query on `property.ownership_history` ordered by transfer_date DESC
+    - Added `GET /api/v1/properties/:id/ownership-history` public route to `PropertyController` (no auth required)
+    - 2 new backend tests (ordered records, empty history)
+  - **Frontend: 4 new components**
+    - `PropertyOwnershipHistory` — timeline of property transfers with dates, prices, title deed links, and notes
+    - `StickyCtaBar` — fixed-bottom bar with Contact Agent, Schedule Viewing, and Save buttons; uses IntersectionObserver to show when hero scrolls out of view
+    - `BondCalculator` — client-side mortgage calculator (P × [r(1+r)^n] / [(1+r)^n – 1]) with editable deposit, interest rate (default 11.75%), and term (default 20 years); ZAR currency formatting via Intl.NumberFormat
+    - `PropertyBreadcrumb` — derives breadcrumbs from propertyType + location hierarchy (Home > Properties > Type > Region > City > Title) with smart dedup
+  - **API Client updates**
+    - Added `OwnershipHistoryRecord` type and `getOwnershipHistory` method to `propertiesApi`
+  - **PropertyDetailEnhanced.tsx integration**
+    - Extended `PropertyDetailState` with `rawPrice`, `city`, `region` fields
+    - Added ownership history data fetching (non-blocking)
+    - Replaced plain back button bar with breadcrumb + back button layout
+    - Added `ref={heroRef}` to hero gallery for IntersectionObserver tracking
+    - Inserted Ownership History timeline after Location card
+    - Inserted Bond Calculator in sidebar (conditional on rawPrice > 0)
+    - Inserted Sticky CTA bar before modals (conditional on !isOwnListing)
+  - 30 new frontend tests across 4 test files (55 total property detail tests)
+  - Zero TypeScript errors confirmed (both API and web)
+
+- **Property Detail — Tier 1 Architectural Decomposition & Missing Features (2026-03-15)**
+  - Extracted 4 new sub-components from the 4041-line monolithic `PropertyDetailEnhanced.tsx`:
+    - `PropertyMonthlyCosts` — displays monthly levy, rates & taxes, utilities with calculated total
+    - `PropertyDaysOnMarket` — shows "X days on market" badge visible to ALL visitors (was agent-only)
+    - `PropertyShareButton` — working Web Share API + fallback menu (Copy Link, WhatsApp, Email)
+    - `PropertyVerificationChecklist` — document-level verification status with progress bar, per property type
+  - Extended `PropertyDetailState` type with `monthlyLevy`, `monthlyRates`, `monthlyUtilities`, `erfSize`, `currency`, `verifiedAt` fields
+  - Wired monthly cost data from API `PropertyListing` through to the new Monthly Costs card
+  - Replaced dead Share button (no onClick handler) with fully functional `PropertyShareButton`
+  - Moved Days on Market from agent-only Listing Intelligence panel to public Listing Timeline section
+  - Added Verification Checklist to sidebar between Agent Card and Neighbourhood Insights
+  - Set up Jest + React Testing Library infrastructure for web app (`jest.config.js`, `jest.setup.ts`)
+  - Added 25 unit tests across all 4 new components (happy path + edge cases)
+  - Zero TypeScript errors confirmed
+
+- **Sprint 06 — Construction Module UI Migration (2026-03-13)**
+  - Migrated full Construction Project Management sample UI (37 pages, 9 data modules, 3 custom components) from `sample_ui/Constructionprojects-main/` into the Pribec Next.js web app
+  - Created 37 Next.js App Router routes under `/construction/*` with dedicated layout and sub-navigation sidebar
+  - Sub-navigation organized into 9 collapsible groups: Dashboards, Project Management, Financial, Procurement & Materials, Field Operations, Documents & Compliance, AI & Intelligence, Reports & Analytics, Administration
+  - Updated main sidebar: renamed "Project Management" to "Construction" with HardHat icon
+  - Adapted all React Router imports to use `@/lib/router-compat` shim for Next.js compatibility
+  - Extended TypeScript interfaces (AIAgent, Document, Risk) to align with mock data
+  - Fixed mock data (risks, documents, AI agents) to satisfy strict type requirements
+  - 89 files created total (37 views, 37 routes, 9 data modules, 4 components, 1 types, 1 layout)
+  - See [design/sprints/sprint-06/2-implementation.md](design/sprints/sprint-06/2-implementation.md)
+
+- **Cross-sprint reusable component extraction — backend common module (2026-03-13)**
+  - **`apps/api/src/common/types.ts`** — shared `AuthRequest` and `PublicRequest` type definitions (superset of user JWT claims, IP, headers, company context). Replaces 15 duplicate `type AuthRequest` blocks scattered across all controllers.
+  - **`apps/api/src/common/base-audit.service.ts`** — abstract `BaseAuditService` class with schema-parameterised `log(entry)` method. Writes to `<schema>.audit_logs` via parameterised `$executeRawUnsafe`. Subclasses only need `super(prisma, 'schema_name')`.
+  - **`apps/api/src/common/index.ts`** — barrel export for `BaseAuditService`, `BaseAuditParams`, `AuthRequest`, `PublicRequest`.
+
+- **Cross-sprint reusable component extraction — frontend shared utilities (2026-03-13)**
+  - **`apps/web/src/lib/formatters.ts`** — `formatMoney(price, currency)`, `formatCompactCurrency(value, prefix)`, `formatRelativeTime(iso)`. Extracted from 5+ duplicate implementations across MyDashboard, AgentDashboardEnhanced, PropertyComparison, PropertyDetailEnhanced, AgentProfile, BuyerDashboardEnhanced, ProfileDashboard.
+  - **`apps/web/src/lib/status-colors.ts`** — `getStatusColor()`, `getPriorityColor()`, `getPriorityTextColor()`, `getSeverityColor()`, `getRiskColor()`, `getRiskLabel()`. Consolidated from 6+ switch-case functions across ConveyancerView, EscrowFinancialDashboard, SalesDashboard, PropertySaleWorkspace, PropertyLifecycleDashboard, BuyerSimpleView.
+  - **`apps/web/src/lib/constants.ts`** — `STAGE_NAMES` (15-stage pipeline names), `TEMPERATURE_CONFIG`, `LEAD_TYPE_LABELS`, `LEAD_TYPE_COLORS`. Extracted from SalesDashboard, LeadDashboard.
+
+- **Cross-sprint reusable component extraction — frontend shared UI components (2026-03-13)**
+  - **`apps/web/src/components/ui/kpi-card.tsx`** — gradient KPI card with icon, value, label, sublabel, 7 preset gradients. Replaces 4+ inline card blocks per dashboard.
+  - **`apps/web/src/components/ui/stat-card.tsx`** — simple stat card (non-gradient) for admin/conveyancer dashboards.
+  - **`apps/web/src/components/ui/loading-spinner.tsx`** — `LoadingSpinner` (sm/md/lg) and `PageLoadingSpinner` (full section centered). Replaces 30+ inconsistent `Loader2 animate-spin` patterns.
+  - **`apps/web/src/components/ui/empty-state.tsx`** — empty state placeholder with icon, title, description, action slot.
+  - **`apps/web/src/components/ui/error-message.tsx`** — centered red error message display.
+  - **`apps/web/src/components/ui/page-header.tsx`** — page header with title, description, and action buttons slot.
+
+### Changed
+- **Backend: 15 controllers now import shared `AuthRequest` type (2026-03-13)**
+  - Removed local `type AuthRequest` definitions from: `property.controller`, `fraud.controller`, `viewing.controller`, `mandate.controller`, `buyer.controller`, `valuation.controller`, `verification.controller`, `neighbourhood.controller`, `sales.controller`, `sales-enhanced.controller`, `dashboard.controller`, `leads.controller`, `conveyancing.controller`, `reports.controller`, `ai-intelligence.controller`. All now `import { AuthRequest } from '../common/types'`.
+  - `property.controller.ts` also imports `PublicRequest` from the shared module.
+
+- **Backend: audit services refactored to use `BaseAuditService` (2026-03-13)**
+  - `PropertyAuditService` — now extends `BaseAuditService` with `schema='property'` (~55 lines → ~14 lines).
+  - `SalesAuditService` — now extends `BaseAuditService` with `schema='sales'` (~55 lines → ~14 lines).
+  - `ConveyancingAuditService` — kept custom (uses `firm_id` column instead of `company_id`) but imports `BaseAuditParams` type.
+  - `FinancialAuditService` — kept as-is (completely different schema: `amount`, `currency`, `metadata` columns).
+
+- **Frontend: 10 view files refactored to shared utilities (2026-03-13)**
+  - `MyDashboard.tsx`, `PropertyComparison.tsx`, `AgentDashboardEnhanced.tsx`, `PropertyDetailEnhanced.tsx`, `AgentProfile.tsx` — replaced inline `formatMoney` with import from `@/lib/formatters`.
+  - `BuyerDashboardEnhanced.tsx`, `ProfileDashboard.tsx` — replaced inline `formatRelativeTime` with import from `@/lib/formatters`.
+  - `ConveyancerView.tsx` — replaced inline `getStatusColor` and `getPriorityColor` with imports from `@/lib/status-colors`.
+  - `SalesDashboard.tsx` — replaced inline `STAGE_NAMES` with import from `@/lib/constants`; replaced `statusBadgeClass` with `getStatusColor` from `@/lib/status-colors`.
+  - `LeadDashboard.tsx` — replaced inline `temperatureConfig`, `typeLabels`, `typeColors`, `priorityColors` with imports from `@/lib/constants` and `@/lib/status-colors`.
+  - `EscrowFinancialDashboard.tsx` — replaced inline `getStatusColor` with import from `@/lib/status-colors`.
+  - `BuyerSimpleView.tsx` — replaced inline `formatCurrency` with `formatMoney` from `@/lib/formatters`.
+
+### Fixed
+- **`property-audit.service.spec.ts`** — updated mock from `$executeRaw` to `$executeRawUnsafe` to match `BaseAuditService` implementation; updated assertion to check `callArgs[0]` (string arg) instead of `callArgs[0][0]` (tagged template).
+
+- **Sprint-05-c UI gap fill — Conveyancer case detail + reports wired to real API (2026-03-13)**
+  - **`apps/web/src/lib/api-client.ts`** — added 10 new types (`ConveyancerCaseDetail`, `ConveyancerTask`, `ConveyancerDeadline`, `ConveyancerGovInteraction`, `ConveyancerLifecycleEvent`, `ConveyancerLifecycleResponse`, 4 report row types) and 13 new `conveyancerApi` methods: `getCase`, `listTasks`, `listDeadlines`, `createDeadline`, `extendDeadline`, `listGovInteractions`, `createGovInteraction`, `updateGovInteraction`, `getLifecycleHistory`, `advanceLifecycle`, `getTurnaroundReport`, `getOutstandingTasksReport`, `getFeeCollectionReport`, `getCaseloadReport`.
+  - **`apps/web/src/app/app/conveyancer/cases/[id]/page.tsx`** — full rewrite: removed mock data layer; wired to real `conveyancerApi.getCase`; added 8 tabs (Overview, Tasks, Deadlines, **Government**, **Lifecycle**, Documents, Financials, Communications); Government tab includes "Record Interaction" form with create flow; Lifecycle tab shows 13-phase history timeline + advance-lifecycle form; all tabs lazy-load their data via `useEffect` on tab activation.
+  - **`apps/web/src/app/app/conveyancer/reports/page.tsx`** — full rewrite: replaces all hardcoded static arrays; adds date-range filter; loads data from 4 report endpoints in parallel (`Promise.all`); live stat cards (total cases, fees outstanding, avg days open, outstanding task count); turnaround bar chart; turnaround table, outstanding tasks table, fee collection table with real data; loading skeletons and error state.
+
+- **Sprint-05-c gap fill — Conveyancing: Deadlines, Government Interactions, Lifecycle, Reports (2026-03-13)**
+  - **`government-interactions.service.ts`** — new service: `listInteractions`, `createInteraction`, `updateInteraction` (government department tracking per case — Deeds Office, SARS, Municipality, Land Registry, Body Corporate); `getLifecycleHistory` and `advanceLifecycle` implementing the 13-phase case lifecycle state machine from sprint-05-c Part 3.
+  - **`reports.service.ts`** — new service: `getTurnaroundReport`, `getOutstandingTasksReport`, `getFeeCollectionReport`, `getCaseloadReport` — all firm-scoped, with optional date filter params.
+  - **`reports.controller.ts`** — new controller at `GET /api/v1/conveyancing/reports/{turnaround,outstanding-tasks,fee-collection,caseload}`, guarded by `JwtAuthGuard + RolesGuard('conveyancer', 'admin')`.
+  - **`case-tasks.service.ts`** — added `listDeadlines`, `createDeadline`, `extendDeadline` methods wiring up the orphaned `conveyancing.deadlines` table (DTOs existed, service methods did not).
+  - **`conveyancing.controller.ts`** — added 8 new routes: `GET/POST :caseId/deadlines`, `PATCH :caseId/deadlines/:id/extend`, `GET/POST :caseId/government-interactions`, `PATCH :caseId/government-interactions/:id`, `GET :caseId/lifecycle`, `POST :caseId/lifecycle/advance`.
+  - **`conveyancing.module.ts`** — registered `GovernmentInteractionsService`, `ReportsService`, `ReportsController`.
+  - **`conveyancing.constants.ts`** — added `GOV_DEPARTMENTS`, `GOV_INTERACTION_TYPES`, `GOV_INTERACTION_STATUSES`, `LIFECYCLE_PHASES` (13-phase map), `LIFECYCLE_TRIGGERS`, `REPORT_TYPES`.
+  - **`conveyancing.dto.ts`** — added `CreateGovInteractionDto`, `UpdateGovInteractionDto`, `AdvanceLifecycleDto`, `ReportQueryDto`.
+  - **`schema.prisma`** — added `ConveyancingGovInteraction` and `CaseLifecycleHistory` models; added `lifecyclePhase` field + `govInteractions`/`lifecycleHistory` relations on `ConveyancingCase`.
+  - **`20260313_sprint05c_conveyancing_gaps/migration.sql`** — adds `lifecycle_phase` column, `conveyancing.government_interactions` table, `conveyancing.case_lifecycle_history` table.
+  - **Tests:** `government-interactions.service.spec.ts` (14 tests), `reports.service.spec.ts` (8 tests) — all 46 conveyancing specs pass.
+
 ### Changed
 - **Conveyancer: New Case — 5-step wizard page (2026-03-12)**
   - **`api-client.ts`** — added `CreateCasePayload` type and `conveyancerApi.createCase(token, payload)` calling `POST /conveyancing/cases`.

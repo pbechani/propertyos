@@ -19,12 +19,7 @@ import { PropertyService } from './property.service';
 import { SavedPropertiesService } from './saved-properties.service';
 import { CreateInquiryDto, RespondInquiryDto } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 @Controller('properties')
 @UseGuards(JwtAuthGuard)

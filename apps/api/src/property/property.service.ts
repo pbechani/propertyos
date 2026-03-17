@@ -24,14 +24,24 @@ export type PropertyRecord = {
   title: string;
   description: string | null;
   property_type: string;
+  property_subtype: string | null;
   listing_type: string | null;
   status: string;
   price: string;
   currency: string;
   area_sqm: string | null;
+  erf_size_sqm: string | null;
+  floor_area_sqm: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   parking_spaces: number | null;
+  garages: number | null;
+  carports: number | null;
+  monthly_levy: string | null;
+  monthly_rates: string | null;
+  monthly_utilities: string | null;
+  title_type: string | null;
+  listing_reference: string | null;
   features: unknown;
   agent_id: string | null;
   owner_id: string | null;
@@ -43,6 +53,8 @@ export type PropertyRecord = {
   company_name: string | null;
   /** Logo URL of the company the listing was created under. */
   company_logo_url: string | null;
+  /** Brand color hex (e.g. "#4A9E8E") of the company. Used for property card header theming. */
+  company_brand_color: string | null;
   /** Status of the company the listing was created under. Used to show investigation badge. */
   company_status: string | null;
   verification_status: string;
@@ -230,7 +242,7 @@ export class PropertyService {
     },
   ): Promise<PropertyWithLocation> {
     const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
-      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       WHERE p.id = ${id}::uuid LIMIT 1
@@ -365,6 +377,20 @@ export class PropertyService {
       await this.upsertLocation(id, normalized.location);
     }
 
+    // Record price change in price_history table
+    if (normalized.price !== undefined && String(normalized.price) !== String(existing[0].price)) {
+      await this.prisma.$queryRaw`
+        INSERT INTO property.price_history (property_id, old_price, new_price, currency, changed_by)
+        VALUES (
+          ${id}::uuid,
+          ${existing[0].price}::decimal,
+          ${normalized.price}::decimal,
+          ${updated.currency ?? existing[0].currency ?? 'ZAR'},
+          ${actorId}::uuid
+        )
+      `;
+    }
+
     await this.audit.log({
       actorId,
       actorRole,
@@ -431,7 +457,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
@@ -484,7 +510,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
-      SELECT DISTINCT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url
+      SELECT DISTINCT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
       FROM property.properties p
       LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
@@ -626,7 +652,7 @@ export class PropertyService {
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p LEFT JOIN identity.companies c ON c.id = p.company_id ${whereClause}`;
     const dataQuery = `
-      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.status AS company_status,
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color, c.status AS company_status,
         (SELECT MIN(oh.scheduled_at)::text FROM property.open_houses oh
           WHERE oh.property_id = p.id AND oh.status = 'scheduled' AND oh.scheduled_at > NOW()
         ) AS next_open_house_at
@@ -704,6 +730,7 @@ export class PropertyService {
         WHERE al.action = 'property.viewed'
           AND al.resource_type = 'property'
           AND p.agent_id = ${agentId}::uuid
+          AND (al.actor_id IS NULL OR (al.actor_id != p.agent_id AND al.actor_id != COALESCE(p.owner_id, p.agent_id)))
       `,
       this.prisma.$queryRaw<[{ total_inquiries: string; responded_inquiries: string }]>`
         SELECT
@@ -830,15 +857,14 @@ export class PropertyService {
         p.id, p.title, p.status, p.price, p.currency,
         p.created_at,
         EXTRACT(DAY FROM NOW() - p.created_at)::int AS days_on_market,
-        (SELECT COUNT(*) FROM property.audit_logs al
-         WHERE al.resource_id = p.id AND al.action = 'property.viewed')::int AS views,
+        p.view_count::int AS views,
         (SELECT COUNT(*) FROM property.saved_properties s
          WHERE s.property_id = p.id)::int AS saves,
         (SELECT COUNT(*) FROM property.inquiries i
          WHERE i.property_id = p.id)::int AS inquiries,
         (SELECT COUNT(*) FROM property.viewings v
          WHERE v.property_id = p.id AND v.status = 'completed')::int AS completed_viewings,
-        pl.city, pl.suburb
+        pl.city, pl.region
       FROM property.properties p
       LEFT JOIN property.property_locations pl ON pl.property_id = p.id
       WHERE p.agent_id = ${agentId}::uuid
@@ -872,6 +898,8 @@ export class PropertyService {
         viewings_declined: string;
         viewings_cancelled: string;
         open_houses_scheduled: string;
+        documents_count: string;
+        leads_count: string;
         days_on_market: string;
       }[]
     >`
@@ -892,7 +920,11 @@ export class PropertyService {
         (SELECT COUNT(*)::text FROM property.viewings
          WHERE property_id = ${propertyId}::uuid AND status = 'cancelled') AS viewings_cancelled,
         (SELECT COUNT(*)::text FROM property.open_houses
-         WHERE property_id = ${propertyId}::uuid AND status = 'scheduled') AS open_houses_scheduled,
+         WHERE property_id = ${propertyId}::uuid AND status = 'scheduled' AND scheduled_at > NOW()) AS open_houses_scheduled,
+        (SELECT COUNT(*)::text FROM property.verifications
+         WHERE property_id = ${propertyId}::uuid) AS documents_count,
+        (SELECT COUNT(*)::text FROM identity.leads
+         WHERE assigned_property_id = ${propertyId}::uuid) AS leads_count,
         EXTRACT(DAY FROM NOW() - p.created_at)::text AS days_on_market
       FROM property.properties p
       WHERE p.id = ${propertyId}::uuid
@@ -909,6 +941,8 @@ export class PropertyService {
       viewings_declined: toInt(s.viewings_declined),
       viewings_cancelled: toInt(s.viewings_cancelled),
       open_houses_scheduled: toInt(s.open_houses_scheduled),
+      documents_count: toInt(s.documents_count),
+      leads_count: toInt(s.leads_count),
       days_on_market: toInt(s.days_on_market),
     };
   }
@@ -1607,6 +1641,67 @@ export class PropertyService {
       SELECT id, media_type, url, thumbnail_url, display_order, is_primary
       FROM property.property_media
       WHERE property_id = ${propertyId}::uuid
+      ORDER BY display_order ASC, created_at ASC
+    `;
+  }
+
+  /** Public ownership history for a property, ordered newest-first. */
+  async getOwnershipHistory(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        owner_name: string | null;
+        transfer_date: string | null;
+        transfer_price: string | null;
+        transfer_currency: string | null;
+        title_deed_url: string | null;
+        notes: string | null;
+        created_at: string | null;
+      }[]
+    >`
+      SELECT id, owner_name, transfer_date, transfer_price,
+             transfer_currency, title_deed_url, notes, created_at
+      FROM property.ownership_history
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY transfer_date DESC NULLS LAST, created_at DESC
+    `;
+  }
+
+  /** Public price change history for a property, ordered by date. */
+  async getPriceHistory(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        old_price: string | null;
+        new_price: string;
+        currency: string;
+        changed_by: string | null;
+        change_note: string | null;
+        created_at: string;
+      }[]
+    >`
+      SELECT id, old_price, new_price, currency, changed_by, change_note, created_at
+      FROM property.price_history
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY created_at ASC
+    `;
+  }
+
+  /** Floor plan media items for a property. */
+  async getFloorPlans(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        url: string;
+        thumbnail_url: string | null;
+        display_order: number;
+        created_at: string | null;
+      }[]
+    >`
+      SELECT id, url, thumbnail_url, display_order, created_at
+      FROM property.property_media
+      WHERE property_id = ${propertyId}::uuid
+        AND media_type = 'floor_plan'
       ORDER BY display_order ASC, created_at ASC
     `;
   }

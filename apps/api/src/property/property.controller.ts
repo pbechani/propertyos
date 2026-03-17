@@ -28,18 +28,7 @@ import {
   ScheduleCallDto,
 } from './property.dto';
 import { resolvePropertyActorRole } from './property.constants';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
-
-type PublicRequest = {
-  user?: { sub: string; email: string; roles: string[] };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest, PublicRequest } from '../common/types';
 
 @Controller('properties')
 export class PropertyController {
@@ -190,6 +179,33 @@ export class PropertyController {
     @Request() req: AuthRequest,
   ) {
     return this.propertyService.getPropertyViewingsList(req.user.sub, id);
+  }
+
+  /**
+   * GET /api/v1/properties/:id/ownership-history
+   * Public ownership transfer timeline.
+   */
+  @Get(':id/ownership-history')
+  async getOwnershipHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.propertyService.getOwnershipHistory(id);
+  }
+
+  /**
+   * GET /api/v1/properties/:id/price-history
+   * Public price change timeline.
+   */
+  @Get(':id/price-history')
+  async getPriceHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.propertyService.getPriceHistory(id);
+  }
+
+  /**
+   * GET /api/v1/properties/:id/floor-plans
+   * Public floor plan media for a property.
+   */
+  @Get(':id/floor-plans')
+  async getFloorPlans(@Param('id', ParseUUIDPipe) id: string) {
+    return this.propertyService.getFloorPlans(id);
   }
 
   /**

@@ -20,18 +20,14 @@ import {
   AgentViewingUpdateDto,
   CancelOpenHouseDto,
   CancelViewingDto,
+  CheckInAttendeeDto,
   CreateOpenHouseDto,
   CreateViewingDto,
   RescheduleOpenHouseDto,
   RescheduleViewingDto,
   ViewingFeedbackDto,
 } from './mandate.dto';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[]; active_company_id?: string | null };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { AuthRequest } from '../common/types';
 
 /**
  * POST /api/v1/properties/:id/viewings            [buyer]
@@ -324,6 +320,53 @@ export class OpenHouseController {
       req.headers['user-agent'],
       req.user.active_company_id,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Get(':id/registrations')
+  async registrations(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.getOpenHouseRegistrations(id, req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Post(':id/check-in')
+  async checkIn(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CheckInAttendeeDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.checkInAttendee(
+      id,
+      req.user.sub,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+}
+
+/**
+ * GET /api/v1/buyer/open-houses/:registrationId/qr-code  [buyer]
+ * Returns the QR code data URL for a registration (buyer's own).
+ */
+@Controller('buyer/open-houses')
+export class BuyerOpenHouseController {
+  constructor(private readonly viewingService: ViewingService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('buyer_seller', 'investor', 'admin')
+  @Get(':registrationId/qr-code')
+  async getQrCode(
+    @Param('registrationId', ParseUUIDPipe) registrationId: string,
+    @Request() req: AuthRequest,
+  ) {
+    const dataUrl = await this.viewingService.getRegistrationQrCode(registrationId, req.user.sub);
+    return { dataUrl };
   }
 }
 

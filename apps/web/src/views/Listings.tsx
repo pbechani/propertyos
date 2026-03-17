@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper, Plus, RefreshCw } from "lucide-react";
+import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper, Plus, RefreshCw, Eye, Camera, Clock, Landmark, Warehouse, DollarSign, Flame, BarChart3, Bell, Home, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserAvatarContent } from "@/components/UserAvatarContent";
+import PropertyCardHeader from "@/components/property/PropertyCardHeader";
+import MultiListingDialog from "@/components/property/MultiListingDialog";
+import type { MultiListingItem } from "@/components/property/MultiListingDialog";
 import { Link, useNavigate } from "@/lib/router-compat";
 import { getAccessToken, getStoredUser } from "@/lib/auth-session";
 import { ApiError, propertiesApi, salesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing, type Sale } from "@/lib/api-client";
 import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
+import LeafletMapDynamic from "@/components/LeafletMapDynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const getDefaultFilters = () => ({
@@ -133,13 +136,26 @@ type ListingCard = {
   id: string;
   title: string;
   location: string;
+  addressLine1: string | null;
+  addressCity: string | null;
   price: string;
   currency: string;
   rawPrice: number;
   beds: number;
   baths: number;
   garage: number;
+  garages: number;
+  carports: number;
   sqm: number;
+  erfSizeSqm: number | null;
+  pricePerSqm: number | null;
+  monthlyLevy: number | null;
+  monthlyRates: number | null;
+  monthlyUtilities: number | null;
+  titleType: string | null;
+  viewCount: number;
+  mediaCount: number;
+  verifiedAt: string | null;
   propertyType: string;
   listingType: 'for_sale' | 'to_rent' | 'development' | null;
   status: 'draft' | 'active' | 'under_offer' | 'sold' | 'withdrawn';
@@ -151,6 +167,7 @@ type ListingCard = {
   agentCompany: string;
   agentAvatarUrl: string | null;
   agentCompanyLogoUrl: string | null;
+  agentCompanyBrandColor: string | null;
   isPrivateListing: boolean;
   image: string;
   createdAt: string;
@@ -330,17 +347,36 @@ function mapPropertyToListingCard(
     looseProperty.agent?.company_name,
   ) ?? "PRIBEC Agent Network";
 
+  const sqm = property.area_sqm ? Number(property.area_sqm) : 0;
+  const erfSizeSqm = property.erf_size_sqm ? Number(property.erf_size_sqm) : null;
+  const pricePerSqm = sqm > 0 && Number.isFinite(numericPrice) && numericPrice > 0
+    ? Math.round(numericPrice / sqm)
+    : null;
+
   return {
     id: property.id,
     title: property.title,
     location,
+    addressLine1: property.location?.address_line1 ?? null,
+    addressCity: property.location?.city ?? null,
     price: Number.isFinite(numericPrice) ? formatPrice(numericPrice, property.currency) : formatPrice(0, property.currency),
     currency: property.currency,
     rawPrice: Number.isFinite(numericPrice) ? numericPrice : 0,
     beds: property.bedrooms ?? 0,
     baths: property.bathrooms ?? 0,
     garage: property.parking_spaces ?? 0,
-    sqm: property.area_sqm ? Number(property.area_sqm) : 0,
+    garages: property.garages ?? 0,
+    carports: property.carports ?? 0,
+    sqm,
+    erfSizeSqm,
+    pricePerSqm,
+    monthlyLevy: property.monthly_levy ? Number(property.monthly_levy) : null,
+    monthlyRates: property.monthly_rates ? Number(property.monthly_rates) : null,
+    monthlyUtilities: property.monthly_utilities ? Number(property.monthly_utilities) : null,
+    titleType: property.title_type ?? null,
+    viewCount: property.view_count ?? 0,
+    mediaCount: property.media?.length ?? 0,
+    verifiedAt: property.verified_at ?? null,
     propertyType: propertyTypeMap[property.property_type] ?? "house",
     listingType: property.listing_type ?? null,
     status: property.status,
@@ -352,6 +388,7 @@ function mapPropertyToListingCard(
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
+    agentCompanyBrandColor: property.company_brand_color ?? null,
     // company_is_system=true  → created under the Self system company (private individual)
     // company_is_system=null  → legacy record with no company_id (also private — see PropertyRecord comment)
     isPrivateListing: property.company_is_system !== false,
@@ -376,15 +413,6 @@ function getListingStatusBadge(status: ListingCard['status']) {
     default:
       return { label: 'DRAFT', className: 'bg-gray-500 text-white' };
   }
-}
-
-function getInitials(value: string): string {
-  return value
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('') || 'A';
 }
 
 function formatRandAmount(amount: number): string {
@@ -676,6 +704,9 @@ export default function Listings() {
   const [submittingInitCard, setSubmittingInitCard] = useState(false);
   const [initCardError, setInitCardError] = useState<string | null>(null);
   const [agentsError, setAgentsError] = useState("");
+  // ── Multi-agent listing dialog ───────────────────────────────────────────
+  const [multiListingDialogOpen, setMultiListingDialogOpen] = useState(false);
+  const [selectedMultiListings, setSelectedMultiListings] = useState<MultiListingItem[]>([]);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   // Pre-computed stable heights for the voice-search waveform visualisation.
@@ -1610,6 +1641,84 @@ export default function Listings() {
     return sortedProperties;
   }, [listingCategory, sortedProperties]);
 
+  // ── Group listings by address to detect multi-agent listings ─────────────
+  const multiListingGroups = useMemo(() => {
+    const groups = new Map<string, ListingCard[]>();
+    for (const p of displayedProperties) {
+      if (!p.addressLine1) continue;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      const group = groups.get(key);
+      if (group) {
+        group.push(p);
+      } else {
+        groups.set(key, [p]);
+      }
+    }
+    // Only keep groups with 2+ listings (multi-agent)
+    const result = new Map<string, ListingCard[]>();
+    for (const [key, group] of groups) {
+      if (group.length >= 2) result.set(key, group);
+    }
+    return result;
+  }, [displayedProperties]);
+
+  // Quick lookup: propertyId → number of agencies for this address
+  const multiListingCountById = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const group of multiListingGroups.values()) {
+      for (const p of group) {
+        countMap.set(p.id, group.length);
+      }
+    }
+    return countMap;
+  }, [multiListingGroups]);
+
+  // Deduplicated display list: for multi-agent groups, show only the first listing
+  const deduplicatedProperties = useMemo(() => {
+    const shownAddressKeys = new Set<string>();
+    return displayedProperties.filter((p) => {
+      if (!p.addressLine1) return true;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      if (!multiListingGroups.has(key)) return true;
+      if (shownAddressKeys.has(key)) return false;
+      shownAddressKeys.add(key);
+      return true;
+    });
+  }, [displayedProperties, multiListingGroups]);
+
+  // ── Handlers for multi-listing dialog ────────────────────────────────────
+  function openMultiListingDialog(property: ListingCard) {
+    const key = `${(property.addressLine1 ?? '').trim().toLowerCase()}|${(property.addressCity ?? '').trim().toLowerCase()}`;
+    const group = multiListingGroups.get(key) ?? [property];
+    setSelectedMultiListings(group.map((p) => ({
+      id: p.id,
+      title: p.title,
+      location: p.location,
+      addressLine1: p.addressLine1,
+      price: p.price,
+      beds: p.beds,
+      baths: p.baths,
+      garage: p.garage,
+      garages: p.garages,
+      carports: p.carports,
+      sqm: p.sqm,
+      propertyType: p.propertyType,
+      image: p.image,
+      agent: p.agent,
+      agentCompany: p.agentCompany,
+      agentAvatarUrl: p.agentAvatarUrl,
+      agentCompanyLogoUrl: p.agentCompanyLogoUrl,
+      agentCompanyBrandColor: p.agentCompanyBrandColor,
+      isPrivateListing: p.isPrivateListing,
+    })));
+    setMultiListingDialogOpen(true);
+  }
+
+  function handleMultiListingSelect(id: string) {
+    setMultiListingDialogOpen(false);
+    navigate(`/app/property/${id}?back=${encodeURIComponent(listingsBackUrl)}`);
+  }
+
   // Geocode unique location strings for properties that lack stored coordinates
   useEffect(() => {
     const propertiesWithoutCoords = displayedProperties.filter(
@@ -1898,6 +2007,59 @@ export default function Listings() {
       latestValue: values[values.length - 1] ?? fallbackBase,
     };
   }, [sortedProperties, insightsAveragePrice]);
+
+  const insightsAvgPricePerSqm = useMemo(() => {
+    const withSqm = sortedProperties.filter((p) => p.sqm > 0 && p.rawPrice > 0);
+    if (withSqm.length === 0) return 0;
+    const total = withSqm.reduce((sum, p) => sum + p.rawPrice / p.sqm, 0);
+    return Math.round(total / withSqm.length);
+  }, [sortedProperties]);
+
+  const insightsPriceHistogram = useMemo(() => {
+    if (sortedProperties.length < 3) return null;
+    const prices = sortedProperties.map((p) => p.rawPrice).filter((p) => p > 0).sort((a, b) => a - b);
+    if (prices.length < 3) return null;
+    const min = prices[0]!;
+    const max = prices[prices.length - 1]!;
+    if (max === min) return null;
+    const bucketCount = Math.min(8, Math.max(4, Math.ceil(prices.length / 3)));
+    const step = (max - min) / bucketCount;
+    const buckets = Array.from({ length: bucketCount }, (_, i) => ({
+      rangeStart: min + i * step,
+      rangeEnd: min + (i + 1) * step,
+      count: 0,
+    }));
+    prices.forEach((price) => {
+      const idx = Math.min(bucketCount - 1, Math.floor((price - min) / step));
+      buckets[idx]!.count += 1;
+    });
+    const maxCount = Math.max(...buckets.map((b) => b.count));
+    return { buckets, maxCount, total: prices.length };
+  }, [sortedProperties]);
+
+  // Recently Sold properties — up to 5 most recent sold listings
+  const insightsRecentlySold = useMemo(() => {
+    return sortedProperties
+      .filter((p) => p.status === 'sold' && p.rawPrice > 0)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [sortedProperties]);
+
+  // Neighbourhood quick stats — aggregate from visible listings
+  const insightsNeighbourhoodStats = useMemo(() => {
+    if (sortedProperties.length < 3) return null;
+    const active = sortedProperties.filter((p) => p.status === 'active');
+    const underOffer = sortedProperties.filter((p) => p.status === 'under_offer');
+    const sold = sortedProperties.filter((p) => p.status === 'sold');
+    const withPrice = sortedProperties.filter((p) => p.rawPrice > 0);
+    const medianPrice = withPrice.length > 0
+      ? [...withPrice].sort((a, b) => a.rawPrice - b.rawPrice)[Math.floor(withPrice.length / 2)]!.rawPrice
+      : 0;
+    const avgDaysOnMarket = sortedProperties.length > 0
+      ? Math.round(sortedProperties.reduce((sum, p) => sum + Math.max(0, Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86_400_000)), 0) / sortedProperties.length)
+      : 0;
+    return { active: active.length, underOffer: underOffer.length, sold: sold.length, medianPrice, avgDaysOnMarket };
+  }, [sortedProperties]);
 
   // URL to return to from the property detail page — includes current filter state so it survives navigation.
   const listingsBackUrl = useMemo(() => {
@@ -3257,12 +3419,10 @@ export default function Listings() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <iframe
-                    title="Property map"
-                    src={mapSource.url}
-                    className="w-full h-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
+                  <LeafletMapDynamic
+                    center={mapSource.center}
+                    zoom={mapSource.zoom}
+                    markers={mapSource.markers}
                   />
                 )
               ) : isGeocodingMap ? (
@@ -3279,7 +3439,7 @@ export default function Listings() {
                 </div>
               )}
               {/* Property pins on map */}
-              {mapPins.map((property) => (
+              {mapSource && mapSource.type === 'image' && mapPins.map((property) => (
                 <Link
                   key={property.id}
                   to={`/app/property/${property.id}?back=${encodeURIComponent(listingsBackUrl)}`}
@@ -3314,24 +3474,29 @@ export default function Listings() {
                   </div>
                 )}
                 <div className={viewMode === "grid" ? "grid grid-cols-1 gap-4 md:gap-6" : "flex flex-col gap-4 md:gap-6"}>
-                {displayedProperties.map((property) => (
-                  <Link
-                    key={property.id}
-                    to={`/app/property/${property.id}?back=${encodeURIComponent(listingsBackUrl)}`}
-                    className="group"
-                  >
-                    {(() => {
+                {deduplicatedProperties.map((property) => {
+                  const multiAgentCount = multiListingCountById.get(property.id);
+                  const isMultiAgent = multiAgentCount !== undefined && multiAgentCount >= 2;
+
+                  const cardContent = (() => {
                       const statusBadge = getListingStatusBadge(property.status);
                       const verificationBadge = property.fraudFlagged
                         ? { label: 'FLAGGED', className: 'bg-red-600 text-white' }
                         : property.verified
                           ? { label: 'VERIFIED', className: 'bg-green-500 text-white' }
                           : { label: 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
-                      const companyInitials = getInitials(property.agentCompany);
-                      const agentInitials = getInitials(property.agent);
 
                       return (
-                    <Card className={`overflow-hidden hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-col md:flex-row" : ""}`}>
+                    <Card className={`overflow-hidden hover:shadow-lg transition-shadow gap-0 ${viewMode === "list" ? "flex flex-col md:flex-row" : ""}`}>
+                      {/* Company / Owner header banner */}
+                      <PropertyCardHeader
+                        isPrivateListing={property.isPrivateListing}
+                        companyLogoUrl={property.agentCompanyLogoUrl}
+                        companyName={property.agentCompany}
+                        companyBrandColor={property.agentCompanyBrandColor}
+                        personName={property.agent}
+                        personAvatarUrl={property.agentAvatarUrl}
+                      />
                       <div className={`relative ${viewMode === "list" ? "md:w-80 shrink-0" : ""}`}>
                         <img
                           src={property.image}
@@ -3350,10 +3515,22 @@ export default function Listings() {
                               🏡 OPEN HOUSE · {new Date(property.nextOpenHouseAt).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })}
                             </Badge>
                           )}
-                          {property.isPrivateListing && (
-                            <Badge className="bg-purple-600 text-white">🔒 Privately Listed</Badge>
+                          {property.viewCount >= 20 && (
+                            <Badge className="bg-orange-500 text-white"><Flame className="w-3 h-3 mr-1" />Hot</Badge>
                           )}
                         </div>
+                        {/* Bottom-left: photo count */}
+                        {property.mediaCount > 1 && (
+                          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1">
+                            <Camera className="w-3 h-3" />{property.mediaCount}
+                          </div>
+                        )}
+                        {/* Bottom-right: view count */}
+                        {property.viewCount > 0 && (
+                          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1">
+                            <Eye className="w-3 h-3" />{property.viewCount}
+                          </div>
+                        )}
                         <button
                           className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${
                             savedPropertyIds.has(property.id)
@@ -3375,7 +3552,7 @@ export default function Listings() {
                         </button>
                       </div>
                       <div className="p-4 md:p-5 flex-1">
-                        <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="flex items-start justify-between mb-2 gap-2">
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold mb-1 group-hover:text-blue-600 transition-colors truncate">
                               {property.title}
@@ -3385,46 +3562,80 @@ export default function Listings() {
                               <span className="truncate">{property.location}</span>
                             </p>
                           </div>
-                          <div className="text-lg md:text-xl font-bold text-blue-600 whitespace-nowrap">{property.price}</div>
+                          <div className="text-right shrink-0">
+                            <div className="text-lg md:text-xl font-bold text-blue-600 whitespace-nowrap">{property.price}</div>
+                            {property.pricePerSqm !== null && (
+                              <div className="text-[10px] text-gray-400 font-medium">{formatRandAmount(property.pricePerSqm)}/m²</div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-600 mb-4 flex-wrap">
+                        {/* Days on market + property type + title type */}
+                        <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-2 flex-wrap">
                           <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {(() => {
+                              const days = Math.max(0, Math.floor((Date.now() - new Date(property.createdAt).getTime()) / 86_400_000));
+                              return days === 0 ? 'Listed today' : days === 1 ? '1 day ago' : `${days} days ago`;
+                            })()}
+                          </span>
+                          <span className="inline-flex items-center gap-1 capitalize">
+                            <Home className="w-3 h-3" />
+                            {property.propertyType}
+                          </span>
+                          {property.titleType && (
+                            <span className="inline-flex items-center gap-1">
+                              <Landmark className="w-3 h-3" />
+                              {property.titleType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </span>
+                          )}
+                          {property.verified && property.verifiedAt && (
+                            <span className="inline-flex items-center gap-1 text-green-500">
+                              <Shield className="w-3 h-3" />
+                              Verified {(() => {
+                                const days = Math.max(0, Math.floor((Date.now() - new Date(property.verifiedAt).getTime()) / 86_400_000));
+                                return days === 0 ? 'today' : days === 1 ? '1d ago' : `${days}d ago`;
+                              })()}
+                            </span>
+                          )}
+                        </div>
+                        {/* Core metrics row */}
+                        <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-600 mb-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1" title="Bedrooms">
                             <BedDouble className="w-3.5 h-3.5" />
                             <span>{property.beds}</span>
                           </span>
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1" title="Bathrooms">
                             <Bath className="w-3.5 h-3.5" />
                             <span>{property.baths}</span>
                           </span>
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1" title={property.garages || property.carports ? `${property.garages} garage${property.garages !== 1 ? 's' : ''}, ${property.carports} carport${property.carports !== 1 ? 's' : ''}` : 'Parking'}>
                             <CarFront className="w-3.5 h-3.5" />
-                            <span>{property.garage}</span>
+                            <span>{property.garages > 0 || property.carports > 0 ? `${property.garages}G ${property.carports}C` : property.garage}</span>
                           </span>
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1" title="Floor area">
                             <Maximize className="w-3.5 h-3.5" />
-                            <span>{property.sqm} M²</span>
+                            <span>{property.sqm} m²</span>
                           </span>
-                        </div>
-                        <div className="pt-4 border-t border-gray-200 flex items-start justify-between gap-3">
-                          {!property.isPrivateListing && (
-                            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0" title={property.agentCompany}>
-                              <UserAvatarContent
-                                avatarUrl={property.agentCompanyLogoUrl}
-                                initials={companyInitials}
-                                alt={property.agentCompany}
-                              />
-                            </div>
+                          {property.erfSizeSqm !== null && property.erfSizeSqm > 0 && (
+                            <span className="inline-flex items-center gap-1" title="Erf / land size">
+                              <Warehouse className="w-3.5 h-3.5" />
+                              <span>{property.erfSizeSqm.toLocaleString('en-ZA')} m²</span>
+                            </span>
                           )}
-                          <div className="ml-auto flex flex-col items-center text-center shrink-0">
-                            <div className="w-8 h-8 bg-gray-200 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center text-[10px] font-semibold text-gray-700">
-                              <UserAvatarContent
-                                avatarUrl={property.agentAvatarUrl}
-                                initials={agentInitials}
-                                alt={property.agent}
-                              />
-                            </div>
-                            <div className="text-xs font-medium text-gray-700 mt-1 max-w-24 truncate" title={property.agent}>{property.agent}</div>
+                        </div>
+                        {/* Monthly costs row */}
+                        {(property.monthlyLevy !== null || property.monthlyRates !== null) && (
+                          <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-2 flex-wrap">
+                            <DollarSign className="w-3 h-3 shrink-0" />
+                            {property.monthlyLevy !== null && <span>Levy R{property.monthlyLevy.toLocaleString('en-ZA')}</span>}
+                            {property.monthlyRates !== null && <span>Rates R{property.monthlyRates.toLocaleString('en-ZA')}</span>}
+                            {property.monthlyUtilities !== null && <span>Utils R{property.monthlyUtilities.toLocaleString('en-ZA')}</span>}
+                            <span className="font-medium text-gray-500">
+                              = R{((property.monthlyLevy ?? 0) + (property.monthlyRates ?? 0) + (property.monthlyUtilities ?? 0)).toLocaleString('en-ZA')}/mo
+                            </span>
                           </div>
+                        )}
+                        <div className="pt-3 border-t border-gray-200">
                         </div>
                         {property.agentId && property.agentId === currentUserId && (() => {
                           const activeSale = propertySaleMap[property.id];
@@ -3468,9 +3679,36 @@ export default function Listings() {
                       </div>
                     </Card>
                       );
-                    })()}
-                  </Link>
-                ))}
+                    })();
+
+                  return isMultiAgent ? (
+                    <div
+                      key={property.id}
+                      className="group cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openMultiListingDialog(property)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMultiListingDialog(property); } }}
+                    >
+                      {/* Multi-agent badge */}
+                      <div className="bg-amber-50 border border-amber-200 rounded-t-xl px-3 py-1.5 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-amber-700" />
+                        <span className="text-xs font-semibold text-amber-700">
+                          Listed by {multiAgentCount} Estate {multiAgentCount === 1 ? 'Agency' : 'Agencies'}
+                        </span>
+                      </div>
+                      {cardContent}
+                    </div>
+                  ) : (
+                    <Link
+                      key={property.id}
+                      to={`/app/property/${property.id}?back=${encodeURIComponent(listingsBackUrl)}`}
+                      className="group"
+                    >
+                      {cardContent}
+                    </Link>
+                  );
+                })}
                 </div>
               </div>
         )}
@@ -3609,6 +3847,130 @@ export default function Listings() {
                 </Button>
               </Card>
 
+              {/* Average Price per m² */}
+              {insightsAvgPricePerSqm > 0 && (
+                <Card className="border border-border bg-foreground text-background p-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Maximize className="w-4 h-4" />
+                    Avg Price per m²
+                  </h3>
+                  <div className="text-2xl font-bold text-blue-400">{formatRandAmount(insightsAvgPricePerSqm)}/m²</div>
+                  <p className="text-xs text-background/60 mt-1">Based on {sortedProperties.filter((p) => p.sqm > 0).length} listings with floor area data</p>
+                </Card>
+              )}
+
+              {/* Price Distribution Histogram */}
+              {insightsPriceHistogram && (
+                <Card className="border border-border bg-foreground text-background p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Price Distribution
+                  </h3>
+                  <div className="space-y-1.5">
+                    {insightsPriceHistogram.buckets.map((bucket, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-[10px]">
+                        <span className="w-16 text-right text-background/60 shrink-0">{formatRandAmount(Math.round(bucket.rangeStart))}</span>
+                        <div className="flex-1 h-4 bg-background/10 rounded overflow-hidden">
+                          <div
+                            className="h-full bg-blue-400 rounded transition-all"
+                            style={{ width: `${insightsPriceHistogram.maxCount > 0 ? (bucket.count / insightsPriceHistogram.maxCount) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="w-6 text-background/60">{bucket.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-background/50 mt-2">{insightsPriceHistogram.total} properties</p>
+                </Card>
+              )}
+
+              {/* Neighbourhood Quick Stats */}
+              {insightsNeighbourhoodStats && (
+                <Card className="border border-border bg-foreground text-background p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Home className="w-4 h-4" />
+                    Area Snapshot
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-background/10 rounded p-2 text-center">
+                      <div className="text-lg font-bold text-green-400">{insightsNeighbourhoodStats.active}</div>
+                      <div className="text-background/60">Active</div>
+                    </div>
+                    <div className="bg-background/10 rounded p-2 text-center">
+                      <div className="text-lg font-bold text-amber-400">{insightsNeighbourhoodStats.underOffer}</div>
+                      <div className="text-background/60">Under Offer</div>
+                    </div>
+                    <div className="bg-background/10 rounded p-2 text-center">
+                      <div className="text-lg font-bold text-red-400">{insightsNeighbourhoodStats.sold}</div>
+                      <div className="text-background/60">Sold</div>
+                    </div>
+                    <div className="bg-background/10 rounded p-2 text-center">
+                      <div className="text-lg font-bold text-blue-400">{insightsNeighbourhoodStats.avgDaysOnMarket}d</div>
+                      <div className="text-background/60">Avg DOM</div>
+                    </div>
+                  </div>
+                  {insightsNeighbourhoodStats.medianPrice > 0 && (
+                    <div className="mt-2 text-[11px] text-background/60 text-center">
+                      Median Price: <span className="text-background/90 font-medium">{formatRandAmount(insightsNeighbourhoodStats.medianPrice)}</span>
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {/* Recently Sold */}
+              {insightsRecentlySold.length > 0 && (
+                <Card className="border border-border bg-foreground text-background p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4" />
+                    Recently Sold ({insightsRecentlySold.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {insightsRecentlySold.map((property) => (
+                      <Link
+                        key={property.id}
+                        to={`/app/listings/${property.id}`}
+                        className="block rounded bg-background/10 p-2 hover:bg-background/20 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <img
+                            src={property.image}
+                            alt=""
+                            className="w-10 h-10 rounded object-cover shrink-0"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_PROPERTY_IMAGE; }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium truncate">{property.title}</p>
+                            <p className="text-[10px] text-background/60 truncate">{property.location}</p>
+                            <p className="text-[11px] font-bold text-red-400">{property.price}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Save Search Alert */}
+              <Card className="border border-border bg-foreground text-background p-4">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Bell className="w-4 h-4" />
+                  Search Alerts
+                </h3>
+                <p className="text-[11px] text-background/60 mb-3">Get notified when new properties match your current search criteria.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-background/20 text-background hover:bg-background/10 text-xs"
+                  onClick={() => {
+                    // TODO: Wire to saved search API when available
+                    alert('Save Search feature coming soon! You will receive email alerts when new properties match your filters.');
+                  }}
+                >
+                  <Bell className="w-3.5 h-3.5 mr-1.5" />
+                  Save This Search
+                </Button>
+              </Card>
+
               <Card className="border border-border bg-foreground text-background p-4">
                 <h3 className="text-xl font-semibold mb-3">{insightsPropertyForSaleHeading}</h3>
                 <div className="space-y-2 text-sm">
@@ -3679,6 +4041,14 @@ export default function Listings() {
         </div>
       </div>
     )}
+
+    {/* Multi-agent listing selection dialog */}
+    <MultiListingDialog
+      open={multiListingDialogOpen}
+      onOpenChange={setMultiListingDialogOpen}
+      listings={selectedMultiListings}
+      onSelectListing={handleMultiListingSelect}
+    />
     </div>
   );
 }

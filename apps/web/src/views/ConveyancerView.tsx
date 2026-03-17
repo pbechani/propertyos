@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { conveyancerApi, type ConveyancerCase } from "@/lib/api-client";
 import { getAccessToken } from "@/lib/auth-session";
+import { getStatusColor, getPriorityColor } from "@/lib/status-colors";
 
 export default function ConveyancerView() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "active" | "completed" | "disputed">("all");
@@ -79,27 +80,6 @@ export default function ConveyancerView() {
   const filteredCases = activeCases.filter(c =>
     selectedFilter === "all" || c.status === selectedFilter
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":  return "bg-green-100 text-green-700";
-      case "active":     return "bg-blue-100 text-blue-700";
-      case "in-progress": return "bg-blue-100 text-blue-700";
-      case "disputed":   return "bg-red-100 text-red-700";
-      case "cancelled":  return "bg-gray-200 text-gray-600";
-      case "pending":    return "bg-yellow-100 text-yellow-700";
-      default:           return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high": return "bg-red-100 text-red-700";
-      case "medium": return "bg-yellow-100 text-yellow-700";
-      case "low": return "bg-green-100 text-green-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -5,6 +5,8 @@ import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
+import MultiListingDialog from '@/components/property/MultiListingDialog';
+import type { MultiListingItem } from '@/components/property/MultiListingDialog';
 import { propertiesApi, type PropertyListing } from '@/lib/api-client';
 
 const PROPERTY_TYPES = ['Residential', 'Land', 'Commercial', 'Off-Plan', 'Agricultural', 'New Build'];
@@ -37,6 +39,8 @@ function toCardData(property: PropertyListing): PropertyCardData {
     price: Number(property.price),
     currency: property.currency,
     location,
+    addressLine1: property.location?.address_line1 ?? null,
+    addressCity: property.location?.city ?? null,
     bedrooms: property.bedrooms ?? undefined,
     bathrooms: property.bathrooms ?? undefined,
     sqm: property.area_sqm ? Number(property.area_sqm) : undefined,
@@ -45,6 +49,10 @@ function toCardData(property: PropertyListing): PropertyCardData {
     fraudAlert: property.verification_status === 'flagged',
     underInvestigation: property.company_status === 'under_investigation',
     imageUrl: primaryImage,
+    isPrivateListing: property.company_is_system !== false,
+    companyLogoUrl: property.company_logo_url,
+    companyName: property.company_name,
+    companyBrandColor: property.company_brand_color,
   };
 }
 
@@ -73,6 +81,79 @@ function PropertySearchResultsContent() {
     () => results.map((property) => toCardData(property)),
     [results],
   );
+
+  // ── Multi-agent listing grouping ─────────────────────────────────────────
+  const [multiListingDialogOpen, setMultiListingDialogOpen] = useState(false);
+  const [selectedMultiListings, setSelectedMultiListings] = useState<MultiListingItem[]>([]);
+
+  const multiListingGroups = useMemo(() => {
+    const groups = new Map<string, PropertyCardData[]>();
+    for (const p of cardResults) {
+      if (!p.addressLine1) continue;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      const group = groups.get(key);
+      if (group) group.push(p);
+      else groups.set(key, [p]);
+    }
+    const result = new Map<string, PropertyCardData[]>();
+    for (const [key, group] of groups) {
+      if (group.length >= 2) result.set(key, group);
+    }
+    return result;
+  }, [cardResults]);
+
+  const multiListingCountById = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const group of multiListingGroups.values()) {
+      for (const p of group) countMap.set(p.id, group.length);
+    }
+    return countMap;
+  }, [multiListingGroups]);
+
+  const deduplicatedCards = useMemo(() => {
+    const shownKeys = new Set<string>();
+    return cardResults.filter((p) => {
+      if (!p.addressLine1) return true;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      if (!multiListingGroups.has(key)) return true;
+      if (shownKeys.has(key)) return false;
+      shownKeys.add(key);
+      return true;
+    });
+  }, [cardResults, multiListingGroups]);
+
+  function openMultiListingDialog(property: PropertyCardData) {
+    const key = `${(property.addressLine1 ?? '').trim().toLowerCase()}|${(property.addressCity ?? '').trim().toLowerCase()}`;
+    const group = multiListingGroups.get(key) ?? [property];
+    setSelectedMultiListings(group.map((p) => ({
+      id: p.id,
+      title: p.title,
+      location: p.location,
+      addressLine1: p.addressLine1 ?? null,
+      price: new Intl.NumberFormat('en-US', { style: 'currency', currency: p.currency ?? 'USD', maximumFractionDigits: 0 }).format(p.price),
+      beds: p.bedrooms ?? 0,
+      baths: p.bathrooms ?? 0,
+      garage: 0,
+      garages: 0,
+      carports: 0,
+      sqm: p.sqm ?? 0,
+      propertyType: p.propertyType,
+      image: p.imageUrl ?? '',
+      agent: p.agentName ?? 'Agent',
+      agentCompany: p.companyName ?? 'Estate Agency',
+      agentAvatarUrl: p.personAvatarUrl ?? null,
+      agentCompanyLogoUrl: p.companyLogoUrl ?? null,
+      agentCompanyBrandColor: p.companyBrandColor ?? null,
+      isPrivateListing: p.isPrivateListing ?? true,
+    })));
+    setMultiListingDialogOpen(true);
+  }
+
+  function handleMultiListingSelect(id: string) {
+    setMultiListingDialogOpen(false);
+    const refParam = '/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '');
+    router.push(`/properties/${id}?ref=${encodeURIComponent(refParam)}`);
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const unverifiedCount = results.filter(
@@ -432,13 +513,39 @@ function PropertySearchResultsContent() {
                   No properties match your current filters.
                 </div>
               )}
-              {cardResults.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  refParam={'/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '')}
-                />
-              ))}
+              {deduplicatedCards.map((property) => {
+                const multiAgentCount = multiListingCountById.get(property.id);
+                const isMultiAgent = multiAgentCount !== undefined && multiAgentCount >= 2;
+
+                if (isMultiAgent) {
+                  return (
+                    <div
+                      key={property.id}
+                      className="cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openMultiListingDialog(property)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMultiListingDialog(property); } }}
+                    >
+                      <div className="bg-amber-50 border border-amber-200 rounded-t-xl px-3 py-1.5 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100-8 4 4 0 000 8zm14 14v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                        <span className="text-xs font-semibold text-amber-700">
+                          Listed by {multiAgentCount} Estate {multiAgentCount === 1 ? 'Agency' : 'Agencies'}
+                        </span>
+                      </div>
+                      <PropertyCard property={property} />
+                    </div>
+                  );
+                }
+
+                return (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    refParam={'/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '')}
+                  />
+                );
+              })}
             </div>
 
             {/* Pagination */}
@@ -527,6 +634,14 @@ function PropertySearchResultsContent() {
           </div>
         </div>
       </div>
+
+      {/* Multi-agent listing selection dialog */}
+      <MultiListingDialog
+        open={multiListingDialogOpen}
+        onOpenChange={setMultiListingDialogOpen}
+        listings={selectedMultiListings}
+        onSelectListing={handleMultiListingSelect}
+      />
     </div>
   );
 }

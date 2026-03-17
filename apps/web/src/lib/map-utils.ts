@@ -12,10 +12,11 @@ export type MapViewport = {
   centerLongitude: number;
 };
 
-export type MapSource = {
-  type: 'image' | 'iframe';
-  url: string;
-};
+export type LeafletMarker = { latitude: number; longitude: number; title?: string; popup?: string };
+
+export type MapSource =
+  | { type: 'image'; url: string }
+  | { type: 'leaflet'; center: [number, number]; zoom: number; markers: LeafletMarker[] };
 
 export function buildMapViewport(points: GeoPoint[]): MapViewport | null {
   if (points.length === 0) {
@@ -44,7 +45,7 @@ export function buildMapViewport(points: GeoPoint[]): MapViewport | null {
 }
 
 export function buildViewportMapSource(params: {
-  points: GeoPoint[];
+  points: (GeoPoint & { title?: string; price?: string })[];
   viewport: MapViewport | null;
   mapboxToken?: string;
 }): MapSource | null {
@@ -68,16 +69,11 @@ export function buildViewportMapSource(params: {
     };
   }
 
-  const bbox = [
-    viewport.minLongitude,
-    viewport.minLatitude,
-    viewport.maxLongitude,
-    viewport.maxLatitude,
-  ].join(',');
-
   return {
-    type: 'iframe',
-    url: `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik`,
+    type: 'leaflet',
+    center: [viewport.centerLatitude, viewport.centerLongitude],
+    zoom: 9,
+    markers: points.map((p) => ({ latitude: p.latitude, longitude: p.longitude, title: p.title, popup: p.price })),
   };
 }
 
@@ -96,7 +92,9 @@ export function buildSinglePointMapSource(params: {
   }
 
   return {
-    type: 'iframe',
-    url: `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01}%2C${latitude - 0.01}%2C${longitude + 0.01}%2C${latitude + 0.01}&layer=mapnik&marker=${latitude}%2C${longitude}`,
+    type: 'leaflet',
+    center: [latitude, longitude],
+    zoom: 14,
+    markers: [{ latitude, longitude }],
   };
 }
