@@ -1,8 +1,9 @@
 'use client';
 
-import { X, StickyNote, Tag, Pin, Save } from 'lucide-react';
+import { X, StickyNote, Tag, Pin, Save, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { propertiesApi } from '@/lib/api-client';
 
 interface Note {
   id: string;
@@ -17,7 +18,9 @@ interface EditNoteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   note: Note | null;
-  onSave?: (note: Note) => void;
+  propertyId: string;
+  authToken: string;
+  onSaved?: () => void;
 }
 
 const categories = [
@@ -32,13 +35,16 @@ const categories = [
   'Other'
 ];
 
-export function EditNoteModal({ open, onOpenChange, note, onSave }: EditNoteModalProps) {
+export function EditNoteModal({ open, onOpenChange, note, propertyId, authToken, onSaved }: EditNoteModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     category: 'Important',
     pinned: false,
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (note) {
@@ -51,15 +57,25 @@ export function EditNoteModal({ open, onOpenChange, note, onSave }: EditNoteModa
     }
   }, [note]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (note && onSave) {
-      onSave({
-        ...note,
-        ...formData,
+    if (!note) return;
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.updateNote(authToken, propertyId, note.id, {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        isPinned: formData.pinned,
       });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to update note');
+    } finally {
+      setIsSaving(false);
     }
-    onOpenChange(false);
   };
 
   if (!note) return null;
@@ -251,21 +267,31 @@ export function EditNoteModal({ open, onOpenChange, note, onSave }: EditNoteModa
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save Changes
-              </button>
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col gap-3 bg-gray-50">
+              {saveError && (
+                <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {saveError}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => onOpenChange(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </form>
         </Dialog.Content>

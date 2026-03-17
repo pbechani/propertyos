@@ -18,10 +18,32 @@ import {
   Plus,
   FileCheck
 } from 'lucide-react';
+import { propertiesApi } from '@/lib/api-client';
+
+export interface UploadedDocumentRecord {
+  id: string;
+  property_id: string;
+  title: string;
+  category: string;
+  description: string | null;
+  status: string;
+  access_level: string;
+  file_url: string;
+  file_name: string;
+  file_size: number | null;
+  file_type: string | null;
+  is_required: boolean;
+  expiration_date: string | null;
+  tags: string[];
+  created_at: string;
+}
 
 interface UploadDocumentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onUploaded?: (doc: UploadedDocumentRecord) => void;
 }
 
 interface UploadedFile {
@@ -57,7 +79,7 @@ const documentStatuses = [
   { id: 'archived', label: 'Archived' }
 ];
 
-export function UploadDocumentModal({ open, onOpenChange }: UploadDocumentModalProps) {
+export function UploadDocumentModal({ open, onOpenChange, propertyId, authToken, onUploaded }: UploadDocumentModalProps) {
   const [step, setStep] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -76,6 +98,8 @@ export function UploadDocumentModal({ open, onOpenChange }: UploadDocumentModalP
     notifyClient: false
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [customTag, setCustomTag] = useState('');
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -156,26 +180,50 @@ export function UploadDocumentModal({ open, onOpenChange }: UploadDocumentModalP
     setStep(1);
   };
 
-  const handleSubmit = () => {
-    console.log('Uploading documents:', { files: uploadedFiles, metadata: formData });
-    // Reset and close
-    onOpenChange(false);
-    setTimeout(() => {
-      setStep(1);
-      setUploadedFiles([]);
-      setFormData({
-        category: 'listing',
-        title: '',
-        description: '',
-        status: 'current',
-        accessLevel: 'team',
-        tags: [],
-        expirationDate: '',
-        isRequired: false,
-        notifyTeam: false,
-        notifyClient: false
-      });
-    }, 300);
+  const handleSubmit = async () => {
+    if (uploadedFiles.length === 0) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      for (const { file } of uploadedFiles) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('title', formData.title || file.name.replace(/\.[^/.]+$/, ''));
+        fd.append('category', formData.category);
+        if (formData.description) fd.append('description', formData.description);
+        fd.append('status', formData.status);
+        fd.append('accessLevel', formData.accessLevel);
+        fd.append('isRequired', String(formData.isRequired));
+        if (formData.expirationDate) fd.append('expirationDate', formData.expirationDate);
+        fd.append('tags', JSON.stringify(formData.tags));
+
+        const doc = await propertiesApi.uploadDocument(authToken, propertyId, fd);
+        onUploaded?.(doc as UploadedDocumentRecord);
+      }
+
+      onOpenChange(false);
+      setTimeout(() => {
+        setStep(1);
+        setUploadedFiles([]);
+        setFormData({
+          category: 'listing',
+          title: '',
+          description: '',
+          status: 'current',
+          accessLevel: 'team',
+          tags: [],
+          expirationDate: '',
+          isRequired: false,
+          notifyTeam: false,
+          notifyClient: false
+        });
+      }, 300);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalSize = uploadedFiles.reduce((acc, f) => acc + f.file.size, 0);
@@ -581,22 +629,33 @@ export function UploadDocumentModal({ open, onOpenChange }: UploadDocumentModalP
               <>
                 <button
                   onClick={handleBack}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
                 >
                   Back
                 </button>
-                <div className="flex gap-3">
-                  <Dialog.Close className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                    Cancel
-                  </Dialog.Close>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!formData.title}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <Upload className="w-5 h-5" />
-                    Upload {uploadedFiles.length} {uploadedFiles.length === 1 ? 'Document' : 'Documents'}
-                  </button>
+                <div className="flex flex-col items-end gap-2">
+                  {submitError && (
+                    <p className="text-sm text-red-600">{submitError}</p>
+                  )}
+                  <div className="flex gap-3">
+                    <Dialog.Close
+                      disabled={isSubmitting}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </Dialog.Close>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!formData.title || isSubmitting}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Upload className="w-5 h-5" />
+                      {isSubmitting
+                        ? 'Uploading...'
+                        : `Upload ${uploadedFiles.length} ${uploadedFiles.length === 1 ? 'Document' : 'Documents'}`}
+                    </button>
+                  </div>
                 </div>
               </>
             )}

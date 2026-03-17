@@ -1206,6 +1206,262 @@ export const propertiesApi = {
       },
     ),
 
+  uploadDocument: (authToken: string, id: string, formData: FormData) =>
+    apiRequest<{
+      id: string;
+      property_id: string;
+      title: string;
+      category: string;
+      status: string;
+      access_level: string;
+      file_url: string;
+      file_name: string;
+      file_size: number | null;
+      file_type: string | null;
+      is_required: boolean;
+      tags: string[];
+      created_at: string;
+    }>(`/properties/${id}/documents`, {
+      method: 'POST',
+      authToken,
+      body: formData,
+      // NOTE: do NOT set Content-Type — multipart boundary handled by browser
+    }),
+
+  listDocuments: (authToken: string, id: string) =>
+    apiRequest<Array<{
+      id: string;
+      property_id: string;
+      title: string;
+      category: string;
+      description: string | null;
+      status: string;
+      access_level: string;
+      file_url: string;
+      file_name: string;
+      file_size: number | null;
+      file_type: string | null;
+      is_required: boolean;
+      expiration_date: string | null;
+      tags: string[];
+      created_at: string;
+    }>>(`/properties/${id}/documents`, { authToken }),
+
+  deleteDocument: (authToken: string, id: string, docId: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}/documents/${docId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  createConditionAssessment: (
+    authToken: string,
+    id: string,
+    payload: {
+      inspectionDate: string;
+      inspectorName?: string;
+      yearBuilt?: string;
+      lastRenovation?: string;
+      overallNotes?: string;
+      roomConditions: Record<string, unknown>;
+    },
+  ) =>
+    apiRequest<{
+      id: string;
+      property_id: string;
+      submitted_by: string;
+      inspection_date: string;
+      inspector_name: string | null;
+      year_built: string | null;
+      last_renovation: string | null;
+      overall_notes: string | null;
+      room_conditions: Record<string, unknown>;
+      created_at: string;
+    }>(`/properties/${id}/condition-assessments`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  listConditionAssessments: (authToken: string, id: string) =>
+    apiRequest<
+      Array<{
+        id: string;
+        property_id: string;
+        submitted_by: string;
+        inspection_date: string;
+        inspector_name: string | null;
+        year_built: string | null;
+        last_renovation: string | null;
+        overall_notes: string | null;
+        room_conditions: Record<string, unknown>;
+        created_at: string;
+      }>
+    >(`/properties/${id}/condition-assessments`, { authToken }),
+
+  createInspectionRequest: (
+    authToken: string,
+    propertyId: string,
+    payload: {
+      inspectionTypes: string[];
+      urgency: string;
+      preferredDate: string;
+      preferredTime: string;
+      alternateDate?: string;
+      alternateTime?: string;
+      inspectorName?: string;
+      inspectorCompany?: string;
+      inspectorPhone?: string;
+      inspectorEmail?: string;
+      accessMethod: string;
+      lockboxCode?: string;
+      contactPerson?: string;
+      contactPhone?: string;
+      contactEmail?: string;
+      areasOfConcern?: string;
+      specialInstructions?: string;
+      notifyClient: boolean;
+      sendReportTo: string;
+    },
+  ) =>
+    apiRequest<{ id: string }>(`/properties/${propertyId}/inspection-requests`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  listInspectionRequests: (authToken: string, propertyId: string) =>
+    apiRequest<
+      Array<{
+        id: string;
+        property_id: string;
+        requested_by: string;
+        status: string;
+        inspection_types: string[];
+        urgency: string;
+        preferred_date: string;
+        preferred_time: string;
+        alternate_date: string | null;
+        alternate_time: string | null;
+        inspector_name: string | null;
+        inspector_company: string | null;
+        inspector_phone: string | null;
+        inspector_email: string | null;
+        access_method: string;
+        notify_client: boolean;
+        send_report_to: string;
+        created_at: string;
+      }>
+    >(`/properties/${propertyId}/inspection-requests`, { authToken }),
+
+  createSellingPoint: (
+    authToken: string,
+    propertyId: string,
+    payload: {
+      title: string;
+      description: string;
+      priority: string;
+      category: string;
+      tags: string[];
+      showInListing: boolean;
+      showInFlyer: boolean;
+      showOnWebsite: boolean;
+    },
+  ) =>
+    apiRequest<{ id: string; title: string; description: string; priority: string; category: string; tags: string[]; show_in_listing: boolean; show_in_flyer: boolean; show_on_website: boolean; created_at: string; updated_at: string }>(
+      `/properties/${propertyId}/selling-points`,
+      {
+        method: 'POST',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  listSellingPoints: (authToken: string, propertyId: string) =>
+    apiRequest<
+      Array<{
+        id: string;
+        property_id: string;
+        title: string;
+        description: string;
+        priority: string;
+        category: string;
+        tags: string[];
+        show_in_listing: boolean;
+        show_in_flyer: boolean;
+        show_on_website: boolean;
+        created_at: string;
+        updated_at: string;
+      }>
+    >(`/properties/${propertyId}/selling-points`, { authToken }),
+
+  updateSellingPoint: (
+    authToken: string,
+    propertyId: string,
+    pointId: string,
+    payload: {
+      title?: string;
+      description?: string;
+      priority?: string;
+      category?: string;
+      tags?: string[];
+      showInListing?: boolean;
+      showInFlyer?: boolean;
+      showOnWebsite?: boolean;
+    },
+  ) =>
+    apiRequest<{ id: string; title: string; description: string; priority: string; updated_at: string }>(
+      `/properties/${propertyId}/selling-points/${pointId}`,
+      {
+        method: 'PATCH',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  deleteSellingPoint: (authToken: string, propertyId: string, pointId: string) =>
+    apiRequest<{ ok: boolean }>(`/properties/${propertyId}/selling-points/${pointId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  createNote: (authToken: string, propertyId: string, payload: Record<string, unknown>) =>
+    apiRequest<{ id: string; property_id: string; title: string; content: string; category: string; is_pinned: boolean; visibility: string; tags: string[]; reminder: string | null; created_at: string; updated_at: string }>(
+      `/properties/${propertyId}/notes`,
+      {
+        method: 'POST',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  listNotes: (authToken: string, propertyId: string) =>
+    apiRequest<{ id: string; property_id: string; title: string; content: string; category: string; is_pinned: boolean; visibility: string; tags: string[]; reminder: string | null; created_at: string; updated_at: string }[]>(
+      `/properties/${propertyId}/notes`,
+      { method: 'GET', authToken },
+    ),
+
+  updateNote: (authToken: string, propertyId: string, noteId: string, payload: Record<string, unknown>) =>
+    apiRequest<{ id: string; property_id: string; title: string; content: string; category: string; is_pinned: boolean; visibility: string; tags: string[]; reminder: string | null; created_at: string; updated_at: string }>(
+      `/properties/${propertyId}/notes/${noteId}`,
+      {
+        method: 'PATCH',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  deleteNote: (authToken: string, propertyId: string, noteId: string) =>
+    apiRequest<{ ok: boolean }>(`/properties/${propertyId}/notes/${noteId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
   update: (authToken: string, id: string, payload: Record<string, unknown>) =>
     apiRequest<PropertyListing>(`/properties/${id}`, {
       method: 'PATCH',

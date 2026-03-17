@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
 import {
@@ -8,38 +8,23 @@ import {
   Calendar,
   Clock,
   Users,
-  MapPin,
   TrendingUp,
   Edit,
   CheckCircle2,
   XCircle,
-  Star,
   Phone,
   Mail,
   MessageSquare,
   UserPlus,
   Download,
   Share2,
-  ThumbsUp,
   UserCheck,
   ClipboardList,
   MoreVertical
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { agentApi } from '@/lib/api-client';
+import { agentApi, viewingActionsApi, type OpenHouseAttendee } from '@/lib/api-client';
 import { OpenHouseCheckInModal } from './OpenHouseCheckInModal';
-
-interface Visitor {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  checkInTime: string;
-  interestLevel: 'high' | 'medium' | 'low';
-  preRegistered: boolean;
-  notes: string;
-  addedToLeads: boolean;
-}
 
 interface OpenHouseDetailModalProps {
   open: boolean;
@@ -67,92 +52,18 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
 
-const mockVisitors: Visitor[] = [
-  {
-    id: '1',
-    name: 'Sarah Martinez',
-    email: 'sarah.m@email.com',
-    phone: '(310) 555-0123',
-    checkInTime: '2:15 PM',
-    interestLevel: 'high',
-    preRegistered: true,
-    notes: 'Looking for family home in good school district. Very interested in the property.',
-    addedToLeads: true
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    email: 'mchen@email.com',
-    phone: '(310) 555-0456',
-    checkInTime: '2:30 PM',
-    interestLevel: 'high',
-    preRegistered: true,
-    notes: 'First-time buyer, pre-approved for $900K. Mentioned submitting an offer.',
-    addedToLeads: true
-  },
-  {
-    id: '3',
-    name: 'Jennifer Williams',
-    email: 'jen.williams@email.com',
-    phone: '(310) 555-0789',
-    checkInTime: '2:45 PM',
-    interestLevel: 'medium',
-    preRegistered: false,
-    notes: 'Walk-in visitor. Interested but needs to sell current home first.',
-    addedToLeads: false
-  },
-  {
-    id: '4',
-    name: 'David Park',
-    email: 'david.park@email.com',
-    phone: '(310) 555-0321',
-    checkInTime: '3:00 PM',
-    interestLevel: 'medium',
-    preRegistered: true,
-    notes: 'Investor looking at multiple properties in the area.',
-    addedToLeads: true
-  },
-  {
-    id: '5',
-    name: 'Lisa Thompson',
-    email: 'lisa.t@email.com',
-    phone: '(310) 555-0654',
-    checkInTime: '3:20 PM',
-    interestLevel: 'low',
-    preRegistered: false,
-    notes: 'Just browsing, not actively looking to buy.',
-    addedToLeads: false
+function getAttendeeName(a: OpenHouseAttendee): string {
+  if (a.buyer_id) {
+    const full = [a.first_name, a.last_name].filter(Boolean).join(' ');
+    return full || '(Unknown)';
   }
-];
-
-const mockFeedback = [
-  {
-    id: '1',
-    visitorName: 'Sarah Martinez',
-    rating: 5,
-    comment: 'Beautiful home! Love the modern kitchen and spacious backyard. Definitely interested.',
-    timestamp: '2:45 PM'
-  },
-  {
-    id: '2',
-    visitorName: 'Michael Chen',
-    rating: 5,
-    comment: 'Perfect layout for our family. The location is ideal and the finishes are top-notch.',
-    timestamp: '3:00 PM'
-  },
-  {
-    id: '3',
-    visitorName: 'David Park',
-    rating: 4,
-    comment: 'Good investment opportunity. Would like more information about rental potential.',
-    timestamp: '3:15 PM'
-  }
-];
+  return a.guest_name ?? '(Unknown)';
+}
 
 export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, authToken, openHouse, propertyAddress, currentAgentName }: OpenHouseDetailModalProps) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [_visitorNote, _setVisitorNote] = useState('');
-  const [_selectedVisitor, _setSelectedVisitor] = useState<string | null>(null);
+  const [attendees, setAttendees] = useState<OpenHouseAttendee[]>([]);
+  const [isLoadingAttendees, setIsLoadingAttendees] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -248,6 +159,16 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
 
   const isActive = openHouse.status === 'upcoming' || openHouse.status === 'in-progress';
   const isCompleted = openHouse.status === 'completed' || openHouse.status === 'ended';
+
+  useEffect(() => {
+    if (!open || !isCompleted || !authToken) return;
+    setIsLoadingAttendees(true);
+    viewingActionsApi
+      .getOpenHouseRegistrations(authToken, openHouse.id)
+      .then(setAttendees)
+      .catch(() => setAttendees([]))
+      .finally(() => setIsLoadingAttendees(false));
+  }, [open, isCompleted, openHouse.id, authToken]);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -345,7 +266,7 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
               </div>
               <div className="text-center">
                 <div className="text-2xl font-semibold text-purple-600">
-                  {mockVisitors.filter(v => v.preRegistered).length}
+                  {attendees.filter(a => !!a.buyer_id).length}
                 </div>
                 <div className="text-xs text-gray-600 mt-1 flex items-center justify-center gap-1">
                   <UserCheck className="w-3 h-3" />
@@ -354,11 +275,11 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
               </div>
               <div className="text-center">
                 <div className="text-2xl font-semibold text-orange-600">
-                  {mockVisitors.filter(v => v.addedToLeads).length}
+                  {attendees.filter(a => a.attended).length}
                 </div>
                 <div className="text-xs text-gray-600 mt-1 flex items-center justify-center gap-1">
                   <UserPlus className="w-3 h-3" />
-                  Added to Leads
+                  Checked In
                 </div>
               </div>
             </div>
@@ -381,7 +302,7 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                   >
                     Visitors
                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">
-                      {mockVisitors.length}
+                      {attendees.filter(a => a.attended).length}
                     </span>
                   </Tabs.Trigger>
                   <Tabs.Trigger
@@ -390,7 +311,7 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                   >
                     Feedback
                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">
-                      {mockFeedback.length}
+                      0
                     </span>
                   </Tabs.Trigger>
                   <Tabs.Trigger
@@ -537,7 +458,7 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                   <div>
                     <h3 className="font-semibold text-lg">Visitor Sign-In List</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      {mockVisitors.length} total visitors • {mockVisitors.filter(v => v.interestLevel === 'high').length} high interest
+                      {attendees.filter(a => a.attended).length} total visitors • {attendees.filter(a => a.attended && a.interest_level === 'high').length} high interest
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -545,155 +466,130 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                       <Download className="w-4 h-4" />
                       Export List
                     </button>
-                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-2">
-                      <UserPlus className="w-4 h-4" />
-                      Add Visitor
-                    </button>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {mockVisitors.map((visitor) => (
-                    <div key={visitor.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center font-medium">
-                              {visitor.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div>
-                              <div className="font-medium flex items-center gap-2">
-                                {visitor.name}
-                                {visitor.preRegistered && (
-                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                    Pre-registered
-                                  </span>
-                                )}
+                {isLoadingAttendees ? (
+                  <div className="flex justify-center py-8"><span className="text-sm text-gray-500">Loading visitors…</span></div>
+                ) : attendees.filter(a => a.attended).length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <Users className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm">No visitors checked in.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {attendees.filter(a => a.attended).map((attendee) => {
+                      const name = getAttendeeName(attendee);
+                      const email = attendee.email ?? attendee.guest_email ?? '—';
+                      const phone = attendee.phone ?? attendee.guest_phone ?? '—';
+                      const checkInTime = attendee.checked_in_at
+                        ? new Date(attendee.checked_in_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
+                        : '—';
+                      const interestLevel = attendee.interest_level ?? 'low';
+                      const isPreRegistered = !!attendee.buyer_id;
+                      return (
+                        <div key={attendee.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center font-medium">
+                                  {getInitials(name)}
+                                </div>
+                                <div>
+                                  <div className="font-medium flex items-center gap-2">
+                                    {name}
+                                    {isPreRegistered && (
+                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                        Pre-registered
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">Checked in at {checkInTime}</div>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">Checked in at {visitor.checkInTime}</div>
+                              <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                                  <Mail className="w-4 h-4" />
+                                  {email}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                                  <Phone className="w-4 h-4" />
+                                  {phone}
+                                </div>
+                              </div>
+                              {attendee.notes && (
+                                <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">
+                                  <div className="font-medium text-gray-900 mb-1">Notes:</div>
+                                  {attendee.notes}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-2 ml-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getInterestLevelColor(interestLevel)}`}>
+                                {interestLevel.charAt(0).toUpperCase() + interestLevel.slice(1)} Interest
+                              </span>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                              <Mail className="w-4 h-4" />
-                              {visitor.email}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                              <Phone className="w-4 h-4" />
-                              {visitor.phone}
-                            </div>
+
+                          <div className="flex gap-2 pt-3 border-t border-gray-100">
+                            {email !== '—' && (
+                              <a
+                                href={`mailto:${email}`}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
+                              >
+                                <Mail className="w-4 h-4" />
+                                Send Email
+                              </a>
+                            )}
+                            {phone !== '—' && (
+                              <a
+                                href={`tel:${phone}`}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
+                              >
+                                <Phone className="w-4 h-4" />
+                                Call
+                              </a>
+                            )}
                           </div>
-                          {visitor.notes && (
-                            <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">
-                              <div className="font-medium text-gray-900 mb-1">Notes:</div>
-                              {visitor.notes}
-                            </div>
-                          )}
                         </div>
-                        <div className="flex flex-col items-end gap-2 ml-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getInterestLevelColor(visitor.interestLevel)}`}>
-                            {visitor.interestLevel.charAt(0).toUpperCase() + visitor.interestLevel.slice(1)} Interest
-                          </span>
-                          {visitor.addedToLeads && (
-                            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium flex items-center gap-1">
-                              <UserCheck className="w-3 h-3" />
-                              In Leads
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2 pt-3 border-t border-gray-100">
-                        <button className="flex-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          Send Email
-                        </button>
-                        <button className="flex-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          Call
-                        </button>
-                        {!visitor.addedToLeads && (
-                          <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center gap-2">
-                            <UserPlus className="w-4 h-4" />
-                            Add to Leads
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Tabs.Content>
 
               {/* Feedback Tab */}
               <Tabs.Content value="feedback" className="space-y-4">
                 <div className="mb-4">
                   <h3 className="font-semibold text-lg mb-1">Visitor Feedback</h3>
-                  <p className="text-sm text-gray-600">
-                    {mockFeedback.length} responses • Average rating: 4.7/5
-                  </p>
+                  <p className="text-sm text-gray-600">0 responses</p>
                 </div>
-
-                <div className="grid md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                    <div className="text-2xl font-semibold text-green-700">4.7</div>
-                    <div className="text-xs text-gray-600 mt-1">Average Rating</div>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                    <ThumbsUp className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <div className="text-2xl font-semibold text-blue-700">87%</div>
-                    <div className="text-xs text-gray-600 mt-1">Positive Feedback</div>
-                  </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                    <MessageSquare className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                    <div className="text-2xl font-semibold text-purple-700">{mockFeedback.length}</div>
-                    <div className="text-xs text-gray-600 mt-1">Total Comments</div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {mockFeedback.map((feedback) => (
-                    <div key={feedback.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <div className="font-medium mb-1">{feedback.visitorName}</div>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star 
-                                key={star} 
-                                className={`w-4 h-4 ${star <= feedback.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <span className="text-xs text-gray-500">{feedback.timestamp}</span>
-                      </div>
-                      <p className="text-sm text-gray-700">{feedback.comment}</p>
-                    </div>
-                  ))}
+                <div className="text-center py-12 text-gray-500">
+                  <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">No feedback collected yet.</p>
                 </div>
               </Tabs.Content>
 
               {/* Activity Log Tab */}
               <Tabs.Content value="activity" className="space-y-3">
                 <h3 className="font-semibold text-lg mb-4">Event Timeline</h3>
-                
+
                 <div className="space-y-3">
-                  {[
-                    { time: '3:45 PM', action: 'Open house ended', icon: CheckCircle2, color: 'text-green-600' },
-                    { time: '3:20 PM', action: 'Lisa Thompson checked in (Walk-in)', icon: UserPlus, color: 'text-blue-600' },
-                    { time: '3:00 PM', action: 'David Park checked in (Pre-registered)', icon: UserPlus, color: 'text-blue-600' },
-                    { time: '2:45 PM', action: 'Jennifer Williams checked in (Walk-in)', icon: UserPlus, color: 'text-blue-600' },
-                    { time: '2:30 PM', action: 'Michael Chen checked in (Pre-registered)', icon: UserPlus, color: 'text-blue-600' },
-                    { time: '2:15 PM', action: 'Sarah Martinez checked in (Pre-registered)', icon: UserPlus, color: 'text-blue-600' },
-                    { time: '2:00 PM', action: 'Open house started', icon: CheckCircle2, color: 'text-green-600' },
-                    { time: '1:30 PM', action: 'Marketing materials set up', icon: ClipboardList, color: 'text-purple-600' },
-                    { time: '10:00 AM', action: 'Signage installed', icon: MapPin, color: 'text-orange-600' }
-                  ].map((event, index) => (
+                  {(
+                    [
+                      { time: openHouse.endTime, action: 'Open house ended', icon: CheckCircle2, color: 'text-green-600', sortKey: openHouse.endTime },
+                      ...attendees
+                        .filter(a => a.checked_in_at)
+                        .sort((a, b) => new Date(b.checked_in_at!).getTime() - new Date(a.checked_in_at!).getTime())
+                        .map(a => {
+                          const name = getAttendeeName(a);
+                          const type = a.buyer_id ? 'Pre-registered' : 'Walk-in';
+                          const t = new Date(a.checked_in_at!).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+                          return { time: t, action: `${name} checked in (${type})`, icon: UserPlus, color: 'text-blue-600', sortKey: a.checked_in_at! };
+                        }),
+                      { time: openHouse.startTime, action: 'Open house started', icon: CheckCircle2, color: 'text-green-600', sortKey: openHouse.startTime },
+                    ] as { time: string; action: string; icon: React.ComponentType<{ className?: string }>; color: string; sortKey: string }[]
+                  ).map((event, index) => (
                     <div key={index} className="flex items-start gap-4 p-3 bg-white border border-gray-200 rounded-lg">
                       <div className="p-2 bg-gray-50 rounded-lg">
                         <event.icon className={`w-4 h-4 ${event.color}`} />

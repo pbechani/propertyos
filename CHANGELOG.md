@@ -12,6 +12,81 @@ Related docs:
 
 ## [Unreleased]
 
+### Added
+
+- **Open House Details — De-hardwired (2026-03-18)**
+  - Removed `mockVisitors` (5 fake visitors), `mockFeedback` (3 fake feedback entries), and the `Visitor` interface from `OpenHouseDetailModal`
+  - Visitors tab now loads real attendees via `viewingActionsApi.getOpenHouseRegistrations` on modal open (completed/ended events only); shows loading state and empty state when no one checked in
+  - Visitor cards render from `OpenHouseAttendee` rows: name resolved from `first_name`/`last_name` (pre-registered) or `guest_name` (walk-in); email/phone shown as `mailto:`/`tel:` links only when data exists; Pre-registered badge driven by `buyer_id` presence
+  - Stats bar "Pre-Registered" count uses `attendees.filter(a => !!a.buyer_id).length`; "Added to Leads" replaced with "Checked In" using `attendees.filter(a => a.attended).length`
+  - Visitors / Feedback tab badges reflect real data counts (0 for feedback until feedback API is built)
+  - Activity Log derives real timeline from checked-in attendee `checked_in_at` timestamps instead of 9 hardcoded events; bookended by dynamic start/end times
+  - Feedback tab replaced with clean empty state ("No feedback collected yet")
+  - Removed unused imports: `MapPin`, `Star`, `ThumbsUp`; removed unused `_visitorNote` / `_selectedVisitor` state
+
+- **Property Condition — full-stack implementation (2026-03-17)**
+  - New `property.property_condition_assessments` table (migration `202603170036_property_condition_assessments`) with columns for component, condition rating, notes, assessed_by, assessed_at, action_required, estimated_cost, and foreign key to `property.properties`
+  - `PropertyConditionService` (`apps/api/src/property/property-condition.service.ts`) with `create`, `list`, `update`, `delete` methods and `assertAccess` ownership check
+  - Four new REST endpoints on `PropertyController`: `POST/GET /properties/:id/conditions`, `PATCH/DELETE /properties/:propertyId/conditions/:conditionId`
+  - Four new methods on `propertiesApi`: `createCondition`, `listConditions`, `updateCondition`, `deleteCondition`
+  - `AddPropertyConditionModal` wired to `propertiesApi.createCondition`; shows saving/error state
+  - `PropertyCondition` component loads list on mount, wires edit/delete actions
+  - 14-test spec (`property-condition.service.spec.ts`) covering all CRUD paths plus ownership errors
+
+- **Request Inspection — full-stack implementation (2026-03-17)**
+  - New `property.inspection_requests` table (migration `202603170037_inspection_requests`) with inspection_type, inspector_name, requested_date, scheduled_date, status, notes, result, report_url, cost, paid_by, and foreign key to `property.properties`
+  - `InspectionRequestService` (`apps/api/src/property/inspection-request.service.ts`) with `create`, `list`, `update`, `delete` methods and `assertAccess` ownership check
+  - Four new REST endpoints on `PropertyController`: `POST/GET /properties/:id/inspections`, `PATCH/DELETE /properties/:propertyId/inspections/:inspectionId`
+  - Four new methods on `propertiesApi`: `createInspection`, `listInspections`, `updateInspection`, `deleteInspection`
+  - `RequestInspectionModal` wired away from hardcoded `console.log` stub; calls `propertiesApi.createInspection`; shows saving/error state
+  - 14-test spec (`inspection-request.service.spec.ts`) covering all CRUD paths plus ownership errors
+
+- **Communication Log — de-hardwired (2026-03-17)**
+  - `LogCommunicationModal` had a `console.log` handleSubmit stub; now calls `propertiesApi.createCommunicationLog` with async error handling and loading state
+  - `CommunicationLog` component loads existing log entries on mount via `propertiesApi.listCommunicationLogs`; appends new entries on success without page reload
+
+- **Enquiries — de-hardwired (2026-03-17)**
+  - `Enquiries` component had hardcoded placeholder enquiries; now loads real enquiry data via `propertiesApi.listEnquiries` on mount with loading and empty states
+
+
+  - New `property.notes` table (migration `202603170039_property_notes`) with title, content, category, is_pinned, visibility, tags (JSONB), reminder, created_by, and foreign key to `property.properties`
+  - `NoteService` (`apps/api/src/property/note.service.ts`) with `create`, `list`, `update`, `delete` methods and `assertAccess` ownership check
+  - Four new REST endpoints on `PropertyController`:
+    - `POST /properties/:id/notes` — create a note (agent/admin)
+    - `GET /properties/:id/notes` — list notes (agent/admin)
+    - `PATCH /properties/:propertyId/notes/:noteId` — partial update inc. pin toggle (agent/admin)
+    - `DELETE /properties/:propertyId/notes/:noteId` — delete (agent/admin)
+  - Four new methods on `propertiesApi`: `createNote`, `listNotes`, `updateNote`, `deleteNote`
+  - `AddNoteModal` wired to `propertiesApi.createNote`; shows saving state and error banner; resets form after success
+  - `EditNoteModal` wired to `propertiesApi.updateNote`; shows saving state and error banner
+  - `Notes` component loads list on mount, wires Pin buttons to `updateNote({isPinned})`, wires Trash buttons to `deleteNote`, passes `propertyId`/`authToken`/`onSaved` to both modals
+  - 14-test spec (`note.service.spec.ts`) covering create/list/update/delete happy paths plus `NotFoundException` and `ForbiddenException` paths
+
+- **Selling Points — full-stack implementation (2026-03-17)**
+  - New `property.selling_points` table (migration `202603170038_selling_points`) with columns for title, description, priority, category, tags (JSONB), show_in_listing, show_in_flyer, show_on_website, and foreign key to `property.properties`
+  - `SellingPointService` (`apps/api/src/property/selling-point.service.ts`) with `create`, `list`, `update`, `delete` methods and `assertAccess` ownership check
+  - Four new REST endpoints on `PropertyController`:
+    - `POST /properties/:id/selling-points` — create a selling point (agent/admin)
+    - `GET /properties/:id/selling-points` — list selling points (agent/admin)
+    - `PATCH /properties/:propertyId/selling-points/:pointId` — partial update (agent/admin)
+    - `DELETE /properties/:propertyId/selling-points/:pointId` — delete (agent/admin)
+  - Four new methods on `propertiesApi`: `createSellingPoint`, `listSellingPoints`, `updateSellingPoint`, `deleteSellingPoint`
+  - `AddSellingPointModal` wired to `propertiesApi.createSellingPoint`; shows saving state and error banner; resets form after success
+  - `EditSellingPointModal` wired to `propertiesApi.updateSellingPoint`; shows saving state and error banner
+  - `SellingPoints` component loads list on mount, passes `propertyId`/`authToken`/`onSaved` to both modals, and wires the Trash button to `deleteSellingPoint`
+  - 14-test spec (`selling-point.service.spec.ts`) covering create/list/update/delete happy paths plus `NotFoundException` and `ForbiddenException` paths
+
+- **Property Document Upload — end-to-end (2026-03-17)**
+  - New `property.property_documents` table (migration `202603170035_property_documents`) with columns for title, category, status, access level, file URL, storage path, tags, expiration date, and required flag
+  - `PropertyDocumentService` (`apps/api/src/property/property-document.service.ts`) with `uploadDocument`, `listDocuments`, and `deleteDocument` methods; input validation for category, status, and access level
+  - Three new REST endpoints on `PropertyController`:
+    - `POST /properties/:id/documents` — uploads file + metadata (agent/admin only)
+    - `GET /properties/:id/documents` — lists documents for the property owner
+    - `DELETE /properties/:id/documents/:docId` — deletes a document
+  - Three new methods on `propertiesApi` in `apps/web/src/lib/api-client.ts`: `uploadDocument`, `listDocuments`, `deleteDocument`
+  - `UploadDocumentModal` now accepts `propertyId`, `authToken`, `onUploaded` props; `handleSubmit` builds `FormData` and calls the API; shows uploading/error state on the submit button; exports `UploadedDocumentRecord` type
+  - `Documents` component now loads existing documents on mount, passes real `propertyId`/`authToken` to the modal, and appends newly uploaded docs to the list without a page refresh
+
 ### Fixed
 - **Walk-In Check-In 500 Error (2026-03-17)**
   - Applied 10 pending database migrations (`202603110023` → `202603170034`) that were missing from the running dev database

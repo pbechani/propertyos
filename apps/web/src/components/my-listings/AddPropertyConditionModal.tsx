@@ -24,10 +24,14 @@ import {
   FileText,
   ClipboardCheck
 } from 'lucide-react';
+import { propertiesApi } from '@/lib/api-client';
 
 interface AddPropertyConditionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onSaved?: () => void;
 }
 
 interface RoomCondition {
@@ -97,10 +101,12 @@ const statusOptions = [
   }
 ];
 
-export function AddPropertyConditionModal({ open, onOpenChange }: AddPropertyConditionModalProps) {
+export function AddPropertyConditionModal({ open, onOpenChange, propertyId, authToken, onSaved }: AddPropertyConditionModalProps) {
   const [currentStep, setCurrentStep] = useState<'overview' | 'room-detail'>('overview');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [conditions, setConditions] = useState<Record<string, RoomCondition>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   const [generalInfo, setGeneralInfo] = useState({
     inspectionDate: new Date().toISOString().split('T')[0],
@@ -189,9 +195,25 @@ export function AddPropertyConditionModal({ open, onOpenChange }: AddPropertyCon
     setSelectedRoomId(null);
   };
 
-  const handleSubmit = () => {
-    console.log('Submitting property condition:', { generalInfo, conditions });
-    onOpenChange(false);
+  const handleSubmit = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.createConditionAssessment(authToken, propertyId, {
+        inspectionDate: generalInfo.inspectionDate,
+        inspectorName: generalInfo.inspector || undefined,
+        yearBuilt: generalInfo.yearBuilt || undefined,
+        lastRenovation: generalInfo.lastRenovation || undefined,
+        overallNotes: generalInfo.overallNotes || undefined,
+        roomConditions: conditions as Record<string, unknown>,
+      });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save assessment');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
@@ -548,10 +570,12 @@ export function AddPropertyConditionModal({ open, onOpenChange }: AddPropertyCon
           <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
             {currentStep === 'overview' ? (
               <>
-                <div className="text-sm text-gray-600">
-                  {needsAttention > 0 && (
+                <div className="text-sm">
+                  {saveError ? (
+                    <span className="text-red-600 flex items-center gap-1"><AlertCircle className="w-4 h-4" />{saveError}</span>
+                  ) : needsAttention > 0 ? (
                     <span className="text-red-600 font-medium">{needsAttention} area{needsAttention !== 1 ? 's' : ''} need{needsAttention === 1 ? 's' : ''} attention</span>
-                  )}
+                  ) : null}
                 </div>
                 <div className="flex gap-3">
                   <Dialog.Close className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
@@ -559,10 +583,11 @@ export function AddPropertyConditionModal({ open, onOpenChange }: AddPropertyCon
                   </Dialog.Close>
                   <button
                     onClick={handleSubmit}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    disabled={isSaving}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <Save className="w-5 h-5" />
-                    Save Assessment
+                    {isSaving ? 'Saving...' : 'Save Assessment'}
                   </button>
                 </div>
               </>

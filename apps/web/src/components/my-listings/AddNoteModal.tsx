@@ -27,10 +27,14 @@ import {
   Sparkles,
   Save
 } from 'lucide-react';
+import { propertiesApi } from '@/lib/api-client';
 
 interface AddNoteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onSaved?: () => void;
 }
 
 const noteCategories = [
@@ -156,7 +160,7 @@ const quickTemplates = [
   }
 ];
 
-export function AddNoteModal({ open, onOpenChange }: AddNoteModalProps) {
+export function AddNoteModal({ open, onOpenChange, propertyId, authToken, onSaved }: AddNoteModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -171,6 +175,8 @@ export function AddNoteModal({ open, onOpenChange }: AddNoteModalProps) {
 
   const [customTag, setCustomTag] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const selectedCategory = noteCategories.find(c => c.id === formData.category);
 const templates = quickTemplates.find(t => t.category === formData.category)?.templates || [];
@@ -200,23 +206,40 @@ const templates = quickTemplates.find(t => t.category === formData.category)?.te
     setShowTemplates(false);
   };
 
-  const handleSubmit = () => {
-    console.log('Submitting note:', formData);
-    onOpenChange(false);
-    // Reset form
-    setTimeout(() => {
-      setFormData({
-        title: '',
-        content: '',
-        category: 'general',
-        isPinned: false,
-        visibility: 'private',
-        tags: [],
-        mentions: [],
-        reminder: '',
-        attachments: []
+  const handleSubmit = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.createNote(authToken, propertyId, {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        isPinned: formData.isPinned,
+        visibility: formData.visibility,
+        tags: formData.tags,
+        reminder: formData.reminder || null,
       });
-    }, 300);
+      onSaved?.();
+      onOpenChange(false);
+      setTimeout(() => {
+        setFormData({
+          title: '',
+          content: '',
+          category: 'general',
+          isPinned: false,
+          visibility: 'private',
+          tags: [],
+          mentions: [],
+          reminder: '',
+          attachments: [],
+        });
+        setSaveError(null);
+      }, 300);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save note');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isFormValid = formData.title.trim() && formData.content.trim();
@@ -557,27 +580,38 @@ const templates = quickTemplates.find(t => t.category === formData.category)?.te
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              {!isFormValid && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertCircle className="w-4 h-4" />
-                  Title and content are required
-                </span>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <Dialog.Close className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                Cancel
-              </Dialog.Close>
-              <button
-                onClick={handleSubmit}
-                disabled={!isFormValid}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <Save className="w-5 h-5" />
-                Save Note
-              </button>
+          <div className="border-t border-gray-200 p-6 bg-gray-50 flex flex-col gap-3">
+            {saveError && (
+              <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {saveError}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                {!isFormValid && !saveError && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertCircle className="w-4 h-4" />
+                    Title and content are required
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Dialog.Close
+                  disabled={isSaving}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </Dialog.Close>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSaving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  {isSaving ? 'Saving...' : 'Save Note'}
+                </button>
+              </div>
             </div>
           </div>
         </Dialog.Content>

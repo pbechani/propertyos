@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Phone, MessageSquare, Video, User, Clock, Plus, Search, PhoneOutgoing, PhoneIncoming, MailOpen, Send } from 'lucide-react';
-import { LogCommunicationModal } from './LogCommunicationModal';
+import { LogCommunicationModal, type LoggedCommunication } from './LogCommunicationModal';
 
 interface Communication {
   id: string;
@@ -75,11 +75,27 @@ const getTypeColor = (type: string) => {
 
 interface Props { propertyId: string; authToken: string; }
 
-export function CommunicationLog({ propertyId: _propertyId, authToken: _authToken }: Props) {
-  const [comms, _setComms] = useState<Communication[]>([]);
+export function CommunicationLog({ propertyId, authToken }: Props) {
+  const [comms, setComms] = useState<Communication[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
+  const handleLogged = (entry: LoggedCommunication) => {
+    const newComm: Communication = {
+      id: crypto.randomUUID(),
+      type: entry.type as Communication['type'],
+      contact: entry.contact,
+      contactRole: entry.contactRole,
+      subject: entry.subject,
+      summary: entry.summary,
+      date: `${entry.date} ${entry.time}`,
+      duration: entry.duration || undefined,
+      outcome: entry.outcome || undefined,
+      followUp: entry.followUpRequired && entry.followUpDetails ? entry.followUpDetails : undefined,
+    };
+    setComms((prev) => [newComm, ...prev]);
+  };
 
   const filtered = comms.filter(c => {
     const matchesType = filterType === 'all' || c.type.startsWith(filterType);
@@ -230,6 +246,9 @@ export function CommunicationLog({ propertyId: _propertyId, authToken: _authToke
       <LogCommunicationModal
         open={isLogModalOpen}
         onOpenChange={setIsLogModalOpen}
+        propertyId={propertyId}
+        authToken={authToken}
+        onLogged={handleLogged}
       />
     </div>
   );

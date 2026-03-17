@@ -26,6 +26,30 @@ function formatDate(iso: string) {
   });
 }
 
+/**
+ * Some enquiries were submitted anonymously and the contact info was embedded
+ * into the message as "General inquiry Name: X Email: Y Phone: Z".
+ * This parser extracts those fields so they can be rendered properly.
+ */
+function parseEmbeddedContact(message: string | null): {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  cleanMessage: string | null;
+} | null {
+  if (!message) return null;
+  const match = message.match(
+    /^(General inquiry\s+)?Name:\s*(.+?)\s+Email:\s*(\S+@\S+)\s+Phone:\s*(\S+)$/i,
+  );
+  if (!match) return null;
+  return {
+    name: match[2].trim() || null,
+    email: match[3].trim() || null,
+    phone: match[4].trim() || null,
+    cleanMessage: null, // the entire message was just contact metadata
+  };
+}
+
 export function Enquiries({ propertyId, authToken }: Props) {
   const [enquiries, setEnquiries] = useState<PropertyInquiryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +91,15 @@ export function Enquiries({ propertyId, authToken }: Props) {
       )}
 
       <div className="space-y-3">
-        {enquiries.map((e) => (
+        {enquiries.map((e) => {
+          const embedded = parseEmbeddedContact(e.message ?? null);
+          const displayName  = e.requester_name  ?? embedded?.name  ?? 'Anonymous';
+          const displayEmail = e.requester_email ?? embedded?.email ?? null;
+          const displayPhone = e.requester_phone ?? embedded?.phone ?? null;
+          // If the whole message was just embedded contact info, don't show it as a message
+          const displayMessage = embedded ? embedded.cleanMessage : (e.message ?? null);
+
+          return (
           <div
             key={e.id}
             className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -81,7 +113,7 @@ export function Enquiries({ propertyId, authToken }: Props) {
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">
-                      {e.requester_name ?? 'Anonymous'}
+                      {displayName}
                     </div>
                     <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-0.5">
                       <Clock className="w-3 h-3" />
@@ -95,11 +127,11 @@ export function Enquiries({ propertyId, authToken }: Props) {
               </div>
 
               {/* Message */}
-              {e.message && (
+              {displayMessage && (
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <div className="flex items-start gap-2">
                     <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700">{e.message}</p>
+                    <p className="text-sm text-gray-700">{displayMessage}</p>
                   </div>
                 </div>
               )}
@@ -118,20 +150,22 @@ export function Enquiries({ propertyId, authToken }: Props) {
               )}
 
               {/* Contact info */}
-              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                {e.requester_email && (
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="w-4 h-4" />
-                    {e.requester_email}
-                  </div>
-                )}
-                {e.requester_phone && (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-4 h-4" />
-                    {e.requester_phone}
-                  </div>
-                )}
-              </div>
+              {(displayEmail || displayPhone) && (
+                <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                  {displayEmail && (
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="w-4 h-4" />
+                      {displayEmail}
+                    </div>
+                  )}
+                  {displayPhone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-4 h-4" />
+                      {displayPhone}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               {e.status !== 'closed' && (
@@ -146,7 +180,8 @@ export function Enquiries({ propertyId, authToken }: Props) {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

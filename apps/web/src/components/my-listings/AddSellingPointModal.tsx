@@ -22,9 +22,14 @@ import {
   Target
 } from 'lucide-react';
 
+import { propertiesApi } from '@/lib/api-client';
+
 interface AddSellingPointModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onSaved?: () => void;
 }
 
 const categories = [
@@ -169,7 +174,7 @@ const suggestedPoints = {
   ]
 };
 
-export function AddSellingPointModal({ open, onOpenChange }: AddSellingPointModalProps) {
+export function AddSellingPointModal({ open, onOpenChange, propertyId, authToken, onSaved }: AddSellingPointModalProps) {
   const [formData, setFormData] = useState({
     category: 'location',
     title: '',
@@ -184,6 +189,8 @@ export function AddSellingPointModal({ open, onOpenChange }: AddSellingPointModa
 
   const [customTag, setCustomTag] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const selectedCategory = categories.find(c => c.id === formData.category);
   const selectedPriority = priorityLevels.find(p => p.value === formData.priority);
@@ -214,23 +221,41 @@ export function AddSellingPointModal({ open, onOpenChange }: AddSellingPointModa
     setShowSuggestions(false);
   };
 
-  const handleSubmit = () => {
-    console.log('Submitting selling point:', formData);
-    onOpenChange(false);
-    // Reset form
-    setTimeout(() => {
-      setFormData({
-        category: 'location',
-        title: '',
-        description: '',
-        priority: 'high',
-        tags: [],
-        images: [],
-        showInListing: true,
-        showInFlyer: true,
-        showOnWebsite: true
+  const handleSubmit = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.createSellingPoint(authToken, propertyId, {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        category: formData.category,
+        tags: formData.tags,
+        showInListing: formData.showInListing,
+        showInFlyer: formData.showInFlyer,
+        showOnWebsite: formData.showOnWebsite,
       });
-    }, 300);
+      onSaved?.();
+      onOpenChange(false);
+      setTimeout(() => {
+        setFormData({
+          category: 'location',
+          title: '',
+          description: '',
+          priority: 'high',
+          tags: [],
+          images: [],
+          showInListing: true,
+          showInFlyer: true,
+          showOnWebsite: true,
+        });
+        setSaveError(null);
+      }, 300);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save selling point');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isFormValid = formData.title.trim() && formData.description.trim();
@@ -539,27 +564,38 @@ export function AddSellingPointModal({ open, onOpenChange }: AddSellingPointModa
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              {!isFormValid && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  <AlertCircle className="w-4 h-4" />
-                  Please fill in all required fields
-                </span>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <Dialog.Close className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                Cancel
-              </Dialog.Close>
-              <button
-                onClick={handleSubmit}
-                disabled={!isFormValid}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                Add Selling Point
-              </button>
+          <div className="border-t border-gray-200 p-6 bg-gray-50 flex flex-col gap-3">
+            {saveError && (
+              <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {saveError}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {!isFormValid && !saveError && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertCircle className="w-4 h-4" />
+                    Please fill in all required fields
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Dialog.Close
+                  disabled={isSaving}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </Dialog.Close>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSaving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  {isSaving ? 'Saving...' : 'Add Selling Point'}
+                </button>
+              </div>
             </div>
           </div>
         </Dialog.Content>

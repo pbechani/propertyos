@@ -23,6 +23,27 @@ import {
 interface LogCommunicationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onLogged?: (entry: LoggedCommunication) => void;
+}
+
+export interface LoggedCommunication {
+  type: string;
+  contact: string;
+  contactRole: string;
+  contactEmail: string;
+  contactPhone: string;
+  subject: string;
+  summary: string;
+  date: string;
+  time: string;
+  duration: string;
+  outcome: string;
+  followUpRequired: boolean;
+  followUpDetails: string;
+  followUpDate: string;
+  tags: string[];
 }
 
 const communicationTypes = [
@@ -33,15 +54,6 @@ const communicationTypes = [
   { id: 'text', label: 'Text Message', icon: MessageSquare, color: 'text-purple-600 bg-purple-50 border-purple-200' },
   { id: 'video-call', label: 'Video Call', icon: Video, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   { id: 'in-person', label: 'In-Person Meeting', icon: Users, color: 'text-orange-600 bg-orange-50 border-orange-200' }
-];
-
-const contactSuggestions = [
-  { name: 'Jennifer Martinez', role: 'Prospective Buyer', email: 'jennifer.m@email.com', phone: '(310) 555-0123' },
-  { name: 'Robert Chen', role: "Buyer's Agent", email: 'robert.chen@realty.com', phone: '(310) 555-0456' },
-  { name: 'Alex Thompson', role: 'Prospective Buyer', email: 'alex.t@email.com', phone: '(310) 555-0789' },
-  { name: 'Jessica Martin', role: 'Interested Buyer', email: 'jessica.m@email.com', phone: '(310) 555-0321' },
-  { name: 'Sarah Kim', role: 'Co-listing Agent', email: 'sarah.kim@agency.com', phone: '(310) 555-0654' },
-  { name: 'Property Owner', role: 'Seller', email: 'owner@email.com', phone: '(310) 555-0987' }
 ];
 
 const outcomeOptions = [
@@ -55,7 +67,7 @@ const outcomeOptions = [
   'Negative - Not interested'
 ];
 
-export function LogCommunicationModal({ open, onOpenChange }: LogCommunicationModalProps) {
+export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommunicationModalProps) {
   const [formData, setFormData] = useState({
     type: 'call-out',
     contact: '',
@@ -75,22 +87,10 @@ export function LogCommunicationModal({ open, onOpenChange }: LogCommunicationMo
     attachments: [] as string[]
   });
 
-  const [showContactSuggestions, setShowContactSuggestions] = useState(false);
   const [customTag, setCustomTag] = useState('');
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSelectContact = (contact: typeof contactSuggestions[0]) => {
-    setFormData(prev => ({
-      ...prev,
-      contact: contact.name,
-      contactRole: contact.role,
-      contactEmail: contact.email,
-      contactPhone: contact.phone
-    }));
-    setShowContactSuggestions(false);
   };
 
   const handleAddTag = () => {
@@ -111,7 +111,9 @@ export function LogCommunicationModal({ open, onOpenChange }: LogCommunicationMo
   };
 
   const handleSubmit = () => {
-    console.log('Logging communication:', formData);
+    if (onLogged) {
+      onLogged({ ...formData });
+    }
     onOpenChange(false);
     // Reset form
     setFormData({
@@ -197,35 +199,13 @@ export function LogCommunicationModal({ open, onOpenChange }: LogCommunicationMo
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Contact Name <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <input
+                <input
                     type="text"
                     value={formData.contact}
-                    onChange={(e) => {
-                      handleInputChange('contact', e.target.value);
-                      setShowContactSuggestions(e.target.value.length > 0);
-                    }}
-                    onFocus={() => setShowContactSuggestions(true)}
-                    placeholder="Enter name or select from recent contacts"
+                    onChange={(e) => handleInputChange('contact', e.target.value)}
+                    placeholder="Enter contact name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  {showContactSuggestions && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                      {contactSuggestions
-                        .filter(c => c.name.toLowerCase().includes(formData.contact.toLowerCase()) || formData.contact === '')
-                        .map((contact, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleSelectContact(contact)}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                          >
-                            <div className="font-medium text-sm">{contact.name}</div>
-                            <div className="text-xs text-gray-500">{contact.role} • {contact.phone}</div>
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

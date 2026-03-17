@@ -37,6 +37,11 @@ import {
 } from './neighbourhood.controller';
 import { ComparisonService } from './comparison.service';
 import { SellerDashboardService } from './seller-dashboard.service';
+import { PropertyDocumentService } from './property-document.service';
+import { InspectionRequestService } from './inspection-request.service';
+import { SellingPointService } from './selling-point.service';
+import { NoteService } from './note.service';
+import { PropertyConditionService } from './property-condition.service';
 
 @Module({
   controllers: [
@@ -89,6 +94,11 @@ import { SellerDashboardService } from './seller-dashboard.service';
     ComparisonService,
     SellerDashboardService,
     NotificationService,
+    PropertyDocumentService,
+    PropertyConditionService,
+    InspectionRequestService,
+    SellingPointService,
+    NoteService,
   ],
   exports: [PropertyService, PropertyAuditService],
 })

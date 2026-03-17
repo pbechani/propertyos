@@ -1,9 +1,10 @@
 'use client';
 
-import { Star, Plus, Edit2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Star, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { AddSellingPointModal } from './AddSellingPointModal';
 import { EditSellingPointModal } from './EditSellingPointModal';
+import { propertiesApi } from '@/lib/api-client';
 
 interface SellingPoint {
   id: string;
@@ -14,11 +15,42 @@ interface SellingPoint {
 
 interface Props { propertyId: string; authToken: string; }
 
-export function SellingPoints({ propertyId: _propertyId, authToken: _authToken }: Props) {
-  const [sellingPoints, _setSellingPoints] = useState<SellingPoint[]>([]);
+export function SellingPoints({ propertyId, authToken }: Props) {
+  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSellingPoint, setSelectedSellingPoint] = useState<SellingPoint | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const data = await propertiesApi.listSellingPoints(authToken, propertyId);
+      setSellingPoints(data.map((p: { id: string; title: string; description: string; priority: string }) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        priority: p.priority as 'high' | 'medium' | 'low',
+      })));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load selling points');
+    }
+  }, [authToken, propertyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(id);
+    try {
+      await propertiesApi.deleteSellingPoint(authToken, propertyId, id);
+      setSellingPoints(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to delete selling point');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -45,6 +77,13 @@ export function SellingPoints({ propertyId: _propertyId, authToken: _authToken }
           Add Selling Point
         </button>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {loadError}
+        </div>
+      )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
@@ -85,7 +124,11 @@ export function SellingPoints({ propertyId: _propertyId, authToken: _authToken }
                       >
                         <Edit2 className="w-4 h-4 text-gray-500" />
                       </button>
-                      <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                      <button
+                        className="p-1.5 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                        disabled={isDeleting === point.id}
+                        onClick={() => handleDelete(point.id)}
+                      >
                         <Trash2 className="w-4 h-4 text-gray-500" />
                       </button>
                     </div>
@@ -111,11 +154,17 @@ export function SellingPoints({ propertyId: _propertyId, authToken: _authToken }
       <AddSellingPointModal
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
+        propertyId={propertyId}
+        authToken={authToken}
+        onSaved={load}
       />
       <EditSellingPointModal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         sellingPoint={selectedSellingPoint}
+        propertyId={propertyId}
+        authToken={authToken}
+        onSaved={load}
       />
     </div>
   );

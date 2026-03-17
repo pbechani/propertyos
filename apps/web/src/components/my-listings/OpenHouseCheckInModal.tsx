@@ -204,7 +204,7 @@ export function OpenHouseCheckInModal({ open, onOpenChange, authToken, openHouse
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50" />
-        <Dialog.Content className="fixed inset-0 md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-white md:rounded-xl shadow-2xl w-full md:max-w-6xl md:max-h-[95vh] overflow-hidden z-50 flex flex-col">
+        <Dialog.Content className="fixed inset-0 md:inset-auto md:top-[1vh] md:left-1/2 md:-translate-x-1/2 bg-white md:rounded-xl shadow-2xl w-full md:max-w-6xl md:h-[98vh] overflow-hidden z-50 flex flex-col">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
             <div className="flex items-center justify-between mb-4">

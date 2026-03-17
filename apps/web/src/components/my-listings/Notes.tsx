@@ -1,9 +1,10 @@
 'use client';
 
-import { StickyNote, Plus, Edit2, Trash2, Clock, Pin } from 'lucide-react';
-import { useState } from 'react';
+import { StickyNote, Plus, Edit2, Trash2, Clock, Pin, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { AddNoteModal } from './AddNoteModal';
 import { EditNoteModal } from './EditNoteModal';
+import { propertiesApi } from '@/lib/api-client';
 
 interface Note {
   id: string;
@@ -16,11 +17,60 @@ interface Note {
 
 interface Props { propertyId: string; authToken: string; }
 
-export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props) {
-  const [notes, _setNotes] = useState<Note[]>([]);
+export function Notes({ propertyId, authToken }: Props) {
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isTogglingPin, setIsTogglingPin] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const data = await propertiesApi.listNotes(authToken, propertyId);
+      setNotes(data.map(n => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        date: n.created_at,
+        pinned: n.is_pinned,
+        category: n.category,
+      })));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load notes');
+    }
+  }, [authToken, propertyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(id);
+    try {
+      await propertiesApi.deleteNote(authToken, propertyId, id);
+      setNotes(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to delete note');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleTogglePin = async (note: Note) => {
+    setIsTogglingPin(note.id);
+    try {
+      await propertiesApi.updateNote(authToken, propertyId, note.id, { isPinned: !note.pinned });
+      setNotes(prev => prev.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n).sort((a, b) => {
+        if (a.pinned === b.pinned) return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return a.pinned ? -1 : 1;
+      }));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to update note');
+    } finally {
+      setIsTogglingPin(null);
+    }
+  };
 
   const pinnedNotes = notes.filter(note => note.pinned);
   const regularNotes = notes.filter(note => !note.pinned);
@@ -37,6 +87,13 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
           Add Note
         </button>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {loadError}
+        </div>
+      )}
 
       {notes.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
@@ -69,7 +126,11 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <button className="p-1.5 hover:bg-yellow-100 rounded transition-colors">
+                        <button
+                          className="p-1.5 hover:bg-yellow-100 rounded transition-colors disabled:opacity-50"
+                          disabled={isTogglingPin === note.id}
+                          onClick={() => handleTogglePin(note)}
+                        >
                           <Pin className="w-4 h-4 text-yellow-700 fill-yellow-700" />
                         </button>
                         <button
@@ -81,7 +142,11 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
                         >
                           <Edit2 className="w-4 h-4 text-gray-500" />
                         </button>
-                        <button className="p-1.5 hover:bg-yellow-100 rounded transition-colors">
+                        <button
+                          className="p-1.5 hover:bg-yellow-100 rounded transition-colors disabled:opacity-50"
+                          disabled={isDeleting === note.id}
+                          onClick={() => handleDelete(note.id)}
+                        >
                           <Trash2 className="w-4 h-4 text-gray-500" />
                         </button>
                       </div>
@@ -117,7 +182,11 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                      <button
+                        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                        disabled={isTogglingPin === note.id}
+                        onClick={() => handleTogglePin(note)}
+                      >
                         <Pin className="w-4 h-4 text-gray-500" />
                       </button>
                       <button
@@ -129,7 +198,11 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
                       >
                         <Edit2 className="w-4 h-4 text-gray-500" />
                       </button>
-                      <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                      <button
+                        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                        disabled={isDeleting === note.id}
+                        onClick={() => handleDelete(note.id)}
+                      >
                         <Trash2 className="w-4 h-4 text-gray-500" />
                       </button>
                     </div>
@@ -145,11 +218,17 @@ export function Notes({ propertyId: _propertyId, authToken: _authToken }: Props)
       <AddNoteModal
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
+        propertyId={propertyId}
+        authToken={authToken}
+        onSaved={load}
       />
       <EditNoteModal
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         note={selectedNote}
+        propertyId={propertyId}
+        authToken={authToken}
+        onSaved={load}
       />
     </div>
   );

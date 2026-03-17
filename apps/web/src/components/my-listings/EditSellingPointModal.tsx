@@ -1,8 +1,9 @@
 'use client';
 
-import { X, Star, Sparkles, TrendingUp, Award, Save } from 'lucide-react';
+import { X, Star, Sparkles, TrendingUp, Award, Save, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { propertiesApi } from '@/lib/api-client';
 
 interface SellingPoint {
   id: string;
@@ -15,7 +16,9 @@ interface EditSellingPointModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sellingPoint: SellingPoint | null;
-  onSave?: (sellingPoint: SellingPoint) => void;
+  propertyId: string;
+  authToken: string;
+  onSaved?: () => void;
 }
 
 const priorityOptions = [
@@ -53,12 +56,15 @@ const exampleSellingPoints = [
   'Hardwood floors throughout main level',
 ];
 
-export function EditSellingPointModal({ open, onOpenChange, sellingPoint, onSave }: EditSellingPointModalProps) {
+export function EditSellingPointModal({ open, onOpenChange, sellingPoint, propertyId, authToken, onSaved }: EditSellingPointModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     priority: 'medium' as 'high' | 'medium' | 'low',
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (sellingPoint) {
@@ -70,15 +76,24 @@ export function EditSellingPointModal({ open, onOpenChange, sellingPoint, onSave
     }
   }, [sellingPoint]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (sellingPoint && onSave) {
-      onSave({
-        ...sellingPoint,
-        ...formData,
+    if (!sellingPoint) return;
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.updateSellingPoint(authToken, propertyId, sellingPoint.id, {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
       });
+      onSaved?.();
+      onOpenChange(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to update selling point');
+    } finally {
+      setIsSaving(false);
     }
-    onOpenChange(false);
   };
 
   const selectedPriority = priorityOptions.find(p => p.value === formData.priority);
@@ -321,21 +336,31 @@ export function EditSellingPointModal({ open, onOpenChange, sellingPoint, onSave
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Save Changes
-              </button>
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col gap-3 bg-gray-50">
+              {saveError && (
+                <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {saveError}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => onOpenChange(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </form>
         </Dialog.Content>

@@ -23,10 +23,13 @@ import {
   Key,
   Sparkles
 } from 'lucide-react';
+import { propertiesApi } from '@/lib/api-client';
 
 interface RequestInspectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
   propertyAddress?: string;
 }
 
@@ -123,42 +126,6 @@ const inspectionTypes = [
   }
 ];
 
-const preferredInspectors = [
-  {
-    id: 'inspector-1',
-    name: 'Michael Thompson',
-    company: 'Premier Home Inspections',
-    rating: 4.9,
-    reviews: 127,
-    specialties: ['General', 'Structural'],
-    phone: '(555) 123-4567',
-    email: 'michael@premierhome.com',
-    available: true
-  },
-  {
-    id: 'inspector-2',
-    name: 'Sarah Rodriguez',
-    company: 'Trusted Property Inspectors',
-    rating: 4.8,
-    reviews: 98,
-    specialties: ['General', 'HVAC', 'Electrical'],
-    phone: '(555) 234-5678',
-    email: 'sarah@trustedprop.com',
-    available: true
-  },
-  {
-    id: 'inspector-3',
-    name: 'James Chen',
-    company: 'Complete Inspections LLC',
-    rating: 5.0,
-    reviews: 156,
-    specialties: ['All Types'],
-    phone: '(555) 345-6789',
-    email: 'james@completeinsp.com',
-    available: false
-  }
-];
-
 const urgencyLevels = [
   {
     value: 'standard',
@@ -182,15 +149,18 @@ const urgencyLevels = [
   }
 ];
 
-export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: RequestInspectionModalProps) {
+export function RequestInspectionModal({ open, onOpenChange, propertyId, authToken, propertyAddress }: RequestInspectionModalProps) {
   const [formData, setFormData] = useState({
-    inspectionTypes: ['general', 'pest'] as string[],
+    inspectionTypes: [] as string[],
     preferredDate: '',
     preferredTime: '',
     alternateDate: '',
     alternateTime: '',
-    selectedInspector: 'inspector-1',
     urgency: 'standard',
+    inspectorName: '',
+    inspectorCompany: '',
+    inspectorPhone: '',
+    inspectorEmail: '',
     accessMethod: 'lockbox',
     lockboxCode: '',
     contactPerson: '',
@@ -199,8 +169,11 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
     areasOfConcern: '',
     specialInstructions: '',
     notifyClient: true,
-    sendReportTo: 'both'
+    sendReportTo: 'both',
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const selectedInspectionTypes = inspectionTypes.filter(type => 
     formData.inspectionTypes.includes(type.id)
@@ -221,18 +194,45 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
     return total;
   };
 
-  const handleSubmit = () => {
-    console.log('Requesting inspection:', formData);
-    onOpenChange(false);
+  const handleSubmit = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await propertiesApi.createInspectionRequest(authToken, propertyId, {
+        inspectionTypes: formData.inspectionTypes,
+        urgency: formData.urgency,
+        preferredDate: formData.preferredDate,
+        preferredTime: formData.preferredTime,
+        alternateDate: formData.alternateDate || undefined,
+        alternateTime: formData.alternateTime || undefined,
+        inspectorName: formData.inspectorName || undefined,
+        inspectorCompany: formData.inspectorCompany || undefined,
+        inspectorPhone: formData.inspectorPhone || undefined,
+        inspectorEmail: formData.inspectorEmail || undefined,
+        accessMethod: formData.accessMethod,
+        lockboxCode: formData.lockboxCode || undefined,
+        contactPerson: formData.contactPerson || undefined,
+        contactPhone: formData.contactPhone || undefined,
+        contactEmail: formData.contactEmail || undefined,
+        areasOfConcern: formData.areasOfConcern || undefined,
+        specialInstructions: formData.specialInstructions || undefined,
+        notifyClient: formData.notifyClient,
+        sendReportTo: formData.sendReportTo,
+      });
+      onOpenChange(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to request inspection');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isFormValid = () => {
     return (
       formData.inspectionTypes.length > 0 &&
-      formData.preferredDate &&
-      formData.preferredTime &&
-      formData.selectedInspector &&
-      (formData.accessMethod !== 'contact' || formData.contactPerson)
+      formData.preferredDate !== '' &&
+      formData.preferredTime !== '' &&
+      (formData.accessMethod !== 'contact' || formData.contactPerson !== '')
     );
   };
 
@@ -256,7 +256,7 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden z-50 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-linear-to-r from-blue-50 to-indigo-50">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Search className="w-6 h-6 text-white" />
@@ -266,7 +266,7 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
                   Request Property Inspection
                 </Dialog.Title>
                 <Dialog.Description className="text-sm text-gray-600 mt-1">
-                  {propertyAddress || '123 Main Street, Anytown, CA 12345'}
+                  {propertyAddress || 'Address not provided'}
                 </Dialog.Description>
               </div>
             </div>
@@ -326,7 +326,7 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
 
             {/* Selected Inspections Summary */}
             {formData.inspectionTypes.length > 0 && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div className="flex-1">
@@ -470,73 +470,60 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
               </div>
             </div>
 
-            {/* Select Inspector */}
+            {/* Inspector Details */}
             <div>
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <User className="w-5 h-5" />
-                Select Inspector
+                Inspector Details{' '}
+                <span className="text-sm font-normal text-gray-500">(Optional — leave blank if unknown)</span>
               </h3>
-              <div className="space-y-3">
-                {preferredInspectors.map((inspector) => {
-                  const isSelected = formData.selectedInspector === inspector.id;
-                  
-                  return (
-                    <button
-                      key={inspector.id}
-                      onClick={() => setFormData(prev => ({ ...prev, selectedInspector: inspector.id }))}
-                      disabled={!inspector.available}
-                      className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
-                        isSelected 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : inspector.available
-                            ? 'border-gray-200 hover:border-gray-300 bg-white'
-                            : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="font-semibold text-gray-900">{inspector.name}</div>
-                            <div className="flex items-center gap-1 text-amber-500">
-                              <span className="text-sm">★</span>
-                              <span className="text-sm font-medium">{inspector.rating}</span>
-                              <span className="text-xs text-gray-500">({inspector.reviews})</span>
-                            </div>
-                            {!inspector.available && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
-                                Unavailable
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600 mb-2">{inspector.company}</div>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {inspector.specialties.map(specialty => (
-                              <span
-                                key={specialty}
-                                className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded"
-                              >
-                                {specialty}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {inspector.phone}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {inspector.email}
-                            </span>
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <CheckCircle2 className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Inspector Name</label>
+                  <input
+                    type="text"
+                    value={formData.inspectorName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, inspectorName: e.target.value }))}
+                    placeholder="Full name"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                  <input
+                    type="text"
+                    value={formData.inspectorCompany}
+                    onChange={(e) => setFormData(prev => ({ ...prev, inspectorCompany: e.target.value }))}
+                    placeholder="Inspection company"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Phone className="w-4 h-4 inline mr-1" />
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.inspectorPhone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, inspectorPhone: e.target.value }))}
+                    placeholder="+27 ..."
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Mail className="w-4 h-4 inline mr-1" />
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.inspectorEmail}
+                    onChange={(e) => setFormData(prev => ({ ...prev, inspectorEmail: e.target.value }))}
+                    placeholder="inspector@example.com"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -708,7 +695,7 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
             </div>
 
             {/* Cost Summary */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
+            <div className="bg-linear-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-green-700" />
@@ -726,27 +713,36 @@ export function RequestInspectionModal({ open, onOpenChange, propertyAddress }: 
 
           {/* Footer */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
+            {saveError && (
+              <div className="mb-4 flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {saveError}
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                {!isFormValid() && (
+                {!isFormValid() && !saveError && (
                   <span className="flex items-center gap-1 text-amber-600">
                     <AlertCircle className="w-4 h-4" />
                     Please fill in all required fields
                   </span>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-3">
-                <Dialog.Close className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                <Dialog.Close
+                  disabled={isSaving}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
                   Cancel
                 </Dialog.Close>
                 <button
                   onClick={handleSubmit}
-                  disabled={!isFormValid()}
+                  disabled={!isFormValid() || isSaving}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <CheckCircle2 className="w-5 h-5" />
-                  Request Inspection
+                  {isSaving ? 'Submitting...' : 'Request Inspection'}
                 </button>
               </div>
             </div>

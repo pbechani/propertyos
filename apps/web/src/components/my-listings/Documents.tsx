@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, Upload, Download, Trash2, Eye, Search, FolderOpen, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { UploadDocumentModal } from './UploadDocumentModal';
+import { UploadDocumentModal, UploadedDocumentRecord } from './UploadDocumentModal';
+import { propertiesApi } from '@/lib/api-client';
 
 interface ListingDocument {
   id: string;
@@ -12,19 +13,61 @@ interface ListingDocument {
   uploadedBy: string;
   fileSize: string;
   fileType: string;
+  fileUrl: string;
   status: 'current' | 'expired' | 'pending-signature' | 'draft';
   required: boolean;
+}
+
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function toListingDocument(doc: UploadedDocumentRecord): ListingDocument {
+  return {
+    id: doc.id,
+    name: doc.title,
+    category: doc.category.charAt(0).toUpperCase() + doc.category.slice(1),
+    uploadedDate: doc.created_at,
+    uploadedBy: 'You',
+    fileSize: formatFileSize(doc.file_size),
+    fileType: doc.file_type?.includes('pdf') ? 'PDF' : doc.file_type?.split('/')[1]?.toUpperCase() ?? '—',
+    fileUrl: doc.file_url,
+    status: (doc.status as ListingDocument['status']) ?? 'current',
+    required: doc.is_required,
+  };
 }
 
 const categories = ['All', 'Listing', 'Disclosures', 'HOA', 'Offers', 'Inspections', 'Marketing', 'Pricing'];
 
 interface Props { propertyId: string; authToken: string; }
 
-export function Documents({ propertyId: _propertyId, authToken: _authToken }: Props) {
-  const [docs, _setDocs] = useState<ListingDocument[]>([]);
+export function Documents({ propertyId, authToken }: Props) {
+  const [docs, setDocs] = useState<ListingDocument[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  const loadDocuments = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const rows = await propertiesApi.listDocuments(authToken, propertyId);
+      setDocs(rows.map(toListingDocument));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load documents');
+    }
+  }, [authToken, propertyId]);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
+
+  const handleUploaded = (doc: UploadedDocumentRecord) => {
+    setDocs(prev => [toListingDocument(doc), ...prev]);
+  };
 
   const filteredDocs = docs.filter(doc => {
     const matchesCategory = selectedCategory === 'All' || doc.category === selectedCategory;
@@ -47,6 +90,18 @@ export function Documents({ propertyId: _propertyId, authToken: _authToken }: Pr
     }
   };
 
+  const handleView = (doc: ListingDocument) => {
+    window.open(doc.fileUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDownload = (doc: ListingDocument) => {
+    const a = document.createElement('a');
+    a.href = doc.fileUrl;
+    a.download = doc.name;
+    a.rel = 'noopener noreferrer';
+    a.click();
+  };
+
   const pendingSignature = docs.filter(d => d.status === 'pending-signature').length;
   const requiredDocs = docs.filter(d => d.required);
   const completedRequired = requiredDocs.filter(d => d.status === 'current').length;
@@ -55,6 +110,11 @@ export function Documents({ propertyId: _propertyId, authToken: _authToken }: Pr
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Documents</h2>
+        {loadError && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" />{loadError}
+          </p>
+        )}
         <button
           onClick={() => setIsUploadModalOpen(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -149,10 +209,10 @@ export function Documents({ propertyId: _propertyId, authToken: _authToken }: Pr
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View">
+                <button onClick={() => handleView(doc)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View">
                   <Eye className="w-4 h-4 text-gray-500" />
                 </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
+                <button onClick={() => handleDownload(doc)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
                   <Download className="w-4 h-4 text-gray-500" />
                 </button>
                 <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Delete">
@@ -192,6 +252,9 @@ export function Documents({ propertyId: _propertyId, authToken: _authToken }: Pr
       <UploadDocumentModal
         open={isUploadModalOpen}
         onOpenChange={setIsUploadModalOpen}
+        propertyId={propertyId}
+        authToken={authToken}
+        onUploaded={handleUploaded}
       />
     </div>
   );
