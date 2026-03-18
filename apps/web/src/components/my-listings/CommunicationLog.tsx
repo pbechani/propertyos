@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Phone, MessageSquare, Video, User, Clock, Plus, Search, PhoneOutgoing, PhoneIncoming, MailOpen, Send } from 'lucide-react';
 import { LogCommunicationModal, type LoggedCommunication } from './LogCommunicationModal';
+import { propertiesApi, type PropertyListing } from '@/lib/api-client';
+import { CommunicationDetailModal } from './CommunicationDetailModal';
 
-interface Communication {
+export interface Communication {
   id: string;
-  type: 'call-out' | 'call-in' | 'email-sent' | 'email-received' | 'text' | 'video-call';
+  type: 'call-out' | 'call-in' | 'email-sent' | 'email-received' | 'text' | 'video-call' | 'in-person';
   contact: string;
   contactRole: string;
   subject: string;
@@ -73,28 +75,52 @@ const getTypeColor = (type: string) => {
   }
 };
 
-interface Props { propertyId: string; authToken: string; }
+interface Props { propertyId: string; authToken: string; property?: PropertyListing | null; }
 
-export function CommunicationLog({ propertyId, authToken }: Props) {
+export function CommunicationLog({ propertyId, authToken, property }: Props) {
   const [comms, setComms] = useState<Communication[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [selectedComm, setSelectedComm] = useState<Communication | null>(null);
 
+  /** Map a raw API row (snake_case) to a Communication display object. */
+  const rowToComm = (r: Record<string, unknown>): Communication => ({
+    id: r['id'] as string,
+    type: r['type'] as Communication['type'],
+    contact: r['contact_name'] as string,
+    contactRole: (r['contact_role'] as string | null) ?? '',
+    subject: r['subject'] as string,
+    summary: r['summary'] as string,
+    date: r['communication_date'] as string,
+    duration: (r['duration'] as string | null) ?? undefined,
+    outcome: (r['outcome'] as string | null) ?? undefined,
+    followUp: r['follow_up_required']
+      ? ((r['follow_up_details'] as string | null) ?? undefined)
+      : undefined,
+  });
+
+  const loadLogs = useCallback(async () => {
+    try {
+      const rows = await propertiesApi.listCommunicationLogs(authToken, propertyId);
+      setComms(rows.map(rowToComm));
+    } catch {
+      // Non-critical — leave list unchanged on error
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken, propertyId]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  /** Called by LogCommunicationModal after a successful save.
+   *  `entry` is the raw DB row (snake_case) returned by the API.
+   *  We map it directly and prepend — no extra round-trip needed because
+   *  createCommunicationLog already busted the GET cache. */
   const handleLogged = (entry: LoggedCommunication) => {
-    const newComm: Communication = {
-      id: crypto.randomUUID(),
-      type: entry.type as Communication['type'],
-      contact: entry.contact,
-      contactRole: entry.contactRole,
-      subject: entry.subject,
-      summary: entry.summary,
-      date: `${entry.date} ${entry.time}`,
-      duration: entry.duration || undefined,
-      outcome: entry.outcome || undefined,
-      followUp: entry.followUpRequired && entry.followUpDetails ? entry.followUpDetails : undefined,
-    };
-    setComms((prev) => [newComm, ...prev]);
+    const r = entry as unknown as Record<string, unknown>;
+    setComms((prev) => [rowToComm(r), ...prev]);
   };
 
   const filtered = comms.filter(c => {
@@ -178,7 +204,7 @@ export function CommunicationLog({ propertyId, authToken }: Props) {
       {/* Timeline */}
       <div className="space-y-3">
         {filtered.map((comm) => (
-          <div key={comm.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div key={comm.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedComm(comm)}>
             <div className="flex items-start gap-4">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getTypeColor(comm.type)}`}>
                 {getTypeIcon(comm.type)}
@@ -250,6 +276,16 @@ export function CommunicationLog({ propertyId, authToken }: Props) {
         authToken={authToken}
         onLogged={handleLogged}
       />
+
+      {selectedComm && (
+        <CommunicationDetailModal
+          open={!!selectedComm}
+          onOpenChange={(open) => { if (!open) setSelectedComm(null); }}
+          comm={selectedComm}
+          property={property}
+          propertyAddress={property?.location?.address_line1 ?? undefined}
+        />
+      )}
     </div>
   );
 }

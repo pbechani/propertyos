@@ -126,6 +126,10 @@ const inspectionTypes = [
   }
 ];
 
+export const INSPECTION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  inspectionTypes.map((t) => [t.id, t.label])
+);
+
 const urgencyLevels = [
   {
     value: 'standard',

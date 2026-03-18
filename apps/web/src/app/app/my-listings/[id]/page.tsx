@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   MapPin, Bed, Bath, Maximize, ArrowLeft, Bot, FileText, PhoneCall, Loader2,
@@ -53,8 +53,9 @@ function getInitials(firstName: string, lastName: string): string {
 export default function ListingDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const listingId = params.id as string;
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'details');
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [property, setProperty] = useState<PropertyListing | null>(null);
   const [stats, setStats] = useState<PropertyStats | null>(null);
@@ -297,9 +298,9 @@ export default function ListingDetailPage() {
               <div className="p-6">
                 {activeTab === 'details'    && property && <ListingDetails property={property} />}
                 {activeTab === 'viewings'   && <ScheduledViewings propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'enquiries'  && <Enquiries propertyId={listingId} authToken={authToken} />}
+                {activeTab === 'enquiries'  && <Enquiries propertyId={listingId} authToken={authToken} property={property} />}
                 {activeTab === 'openhouses' && <OpenHouses propertyId={listingId} authToken={authToken} propertyAddress={address} currentAgentName={agentName} />}
-                {activeTab === 'comms'      && <CommunicationLog propertyId={listingId} authToken={authToken} />}
+                {activeTab === 'comms'      && <CommunicationLog propertyId={listingId} authToken={authToken} property={property} />}
                 {activeTab === 'documents'  && <Documents propertyId={listingId} authToken={authToken} />}
                 {activeTab === 'condition'  && <PropertyCondition propertyId={listingId} authToken={authToken} />}
                 {activeTab === 'selling'    && <SellingPoints propertyId={listingId} authToken={authToken} />}

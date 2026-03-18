@@ -24,6 +24,7 @@ import { PropertyConditionService } from './property-condition.service';
 import { InspectionRequestService } from './inspection-request.service';
 import { SellingPointService } from './selling-point.service';
 import { NoteService } from './note.service';
+import { CommunicationLogService } from './communication-log.service';
 import { ComparisonService } from './comparison.service';
 import { SellerDashboardService } from './seller-dashboard.service';
 import {
@@ -45,6 +46,7 @@ export class PropertyController {
     private readonly inspectionRequestService: InspectionRequestService,
     private readonly sellingPointService: SellingPointService,
     private readonly noteService: NoteService,
+    private readonly communicationLogService: CommunicationLogService,
     private readonly comparisonService: ComparisonService,
   ) {}
 
@@ -702,6 +704,82 @@ export class PropertyController {
     @Request() req: AuthRequest,
   ) {
     await this.noteService.delete(noteId, req.user.sub);
+    return { ok: true };
+  }
+
+  /**
+   * POST /api/v1/properties/:id/communication-logs
+   * Log a communication entry for a listing. [agent, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Post(':id/communication-logs')
+  async createCommunicationLog(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: Record<string, unknown>,
+    @Request() req: AuthRequest,
+  ) {
+    return this.communicationLogService.create({
+      propertyId: id,
+      loggedBy: req.user.sub,
+      type: body['type'] as string,
+      contactName: body['contactName'] as string,
+      contactRole: (body['contactRole'] as string | undefined) ?? null,
+      contactEmail: (body['contactEmail'] as string | undefined) ?? null,
+      contactPhone: (body['contactPhone'] as string | undefined) ?? null,
+      subject: body['subject'] as string,
+      summary: body['summary'] as string,
+      communicationDate: body['communicationDate'] as string,
+      duration: (body['duration'] as string | undefined) ?? null,
+      outcome: (body['outcome'] as string | undefined) ?? null,
+      followUpRequired: Boolean(body['followUpRequired']),
+      followUpDetails: (body['followUpDetails'] as string | undefined) ?? null,
+      followUpDate: (body['followUpDate'] as string | undefined) ?? null,
+      tags: (body['tags'] as string[] | undefined) ?? [],
+    });
+  }
+
+  /**
+   * GET /api/v1/properties/:id/communication-logs
+   * List communication logs for a listing. [agent, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Get(':id/communication-logs')
+  async listCommunicationLogs(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.communicationLogService.list(id, req.user.sub);
+  }
+
+  /**
+   * PATCH /api/v1/properties/:propertyId/communication-logs/:logId
+   * Update a communication log entry. [agent, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':propertyId/communication-logs/:logId')
+  async updateCommunicationLog(
+    @Param('logId', ParseUUIDPipe) logId: string,
+    @Body() body: Record<string, unknown>,
+    @Request() req: AuthRequest,
+  ) {
+    return this.communicationLogService.update(logId, req.user.sub, body as any);
+  }
+
+  /**
+   * DELETE /api/v1/properties/:propertyId/communication-logs/:logId
+   * Delete a communication log entry. [agent, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Delete(':propertyId/communication-logs/:logId')
+  async deleteCommunicationLog(
+    @Param('logId', ParseUUIDPipe) logId: string,
+    @Request() req: AuthRequest,
+  ) {
+    await this.communicationLogService.delete(logId, req.user.sub);
     return { ok: true };
   }
 }

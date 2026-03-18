@@ -3,8 +3,10 @@ import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { LeadActivityService } from './lead-activity.service';
 import { LeadTaskService } from './lead-task.service';
+import { IdentityModule } from '../identity/identity.module';
 
 @Module({
+  imports: [IdentityModule],
   controllers: [LeadsController],
   providers: [LeadsService, LeadActivityService, LeadTaskService],
   exports: [LeadsService],

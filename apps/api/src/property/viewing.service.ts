@@ -888,6 +888,18 @@ The PropertyOS Team
 
     const viewing = rows[0];
 
+    // Store reminder_send_at when the agent requested a reminder
+    if (dto.sendReminder && dto.reminderMinutesBefore != null) {
+      const reminderAt = new Date(
+        new Date(dto.scheduledAt).getTime() - dto.reminderMinutesBefore * 60_000,
+      );
+      await this.prisma.$queryRaw`
+        UPDATE property.viewings
+        SET    reminder_send_at = ${reminderAt.toISOString()}::timestamptz
+        WHERE  id = ${viewing.id}::uuid
+      `;
+    }
+
     await this.audit.log({
       actorId: agentId,
       actorRole: 'agent',
@@ -899,6 +911,65 @@ The PropertyOS Team
       ipAddress,
       userAgent,
     });
+
+    // Send confirmation email (with optional ICS attachment) to buyer
+    if (dto.sendConfirmation && dto.buyerContactEmail) {
+      const propertyTitle = await this.getPropertyTitle(propertyId);
+      const agent = await this.getUserContact(agentId);
+      const scheduledDate = new Date(dto.scheduledAt);
+      const scheduledStr = scheduledDate.toLocaleString('en-ZA', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      });
+      const duration = dto.durationMinutes ?? 30;
+
+      const emailBody = [
+        `Hi ${dto.buyerContactName},`,
+        ``,
+        `Your property viewing has been booked.`,
+        ``,
+        `Property:  ${propertyTitle}`,
+        `Date/Time: ${scheduledStr}`,
+        `Duration:  ${duration} minutes`,
+        `Type:      ${dto.viewingType === 'virtual' ? 'Virtual' : 'In-person'}`,
+        dto.virtualLink ? `Link:      ${dto.virtualLink}` : null,
+        ``,
+        `If you have any questions, please contact the agent directly.`,
+        ``,
+        `Kind regards,`,
+        `The PRIBEC Team`,
+      ]
+        .filter((l): l is string => l !== null)
+        .join('\n');
+
+      const attachments = dto.addCalendarInvite
+        ? [
+            {
+              filename: 'viewing.ics',
+              content: this.generateIcs({
+                uid: viewing.id,
+                startIso: dto.scheduledAt,
+                durationMinutes: duration,
+                summary: `Property Viewing — ${propertyTitle}`,
+                description: `Property viewing booked via PriBeC. Contact your agent for any changes.`,
+                location: propertyTitle,
+                organizerName: agent.full_name ?? 'PriBeC Agent',
+                organizerEmail: agent.email || 'noreply@pribec.co.za',
+                attendeeName: dto.buyerContactName,
+                attendeeEmail: dto.buyerContactEmail,
+              }),
+              contentType: 'text/calendar',
+            },
+          ]
+        : undefined;
+
+      await this.notifications.sendEmail(
+        dto.buyerContactEmail,
+        `Viewing confirmed — ${propertyTitle}`,
+        emailBody,
+        attachments,
+      );
+    }
 
     return viewing;
   }
@@ -1291,6 +1362,43 @@ The PropertyOS Team
         VALUES (${userId}::uuid, ${coId}::uuid, ${type}, ${title}, ${body}, 'viewing')
       `;
     }
+  }
+
+  private generateIcs(params: {
+    uid: string;
+    startIso: string;
+    durationMinutes: number;
+    summary: string;
+    description: string;
+    location: string;
+    organizerName: string;
+    organizerEmail: string;
+    attendeeName: string;
+    attendeeEmail: string;
+  }): string {
+    const fmt = (d: Date): string =>
+      d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const start = new Date(params.startIso);
+    const end = new Date(start.getTime() + params.durationMinutes * 60_000);
+
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//PriBeC//Property Viewing//EN',
+      'METHOD:REQUEST',
+      'BEGIN:VEVENT',
+      `UID:viewing-${params.uid}@pribec`,
+      `DTSTAMP:${fmt(new Date())}`,
+      `DTSTART:${fmt(start)}`,
+      `DTEND:${fmt(end)}`,
+      `SUMMARY:${params.summary}`,
+      `DESCRIPTION:${params.description}`,
+      `LOCATION:${params.location}`,
+      `ORGANIZER;CN=${params.organizerName}:mailto:${params.organizerEmail}`,
+      `ATTENDEE;RSVP=TRUE;CN=${params.attendeeName}:mailto:${params.attendeeEmail}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
   }
 }
 

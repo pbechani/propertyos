@@ -82,9 +82,18 @@ export class InquiryService {
 
     const [rows, countRows] = await Promise.all([
       this.prisma.$queryRaw`
-        SELECT * FROM property.inquiries
-        WHERE property_id = ${propertyId}::uuid
-        ORDER BY created_at DESC
+        SELECT i.*,
+          CASE
+            WHEN i.message NOT LIKE 'Name: %'
+            THEN NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ' ')
+            ELSE NULL
+          END AS requester_name,
+          CASE WHEN i.message NOT LIKE 'Name: %' THEN u.email ELSE NULL END AS requester_email,
+          CASE WHEN i.message NOT LIKE 'Name: %' THEN u.phone ELSE NULL END AS requester_phone
+        FROM property.inquiries i
+        LEFT JOIN identity.users u ON u.id = i.buyer_id
+        WHERE i.property_id = ${propertyId}::uuid
+        ORDER BY i.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `,
       this.prisma.$queryRaw<[{ total: string }]>`

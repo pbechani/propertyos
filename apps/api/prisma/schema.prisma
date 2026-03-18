@@ -822,6 +822,8 @@ model PropertyViewing {
   rescheduled_at     DateTime? @db.Timestamptz(6)
   rescheduled_reason String?
   declined_at        DateTime? @db.Timestamptz(6)
+  reminderSendAt     DateTime? @map("reminder_send_at") @db.Timestamptz(6)
+  reminderSentAt     DateTime? @map("reminder_sent_at") @db.Timestamptz(6)
 
   @@index([propertyId, scheduledAt], map: "idx_viewings_property_scheduled")
   @@index([agentId, scheduledAt], map: "idx_viewings_agent_scheduled")

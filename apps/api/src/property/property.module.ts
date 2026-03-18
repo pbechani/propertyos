@@ -41,6 +41,7 @@ import { PropertyDocumentService } from './property-document.service';
 import { InspectionRequestService } from './inspection-request.service';
 import { SellingPointService } from './selling-point.service';
 import { NoteService } from './note.service';
+import { CommunicationLogService } from './communication-log.service';
 import { PropertyConditionService } from './property-condition.service';
 
 @Module({
@@ -99,6 +100,7 @@ import { PropertyConditionService } from './property-condition.service';
     InspectionRequestService,
     SellingPointService,
     NoteService,
+    CommunicationLogService,
   ],
   exports: [PropertyService, PropertyAuditService],
 })

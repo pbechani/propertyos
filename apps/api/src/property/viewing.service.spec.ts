@@ -421,4 +421,141 @@ describe('ViewingService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('bookForBuyer', () => {
+    const bookedViewing = {
+      ...baseViewing,
+      id: viewingId,
+      status: 'confirmed',
+      agent_notes: JSON.stringify({ bookedByAgent: true, name: 'Jane Doe', email: 'jane@example.com', phone: null, notes: null }),
+    };
+
+    const baseDto = {
+      viewingType: 'physical' as const,
+      scheduledAt: '2026-09-01T10:00:00Z',
+      durationMinutes: 30,
+      buyerContactName: 'Jane Doe',
+      buyerContactEmail: 'jane@example.com',
+    };
+
+    it('inserts a confirmed viewing and returns it', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])   // property lookup
+        .mockResolvedValueOnce([bookedViewing]);         // INSERT RETURNING
+
+      const result = await service.bookForBuyer(propertyId, agentId, baseDto);
+
+      expect(result).toEqual(bookedViewing);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'viewing.agent_booked' }),
+      );
+    });
+
+    it('throws NotFoundException when property does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(
+        service.bookForBuyer(propertyId, agentId, baseDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('stores reminder_send_at when sendReminder is true', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])   // property lookup
+        .mockResolvedValueOnce([bookedViewing])         // INSERT RETURNING
+        .mockResolvedValueOnce(undefined);              // reminder UPDATE
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        sendReminder: true,
+        reminderMinutesBefore: 60,
+      });
+
+      // Third queryRaw call is the reminder UPDATE
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not update reminder_send_at when sendReminder is false', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])
+        .mockResolvedValueOnce([bookedViewing]);
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        sendReminder: false,
+      });
+
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('sends confirmation email when sendConfirmation is true and email is provided', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])   // property lookup
+        .mockResolvedValueOnce([bookedViewing])         // INSERT RETURNING
+        .mockResolvedValueOnce([{ title: 'Sandton Villa' }]) // getPropertyTitle
+        .mockResolvedValueOnce([{ email: 'agent@co.za', full_name: 'Bob Agent' }]); // getUserContact
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        sendConfirmation: true,
+      });
+
+      expect(mockNotifications.sendEmail).toHaveBeenCalledWith(
+        'jane@example.com',
+        expect.stringContaining('confirmed'),
+        expect.stringContaining('Sandton Villa'),
+        undefined, // no ICS
+      );
+    });
+
+    it('includes ICS attachment when addCalendarInvite is true', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])
+        .mockResolvedValueOnce([bookedViewing])
+        .mockResolvedValueOnce([{ title: 'Sandton Villa' }])
+        .mockResolvedValueOnce([{ email: 'agent@co.za', full_name: 'Bob Agent' }]);
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        sendConfirmation: true,
+        addCalendarInvite: true,
+      });
+
+      expect(mockNotifications.sendEmail).toHaveBeenCalledWith(
+        'jane@example.com',
+        expect.any(String),
+        expect.any(String),
+        expect.arrayContaining([
+          expect.objectContaining({ filename: 'viewing.ics', contentType: 'text/calendar' }),
+        ]),
+      );
+    });
+
+    it('does not send email when sendConfirmation is false', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])
+        .mockResolvedValueOnce([bookedViewing]);
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        sendConfirmation: false,
+      });
+
+      expect(mockNotifications.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not send email when buyerContactEmail is missing', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: propertyId }])
+        .mockResolvedValueOnce([bookedViewing]);
+
+      await service.bookForBuyer(propertyId, agentId, {
+        ...baseDto,
+        buyerContactEmail: undefined,
+        sendConfirmation: true,
+      });
+
+      expect(mockNotifications.sendEmail).not.toHaveBeenCalled();
+    });
+  });
 });

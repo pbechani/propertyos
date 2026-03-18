@@ -10,6 +10,8 @@ import {
   Query,
   Request,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
@@ -17,6 +19,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { LeadsService } from './leads.service';
 import { LeadActivityService } from './lead-activity.service';
 import { LeadTaskService } from './lead-task.service';
+import { NotificationService } from '../identity/notification.service';
 import {
   CreateLeadDto,
   UpdateLeadDto,
@@ -24,6 +27,7 @@ import {
   CreateLeadActivityDto,
   CreateLeadTaskDto,
   UpdateLeadTaskDto,
+  SendLeadEmailDto,
 } from './leads.dto';
 import { AuthRequest } from '../common/types';
 
@@ -38,6 +42,7 @@ export class LeadsController {
     private readonly leadsService: LeadsService,
     private readonly activityService: LeadActivityService,
     private readonly taskService: LeadTaskService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -168,5 +173,30 @@ export class LeadsController {
   ) {
     const { sub, roles, active_company_id } = req.user;
     return this.taskService.update(leadId, taskId, sub, roles, active_company_id ?? '', dto);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Send email to lead  — POST /leads/:id/email
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @Post(':id/email')
+  @HttpCode(HttpStatus.OK)
+  async sendEmail(
+    @Request() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SendLeadEmailDto,
+  ): Promise<{ success: boolean }> {
+    const { sub, roles, active_company_id } = req.user;
+    const lead = await this.leadsService.getById(id, sub, roles, active_company_id ?? '');
+    if (!lead.email) {
+      return { success: false };
+    }
+    await this.notificationService.sendEmail(lead.email, dto.subject, dto.body);
+    // Log the activity
+    await this.activityService.create(id, sub, roles, active_company_id ?? '', {
+      type: 'email',
+      description: `Email sent: ${dto.subject}`,
+    });
+    return { success: true };
   }
 }

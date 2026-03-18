@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Mail, Phone, Loader2, User, Clock, Filter } from 'lucide-react';
-import { propertiesApi, type PropertyInquiryRecord } from '@/lib/api-client';
+import { MessageSquare, Mail, Phone, Loader2, User, Clock, Filter, Plus } from 'lucide-react';
+import { propertiesApi, type PropertyInquiryRecord, type PropertyListing } from '@/lib/api-client';
+import { EnquiryDetailModal } from './EnquiryDetailModal';
+import { AddEnquiryModal } from './AddEnquiryModal';
 
 interface Props {
   propertyId: string;
   authToken: string;
+  propertyAddress?: string;
+  property?: PropertyListing | null;
 }
 
 function statusColor(status: string) {
@@ -38,22 +42,54 @@ function parseEmbeddedContact(message: string | null): {
   cleanMessage: string | null;
 } | null {
   if (!message) return null;
-  const match = message.match(
+
+  // ── Old single-line format ────────────────────────────────────────────────
+  // "General inquiry Name: X Email: y@z.com Phone: 123"
+  const singleLine = message.match(
     /^(General inquiry\s+)?Name:\s*(.+?)\s+Email:\s*(\S+@\S+)\s+Phone:\s*(\S+)$/i,
   );
-  if (!match) return null;
+  if (singleLine) {
+    return {
+      name: singleLine[2].trim() || null,
+      email: singleLine[3].trim() || null,
+      phone: singleLine[4].trim() || null,
+      cleanMessage: null,
+    };
+  }
+
+  // ── New multi-line format (from AddEnquiryModal) ──────────────────────────
+  // "Name: John Doe\nEmail: ...\nPhone: ...\n[opt fields]\n\nActual message\n\n[Internal Notes]: ..."
+  if (!message.startsWith('Name: ')) return null;
+
+  const nameMatch  = message.match(/^Name:\s*(.+)$/m);
+  const emailMatch = message.match(/^Email:\s*(.+)$/m);
+  const phoneMatch = message.match(/^Phone:\s*(.+)$/m);
+
+  // Body is everything after the first blank line separating header from message
+  const blankIdx = message.indexOf('\n\n');
+  let cleanMessage: string | null = null;
+  if (blankIdx !== -1) {
+    let body = message.slice(blankIdx + 2).trim();
+    // Strip trailing internal-notes block if present
+    const notesIdx = body.indexOf('\n\n[Internal Notes]');
+    if (notesIdx !== -1) body = body.slice(0, notesIdx).trim();
+    cleanMessage = body || null;
+  }
+
   return {
-    name: match[2].trim() || null,
-    email: match[3].trim() || null,
-    phone: match[4].trim() || null,
-    cleanMessage: null, // the entire message was just contact metadata
+    name:  nameMatch?.[1]?.trim()  || null,
+    email: emailMatch?.[1]?.trim() || null,
+    phone: phoneMatch?.[1]?.trim() || null,
+    cleanMessage,
   };
 }
 
-export function Enquiries({ propertyId, authToken }: Props) {
+export function Enquiries({ propertyId, authToken, propertyAddress, property }: Props) {
   const [enquiries, setEnquiries] = useState<PropertyInquiryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedEnquiry, setSelectedEnquiry] = useState<PropertyInquiryRecord | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     if (!authToken) { setIsLoading(false); return; }
@@ -74,13 +110,47 @@ export function Enquiries({ propertyId, authToken }: Props) {
   }
 
   return (
+    <>
+      <AddEnquiryModal
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        propertyId={propertyId}
+        authToken={authToken}
+        onCreated={(r) => setEnquiries((prev) => [r, ...prev])}
+      />
+
+      {selectedEnquiry && (
+        <EnquiryDetailModal
+          open={!!selectedEnquiry}
+          onOpenChange={(open) => { if (!open) setSelectedEnquiry(null); }}
+          enquiry={selectedEnquiry}
+          property={property}
+          propertyAddress={propertyAddress}
+          propertyId={propertyId}
+          authToken={authToken}
+          onStatusChanged={(id, status) => {
+            setEnquiries((prev) => prev.map((e) => e.id === id ? { ...e, status } : e));
+            setSelectedEnquiry((prev) => prev && prev.id === id ? { ...prev, status } : prev);
+          }}
+        />
+      )}
+
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Enquiries ({enquiries.length})</h2>
-        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">
-          <Filter className="w-4 h-4" />
-          Filter
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add Enquiry
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">
+            <Filter className="w-4 h-4" />
+            Filter
+          </button>
+        </div>
       </div>
 
       {enquiries.length === 0 && (
@@ -102,7 +172,8 @@ export function Enquiries({ propertyId, authToken }: Props) {
           return (
           <div
             key={e.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            onClick={() => setSelectedEnquiry(e)}
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
           >
             <div className="space-y-3">
               {/* Header: avatar + name + timestamp | status badge */}
@@ -170,10 +241,16 @@ export function Enquiries({ propertyId, authToken }: Props) {
               {/* Actions */}
               {e.status !== 'closed' && (
                 <div className="flex gap-2 pt-2 border-t border-gray-100">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                  <button
+                    onClick={(ev) => { ev.stopPropagation(); setSelectedEnquiry(e); }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
                     Reply
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                  <button
+                    onClick={(ev) => { ev.stopPropagation(); setSelectedEnquiry(e); }}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
                     Mark as Closed
                   </button>
                 </div>
@@ -184,5 +261,6 @@ export function Enquiries({ propertyId, authToken }: Props) {
         })}
       </div>
     </div>
+    </>
   );
 }

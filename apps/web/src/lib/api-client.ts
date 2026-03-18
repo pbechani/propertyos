@@ -24,6 +24,16 @@ type RequestOptions = RequestInit & {
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const getResponseCache = new Map<string, { data: unknown; expiresAt: number }>();
 const getRateLimitCooldowns = new Map<string, number>();
+
+/** Invalidate all GET cache entries whose key starts with the given URL prefix. */
+export function bustGetCache(pathPrefix: string, authToken?: string | null): void {
+  const urlPrefix = `${API_BASE_URL}${pathPrefix}`;
+  for (const key of getResponseCache.keys()) {
+    if (key.startsWith(urlPrefix) && (authToken === undefined || key.endsWith(`::${authToken ?? ''}`))) {
+      getResponseCache.delete(key);
+    }
+  }
+}
 const DEFAULT_GET_CACHE_TTL_MS = 15_000;
 const RATE_LIMIT_COOLDOWN_MS = 3_000;
 let inFlightTokenRefresh: Promise<string | null> | null = null;
@@ -1462,6 +1472,43 @@ export const propertiesApi = {
       authToken,
     }),
 
+  createCommunicationLog: async (authToken: string, propertyId: string, payload: Record<string, unknown>) => {
+    const result = await apiRequest<Record<string, unknown>>(
+      `/properties/${propertyId}/communication-logs`,
+      {
+        method: 'POST',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    );
+    bustGetCache(`/properties/${propertyId}/communication-logs`, authToken);
+    return result;
+  },
+
+  listCommunicationLogs: (authToken: string, propertyId: string) =>
+    apiRequest<Record<string, unknown>[]>(
+      `/properties/${propertyId}/communication-logs`,
+      { authToken },
+    ),
+
+  updateCommunicationLog: (authToken: string, propertyId: string, logId: string, payload: Record<string, unknown>) =>
+    apiRequest<Record<string, unknown>>(
+      `/properties/${propertyId}/communication-logs/${logId}`,
+      {
+        method: 'PATCH',
+        authToken,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    ),
+
+  deleteCommunicationLog: (authToken: string, propertyId: string, logId: string) =>
+    apiRequest<{ ok: boolean }>(`/properties/${propertyId}/communication-logs/${logId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
   update: (authToken: string, id: string, payload: Record<string, unknown>) =>
     apiRequest<PropertyListing>(`/properties/${id}`, {
       method: 'PATCH',
@@ -2351,6 +2398,14 @@ export const leadsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+
+  sendEmail: (authToken: string, leadId: string, payload: { subject: string; body: string }) =>
+    apiRequest<{ success: boolean }>(`/leads/${leadId}/email`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ─── Companies ────────────────────────────────────────────────────────────────
@@ -2865,6 +2920,10 @@ export type AgentBookViewingPayload = {
   buyerContactEmail?: string;
   buyerContactPhone?: string;
   notes?: string;
+  sendConfirmation?: boolean;
+  addCalendarInvite?: boolean;
+  sendReminder?: boolean;
+  reminderMinutesBefore?: number;
 };
 
 export type ViewingResponse = {

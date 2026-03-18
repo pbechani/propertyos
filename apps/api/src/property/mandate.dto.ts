@@ -206,6 +206,29 @@ export class AgentBookViewingDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** If true, a confirmation email is sent to the buyer's email address. */
+  @IsOptional()
+  @IsBoolean()
+  sendConfirmation?: boolean;
+
+  /** If true, an .ics calendar invite is attached to the confirmation email. */
+  @IsOptional()
+  @IsBoolean()
+  addCalendarInvite?: boolean;
+
+  /** If true, reminder_send_at is stored so a background worker can send a reminder. */
+  @IsOptional()
+  @IsBoolean()
+  sendReminder?: boolean;
+
+  /** Minutes before scheduled_at to send the reminder (e.g. 15, 30, 60, 1440). */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10080)
+  @Type(() => Number)
+  reminderMinutesBefore?: number;
 }
 
 export class ViewingFeedbackDto {

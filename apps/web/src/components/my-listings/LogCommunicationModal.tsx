@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Users
 } from 'lucide-react';
+import { propertiesApi } from '@/lib/api-client';
 
 interface LogCommunicationModalProps {
   open: boolean;
@@ -67,7 +68,7 @@ const outcomeOptions = [
   'Negative - Not interested'
 ];
 
-export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommunicationModalProps) {
+export function LogCommunicationModal({ open, onOpenChange, propertyId, authToken, onLogged }: LogCommunicationModalProps) {
   const [formData, setFormData] = useState({
     type: 'call-out',
     contact: '',
@@ -88,6 +89,30 @@ export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommu
   });
 
   const [customTag, setCustomTag] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setFormData({
+      type: 'call-out',
+      contact: '',
+      contactRole: '',
+      contactEmail: '',
+      contactPhone: '',
+      subject: '',
+      summary: '',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0, 5),
+      duration: '',
+      outcome: '',
+      followUpRequired: false,
+      followUpDetails: '',
+      followUpDate: '',
+      tags: [],
+      attachments: [],
+    });
+    setSaveError(null);
+  };
 
   const handleInputChange = (field: string, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,30 +135,37 @@ export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommu
     }));
   };
 
-  const handleSubmit = () => {
-    if (onLogged) {
-      onLogged({ ...formData });
+  const handleSubmit = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      const communicationDate = `${formData.date}T${formData.time}:00.000Z`;
+      const saved = await propertiesApi.createCommunicationLog(authToken, propertyId, {
+        type: formData.type,
+        contactName: formData.contact,
+        contactRole: formData.contactRole || null,
+        contactEmail: formData.contactEmail || null,
+        contactPhone: formData.contactPhone || null,
+        subject: formData.subject,
+        summary: formData.summary,
+        communicationDate,
+        duration: formData.duration || null,
+        outcome: formData.outcome || null,
+        followUpRequired: formData.followUpRequired,
+        followUpDetails: formData.followUpDetails || null,
+        followUpDate: formData.followUpDate || null,
+        tags: formData.tags,
+      });
+      if (onLogged) {
+        onLogged(saved as unknown as LoggedCommunication);
+      }
+      onOpenChange(false);
+      resetForm();
+    } catch {
+      setSaveError('Failed to save communication log. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    onOpenChange(false);
-    // Reset form
-    setFormData({
-      type: 'call-out',
-      contact: '',
-      contactRole: '',
-      contactEmail: '',
-      contactPhone: '',
-      subject: '',
-      summary: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5),
-      duration: '',
-      outcome: '',
-      followUpRequired: false,
-      followUpDetails: '',
-      followUpDate: '',
-      tags: [],
-      attachments: []
-    });
   };
 
   const isValid = formData.contact && formData.subject && formData.summary;
@@ -432,13 +464,19 @@ export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommu
 
           {/* Footer */}
           <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
-            {!isValid && (
+            {saveError && (
+              <div className="flex items-center gap-2 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{saveError}</span>
+              </div>
+            )}
+            {!saveError && !isValid && (
               <div className="flex items-center gap-2 text-sm text-orange-600">
                 <AlertCircle className="w-4 h-4" />
                 <span>Please fill in all required fields</span>
               </div>
             )}
-            {isValid && (
+            {!saveError && isValid && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Ready to log communication</span>
@@ -450,11 +488,11 @@ export function LogCommunicationModal({ open, onOpenChange, onLogged }: LogCommu
               </Dialog.Close>
               <button
                 onClick={handleSubmit}
-                disabled={!isValid}
+                disabled={!isValid || isSaving}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
-                Log Communication
+                {isSaving ? 'Saving…' : 'Log Communication'}
               </button>
             </div>
           </div>

@@ -12,7 +12,58 @@ Related docs:
 
 ## [Unreleased]
 
+### Fixed
+
+- **Add Lead — type field mismatch (2026-03-18)**
+  - `AddLeadModal.tsx` was sending `propertyInterest` values `'buying'` / `'selling'` / `'both'` directly as the `type` field on lead creation; the backend `@IsIn` validator only accepts `['buyer','seller','renter','investor']` causing all submissions to fail with 400
+  - Added `interestTypeMap` in `AddLeadModal.tsx` to convert `buying→buyer`, `selling→seller`, `both→buyer` before the API call
+
 ### Added
+
+- **Leads — Contact Lead modal with Mailpit email (2026-03-18)**
+  - New `ContactLeadModal.tsx` component: 3-tab modal (Email / Call / SMS)
+  - Email tab calls a new backend endpoint `POST /leads/:id/email` which sends via Mailpit SMTP (nodemailer, port 1025); email is logged as an `email` activity on the lead
+  - New `SendLeadEmailDto` in `leads.dto.ts`; `NotificationService` injected into `LeadsController` via `IdentityModule` import in `LeadsModule`
+  - Call and SMS tabs log the interaction as a `call` / `sms` activity via `leadsApi.createActivity`; support optional follow-up scheduling
+  - File attach: hidden `<input type="file" multiple>` triggered by "Attach Files" button; selected files listed with remove buttons and included in the activity description
+  - Wired to "Contact Lead" button on each lead card in `Leads.tsx` with per-lead modal state
+
+- **Leads — Update Status modal (2026-03-18)**
+  - New `UpdateLeadStatusModal.tsx` component: 8-option status grid (Hot, Nurturing, Converted, Lost, Cold, Qualified, Contacted, New)
+  - Each status option maps to the appropriate `stage` and/or `temperature` API fields; Lost status shows a lost-reason dropdown
+  - Optional tags input and internal notes; optional follow-up scheduling
+  - On save, calls `leadsApi.update` then `leadsApi.createActivity` to log the change
+  - Wired to "Update Status" button on each lead card in `Leads.tsx` with per-lead modal state
+
+- **Leads — Lead Detail page (2026-03-18)**
+  - New Next.js page `apps/web/src/app/app/my-listings/[id]/leads/[leadId]/page.tsx`
+  - Fetches real lead data via `leadsApi.getById` and activity history via `leadsApi.listActivities`; shows loading/error states
+  - Displays: lead avatar/initials, status badge, score bar, property interests, budget range, timeline, prequalification flag, source, notes, full activity timeline with per-type icons
+  - "Add Note" modal logs a `note` activity and refreshes the timeline
+  - Sidebar Actions panel with Convert to Client, Schedule Follow-up, Send Properties, Mark as Lost buttons
+  - Lead cards in `Leads.tsx` are now clickable; navigates to `/app/my-listings/${propertyId}/leads/${lead.id}`; action buttons use `stopPropagation` to avoid triggering card navigation
+  - `my-listings/[id]/page.tsx` now reads `?tab=leads` query param on load so the Leads tab is restored when navigating back from the detail page
+
+- **Leads — Convert to Client modal (2026-03-18)**
+  - New `ConvertToClientModal.tsx` component: 3-step wizard
+    - **Step 1 — Personal Info**: pre-filled from lead (name, email, phone); optional address fields; shows transferred lead info summary (type, pre-qualification, timeline, budget)
+    - **Step 2 — Client Setup**: client type (Buyer / Seller / Both), client status (Active / Pending / Prospect), priority (High / Medium / Low), referral source
+    - **Step 3 — Finalize**: contract type (Exclusive / Non-Exclusive), commission rate %, agreement date, agreement-signed checkbox; optional "Schedule Initial Consultation" with datetime picker; optional "Send Welcome Email" via Mailpit; ready-to-convert summary card
+  - On Convert: sets lead `stage` to `'closed'` via `leadsApi.update`, logs a detailed conversion activity note, and optionally sends welcome email via the existing `POST /leads/:id/email` endpoint
+  - Wired to both the header "Convert to Client" button and the sidebar "Convert to Client" button in the lead detail page; auth token captured once on page load and passed to the modal
+  - After successful conversion, the lead detail page reloads to show the "Converted" status badge
+
+- **Enquiries — Enquiry Detail modal (2026-03-18)**
+  - New `EnquiryDetailModal.tsx` component: full-detail view with contact info, property interests, notes, activity log, and action buttons (Reply, Schedule Viewing, Convert to Lead, Archive)
+  - Wired to enquiry list items in `Enquiries.tsx`; clicking an enquiry row opens the detail modal
+
+- **Enquiries — Add Enquiry modal (2026-03-18)**
+  - New `AddEnquiryModal.tsx` component: form to manually capture a new enquiry (name, email, phone, message, source, property interest type, budget, timeline)
+  - Calls `propertiesApi.createEnquiry` on submit; `Enquiries` component refreshes list on success
+
+- **Inspections — Inspection Detail modal (2026-03-18)**
+  - New `InspectionDetailModal.tsx` component: displays inspection type, inspector, scheduled/requested dates, status, result, report URL, cost, and notes
+  - Wired to inspection list items in the Inspections tab; clicking an inspection row opens the detail modal
 
 - **Open House Details — De-hardwired (2026-03-18)**
   - Removed `mockVisitors` (5 fake visitors), `mockFeedback` (3 fake feedback entries), and the `Visitor` interface from `OpenHouseDetailModal`
@@ -41,9 +92,14 @@ Related docs:
   - `RequestInspectionModal` wired away from hardcoded `console.log` stub; calls `propertiesApi.createInspection`; shows saving/error state
   - 14-test spec (`inspection-request.service.spec.ts`) covering all CRUD paths plus ownership errors
 
-- **Communication Log — de-hardwired (2026-03-17)**
-  - `LogCommunicationModal` had a `console.log` handleSubmit stub; now calls `propertiesApi.createCommunicationLog` with async error handling and loading state
-  - `CommunicationLog` component loads existing log entries on mount via `propertiesApi.listCommunicationLogs`; appends new entries on success without page reload
+- **Communication Log — fully implemented (2026-03-18)**
+  - New `property.communication_logs` table (migration `202603180040_property_communication_logs`) with type, contact details, subject, summary, communication_date, duration, outcome, follow-up fields, tags (JSONB), and foreign key to `property.properties`
+  - `CommunicationLogService` (`apps/api/src/property/communication-log.service.ts`) with `create`, `list`, `update`, `delete` methods and `assertAccess` ownership check; registered in `PropertyModule`
+  - Four new REST endpoints on `PropertyController`: `POST/GET /properties/:id/communication-logs`, `PATCH/DELETE /properties/:propertyId/communication-logs/:logId`
+  - Four new methods on `propertiesApi`: `createCommunicationLog`, `listCommunicationLogs`, `updateCommunicationLog`, `deleteCommunicationLog`
+  - `LogCommunicationModal` wired to `propertiesApi.createCommunicationLog` with async submit, saving/error state, and form reset on success (previously had a synchronous local-only stub)
+  - `CommunicationLog` loads existing entries from DB on mount via `listCommunicationLogs`; refreshes after each new log is saved
+  - 14-test spec (`communication-log.service.spec.ts`): all 14 pass
 
 - **Enquiries — de-hardwired (2026-03-17)**
   - `Enquiries` component had hardcoded placeholder enquiries; now loads real enquiry data via `propertiesApi.listEnquiries` on mount with loading and empty states

@@ -22,7 +22,12 @@ export class NotificationService {
     this.smsProvider = this.resolveSmsProvider();
   }
 
-  async sendEmail(to: string, subject: string, body: string): Promise<void> {
+  async sendEmail(
+    to: string,
+    subject: string,
+    body: string,
+    attachments?: import('./notifications/types').EmailAttachment[],
+  ): Promise<void> {
     const maskedRecipient = this.maskRecipient(to);
 
     if (!this.emailProvider) {
@@ -34,7 +39,7 @@ export class NotificationService {
     }
 
     try {
-      await this.emailProvider.send({ to, subject, body });
+      await this.emailProvider.send({ to, subject, body, attachments });
       this.logger.log(`Email notification sent -> ${maskedRecipient}`);
       this.logger.debug(`Email payload length: ${body.length}`);
     } catch (error) {

@@ -335,3 +335,18 @@ export class UpdateLeadTaskDto {
   @IsUUID()
   assignedTo?: string;
 }
+
+
+// 
+// Send Email to Lead
+// 
+
+export class SendLeadEmailDto {
+  @IsNotEmpty()
+  @IsString()
+  subject!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  body!: string;
+}
