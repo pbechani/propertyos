@@ -34,8 +34,11 @@ import {
   Mail as MailIcon,
   Bed,
   Bath,
+  TrendingUp,
+  Square,
+  Send,
 } from 'lucide-react';
-import { leadsApi, propertiesApi, type LeadRow, type LeadActivityRow } from '@/lib/api-client';
+import { leadsApi, propertiesApi, type LeadRow, type LeadActivityRow, type PropertyListing } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 import { ConvertToClientModal } from '@/components/my-listings/ConvertToClientModal';
 import { ScheduleFollowUpModal } from '@/components/my-listings/ScheduleFollowUpModal';
@@ -117,6 +120,80 @@ function parsePreferences(raw: string | null) {
   return result;
 }
 
+type MatchedProperty = PropertyListing & { matchScore: number };
+
+function computeMatchScore(
+  property: PropertyListing,
+  preferences: ReturnType<typeof parsePreferences> | null,
+  budgetMin: string | null,
+  budgetMax: string | null,
+): number {
+  let score = 0;
+  let maxScore = 0;
+  const price = parseFloat(property.price);
+
+  // Budget: 40 pts
+  const bMin = budgetMin ? parseFloat(budgetMin) : null;
+  const bMax = budgetMax ? parseFloat(budgetMax) : null;
+  if (bMin !== null || bMax !== null) {
+    maxScore += 40;
+    if (bMin !== null && bMax !== null) {
+      if (price >= bMin && price <= bMax) score += 40;
+      else if (price <= bMax * 1.1 && price >= bMin * 0.9) score += 22;
+    } else if (bMax !== null && price <= bMax) score += 40;
+    else if (bMin !== null && price >= bMin) score += 30;
+  }
+
+  if (preferences) {
+    // Bedrooms: 20 pts
+    if (preferences.bedrooms) {
+      maxScore += 20;
+      const min = parseInt(preferences.bedrooms);
+      if (property.bedrooms != null && property.bedrooms >= min) score += 20;
+      else if (property.bedrooms != null && property.bedrooms >= min - 1) score += 10;
+    }
+    // Bathrooms: 15 pts
+    if (preferences.bathrooms) {
+      maxScore += 15;
+      const min = parseInt(preferences.bathrooms);
+      if (property.bathrooms != null && property.bathrooms >= min) score += 15;
+    }
+    // Property type: 25 pts
+    if (preferences.types.length > 0) {
+      maxScore += 25;
+      const propType = property.property_type.toLowerCase();
+      const match = preferences.types.some((t) => {
+        const tl = t.toLowerCase();
+        return (
+          tl.includes(propType) || propType.includes(tl) ||
+          (['house', 'apartment', 'townhouse', 'single family', 'condo', 'flat', 'villa'].some((r) => tl.includes(r)) && propType === 'residential')
+        );
+      });
+      if (match) score += 25;
+    }
+    // Location: 20 pts
+    if (preferences.locations.length > 0) {
+      maxScore += 20;
+      const cityStr = `${property.location?.city ?? ''} ${property.location?.region ?? ''}`.toLowerCase();
+      if (preferences.locations.some((loc) => cityStr.includes(loc.toLowerCase()))) score += 20;
+      else score += 5;
+    }
+    // Features: 10 pts
+    if (preferences.features.length > 0) {
+      maxScore += 10;
+      if (property.features?.length) {
+        const matched = preferences.features.filter((f) =>
+          property.features!.some((pf) => pf.toLowerCase().includes(f.toLowerCase())),
+        ).length;
+        score += Math.round((matched / preferences.features.length) * 10);
+      }
+    }
+  }
+
+  if (maxScore === 0) return 50;
+  return Math.min(100, Math.round((score / maxScore) * 100));
+}
+
 // ─── page ───────────────────────────────────────────────────────────────────
 
 export default function LeadDetailPage() {
@@ -137,6 +214,7 @@ export default function LeadDetailPage() {
   const [showSendPropsModal, setShowSendPropsModal] = useState(false);
   const [authToken, setAuthToken]   = useState<string | null>(null);
   const [interestedInTitle, setInterestedInTitle] = useState<string | null>(null);
+  const [matchedProperties, setMatchedProperties] = useState<MatchedProperty[]>([]);
 
   const loadLead = useCallback(async () => {
     setLoading(true);
@@ -166,6 +244,21 @@ export default function LeadDetailPage() {
         }
       } else {
         setInterestedInTitle(null);
+      }
+
+      // Fetch agent listings and compute match scores
+      try {
+        const propsResult = await propertiesApi.getMyListings(token);
+        const withScores: MatchedProperty[] = propsResult.data
+          .map((p) => ({
+            ...p,
+            matchScore: computeMatchScore(p, parsed, leadData.budget_min, leadData.budget_max),
+          }))
+          .sort((a, b) => b.matchScore - a.matchScore)
+          .slice(0, 5);
+        setMatchedProperties(withScores);
+      } catch {
+        setMatchedProperties([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lead');
@@ -504,6 +597,114 @@ export default function LeadDetailPage() {
                 </div>
               );
             })()}
+
+            {/* Matched Properties */}
+            {matchedProperties.length > 0 && (
+              <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-700 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-bold text-white">Matched Properties</h3>
+                  <button
+                    onClick={() => setShowSendPropsModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send Property
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {matchedProperties.map((prop) => {
+                    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                    const rawInterestedIn = parsePreferences(lead.preferences)?.interestedIn ?? null;
+                    const isInterested =
+                      (rawInterestedIn && uuidPattern.test(rawInterestedIn) && prop.id === rawInterestedIn) ||
+                      (interestedInTitle && prop.title === interestedInTitle);
+                    const isSent = activities.some(
+                      (a) => a.type === 'property-sent' && (a.description?.includes(prop.title) || a.description?.includes(prop.id)),
+                    );
+                    const price = parseFloat(prop.price).toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: prop.currency ?? 'USD',
+                      maximumFractionDigits: 0,
+                    });
+                    const areaSqm = prop.floor_area_sqm ?? prop.area_sqm;
+                    const areaSqft = areaSqm ? Math.round(parseFloat(areaSqm) * 10.764) : null;
+                    const matchColor =
+                      prop.matchScore >= 85 ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-200';
+                    return (
+                      <div key={prop.id} className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-white font-semibold text-sm">{prop.title}</span>
+                            {isInterested && (
+                              <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-medium rounded-md">
+                                Interested
+                              </span>
+                            )}
+                            {!isInterested && isSent && (
+                              <span className="px-2 py-0.5 bg-gray-600 text-gray-200 text-xs font-medium rounded-md">
+                                Sent
+                              </span>
+                            )}
+                          </div>
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1 flex-shrink-0 ml-2 ${matchColor}`}>
+                            <TrendingUp className="w-3 h-3" />
+                            {prop.matchScore}% Match
+                          </span>
+                        </div>
+                        <div className="text-blue-400 font-bold text-base mb-2">{price}</div>
+                        <div className="flex items-center gap-4 text-gray-400 text-sm mb-3">
+                          {prop.bedrooms != null && (
+                            <span className="flex items-center gap-1">
+                              <Bed className="w-3.5 h-3.5" />
+                              {prop.bedrooms} beds
+                            </span>
+                          )}
+                          {prop.bathrooms != null && (
+                            <span className="flex items-center gap-1">
+                              <Bath className="w-3.5 h-3.5" />
+                              {prop.bathrooms} baths
+                            </span>
+                          )}
+                          {areaSqft && (
+                            <span className="flex items-center gap-1">
+                              <Square className="w-3.5 h-3.5" />
+                              {areaSqft.toLocaleString()} sqft
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => router.push(`/app/my-listings/${prop.id}`)}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            View Property
+                          </button>
+                          <button
+                            onClick={() => setShowFollowUpModal(true)}
+                            className="px-3 py-1.5 bg-transparent border border-gray-600 text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-700 transition-colors"
+                          >
+                            Schedule Viewing
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (authToken) {
+                                leadsApi.createActivity(authToken, leadId, {
+                                  type: 'note',
+                                  description: `Requested feedback on property: ${prop.title}`,
+                                });
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-transparent border border-gray-600 text-gray-300 text-xs font-medium rounded-lg hover:bg-gray-700 transition-colors"
+                          >
+                            Get Feedback
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Activity Timeline */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
