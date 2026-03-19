@@ -27,7 +27,7 @@ import {
   ThumbsUp,
   Activity,
 } from 'lucide-react';
-import { leadsApi, usersApi, UserSearchResult } from '@/lib/api-client';
+import { leadsApi, usersApi, propertiesApi, UserSearchResult } from '@/lib/api-client';
 
 interface Props {
   open: boolean;
@@ -118,13 +118,20 @@ export function AddLeadModal({ open, onOpenChange, propertyId, authToken, onSucc
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<UserSearchResult[]>([]);
+  const [listingTitle, setListingTitle] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     usersApi.search(authToken, '', 'agent')
       .then(setAgents)
       .catch(() => setAgents([]));
-  }, [open, authToken]);
+    // Fetch listing title to use instead of UUID in preferences
+    if (propertyId) {
+      propertiesApi.getById(propertyId, authToken)
+        .then((p) => setListingTitle(p.title ?? null))
+        .catch(() => setListingTitle(null));
+    }
+  }, [open, authToken, propertyId]);
 
   if (!open) return null;
 
@@ -166,7 +173,7 @@ export function AddLeadModal({ open, onOpenChange, propertyId, authToken, onSucc
         formData.mustHaveFeatures.length ? `Features: ${formData.mustHaveFeatures.join(', ')}` : '',
         formData.motivation ? `Motivation: ${formData.motivation}` : '',
         formData.interestedInListing && formData.listingId
-          ? `Interested in listing: ${formData.listingId}`
+          ? `Interested in listing: ${listingTitle ?? formData.listingId}`
           : '',
       ].filter(Boolean).join('\n') || undefined;
 
