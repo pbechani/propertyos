@@ -35,7 +35,7 @@ import {
   Bed,
   Bath,
 } from 'lucide-react';
-import { leadsApi, type LeadRow, type LeadActivityRow } from '@/lib/api-client';
+import { leadsApi, propertiesApi, type LeadRow, type LeadActivityRow } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 import { ConvertToClientModal } from '@/components/my-listings/ConvertToClientModal';
 import { ScheduleFollowUpModal } from '@/components/my-listings/ScheduleFollowUpModal';
@@ -96,20 +96,22 @@ function parsePreferences(raw: string | null) {
     bathrooms: string | null;
     features: string[];
     motivation: string | null;
+    interestedIn: string | null;
     other: string[];
-  } = { types: [], locations: [], bedrooms: null, bathrooms: null, features: [], motivation: null, other: [] };
+  } = { types: [], locations: [], bedrooms: null, bathrooms: null, features: [], motivation: null, interestedIn: null, other: [] };
 
   for (const line of raw.split('\n')) {
     const colonIdx = line.indexOf(':');
     if (colonIdx === -1) { result.other.push(line.trim()); continue; }
     const key   = line.slice(0, colonIdx).trim().toLowerCase();
     const value = line.slice(colonIdx + 1).trim();
-    if (key === 'types')      result.types      = value.split(',').map((s) => s.trim()).filter(Boolean);
-    else if (key === 'locations') result.locations  = value.split(',').map((s) => s.trim()).filter(Boolean);
-    else if (key === 'bedrooms')  result.bedrooms   = value;
-    else if (key === 'bathrooms') result.bathrooms  = value;
-    else if (key === 'features')  result.features   = value.split(',').map((s) => s.trim()).filter(Boolean);
-    else if (key === 'motivation') result.motivation = value;
+    if (key === 'types')                   result.types       = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'locations')          result.locations   = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'bedrooms')           result.bedrooms    = value;
+    else if (key === 'bathrooms')          result.bathrooms   = value;
+    else if (key === 'features')           result.features    = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'motivation')         result.motivation  = value;
+    else if (key === 'interested in listing') result.interestedIn = value;
     else result.other.push(line.trim());
   }
   return result;
@@ -134,6 +136,7 @@ export default function LeadDetailPage() {
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showSendPropsModal, setShowSendPropsModal] = useState(false);
   const [authToken, setAuthToken]   = useState<string | null>(null);
+  const [interestedInTitle, setInterestedInTitle] = useState<string | null>(null);
 
   const loadLead = useCallback(async () => {
     setLoading(true);
@@ -148,6 +151,22 @@ export default function LeadDetailPage() {
       ]);
       setLead(leadData);
       setActivities(activityData);
+
+      // Resolve UUID in "Interested in listing" preference to a title
+      const parsed = parsePreferences(leadData.preferences);
+      const raw = parsed?.interestedIn ?? null;
+      if (raw) {
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidPattern.test(raw)) {
+          propertiesApi.getById(raw, token)
+            .then((p) => setInterestedInTitle(p.title ?? raw))
+            .catch(() => setInterestedInTitle(raw));
+        } else {
+          setInterestedInTitle(raw); // already a title
+        }
+      } else {
+        setInterestedInTitle(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load lead');
     } finally {
@@ -380,7 +399,7 @@ export default function LeadDetailPage() {
                 parsed.types.length || parsed.locations.length ||
                 parsed.bedrooms || parsed.bathrooms ||
                 parsed.features.length || parsed.motivation || parsed.other.length
-              );
+              ) || !!interestedInTitle;
               if (!hasInterests && !hasBudget) return null;
               return (
                 <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-700 p-6">
@@ -443,6 +462,17 @@ export default function LeadDetailPage() {
                             <div className="text-white font-semibold">{budgetLabel}</div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Interested In Listing */}
+                    {interestedInTitle && (
+                      <div className="pt-1 border-t border-gray-700">
+                        <div className="text-sm text-gray-400 mb-2">Interested In Listing</div>
+                        <span className="px-3 py-1 bg-gray-800 border border-gray-600 text-yellow-300 text-sm font-medium rounded-full flex items-center gap-1.5 w-fit">
+                          <Home className="w-3.5 h-3.5" />
+                          {interestedInTitle}
+                        </span>
                       </div>
                     )}
 
