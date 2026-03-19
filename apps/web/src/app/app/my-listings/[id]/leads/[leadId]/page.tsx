@@ -37,6 +37,8 @@ import {
 import { leadsApi, type LeadRow, type LeadActivityRow } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
 import { ConvertToClientModal } from '@/components/my-listings/ConvertToClientModal';
+import { ScheduleFollowUpModal } from '@/components/my-listings/ScheduleFollowUpModal';
+import { SendPropertiesModal } from '@/components/my-listings/SendPropertiesModal';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -99,6 +101,8 @@ export default function LeadDetailPage() {
   const [newNote, setNewNote]       = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [showSendPropsModal, setShowSendPropsModal] = useState(false);
   const [authToken, setAuthToken]   = useState<string | null>(null);
 
   const loadLead = useCallback(async () => {
@@ -527,11 +531,13 @@ export default function LeadDetailPage() {
                   <UserPlus className="w-4 h-4" />
                   Convert to Client
                 </button>
-                <button className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
+                <button className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm"
+                  onClick={() => setShowFollowUpModal(true)}>
                   <Calendar className="w-4 h-4" />
                   Schedule Follow-up
                 </button>
-                <button className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
+                <button className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm"
+                  onClick={() => setShowSendPropsModal(true)}>
                   <Home className="w-4 h-4" />
                   Send Properties
                 </button>
@@ -596,6 +602,32 @@ export default function LeadDetailPage() {
           onClose={() => setShowConvertModal(false)}
           onSuccess={() => {
             setShowConvertModal(false);
+            loadLead();
+          }}
+        />
+      )}
+
+      {/* ── Schedule Follow-Up Modal ──────────────────────────────────── */}
+      {showFollowUpModal && authToken && (
+        <ScheduleFollowUpModal
+          lead={lead}
+          authToken={authToken}
+          onClose={() => setShowFollowUpModal(false)}
+          onSuccess={() => {
+            setShowFollowUpModal(false);
+            loadLead();
+          }}
+        />
+      )}
+
+      {/* ── Send Properties Modal ─────────────────────────────────────── */}
+      {showSendPropsModal && authToken && (
+        <SendPropertiesModal
+          lead={lead}
+          authToken={authToken}
+          onClose={() => setShowSendPropsModal(false)}
+          onSuccess={() => {
+            setShowSendPropsModal(false);
             loadLead();
           }}
         />
