@@ -160,8 +160,10 @@ export function AddLeadModal({ open, onOpenChange, propertyId, authToken, onSucc
       const name = [formData.firstName, formData.lastName].filter(Boolean).join(' ') || 'Unnamed Lead';
       const preferences = [
         formData.propertyTypes.length ? `Types: ${formData.propertyTypes.join(', ')}` : '',
-        formData.mustHaveFeatures.length ? `Features: ${formData.mustHaveFeatures.join(', ')}` : '',
         formData.locationNotes ? `Locations: ${formData.locationNotes}` : '',
+        formData.bedrooms ? `Bedrooms: ${formData.bedrooms}` : '',
+        formData.bathrooms ? `Bathrooms: ${formData.bathrooms}` : '',
+        formData.mustHaveFeatures.length ? `Features: ${formData.mustHaveFeatures.join(', ')}` : '',
         formData.motivation ? `Motivation: ${formData.motivation}` : '',
         formData.interestedInListing && formData.listingId
           ? `Interested in listing: ${formData.listingId}`

@@ -21,7 +21,6 @@ import {
   UserPlus,
   Video,
   Plus,
-  Target,
   Timer,
   CreditCard,
   Zap,
@@ -33,6 +32,8 @@ import {
   Home,
   Phone as PhoneCall,
   Mail as MailIcon,
+  Bed,
+  Bath,
 } from 'lucide-react';
 import { leadsApi, type LeadRow, type LeadActivityRow } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
@@ -83,6 +84,35 @@ function formatBudget(min: string | null, max: string | null, currency: string) 
   if (min && max) return `${fmt(min)} – ${fmt(max)}`;
   if (min) return `From ${fmt(min)}`;
   return `Up to ${fmt(max!)}`;
+}
+
+/** Parse the structured preferences string saved by AddLeadModal */
+function parsePreferences(raw: string | null) {
+  if (!raw) return null;
+  const result: {
+    types: string[];
+    locations: string[];
+    bedrooms: string | null;
+    bathrooms: string | null;
+    features: string[];
+    motivation: string | null;
+    other: string[];
+  } = { types: [], locations: [], bedrooms: null, bathrooms: null, features: [], motivation: null, other: [] };
+
+  for (const line of raw.split('\n')) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) { result.other.push(line.trim()); continue; }
+    const key   = line.slice(0, colonIdx).trim().toLowerCase();
+    const value = line.slice(colonIdx + 1).trim();
+    if (key === 'types')      result.types      = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'locations') result.locations  = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'bedrooms')  result.bedrooms   = value;
+    else if (key === 'bathrooms') result.bathrooms  = value;
+    else if (key === 'features')  result.features   = value.split(',').map((s) => s.trim()).filter(Boolean);
+    else if (key === 'motivation') result.motivation = value;
+    else result.other.push(line.trim());
+  }
+  return result;
 }
 
 // ─── page ───────────────────────────────────────────────────────────────────
@@ -342,18 +372,108 @@ export default function LeadDetailPage() {
               </div>
             </div>
 
-            {/* Preferences */}
-            {lead.preferences && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Preferences</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <Target className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{lead.preferences}</p>
+            {/* Property Interests */}
+            {(() => {
+              const parsed = parsePreferences(lead.preferences);
+              const hasBudget = !!(lead.budget_min || lead.budget_max);
+              const hasInterests = parsed && (
+                parsed.types.length || parsed.locations.length ||
+                parsed.bedrooms || parsed.bathrooms ||
+                parsed.features.length || parsed.motivation || parsed.other.length
+              );
+              if (!hasInterests && !hasBudget) return null;
+              return (
+                <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-700 p-6">
+                  <h3 className="text-lg font-bold text-white mb-5">Property Interests</h3>
+                  <div className="space-y-5">
+
+                    {/* Property Types */}
+                    {parsed && parsed.types.length > 0 && (
+                      <div>
+                        <div className="text-sm text-gray-400 mb-2">Property Types</div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsed.types.map((t) => (
+                            <span key={t} className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preferred Locations */}
+                    {parsed && parsed.locations.length > 0 && (
+                      <div>
+                        <div className="text-sm text-gray-400 mb-2">Preferred Locations</div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsed.locations.map((loc) => (
+                            <span key={loc} className="px-3 py-1 bg-gray-800 border border-gray-600 text-purple-400 text-sm font-medium rounded-full flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {loc}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stats row: bedrooms / bathrooms / price */}
+                    {(parsed?.bedrooms || parsed?.bathrooms || hasBudget) && (
+                      <div className="grid grid-cols-3 gap-4 pt-1">
+                        {parsed?.bedrooms && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Min. Bedrooms</div>
+                            <div className="flex items-center gap-2 text-white font-semibold">
+                              <Bed className="w-4 h-4 text-gray-400" />
+                              {parsed.bedrooms}+
+                            </div>
+                          </div>
+                        )}
+                        {parsed?.bathrooms && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Min. Bathrooms</div>
+                            <div className="flex items-center gap-2 text-white font-semibold">
+                              <Bath className="w-4 h-4 text-gray-400" />
+                              {parsed.bathrooms}+
+                            </div>
+                          </div>
+                        )}
+                        {hasBudget && (
+                          <div>
+                            <div className="text-xs text-gray-400 mb-1">Price Range</div>
+                            <div className="text-white font-semibold">{budgetLabel}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Must-Haves / Features */}
+                    {parsed && parsed.features.length > 0 && (
+                      <div className="pt-1 border-t border-gray-700">
+                        <div className="text-sm text-gray-400 mb-2">Must-Haves</div>
+                        <div className="flex flex-wrap gap-2">
+                          {parsed.features.map((f) => (
+                            <span key={f} className="px-3 py-1 bg-green-900 border border-green-700 text-green-400 text-sm font-medium rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Motivation / other freeform notes */}
+                    {parsed && (parsed.motivation || parsed.other.length > 0) && (
+                      <div className="pt-1 border-t border-gray-700">
+                        <div className="text-sm text-gray-400 mb-1">Notes</div>
+                        <p className="text-sm text-gray-300">
+                          {[parsed.motivation, ...parsed.other].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Activity Timeline */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
