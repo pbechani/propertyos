@@ -1719,4 +1719,82 @@ export class PropertyService {
       throw new ForbiddenException('You can only manage your own listings');
     }
   }
+
+  // ── Property Offers ────────────────────────────────────────────────────────
+
+  async getPropertyOffers(agentId: string, propertyId: string) {
+    // Ensure the property belongs to this agent
+    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
+      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT * FROM sales.property_offers
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY submitted_at DESC
+    `;
+  }
+
+  async createPropertyOffer(
+    agentId: string,
+    propertyId: string,
+    dto: {
+      buyerName: string;
+      amount: number;
+      earnestMoney?: number;
+      financing: string;
+      contingencies: string[];
+      closingDate?: string;
+      notes?: string;
+    },
+  ) {
+    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
+      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const closingDate = dto.closingDate ? new Date(dto.closingDate) : null;
+    const rows = await this.prisma.$queryRaw<unknown[]>`
+      INSERT INTO sales.property_offers
+        (property_id, agent_id, buyer_name, amount, earnest_money, financing, contingencies, closing_date, notes)
+      VALUES (
+        ${propertyId}::uuid,
+        ${agentId}::uuid,
+        ${dto.buyerName},
+        ${dto.amount},
+        ${dto.earnestMoney ?? null},
+        ${dto.financing},
+        ${dto.contingencies}::text[],
+        ${closingDate},
+        ${dto.notes ?? null}
+      )
+      RETURNING *
+    `;
+    return rows[0];
+  }
+
+  async updatePropertyOfferStatus(
+    agentId: string,
+    propertyId: string,
+    offerId: string,
+    status: string,
+  ) {
+    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
+      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const rows = await this.prisma.$queryRaw<unknown[]>`
+      UPDATE sales.property_offers
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
+      RETURNING *
+    `;
+    if (!(rows as unknown[]).length) throw new NotFoundException('Offer not found');
+    return rows[0];
+  }
 }

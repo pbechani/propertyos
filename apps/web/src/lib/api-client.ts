@@ -2902,6 +2902,59 @@ export const sellerApi = {
     }),
 };
 
+// ─── Agent Property Offers ────────────────────────────────────────────────────
+
+export type PropertyOfferRow = {
+  id: string;
+  property_id: string;
+  agent_id: string;
+  buyer_name: string;
+  amount: string;
+  earnest_money: string | null;
+  financing: string;
+  contingencies: string[];
+  closing_date: string | null;
+  notes: string | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+  submitted_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePropertyOfferPayload = {
+  buyerName: string;
+  amount: number;
+  earnestMoney?: number;
+  financing: string;
+  contingencies: string[];
+  closingDate?: string;
+  notes?: string;
+};
+
+export const agentOffersApi = {
+  list: (authToken: string, propertyId: string) =>
+    apiRequest<PropertyOfferRow[]>(`/agent/my-listings/${propertyId}/offers`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  create: (authToken: string, propertyId: string, payload: CreatePropertyOfferPayload) =>
+    apiRequest<PropertyOfferRow>(`/agent/my-listings/${propertyId}/offers`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateStatus: (authToken: string, propertyId: string, offerId: string, status: string) =>
+    apiRequest<PropertyOfferRow>(`/agent/my-listings/${propertyId}/offers/${offerId}/status`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }),
+};
+
 // ─── Viewings ────────────────────────────────────────────────────────────────
 
 export type CreateViewingPayload = {

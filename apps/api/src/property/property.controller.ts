@@ -850,6 +850,44 @@ export class AgentDashboardController {
   async getCommissionPipeline(@Request() req: AuthRequest) {
     return this.propertyService.getAgentCommissionPipeline(req.user.sub);
   }
+
+  /** GET /api/v1/agent/my-listings/:id/offers */
+  @Get('my-listings/:id/offers')
+  async getListingOffers(
+    @Request() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.propertyService.getPropertyOffers(req.user.sub, id);
+  }
+
+  /** POST /api/v1/agent/my-listings/:id/offers */
+  @Post('my-listings/:id/offers')
+  async createListingOffer(
+    @Request() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: {
+      buyerName: string;
+      amount: number;
+      earnestMoney?: number;
+      financing: string;
+      contingencies: string[];
+      closingDate?: string;
+      notes?: string;
+    },
+  ) {
+    return this.propertyService.createPropertyOffer(req.user.sub, id, body);
+  }
+
+  /** PATCH /api/v1/agent/my-listings/:id/offers/:offerId/status */
+  @Patch('my-listings/:id/offers/:offerId/status')
+  async updateListingOfferStatus(
+    @Request() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+    @Body() body: { status: string },
+  ) {
+    return this.propertyService.updatePropertyOfferStatus(req.user.sub, id, offerId, body.status);
+  }
 }
 
 /**
