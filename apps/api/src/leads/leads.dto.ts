@@ -37,6 +37,9 @@ export const ACTIVITY_TYPES = [
   'meeting',
   'note',
   'stage_change',
+  'property-sent',
+  'viewing',
+  'follow-up',
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
