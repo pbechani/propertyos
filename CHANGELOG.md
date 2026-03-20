@@ -12,6 +12,63 @@ Related docs:
 
 ## [Unreleased]
 
+### Added
+
+- **Offer Detail Page — full offer view with counter offer history (2026-03-19)**
+  - New Next.js page `apps/web/src/app/app/my-listings/[id]/offers/[offerId]/page.tsx` (ported from `sample_ui/Agentlistingdetailpage-main/offerdetail.tsx`)
+  - Displays a full offer breakdown: price comparison card (offer vs list price, % above/below, earnest money, closing date), buyer info card, offer terms, counter offer history timeline, and quick action buttons (Accept, Counter, Reject, Request More Info)
+  - Top card shows: offer amount, list price, difference with colour coding (green above list, red below), and earnest money
+  - Wired in `my-listings/[id]/page.tsx` — clicking any offer row in the Offers tab navigates to `/app/my-listings/${id}/offers/${offerId}`
+  - Counter offer history renders a sequential timeline showing each round's amounts, dates, and direction (agent vs buyer)
+
+- **Offer Actions — Accept, Reject modals (2026-03-19)**
+  - New `AcceptOfferModal.tsx`: confirmation dialog with offer summary, acceptance notes, and optionally marks competing offers as rejected; calls `POST /agent/my-listings/:id/offers/:offerId/accept`
+  - New `RejectOfferModal.tsx`: 6-option rejection reason dropdown (price too low, financing concerns, better offer, contingency concerns, timing, other) with optional counter suggestion and message to buyer; calls `POST /agent/my-listings/:id/offers/:offerId/reject`
+  - Both modals send email notifications to the buyer via Mailpit
+
+- **Counter Offer — full-stack implementation (2026-03-19)**
+  - New backend endpoint `POST /agent/my-listings/:listingId/offers/:offerId/counter` in `property.controller.ts`
+  - `PropertyService.counterOffer()` inserts into `property.offer_counters` (migration `202603190044`), updates offer status to `counter_offered`, audit logs the action, and sends a counter offer email to the buyer via `NotificationService`
+  - `CounterOfferModal.tsx` overhauled: list price now sourced from the listing itself (not the offer), Quick Strategies section (Full Ask, Split Difference, Small Reduction) rendered with real calculations, earnest money defaults to offer value with safe `?? 0` guard for undefined
+  - Counter offer details (amount, closing date, expiration, message) shown in offer list rows and on the offer detail page after submission
+
+- **Add Offer — Buyer Selector (leads / clients / new) (2026-03-19)**
+  - `AddOfferModal.tsx` step 1 "Buyer Info" now presents a 3-option selector: **New Buyer** (manual name + email entry), **From Leads** (search autocomplete against `leadsApi.list`), **From Clients** (search autocomplete against `clientsApi.list`)
+  - Selecting a lead or client pre-fills `buyerName` and `buyerEmail` fields; agent can still edit before submitting
+  - Same selector pattern added to `InitiateSaleModal.tsx` buyer info step
+
+- **Initiate Sale — Buyer Selector (leads / clients / new) (2026-03-19)**
+  - `InitiateSaleModal.tsx` buyer info step updated with the same 3-option (New / Lead / Client) search pattern as `AddOfferModal`
+  - Selecting a lead or client pre-fills name and email; search is debounced with a 300 ms delay and shows loading state
+
+- **Company Isolation — listings and agent controls scoped to active company (2026-03-20)**
+  - Fixed a critical bug where a user's listings from one company context were visible when logged into a different company
+  - `PropertyListing` type and `ListingCard` component now carry a `companyId` field populated from `property.company_id` in the API response
+  - `Listings.tsx` reads `currentCompanyId` from `getActiveCompanyIdFromToken()` and gates the "Initiate Sale" button on `agentId === currentUserId && companyId === currentCompanyId`
+  - `PropertyDetailEnhanced.tsx` `isOwnListing` flag now requires both `currentUser.id === property.agent.id` **and** `property.companyId === activeCompanyId` — prevents agent controls (edit, open houses, offers, etc.) from rendering for cross-company properties
+
+- **Open Houses — past events filtered from public property detail (2026-03-20)**
+  - Public property detail sidebar previously showed all open houses including past ones
+  - `PropertyDetailEnhanced` now maintains two separate states: `propertyOpenHouses` (filtered to future/active events by `end_at > now`) shown on the public sidebar, and `allPropertyOpenHouses` (full list) used on the owner-only management tab
+  - Users can no longer register for events that have already ended
+
+- **Open House Registrants — visible for upcoming events (2026-03-20)**
+  - `OpenHouseDetailModal` previously only loaded attendees for `completed` events; now loads registrants for all statuses including `upcoming` and `in-progress`
+  - Added a dedicated **Registrants** tab (always visible, between Overview and Visitors) showing all pre-registered attendees with avatar initials, name, email, phone, registration date, Attended badge, and interest level badge
+  - Empty state with explanatory message shown when no registrations exist yet
+
+- **Open House Registrants — expandable list on property owner tab (2026-03-20)**
+  - Property detail owner management tab (Open Houses section) now has a **View Registrants** toggle button per open house row
+  - Clicking the toggle lazy-loads registrants from `GET /open-houses/:id/registrations` and displays an expandable inline list with name, email/phone, registration date, Attended and interest level badges
+
+- **Open House — Manual Guest Registration by Agent (2026-03-20)**
+  - New backend endpoint `POST /agent/open-houses/:id/register-guest` (agent/admin role) in `AgentOpenHouseController`
+  - New `RegisterGuestDto` in `mandate.dto.ts` with `guestName` (required), `guestEmail`, `guestPhone`, `interestLevel`, `notes`
+  - New `ViewingService.registerGuestForOpenHouse()` inserts a guest-only row (no `buyer_id`) into `property.open_house_registrations`, verifies agent ownership, and audit-logs the action
+  - New `viewingActionsApi.agentRegisterGuest()` in `api-client.ts`
+  - **"Add Registrant"** button added to the Registrants tab header in `OpenHouseDetailModal`
+  - Clicking opens an inline form with: Full Name (required), Email, Phone, Interest Level (High/Medium/Low) select; on submit the new guest is immediately appended to the attendees list without a page reload
+
 ### Fixed
 
 - **Add Lead — type field mismatch (2026-03-18)**

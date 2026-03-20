@@ -16,8 +16,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
-import { getAccessToken, getStoredUser } from "@/lib/auth-session";
-import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, salesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type Sale, type OwnershipHistoryRecord, type PriceHistoryRecord, type FloorPlanRecord } from "@/lib/api-client";
+import { getAccessToken, getStoredUser, getActiveCompanyIdFromToken } from "@/lib/auth-session";
+import { propertiesApi, usersApi, viewingsApi, neighbourhoodApi, mandateApi, viewingActionsApi, agentApi, inquiriesApi, salesApi, type AgentProfileResponse, type AuthUser, type PropertyListing, type NeighbourhoodStats, type ComparableSale, type AiValuationEstimate, type ValuationRecord, type MandateRecord, type CreateMandatePayload, type OpenHouseRecord, type OpenHouseAttendee, type PropertyStats, type ListingViewingRecord, type PropertyInquiryRecord, type CreateOpenHousePayload, type CancelOpenHousePayload, type RescheduleOpenHousePayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type Sale, type OwnershipHistoryRecord, type PriceHistoryRecord, type FloorPlanRecord } from "@/lib/api-client";
 import { buildSinglePointMapSource } from "@/lib/map-utils";
 import LeafletMapDynamic from "@/components/LeafletMapDynamic";
 import { formatMoney } from "@/lib/formatters";
@@ -345,6 +345,8 @@ type PropertyDetailState = {
   rawPrice: number;
   city: string | null;
   region: string | null;
+  /** Company UUID the listing was created under — used to gate owner-only controls */
+  companyId: string | null;
 };
 
 function getEmptyPropertyDetail(): PropertyDetailState {
@@ -387,6 +389,7 @@ function getEmptyPropertyDetail(): PropertyDetailState {
     rawPrice: 0,
     city: null,
     region: null,
+    companyId: null,
   };
 }
 
@@ -493,6 +496,8 @@ export default function PropertyDetailEnhanced() {
   const [existingSale, setExistingSale] = useState<Sale | null>(null);
 
   const [propertyOpenHouses, setPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
+  // Full list (including past) used only in the owner management tab
+  const [allPropertyOpenHouses, setAllPropertyOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [registeringOpenHouseId, setRegisteringOpenHouseId] = useState<string | null>(null);
   const [openHouseRegisterSuccess, setOpenHouseRegisterSuccess] = useState<string | null>(null);
 
@@ -551,6 +556,11 @@ export default function PropertyDetailEnhanced() {
   const [rescheduleOpenHouseForm, setRescheduleOpenHouseForm] = useState<RescheduleOpenHousePayload>({ scheduledAt: '', endAt: '', reason: '' });
   const [isReschedulingOpenHouse, setIsReschedulingOpenHouse] = useState(false);
   const [rescheduleOpenHouseError, setRescheduleOpenHouseError] = useState('');
+
+  // ── Open house attendees (owner management tab) ───────────────────────────
+  const [expandedOpenHouseId, setExpandedOpenHouseId] = useState<string | null>(null);
+  const [openHouseAttendees, setOpenHouseAttendees] = useState<Record<string, OpenHouseAttendee[]>>({});
+  const [loadingAttendeesId, setLoadingAttendeesId] = useState<string | null>(null);
 
   const handleAddToFavourites = async () => {
     const token = getAccessToken();
@@ -843,7 +853,14 @@ export default function PropertyDetailEnhanced() {
   const [geocodedCoords, setGeocodedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const isSoldListing = property.listingStatus.toLowerCase() === 'sold';
-  const isOwnListing = !!currentUser && !!property.agent.id && currentUser.id === property.agent.id;
+  // A listing is "own" only when both the user AND the active company context match.
+  // This prevents agent controls leaking across company contexts (e.g. Self vs Bechani Enterprises).
+  const activeCompanyId = getActiveCompanyIdFromToken();
+  const isOwnListing =
+    !!currentUser &&
+    !!property.agent.id &&
+    currentUser.id === property.agent.id &&
+    property.companyId === activeCompanyId;
   const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
   const verificationBadge = getVerificationBadge(property.verificationStatus);
   const hasLocationCoordinates = property.latitude != null && property.longitude != null;
@@ -1130,6 +1147,7 @@ export default function PropertyDetailEnhanced() {
           rawPrice: listing.price ? Number(listing.price) : 0,
           city: city || null,
           region: region || null,
+          companyId: listing.company_id ?? null,
         }));
         setRawListingCurrency(listing.currency || 'ZAR');
         // Normalize null listing_type to 'for_sale' — legacy records without an
@@ -1245,7 +1263,13 @@ export default function PropertyDetailEnhanced() {
   useEffect(() => {
     if (!propertyId) return;
     propertiesApi.getPropertyOpenHouses(propertyId)
-      .then(setPropertyOpenHouses)
+      .then((houses) => {
+        // All houses stored for owner management tab
+        setAllPropertyOpenHouses(houses);
+        // Filter out past open houses (end time has passed) for the public sidebar
+        const now = new Date();
+        setPropertyOpenHouses(houses.filter((oh) => new Date(oh.end_at) > now));
+      })
       .catch(() => { /* non-critical */ });
   }, [propertyId]);
 
@@ -1470,6 +1494,7 @@ export default function PropertyDetailEnhanced() {
         created_at: new Date().toISOString(),
       };
       setPropertyOpenHouses((prev) => [newRecord, ...prev]);
+      setAllPropertyOpenHouses((prev) => [newRecord, ...prev]);
       setShowCreateOpenHouseForm(false);
       setOpenHouseForm({ scheduledAt: '', endAt: '', maxAttendees: undefined, description: '' });
     } catch (err) {
@@ -1491,6 +1516,7 @@ export default function PropertyDetailEnhanced() {
     try {
       const updated = await agentApi.cancelOpenHouse(token, cancellingOpenHouseId, { reason: cancelOpenHouseForm.reason.trim() });
       setPropertyOpenHouses((prev) => prev.map((oh) => oh.id === cancellingOpenHouseId ? { ...oh, status: updated.status, cancel_reason: updated.cancel_reason } : oh));
+      setAllPropertyOpenHouses((prev) => prev.map((oh) => oh.id === cancellingOpenHouseId ? { ...oh, status: updated.status, cancel_reason: updated.cancel_reason } : oh));
       setShowCancelOpenHouseModal(false);
       setCancellingOpenHouseId(null);
       setCancelOpenHouseForm({ reason: '' });
@@ -1513,6 +1539,7 @@ export default function PropertyDetailEnhanced() {
     try {
       const updated = await agentApi.rescheduleOpenHouse(token, reschedulingOpenHouseId, rescheduleOpenHouseForm);
       setPropertyOpenHouses((prev) => prev.map((oh) => oh.id === reschedulingOpenHouseId ? { ...oh, scheduled_at: updated.scheduled_at, end_at: updated.end_at, rescheduled_at: updated.rescheduled_at, rescheduled_reason: updated.rescheduled_reason } : oh));
+      setAllPropertyOpenHouses((prev) => prev.map((oh) => oh.id === reschedulingOpenHouseId ? { ...oh, scheduled_at: updated.scheduled_at, end_at: updated.end_at, rescheduled_at: updated.rescheduled_at, rescheduled_reason: updated.rescheduled_reason } : oh));
       setShowRescheduleOpenHouseModal(false);
       setReschedulingOpenHouseId(null);
       setRescheduleOpenHouseForm({ scheduledAt: '', endAt: '', reason: '' });
@@ -1520,6 +1547,26 @@ export default function PropertyDetailEnhanced() {
       setRescheduleOpenHouseError(err instanceof Error ? err.message : 'Failed to reschedule open house.');
     } finally {
       setIsReschedulingOpenHouse(false);
+    }
+  };
+
+  const handleToggleOpenHouseAttendees = async (openHouseId: string) => {
+    if (expandedOpenHouseId === openHouseId) {
+      setExpandedOpenHouseId(null);
+      return;
+    }
+    setExpandedOpenHouseId(openHouseId);
+    if (openHouseAttendees[openHouseId]) return; // already loaded
+    const token = getAccessToken();
+    if (!token) return;
+    setLoadingAttendeesId(openHouseId);
+    try {
+      const attendees = await viewingActionsApi.getOpenHouseRegistrations(token, openHouseId);
+      setOpenHouseAttendees((prev) => ({ ...prev, [openHouseId]: attendees }));
+    } catch {
+      setOpenHouseAttendees((prev) => ({ ...prev, [openHouseId]: [] }));
+    } finally {
+      setLoadingAttendeesId(null);
     }
   };
 
@@ -1750,9 +1797,9 @@ export default function PropertyDetailEnhanced() {
                 >
                   <Home className={`w-4 h-4 ${ownerTab === 'open_houses' ? 'text-purple-200' : 'text-purple-400'}`} />
                   <span>Open Houses</span>
-                  {propertyOpenHouses.length > 0 && (
+                  {allPropertyOpenHouses.length > 0 && (
                     <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'open_houses' ? 'bg-purple-500 text-purple-100' : 'bg-purple-100 text-purple-600'}`}>
-                      {propertyOpenHouses.length}
+                      {allPropertyOpenHouses.length}
                     </span>
                   )}
                 </button>
@@ -2157,14 +2204,14 @@ export default function PropertyDetailEnhanced() {
                     )}
                   </div>
 
-                  {propertyOpenHouses.length === 0 ? (
+                  {allPropertyOpenHouses.length === 0 ? (
                     <div className="py-6 text-center">
                       <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                       <p className="text-sm text-gray-500">No open houses scheduled</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
-                      {propertyOpenHouses.map((oh) => {
+                      {allPropertyOpenHouses.map((oh) => {
                         const statusColors: Record<string, string> = {
                           scheduled: 'bg-blue-100 text-blue-700',
                           active: 'bg-emerald-100 text-emerald-700',
@@ -2227,6 +2274,60 @@ export default function PropertyDetailEnhanced() {
                                 </button>
                               </div>
                             )}
+                            {/* Registrants section */}
+                            <div className="ml-11 mt-3">
+                              <button
+                                onClick={() => void handleToggleOpenHouseAttendees(oh.id)}
+                                className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium"
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                {expandedOpenHouseId === oh.id ? 'Hide' : 'View'} Registrants
+                                {openHouseAttendees[oh.id] != null && (
+                                  <span className="bg-purple-100 text-purple-700 rounded-full px-1.5 py-0.5 text-xs font-bold">
+                                    {openHouseAttendees[oh.id].length}
+                                  </span>
+                                )}
+                              </button>
+                              {expandedOpenHouseId === oh.id && (
+                                <div className="mt-2">
+                                  {loadingAttendeesId === oh.id ? (
+                                    <p className="text-xs text-gray-400 py-2">Loading registrants…</p>
+                                  ) : !openHouseAttendees[oh.id]?.length ? (
+                                    <p className="text-xs text-gray-400 py-2 italic">No registrations yet.</p>
+                                  ) : (
+                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                      {openHouseAttendees[oh.id].map((att) => {
+                                        const name = (att.guest_name ?? [att.first_name, att.last_name].filter(Boolean).join(' ')) || 'Unknown';
+                                        const email = att.guest_email ?? att.email ?? '—';
+                                        const phone = att.guest_phone ?? att.phone ?? null;
+                                        const interestColors = { high: 'bg-green-100 text-green-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-600' };
+                                        return (
+                                          <div key={att.id} className="flex items-start justify-between gap-2 bg-white border border-gray-100 rounded-md px-2.5 py-2 text-xs">
+                                            <div className="min-w-0">
+                                              <p className="font-medium text-gray-900 truncate">{name}</p>
+                                              <p className="text-gray-500 truncate">{email}{phone ? ` · ${phone}` : ''}</p>
+                                              <p className="text-gray-400 mt-0.5">
+                                                Registered {new Date(att.registered_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+                                              </p>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                              {att.attended && (
+                                                <span className="bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 text-xs font-bold">✓ Attended</span>
+                                              )}
+                                              {att.interest_level && (
+                                                <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${interestColors[att.interest_level] ?? ''}`}>
+                                                  {att.interest_level} interest
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

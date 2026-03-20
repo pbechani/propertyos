@@ -9,7 +9,7 @@ import PropertyCardHeader from "@/components/property/PropertyCardHeader";
 import MultiListingDialog from "@/components/property/MultiListingDialog";
 import type { MultiListingItem } from "@/components/property/MultiListingDialog";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { getAccessToken, getStoredUser } from "@/lib/auth-session";
+import { getAccessToken, getStoredUser, getActiveCompanyIdFromToken } from "@/lib/auth-session";
 import { ApiError, propertiesApi, salesApi, type AgentProfileResponse, type FeaturedAgentCard, type PropertyListing, type Sale } from "@/lib/api-client";
 import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
 import LeafletMapDynamic from "@/components/LeafletMapDynamic";
@@ -164,6 +164,8 @@ type ListingCard = {
   fraudFlagged: boolean;
   agent: string;
   agentId: string | null;
+  /** Company UUID the listing was created under — used to gate owner-only controls */
+  companyId: string | null;
   agentCompany: string;
   agentAvatarUrl: string | null;
   agentCompanyLogoUrl: string | null;
@@ -385,6 +387,7 @@ function mapPropertyToListingCard(
     fraudFlagged: property.verification_status === "flagged",
     agent: profileAgentName || "Verified Agent",
     agentId: property.agent_id ?? null,
+    companyId: property.company_id ?? null,
     agentCompany,
     agentAvatarUrl,
     agentCompanyLogoUrl,
@@ -694,6 +697,7 @@ export default function Listings() {
 
   // ── Current user (for "Initiate Sale" button on own listings) ────────────
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
   // Map of propertyId → active Sale (populated for own listings once user loads)
   const [propertySaleMap, setPropertySaleMap] = useState<Record<string, Sale>>({});
   const [initiateCardProp, setInitiateCardProp] = useState<{ id: string; title: string; price: number; currency: string } | null>(null);
@@ -1198,6 +1202,7 @@ export default function Listings() {
   useEffect(() => {
     const user = getStoredUser();
     setCurrentUserId(user?.id ?? null);
+    setCurrentCompanyId(getActiveCompanyIdFromToken());
     const token = getAccessToken();
     if (!token) return;
     salesApi.getMySales(token).then((sales) => {
@@ -3637,7 +3642,7 @@ export default function Listings() {
                         )}
                         <div className="pt-3 border-t border-gray-200">
                         </div>
-                        {property.agentId && property.agentId === currentUserId && (() => {
+                        {property.agentId && property.agentId === currentUserId && property.companyId === currentCompanyId && (() => {
                           const activeSale = propertySaleMap[property.id];
                           if (activeSale) {
                             return (

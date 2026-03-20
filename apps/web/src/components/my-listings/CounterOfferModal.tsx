@@ -8,9 +8,9 @@ interface Offer {
   id: string;
   buyer: string;
   amount: number;
-  earnestMoney: number;
+  earnestMoney?: number | null;
   contingencies: string[];
-  closingDate: string;
+  closingDate?: string;
   status: 'pending' | 'accepted' | 'rejected' | 'countered';
   submittedDate: string;
   financing: string;
@@ -22,7 +22,7 @@ interface CounterOfferModalProps {
   onOpenChange: (open: boolean) => void;
   offer: Offer | null;
   listPrice?: number;
-  onCounter?: (counterOffer: any) => void;
+  onCounter: (counterOffer: { counterAmount: number; counterEarnestMoney?: number; counterClosingDate?: string; counterNotes?: string }) => void;
 }
 
 const counterStrategies = [
@@ -34,7 +34,7 @@ const counterStrategies = [
   {
     name: 'Small Concession',
     description: 'Move 2-3% closer',
-    calculate: (original: number, list: number) => Math.round(list - (list - original) * 0.75 / 1000) * 1000,
+    calculate: (original: number, list: number) => Math.round((list - (list - original) * 0.75) / 1000) * 1000,
   },
   {
     name: 'Firm on Price',
@@ -43,7 +43,7 @@ const counterStrategies = [
   },
 ];
 
-export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 825000, onCounter }: CounterOfferModalProps) {
+export function CounterOfferModal({ open, onOpenChange, offer, listPrice, onCounter }: CounterOfferModalProps) {
   const [formData, setFormData] = useState({
     counterAmount: '',
     counterEarnestMoney: '',
@@ -57,12 +57,11 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
 
   useEffect(() => {
     if (offer) {
-      // Set default counter amount to list price
       setFormData({
-        counterAmount: listPrice.toString(),
-        counterEarnestMoney: offer.earnestMoney.toString(),
-        counterClosingDate: offer.closingDate,
-        expirationDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days from now
+        counterAmount: listPrice != null ? listPrice.toString() : offer.amount.toString(),
+        counterEarnestMoney: offer.earnestMoney != null ? offer.earnestMoney.toString() : '',
+        counterClosingDate: offer.closingDate ?? '',
+        expirationDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         expirationTime: '17:00',
         counterNotes: '',
         removeContingencies: [],
@@ -73,12 +72,12 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (offer && onCounter) {
+    if (offer) {
       onCounter({
-        originalOfferId: offer.id,
-        ...formData,
         counterAmount: parseFloat(formData.counterAmount),
-        counterEarnestMoney: parseFloat(formData.counterEarnestMoney),
+        counterEarnestMoney: formData.counterEarnestMoney ? parseFloat(formData.counterEarnestMoney) : undefined,
+        counterClosingDate: formData.counterClosingDate || undefined,
+        counterNotes: formData.counterNotes || undefined,
       });
     }
     onOpenChange(false);
@@ -147,17 +146,21 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
                     <div className="text-xs text-gray-600 mb-1">Offer Amount</div>
                     <div className="font-semibold text-gray-900">{formatCurrency(offer.amount)}</div>
                     <div className="text-xs text-gray-500">
-                      {((offer.amount / listPrice) * 100).toFixed(1)}% of asking
+                      {listPrice != null ? `${((offer.amount / listPrice) * 100).toFixed(1)}% of asking` : ''}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600 mb-1">Earnest Money</div>
-                    <div className="font-semibold text-gray-900">{formatCurrency(offer.earnestMoney)}</div>
+                    <div className="font-semibold text-gray-900">
+                      {offer.earnestMoney ? formatCurrency(offer.earnestMoney) : '—'}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600 mb-1">Closing Date</div>
                     <div className="font-semibold text-gray-900">
-                      {new Date(offer.closingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {offer.closingDate
+                        ? new Date(offer.closingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        : '—'}
                     </div>
                   </div>
                   <div>
@@ -167,7 +170,8 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
                 </div>
               </div>
 
-              {/* Quick Counter Strategies */}
+              {/* Quick Counter Strategies — only shown when list price differs from offer */}
+              {listPrice != null && listPrice !== originalAmount && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Quick Counter Strategies
@@ -195,8 +199,7 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
                   })}
                 </div>
               </div>
-
-              {/* Counter Offer Comparison */}
+              )}
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-5">
                 <div className="flex items-center gap-2 text-blue-800 font-medium mb-4">
                   <Calculator className="w-5 h-5" />
@@ -279,7 +282,7 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
                     <div className="bg-white rounded-lg p-3">
                       <div className="text-xs text-gray-600 mb-1">% of Asking</div>
                       <div className="text-lg font-semibold text-gray-900">
-                        {((counterAmount / listPrice) * 100).toFixed(1)}%
+                        {listPrice != null ? `${((counterAmount / listPrice) * 100).toFixed(1)}%` : '—'}
                       </div>
                     </div>
                   </div>
@@ -302,7 +305,9 @@ export function CounterOfferModal({ open, onOpenChange, offer, listPrice = 82500
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Original: {new Date(offer.closingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Original: {offer.closingDate
+                      ? new Date(offer.closingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'Not set'}
                   </p>
                 </div>
 

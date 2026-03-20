@@ -23,6 +23,7 @@ import {
   CheckInAttendeeDto,
   CreateOpenHouseDto,
   CreateViewingDto,
+  RegisterGuestDto,
   RescheduleOpenHouseDto,
   RescheduleViewingDto,
   ViewingFeedbackDto,
@@ -258,6 +259,23 @@ export class AgentOpenHouseController {
   @Get()
   async list(@Request() req: AuthRequest) {
     return this.viewingService.agentOpenHouses(req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Post(':id/register-guest')
+  async registerGuest(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RegisterGuestDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.registerGuestForOpenHouse(
+      id,
+      req.user.sub,
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 }
 

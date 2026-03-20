@@ -892,6 +892,8 @@ export type PropertyListing = {
   company_brand_color?: string | null;
   /** Status of the company the listing was created under (e.g. 'under_investigation'). */
   company_status?: string | null;
+  /** UUID of the company the listing was created under. Used for company context isolation checks. */
+  company_id?: string | null;
   created_at: string;
   updated_at: string;
   /** ISO timestamp of the next scheduled open house for this property, if any. */
@@ -2076,6 +2078,18 @@ export const viewingActionsApi = {
       authToken,
     }),
 
+  agentRegisterGuest: (
+    authToken: string,
+    openHouseId: string,
+    payload: { guestName: string; guestEmail?: string; guestPhone?: string; interestLevel?: 'high' | 'medium' | 'low'; notes?: string },
+  ) =>
+    apiRequest<OpenHouseAttendee>(`/agent/open-houses/${openHouseId}/register-guest`, {
+      method: 'POST',
+      authToken,
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+
   checkInAttendee: (authToken: string, openHouseId: string, payload: CheckInAttendeePayload) =>
     apiRequest<OpenHouseAttendee>(`/open-houses/${openHouseId}/check-in`, {
       method: 'POST',
@@ -2909,6 +2923,7 @@ export type PropertyOfferRow = {
   property_id: string;
   agent_id: string;
   buyer_name: string;
+  buyer_email: string | null;
   amount: string;
   earnest_money: string | null;
   financing: string;
@@ -2916,13 +2931,26 @@ export type PropertyOfferRow = {
   closing_date: string | null;
   notes: string | null;
   status: 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+  counter_amount: string | null;
+  counter_earnest_money: string | null;
+  counter_closing_date: string | null;
+  counter_notes: string | null;
+  countered_at: string | null;
   submitted_at: string;
   created_at: string;
   updated_at: string;
 };
 
+export type CounterOfferPayload = {
+  counterAmount: number;
+  counterEarnestMoney?: number;
+  counterClosingDate?: string;
+  counterNotes?: string;
+};
+
 export type CreatePropertyOfferPayload = {
   buyerName: string;
+  buyerEmail?: string;
   amount: number;
   earnestMoney?: number;
   financing: string;
@@ -2946,12 +2974,26 @@ export const agentOffersApi = {
       body: JSON.stringify(payload),
     }),
 
+  get: (authToken: string, propertyId: string, offerId: string) =>
+    apiRequest<PropertyOfferRow>(`/agent/my-listings/${propertyId}/offers/${offerId}`, {
+      method: 'GET',
+      authToken,
+    }),
+
   updateStatus: (authToken: string, propertyId: string, offerId: string, status: string) =>
     apiRequest<PropertyOfferRow>(`/agent/my-listings/${propertyId}/offers/${offerId}/status`, {
       method: 'PATCH',
       authToken,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
+    }),
+
+  counter: (authToken: string, propertyId: string, offerId: string, payload: CounterOfferPayload) =>
+    apiRequest<PropertyOfferRow>(`/agent/my-listings/${propertyId}/offers/${offerId}/counter`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }),
 };
 

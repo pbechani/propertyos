@@ -799,7 +799,7 @@ export class AgentDashboardController {
    */
   @Get('dashboard')
   async getDashboard(@Request() req: AuthRequest) {
-    return this.propertyService.getAgentDashboard(req.user.sub);
+    return this.propertyService.getAgentDashboard(req.user.sub, req.user.active_company_id);
   }
 
   /**
@@ -812,7 +812,7 @@ export class AgentDashboardController {
     @Request() req: AuthRequest,
     @Query('status') status?: string,
   ) {
-    return this.propertyService.getMyListings(req.user.sub, status);
+    return this.propertyService.getMyListings(req.user.sub, status, req.user.active_company_id);
   }
 
   /**
@@ -821,7 +821,7 @@ export class AgentDashboardController {
    */
   @Get('dashboard/summary')
   async getDashboardSummary(@Request() req: AuthRequest) {
-    return this.propertyService.getAgentDashboardSummary(req.user.sub);
+    return this.propertyService.getAgentDashboardSummary(req.user.sub, req.user.active_company_id);
   }
 
   /**
@@ -867,6 +867,7 @@ export class AgentDashboardController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: {
       buyerName: string;
+      buyerEmail?: string;
       amount: number;
       earnestMoney?: number;
       financing: string;
@@ -887,6 +888,22 @@ export class AgentDashboardController {
     @Body() body: { status: string },
   ) {
     return this.propertyService.updatePropertyOfferStatus(req.user.sub, id, offerId, body.status);
+  }
+
+  /** POST /api/v1/agent/my-listings/:id/offers/:offerId/counter */
+  @Post('my-listings/:id/offers/:offerId/counter')
+  async counterListingOffer(
+    @Request() req: AuthRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+    @Body() body: {
+      counterAmount: number;
+      counterEarnestMoney?: number;
+      counterClosingDate?: string;
+      counterNotes?: string;
+    },
+  ) {
+    return this.propertyService.counterPropertyOffer(req.user.sub, id, offerId, body);
   }
 }
 

@@ -613,6 +613,57 @@ The PropertyOS Team
     `;
   }
 
+  async registerGuestForOpenHouse(
+    openHouseId: string,
+    agentId: string,
+    payload: {
+      guestName: string;
+      guestEmail?: string;
+      guestPhone?: string;
+      interestLevel?: 'high' | 'medium' | 'low';
+      notes?: string;
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<OpenHouseAttendeeRow> {
+    // Verify ownership
+    const oh = await this.prisma.$queryRaw<Array<{ id: string; status: string }>>`
+      SELECT id, status FROM property.open_houses WHERE id = ${openHouseId}::uuid AND agent_id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!oh.length) throw new NotFoundException('Open house not found');
+    if (oh[0].status === 'cancelled') throw new BadRequestException('Cannot register for a cancelled open house');
+
+    const interestLevel = payload.interestLevel ?? null;
+    const rows = await this.prisma.$queryRaw<OpenHouseAttendeeRow[]>`
+      INSERT INTO property.open_house_registrations
+        (open_house_id, guest_name, guest_email, guest_phone, interest_level, notes)
+      VALUES
+        (${openHouseId}::uuid, ${payload.guestName}, ${payload.guestEmail ?? null},
+         ${payload.guestPhone ?? null}, ${interestLevel}, ${payload.notes ?? null})
+      RETURNING
+        id, open_house_id, buyer_id, registered_at, attended, checked_in_at,
+        interest_level, notes, guest_name, guest_email, guest_phone, qr_token,
+        NULL::text AS first_name, NULL::text AS last_name,
+        guest_email AS email, guest_phone AS phone
+    `;
+
+    if (!rows.length) throw new BadRequestException('Could not create registration');
+    const registration = rows[0];
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: 'agent',
+      action: 'open_house.guest_registered',
+      resourceType: 'open_house_registration',
+      resourceId: registration.id,
+      payload: { openHouseId, guestName: payload.guestName },
+      ipAddress,
+      userAgent,
+    });
+
+    return registration;
+  }
+
   async checkInAttendee(
     openHouseId: string,
     agentId: string,

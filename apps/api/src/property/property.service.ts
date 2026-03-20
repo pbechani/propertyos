@@ -2,11 +2,13 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
+import { NotificationService } from '../identity/notification.service';
 import {
   CreatePropertyDto,
   UpdatePropertyDto,
@@ -149,10 +151,13 @@ export type AgentReviewRow = {
 
 @Injectable()
 export class PropertyService {
+  private readonly logger = new Logger(PropertyService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaStorage: MediaStorageService,
     private readonly audit: PropertyAuditService,
+    private readonly notifications: NotificationService,
   ) {}
 
   // ──────────────────────────────────────────────────────────
@@ -447,13 +452,24 @@ export class PropertyService {
   async getMyListings(
     agentId: string,
     status?: string,
+    companyId?: string | null,
   ): Promise<{ data: PropertyWithLocation[]; total: number }> {
     const hasStatusFilter = !!status && status !== 'all';
-    const values: unknown[] = hasStatusFilter ? [agentId, status] : [agentId];
+    const hasCompanyFilter = !!companyId;
 
-    const whereClause = hasStatusFilter
-      ? 'WHERE p.agent_id = $1::uuid AND p.status = $2'
-      : 'WHERE p.agent_id = $1::uuid';
+    const conditions: string[] = ['p.agent_id = $1::uuid'];
+    const values: unknown[] = [agentId];
+
+    if (hasStatusFilter) {
+      values.push(status);
+      conditions.push(`p.status = $${values.length}`);
+    }
+    if (hasCompanyFilter) {
+      values.push(companyId);
+      conditions.push(`p.company_id = $${values.length}::uuid`);
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
 
     const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
     const dataQuery = `
@@ -688,7 +704,7 @@ export class PropertyService {
   // Agent dashboard stats
   // ──────────────────────────────────────────────────────────
 
-  async getAgentDashboard(agentId: string): Promise<{
+  async getAgentDashboard(agentId: string, companyId?: string | null): Promise<{
     totalListings: number;
     byStatus: Record<string, number>;
     newInquiries7d: number;
@@ -698,27 +714,29 @@ export class PropertyService {
     listingViewsTrendPct: number;
     inquiryResponseRatePct: number;
   }> {
+    const companyFilter = companyId ? `AND company_id = '${companyId}'::uuid` : '';
+    const companyJoinFilter = companyId ? `AND p.company_id = '${companyId}'::uuid` : '';
     const [listingRows, inquiryRows, verRows, viewRows, responseRows] = await Promise.all([
-      this.prisma.$queryRaw<{ status: string; count: string }[]>`
+      this.prisma.$queryRawUnsafe<{ status: string; count: string }[]>(`
         SELECT status, COUNT(*)::text as count
         FROM property.properties
-        WHERE agent_id = ${agentId}::uuid
+        WHERE agent_id = $1::uuid ${companyFilter}
         GROUP BY status
-      `,
-      this.prisma.$queryRaw<[{ count: string }]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ count: string }]>(`
         SELECT COUNT(*)::text as count
         FROM property.inquiries i
         JOIN property.properties p ON i.property_id = p.id
-        WHERE p.agent_id = ${agentId}::uuid
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
           AND i.created_at >= NOW() - INTERVAL '7 days'
-      `,
-      this.prisma.$queryRaw<{ verification_status: string; count: string }[]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<{ verification_status: string; count: string }[]>(`
         SELECT verification_status, COUNT(*)::text as count
         FROM property.properties
-        WHERE agent_id = ${agentId}::uuid
+        WHERE agent_id = $1::uuid ${companyFilter}
         GROUP BY verification_status
-      `,
-      this.prisma.$queryRaw<[{ current_views: string; previous_views: string }]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ current_views: string; previous_views: string }]>(`
         SELECT
           COUNT(*) FILTER (WHERE al.created_at >= NOW() - INTERVAL '7 days')::text AS current_views,
           COUNT(*) FILTER (
@@ -729,10 +747,10 @@ export class PropertyService {
         JOIN property.properties p ON p.id = al.resource_id
         WHERE al.action = 'property.viewed'
           AND al.resource_type = 'property'
-          AND p.agent_id = ${agentId}::uuid
+          AND p.agent_id = $1::uuid ${companyJoinFilter}
           AND (al.actor_id IS NULL OR (al.actor_id != p.agent_id AND al.actor_id != COALESCE(p.owner_id, p.agent_id)))
-      `,
-      this.prisma.$queryRaw<[{ total_inquiries: string; responded_inquiries: string }]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ total_inquiries: string; responded_inquiries: string }]>(`
         SELECT
           COUNT(*)::text AS total_inquiries,
           COUNT(*) FILTER (
@@ -740,8 +758,8 @@ export class PropertyService {
           )::text AS responded_inquiries
         FROM property.inquiries i
         JOIN property.properties p ON p.id = i.property_id
-        WHERE p.agent_id = ${agentId}::uuid
-      `,
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
+      `, agentId),
     ]);
 
     const byStatus: Record<string, number> = {};
@@ -789,43 +807,45 @@ export class PropertyService {
   // Extended agent dashboard (Sprint 03 Enhanced)
   // ---------------------------------------------------------------------------
 
-  async getAgentDashboardSummary(agentId: string) {
+  async getAgentDashboardSummary(agentId: string, companyId?: string | null) {
+    const companyFilter = companyId ? `AND company_id = '${companyId}'::uuid` : '';
+    const companyJoinFilter = companyId ? `AND p.company_id = '${companyId}'::uuid` : '';
     const [listing, mandate, viewRows, commissionRows] = await Promise.all([
-      this.prisma.$queryRaw<
+      this.prisma.$queryRawUnsafe<
         { status: string; count: string; total_value: string }[]
-      >`
+      >(`
         SELECT status, COUNT(*)::text AS count, COALESCE(SUM(price),0)::text AS total_value
         FROM property.properties
-        WHERE agent_id = ${agentId}::uuid
+        WHERE agent_id = $1::uuid ${companyFilter}
         GROUP BY status
-      `,
-      this.prisma.$queryRaw<[{ active: string; pending: string }]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ active: string; pending: string }]>(`
         SELECT
           COUNT(*) FILTER (WHERE status = 'active')::text AS active,
           COUNT(*) FILTER (WHERE status = 'pending')::text AS pending
         FROM property.mandates
-        WHERE agent_id = ${agentId}::uuid
-      `,
-      this.prisma.$queryRaw<[{ upcoming: string; today: string }]>`
+        WHERE agent_id = $1::uuid
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ upcoming: string; today: string }]>(`
         SELECT
           COUNT(*) FILTER (WHERE v.scheduled_at >= NOW() AND v.status = 'confirmed')::text AS upcoming,
           COUNT(*) FILTER (
             WHERE DATE(v.scheduled_at) = CURRENT_DATE AND v.status IN ('confirmed','pending')
           )::text AS today
         FROM property.viewings v
-        WHERE v.agent_id = ${agentId}::uuid
-      `,
-      this.prisma.$queryRaw<
+        WHERE v.agent_id = $1::uuid
+      `, agentId),
+      this.prisma.$queryRawUnsafe<
         { property_id: string; title: string; price: string; stage_name: string | null }[]
-      >`
+      >(`
         SELECT p.id AS property_id, p.title, p.price::text, sc.stage_name
         FROM property.properties p
         JOIN sales.property_sales ps ON ps.property_id = p.id AND ps.status = 'active'
         JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country
-        WHERE p.agent_id = ${agentId}::uuid
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
         ORDER BY p.price DESC
         LIMIT 10
-      `,
+      `, agentId),
     ]);
 
     const byStatus: Record<string, { count: number; totalValue: number }> = {};
@@ -1742,6 +1762,7 @@ export class PropertyService {
     propertyId: string,
     dto: {
       buyerName: string;
+      buyerEmail?: string;
       amount: number;
       earnestMoney?: number;
       financing: string;
@@ -1750,8 +1771,8 @@ export class PropertyService {
       notes?: string;
     },
   ) {
-    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
-      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
+      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
     `;
     if (!props[0]) throw new NotFoundException('Property not found');
     if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
@@ -1759,11 +1780,12 @@ export class PropertyService {
     const closingDate = dto.closingDate ? new Date(dto.closingDate) : null;
     const rows = await this.prisma.$queryRaw<unknown[]>`
       INSERT INTO sales.property_offers
-        (property_id, agent_id, buyer_name, amount, earnest_money, financing, contingencies, closing_date, notes)
+        (property_id, agent_id, buyer_name, buyer_email, amount, earnest_money, financing, contingencies, closing_date, notes)
       VALUES (
         ${propertyId}::uuid,
         ${agentId}::uuid,
         ${dto.buyerName},
+        ${dto.buyerEmail ?? null},
         ${dto.amount},
         ${dto.earnestMoney ?? null},
         ${dto.financing},
@@ -1782,19 +1804,92 @@ export class PropertyService {
     offerId: string,
     status: string,
   ) {
-    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
-      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
+      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
     `;
     if (!props[0]) throw new NotFoundException('Property not found');
     if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
 
-    const rows = await this.prisma.$queryRaw<unknown[]>`
+    const rows = await this.prisma.$queryRaw<{ buyer_name: string; buyer_email: string | null; amount: number }[]>`
       UPDATE sales.property_offers
       SET status = ${status}, updated_at = NOW()
       WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
       RETURNING *
     `;
-    if (!(rows as unknown[]).length) throw new NotFoundException('Offer not found');
-    return rows[0];
+    if (!rows.length) throw new NotFoundException('Offer not found');
+
+    const offer = rows[0];
+    if (offer.buyer_email) {
+      const label = status === 'accepted' ? 'Accepted 🎉' : status === 'rejected' ? 'Declined' : status;
+      const subject = `Your offer on ${props[0].title} has been ${label}`;
+      const body = status === 'accepted'
+        ? `<p>Dear ${offer.buyer_name},</p><p>Great news! Your offer of <strong>$${Number(offer.amount).toLocaleString()}</strong> on <strong>${props[0].title}</strong> has been <strong>accepted</strong>. The agent will be in touch shortly with next steps.</p><p>Regards,<br/>PRIBEC</p>`
+        : `<p>Dear ${offer.buyer_name},</p><p>Thank you for your interest in <strong>${props[0].title}</strong>. Unfortunately, your offer of <strong>$${Number(offer.amount).toLocaleString()}</strong> has not been accepted at this time.</p><p>Regards,<br/>PRIBEC</p>`;
+      await this.notifications.sendEmail(offer.buyer_email, subject, body).catch((err) =>
+        this.logger.warn(`Failed to send status email: ${err.message}`),
+      );
+    }
+
+    return offer;
+  }
+
+  async counterPropertyOffer(
+    agentId: string,
+    propertyId: string,
+    offerId: string,
+    data: {
+      counterAmount: number;
+      counterEarnestMoney?: number;
+      counterClosingDate?: string;
+      counterNotes?: string;
+    },
+  ) {
+    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
+      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const closingDate = data.counterClosingDate ? new Date(data.counterClosingDate) : null;
+
+    const rows = await this.prisma.$queryRaw<{ buyer_name: string; buyer_email: string | null; amount: number }[]>`
+      UPDATE sales.property_offers
+      SET
+        status                = 'countered',
+        counter_amount        = ${data.counterAmount}::numeric,
+        counter_earnest_money = ${data.counterEarnestMoney ?? null}::numeric,
+        counter_closing_date  = ${closingDate}::date,
+        counter_notes         = ${data.counterNotes ?? null},
+        countered_at          = NOW(),
+        updated_at            = NOW()
+      WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
+      RETURNING *
+    `;
+    if (!rows.length) throw new NotFoundException('Offer not found');
+
+    const offer = rows[0];
+    if (offer.buyer_email) {
+      const formattedAmount = `$${Number(data.counterAmount).toLocaleString()}`;
+      const formattedClosing = data.counterClosingDate
+        ? new Date(data.counterClosingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'To be confirmed';
+      const subject = `Counter offer received on ${props[0].title}`;
+      const body = `
+<p>Dear ${offer.buyer_name},</p>
+<p>The agent has reviewed your offer on <strong>${props[0].title}</strong> and has submitted a counter offer.</p>
+<table style="border-collapse:collapse;width:100%;max-width:400px">
+  <tr><td style="padding:8px;font-weight:bold">Counter Amount</td><td style="padding:8px">${formattedAmount}</td></tr>
+  ${data.counterEarnestMoney != null ? `<tr><td style="padding:8px;font-weight:bold">Earnest Money</td><td style="padding:8px">$${Number(data.counterEarnestMoney).toLocaleString()}</td></tr>` : ''}
+  <tr><td style="padding:8px;font-weight:bold">Proposed Closing Date</td><td style="padding:8px">${formattedClosing}</td></tr>
+  ${data.counterNotes ? `<tr><td style="padding:8px;font-weight:bold">Notes</td><td style="padding:8px">${data.counterNotes}</td></tr>` : ''}
+</table>
+<p>Please contact the agent to accept, reject, or negotiate further.</p>
+<p>Regards,<br/>PRIBEC</p>`;
+      await this.notifications.sendEmail(offer.buyer_email, subject, body).catch((err) =>
+        this.logger.warn(`Failed to send counter offer email: ${err.message}`),
+      );
+    }
+
+    return offer;
   }
 }

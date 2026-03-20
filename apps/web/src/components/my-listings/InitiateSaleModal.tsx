@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
   X,
@@ -25,13 +25,18 @@ import {
   ChevronRight,
   CheckSquare,
   Plus,
-  Trash2
+  Trash2,
+  Search,
+  UserCheck,
+  UserPlus,
 } from 'lucide-react';
+import { leadsApi, LeadRow } from '@/lib/api-client';
 
 interface InitiateSaleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   listingPrice: number;
+  authToken: string;
 }
 
 const financingTypes = [
@@ -88,11 +93,17 @@ const contingencies = [
   { id: 'title', label: 'Title Review', recommended: true }
 ];
 
-export function InitiateSaleModal({ open, onOpenChange, listingPrice }: InitiateSaleModalProps) {
+export function InitiateSaleModal({ open, onOpenChange, listingPrice, authToken }: InitiateSaleModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [buyers, setBuyers] = useState([
     {
       id: 1,
+      source: 'new' as 'lead' | 'client' | 'new',
+      selectedLead: null as LeadRow | null,
+      searchQuery: '',
+      searchResults: [] as LeadRow[],
+      searchLoading: false,
+      showDropdown: false,
       buyerName: '',
       buyerEmail: '',
       buyerPhone: ''
@@ -140,6 +151,12 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
     const newId = Math.max(...buyers.map(b => b.id)) + 1;
     setBuyers([...buyers, {
       id: newId,
+      source: 'new' as const,
+      selectedLead: null,
+      searchQuery: '',
+      searchResults: [],
+      searchLoading: false,
+      showDropdown: false,
       buyerName: '',
       buyerEmail: '',
       buyerPhone: ''
@@ -157,6 +174,41 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
       b.id === id ? { ...b, [field]: value } : b
     ));
   };
+
+  const setBuyerSource = (id: number, source: 'lead' | 'client' | 'new') => {
+    setBuyers(buyers.map(b =>
+      b.id === id ? { ...b, source, selectedLead: null, searchQuery: '', searchResults: [], showDropdown: false, buyerName: '', buyerEmail: '', buyerPhone: '' } : b
+    ));
+  };
+
+  const selectBuyerLead = (id: number, lead: LeadRow) => {
+    setBuyers(buyers.map(b =>
+      b.id === id ? { ...b, selectedLead: lead, showDropdown: false, searchQuery: '', buyerName: lead.name, buyerEmail: lead.email ?? '' } : b
+    ));
+  };
+
+  const searchTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+
+  const handleBuyerSearch = useCallback((id: number, query: string, source: 'lead' | 'client') => {
+    setBuyers(prev => prev.map(b => b.id === id ? { ...b, searchQuery: query, showDropdown: false } : b));
+    if (searchTimers.current[id]) clearTimeout(searchTimers.current[id]);
+    if (!query.trim()) {
+      setBuyers(prev => prev.map(b => b.id === id ? { ...b, searchResults: [], showDropdown: false } : b));
+      return;
+    }
+    setBuyers(prev => prev.map(b => b.id === id ? { ...b, searchLoading: true } : b));
+    searchTimers.current[id] = setTimeout(async () => {
+      try {
+        const res = await leadsApi.list(authToken, { search: query, type: source === 'client' ? 'buyer' : undefined, limit: 8 });
+        const filtered = source === 'client'
+          ? res.data.filter(l => l.stage === 'closed_won' || l.type === 'buyer')
+          : res.data.filter(l => l.stage !== 'closed_won' && l.stage !== 'closed_lost');
+        setBuyers(prev => prev.map(b => b.id === id ? { ...b, searchResults: filtered.length ? filtered : res.data, searchLoading: false, showDropdown: true } : b));
+      } catch {
+        setBuyers(prev => prev.map(b => b.id === id ? { ...b, searchResults: [], searchLoading: false } : b));
+      }
+    }, 300);
+  }, [authToken]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -207,7 +259,7 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
       case 1:
         return formData.salePrice > 0 && formData.offerAcceptedDate && formData.closingDate && formData.earnestMoney > 0;
       case 2:
-        return buyers.some(b => b.buyerName.trim() !== '') && formData.buyerAgentName.trim() !== '';
+        return buyers.some(b => b.buyerName.trim() !== '' || b.selectedLead !== null) && formData.buyerAgentName.trim() !== '';
       case 3:
         return formData.financingType && formData.downPaymentPercent >= 0;
       case 4:
@@ -408,7 +460,7 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
                     <div>
                       <div className="font-medium text-purple-900">Buyer Information</div>
                       <p className="text-sm text-purple-700 mt-1">
-                        Enter buyer and buyer's agent details for record keeping and communication.
+                        Select from an existing lead or client, or enter new buyer details manually.
                       </p>
                     </div>
                   </div>
@@ -432,8 +484,9 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
                   
                   <div className="space-y-4">
                     {buyers.map((buyer, index) => (
-                      <div key={buyer.id} className="p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
-                        <div className="flex items-center justify-between mb-3">
+                      <div key={buyer.id} className="p-4 border-2 border-gray-200 rounded-lg bg-gray-50 space-y-4">
+                        {/* Card header */}
+                        <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-700">
                             Buyer {index + 1} {index === 0 && buyers.length > 1 && <span className="text-purple-600">(Primary)</span>}
                           </span>
@@ -447,35 +500,149 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
                             </button>
                           )}
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={buyer.buyerName}
-                              onChange={(e) => updateBuyer(buyer.id, 'buyerName', e.target.value)}
-                              placeholder="e.g., Jennifer Martinez"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                            />
+
+                        {/* Source selector */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {([
+                            { id: 'lead' as const, label: 'From a Lead', icon: Users, active: 'border-blue-500 bg-blue-50', iconActive: 'text-blue-600' },
+                            { id: 'client' as const, label: 'Existing Client', icon: UserCheck, active: 'border-purple-500 bg-purple-50', iconActive: 'text-purple-600' },
+                            { id: 'new' as const, label: 'New Buyer', icon: UserPlus, active: 'border-green-500 bg-green-50', iconActive: 'text-green-600' },
+                          ]).map(({ id, label, icon: Icon, active, iconActive }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => setBuyerSource(buyer.id, id)}
+                              className={`flex items-center gap-2 p-2.5 rounded-lg border-2 transition-all text-left text-sm ${
+                                buyer.source === id ? active : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <Icon className={`w-4 h-4 flex-shrink-0 ${buyer.source === id ? iconActive : 'text-gray-400'}`} />
+                              <span className={`font-medium ${buyer.source === id ? 'text-gray-900' : 'text-gray-600'}`}>{label}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Lead / Client search */}
+                        {(buyer.source === 'lead' || buyer.source === 'client') && (
+                          <div className="relative">
+                            {buyer.selectedLead ? (
+                              <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                    {buyer.selectedLead.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-gray-900 text-sm">{buyer.selectedLead.name}</div>
+                                    <div className="text-xs text-gray-500">{buyer.selectedLead.email ?? 'No email'}</div>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setBuyers(prev => prev.map(b => b.id === buyer.id ? { ...b, selectedLead: null, buyerName: '', buyerEmail: '' } : b))}
+                                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100"
+                                >
+                                  Change
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                  <input
+                                    type="text"
+                                    value={buyer.searchQuery}
+                                    onChange={(e) => handleBuyerSearch(buyer.id, e.target.value, buyer.source as 'lead' | 'client')}
+                                    onFocus={() => buyer.searchResults.length > 0 && setBuyers(prev => prev.map(b => b.id === buyer.id ? { ...b, showDropdown: true } : b))}
+                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white"
+                                    placeholder={buyer.source === 'lead' ? 'Search leads by name or email…' : 'Search clients by name or email…'}
+                                  />
+                                  {buyer.searchLoading && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                  )}
+                                </div>
+
+                                {buyer.showDropdown && buyer.searchResults.length > 0 && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    {buyer.searchResults.map((lead) => (
+                                      <button
+                                        key={lead.id}
+                                        type="button"
+                                        onClick={() => selectBuyerLead(buyer.id, lead)}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left border-b border-gray-100 last:border-0"
+                                      >
+                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                          {lead.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium text-sm text-gray-900 truncate">{lead.name}</div>
+                                          <div className="text-xs text-gray-500 truncate">{lead.email ?? 'No email'}</div>
+                                        </div>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                          lead.temperature === 'hot' ? 'bg-red-100 text-red-700'
+                                          : lead.temperature === 'warm' ? 'bg-orange-100 text-orange-700'
+                                          : 'bg-blue-100 text-blue-700'
+                                        }`}>{lead.temperature}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {buyer.showDropdown && buyer.searchResults.length === 0 && !buyer.searchLoading && buyer.searchQuery.trim() && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-500">
+                                    No {buyer.source === 'lead' ? 'leads' : 'clients'} found for "{buyer.searchQuery}"
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Email
-                            </label>
-                            <input
-                              type="email"
-                              value={buyer.buyerEmail}
-                              onChange={(e) => updateBuyer(buyer.id, 'buyerEmail', e.target.value)}
-                              placeholder="buyer@example.com"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                            />
+                        )}
+
+                        {/* New buyer manual entry */}
+                        {buyer.source === 'new' && (
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Name <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={buyer.buyerName}
+                                onChange={(e) => updateBuyer(buyer.id, 'buyerName', e.target.value)}
+                                placeholder="e.g., Jennifer Martinez"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Email
+                              </label>
+                              <input
+                                type="email"
+                                value={buyer.buyerEmail}
+                                onChange={(e) => updateBuyer(buyer.id, 'buyerEmail', e.target.value)}
+                                placeholder="buyer@example.com"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Phone
+                              </label>
+                              <input
+                                type="tel"
+                                value={buyer.buyerPhone}
+                                onChange={(e) => updateBuyer(buyer.id, 'buyerPhone', e.target.value)}
+                                placeholder="(555) 123-4567"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Phone
-                            </label>
+                        )}
+
+                        {/* Phone for lead/client (email comes from lead) */}
+                        {(buyer.source === 'lead' || buyer.source === 'client') && buyer.selectedLead && (
+                          <div className="w-1/3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Phone (optional)</label>
                             <input
                               type="tel"
                               value={buyer.buyerPhone}
@@ -484,7 +651,7 @@ export function InitiateSaleModal({ open, onOpenChange, listingPrice }: Initiate
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                             />
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>

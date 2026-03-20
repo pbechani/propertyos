@@ -70,6 +70,34 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
 
+  // Manual guest registration form state
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [registerForm, setRegisterForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', interestLevel: 'medium' as 'high' | 'medium' | 'low' });
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+
+  async function handleRegisterGuest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!registerForm.guestName.trim()) return;
+    setIsRegistering(true);
+    setRegisterError('');
+    try {
+      const newAttendee = await viewingActionsApi.agentRegisterGuest(authToken ?? '', openHouse.id, {
+        guestName: registerForm.guestName.trim(),
+        guestEmail: registerForm.guestEmail.trim() || undefined,
+        guestPhone: registerForm.guestPhone.trim() || undefined,
+        interestLevel: registerForm.interestLevel,
+      });
+      setAttendees(prev => [...prev, newAttendee]);
+      setRegisterForm({ guestName: '', guestEmail: '', guestPhone: '', interestLevel: 'medium' });
+      setShowRegisterForm(false);
+    } catch (err: unknown) {
+      setRegisterError(err instanceof Error ? err.message : 'Failed to register guest');
+    } finally {
+      setIsRegistering(false);
+    }
+  }
+
   async function handleCancelEvent() {
     if (!cancelReason.trim()) return;
     setIsCancelling(true);
@@ -161,14 +189,14 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
   const isCompleted = openHouse.status === 'completed' || openHouse.status === 'ended';
 
   useEffect(() => {
-    if (!open || !isCompleted || !authToken) return;
+    if (!open || !authToken) return;
     setIsLoadingAttendees(true);
     viewingActionsApi
       .getOpenHouseRegistrations(authToken, openHouse.id)
       .then(setAttendees)
       .catch(() => setAttendees([]))
       .finally(() => setIsLoadingAttendees(false));
-  }, [open, isCompleted, openHouse.id, authToken]);
+  }, [open, openHouse.id, authToken]);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -293,6 +321,16 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                 className="px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 hover:text-gray-900 transition-colors"
               >
                 Overview
+              </Tabs.Trigger>
+              {/* Registrants tab — always shown so agent can see who signed up */}
+              <Tabs.Trigger
+                value="registrants"
+                className="px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 hover:text-gray-900 transition-colors flex items-center gap-2"
+              >
+                Registrants
+                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">
+                  {attendees.length}
+                </span>
               </Tabs.Trigger>
               {isCompleted && (
                 <>
@@ -448,6 +486,138 @@ export function OpenHouseDetailModal({ open, onOpenChange, onEdit, onCancelled, 
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+              </Tabs.Content>
+
+              {/* Registrants Tab — people who pre-registered, shown for all statuses */}
+              <Tabs.Content value="registrants" className="space-y-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold text-lg">Registered Attendees</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {attendees.length === 0 ? 'No one has registered yet' : `${attendees.length} person${attendees.length !== 1 ? 's' : ''} registered`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setShowRegisterForm(v => !v); setRegisterError(''); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add Registrant
+                  </button>
+                </div>
+
+                {/* Inline registration form */}
+                {showRegisterForm && (
+                  <form onSubmit={handleRegisterGuest} className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-blue-900">Register a Guest</h4>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          value={registerForm.guestName}
+                          onChange={e => setRegisterForm(f => ({ ...f, guestName: e.target.value }))}
+                          placeholder="e.g. John Smith"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={registerForm.guestEmail}
+                          onChange={e => setRegisterForm(f => ({ ...f, guestEmail: e.target.value }))}
+                          placeholder="e.g. john@email.com"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                        <input
+                          type="tel"
+                          value={registerForm.guestPhone}
+                          onChange={e => setRegisterForm(f => ({ ...f, guestPhone: e.target.value }))}
+                          placeholder="e.g. +27 82 000 0000"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Interest Level</label>
+                        <select
+                          value={registerForm.interestLevel}
+                          onChange={e => setRegisterForm(f => ({ ...f, interestLevel: e.target.value as 'high' | 'medium' | 'low' }))}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+                    </div>
+                    {registerError && <p className="text-xs text-red-600">{registerError}</p>}
+                    <div className="flex gap-2 justify-end">
+                      <button type="button" onClick={() => setShowRegisterForm(false)} className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                      <button type="submit" disabled={isRegistering} className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5">
+                        {isRegistering && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                        Register
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {isLoadingAttendees ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                    <span className="text-sm text-gray-500">Loading registrants…</span>
+                  </div>
+                ) : attendees.length === 0 ? (
+                  <div className="text-center py-12">
+                    <UserPlus className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-500">No registrations yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Buyers who register via the property page will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {attendees.map((att) => {
+                      const name = getAttendeeName(att);
+                      const email = att.email ?? att.guest_email ?? '—';
+                      const phone = att.phone ?? att.guest_phone ?? null;
+                      const interestColors: Record<string, string> = {
+                        high: 'bg-green-100 text-green-700',
+                        medium: 'bg-amber-100 text-amber-700',
+                        low: 'bg-gray-100 text-gray-600',
+                      };
+                      const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                      return (
+                        <div key={att.id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                          <div className="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-semibold shrink-0">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+                            <p className="text-xs text-gray-500 truncate">{email}{phone ? ` · ${phone}` : ''}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className="text-xs text-gray-400">
+                              {new Date(att.registered_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
+                            </span>
+                            {att.attended && (
+                              <span className="bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 text-xs font-medium flex items-center gap-0.5">
+                                <CheckCircle2 className="w-3 h-3" /> Attended
+                              </span>
+                            )}
+                            {att.interest_level && (
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${interestColors[att.interest_level] ?? ''}`}>
+                                {att.interest_level} interest
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </Tabs.Content>

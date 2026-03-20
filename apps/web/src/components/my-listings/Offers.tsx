@@ -1,14 +1,16 @@
 'use client';
 
-import { DollarSign, Calendar, FileText, AlertCircle, CheckCircle, Plus, Loader2 } from 'lucide-react';
+import { DollarSign, Calendar, FileText, AlertCircle, CheckCircle, Plus, Loader2, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { AddOfferModal } from './AddOfferModal';
 import { CounterOfferModal } from './CounterOfferModal';
-import { agentOffersApi, type PropertyOfferRow } from '@/lib/api-client';
+import { agentOffersApi, type PropertyOfferRow, type CounterOfferPayload } from '@/lib/api-client';
 
-interface Props { propertyId: string; authToken: string; }
+interface Props { propertyId: string; authToken: string; listPrice?: number; }
 
-export function Offers({ propertyId, authToken }: Props) {
+export function Offers({ propertyId, authToken, listPrice }: Props) {
+  const router = useRouter();
   const [offers, setOffers] = useState<PropertyOfferRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export function Offers({ propertyId, authToken }: Props) {
 
   const handleAddOffer = async (formData: {
     buyer: string;
+    buyerEmail?: string;
     amount: number;
     earnestMoney: number;
     financing: string;
@@ -44,6 +47,7 @@ export function Offers({ propertyId, authToken }: Props) {
     try {
       await agentOffersApi.create(authToken, propertyId, {
         buyerName: formData.buyer,
+        buyerEmail: formData.buyerEmail || undefined,
         amount: formData.amount,
         earnestMoney: formData.earnestMoney || undefined,
         financing: formData.financing,
@@ -137,7 +141,11 @@ export function Offers({ propertyId, authToken }: Props) {
       {/* Offers List */}
       <div className="space-y-4">
         {offers.map((offer) => (
-          <div key={offer.id} className="bg-white border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow">
+          <div
+            key={offer.id}
+            className="bg-white border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer"
+            onClick={() => router.push(`/app/my-listings/${propertyId}/offers/${offer.id}`)}
+          >
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -147,9 +155,12 @@ export function Offers({ propertyId, authToken }: Props) {
                     Submitted {new Date(offer.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded border text-sm font-medium ${getStatusColor(offer.status)}`}>
-                  {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded border text-sm font-medium ${getStatusColor(offer.status)}`}>
+                    {offer.status.charAt(0).toUpperCase() + offer.status.slice(1)}
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -202,8 +213,35 @@ export function Offers({ propertyId, authToken }: Props) {
                 </div>
               )}
 
+              {offer.status === 'countered' && offer.counter_amount && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="text-sm font-semibold text-blue-800 mb-2">Counter Offer Sent</div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-blue-600">Counter Amount:</span>{' '}
+                      <span className="font-medium">{formatCurrency(offer.counter_amount)}</span>
+                    </div>
+                    {offer.counter_earnest_money && (
+                      <div>
+                        <span className="text-blue-600">Earnest:</span>{' '}
+                        <span className="font-medium">{formatCurrency(offer.counter_earnest_money)}</span>
+                      </div>
+                    )}
+                    {offer.counter_closing_date && (
+                      <div>
+                        <span className="text-blue-600">Closing:</span>{' '}
+                        <span className="font-medium">{new Date(offer.counter_closing_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                  </div>
+                  {offer.counter_notes && (
+                    <p className="text-sm text-blue-700 mt-2 italic">"{offer.counter_notes}"</p>
+                  )}
+                </div>
+              )}
+
               {offer.status === 'pending' && (
-                <div className="flex gap-2 pt-2 border-t border-gray-200">
+                <div className="flex gap-2 pt-2 border-t border-gray-200" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => handleUpdateStatus(offer.id, 'accepted')}
                     disabled={updatingId === offer.id}
@@ -243,13 +281,34 @@ export function Offers({ propertyId, authToken }: Props) {
       <AddOfferModal
         open={isAddOfferModalOpen}
         onOpenChange={setIsAddOfferModalOpen}
+        authToken={authToken}
+        listPrice={listPrice}
         onAdd={handleAddOffer}
       />
 
       <CounterOfferModal
         open={isCounterOfferModalOpen}
         onOpenChange={setIsCounterOfferModalOpen}
-        offer={selectedOffer as any}
+        offer={selectedOffer ? {
+          id: selectedOffer.id,
+          buyer: selectedOffer.buyer_name,
+          amount: parseFloat(selectedOffer.amount),
+          earnestMoney: selectedOffer.earnest_money != null ? parseFloat(selectedOffer.earnest_money) : 0,
+          contingencies: selectedOffer.contingencies,
+          closingDate: selectedOffer.closing_date ?? '',
+          status: selectedOffer.status as 'pending' | 'accepted' | 'rejected' | 'countered',
+          submittedDate: selectedOffer.submitted_at,
+          financing: selectedOffer.financing,
+          notes: selectedOffer.notes ?? '',
+        } : null}
+        listPrice={listPrice}
+        onCounter={async (counterData: CounterOfferPayload) => {
+          if (selectedOffer) {
+            await agentOffersApi.counter(authToken, propertyId, selectedOffer.id, counterData);
+            await loadOffers();
+          }
+          setIsCounterOfferModalOpen(false);
+        }}
       />
     </div>
   );

@@ -1,15 +1,19 @@
 'use client';
 
-import { X, DollarSign, User, Calendar, FileText, TrendingUp, CheckSquare, AlertCircle, Calculator } from 'lucide-react';
-import { useState } from 'react';
+import { X, DollarSign, User, Calendar, FileText, TrendingUp, CheckSquare, AlertCircle, Calculator, Search, UserCheck, Users, UserPlus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { leadsApi, LeadRow } from '@/lib/api-client';
 
 interface AddOfferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   listPrice?: number;
+  authToken: string;
   onAdd?: (offer: any) => void;
 }
+
+type BuyerSource = 'lead' | 'client' | 'new';
 
 const financingOptions = [
   { value: 'cash', label: 'Cash Offer', icon: '💵', description: 'No financing contingency' },
@@ -29,9 +33,10 @@ const commonContingencies = [
   { id: 'hoa', label: 'HOA Review', description: 'Review of HOA documents' },
 ];
 
-export function AddOfferModal({ open, onOpenChange, listPrice = 825000, onAdd }: AddOfferModalProps) {
+export function AddOfferModal({ open, onOpenChange, listPrice = 825000, authToken, onAdd }: AddOfferModalProps) {
   const [formData, setFormData] = useState({
     buyer: '',
+    buyerEmail: '',
     amount: '',
     earnestMoney: '',
     financing: 'conventional',
@@ -39,6 +44,76 @@ export function AddOfferModal({ open, onOpenChange, listPrice = 825000, onAdd }:
     closingDate: '',
     notes: '',
   });
+
+  const [buyerSource, setBuyerSource] = useState<BuyerSource>('new');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<LeadRow[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<LeadRow | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim() || buyerSource === 'new') {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await leadsApi.list(authToken, {
+          search: searchQuery,
+          type: buyerSource === 'client' ? 'buyer' : undefined,
+          limit: 8,
+        });
+        // For 'client' filter further to closed/won; for 'lead' show active leads
+        const filtered = buyerSource === 'client'
+          ? res.data.filter(l => l.stage === 'closed_won' || l.type === 'buyer')
+          : res.data.filter(l => l.stage !== 'closed_won' && l.stage !== 'closed_lost');
+        setSearchResults(filtered.length > 0 ? filtered : res.data);
+        setShowDropdown(true);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  }, [searchQuery, buyerSource, authToken]);
+
+  const handleSelectContact = (lead: LeadRow) => {
+    setSelectedContact(lead);
+    setFormData(f => ({
+      ...f,
+      buyer: lead.name,
+      buyerEmail: lead.email ?? '',
+    }));
+    setShowDropdown(false);
+    setSearchQuery('');
+  };
+
+  const handleBuyerSourceChange = (source: BuyerSource) => {
+    setBuyerSource(source);
+    setSelectedContact(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+    setFormData(f => ({ ...f, buyer: '', buyerEmail: '' }));
+  };
 
   const offerAmount = parseFloat(formData.amount) || 0;
   const percentOfAsking = listPrice > 0 ? ((offerAmount / listPrice) * 100).toFixed(2) : '0';
@@ -66,8 +141,12 @@ export function AddOfferModal({ open, onOpenChange, listPrice = 825000, onAdd }:
     }
     onOpenChange(false);
     // Reset form
+    setBuyerSource('new');
+    setSelectedContact(null);
+    setSearchQuery('');
     setFormData({
       buyer: '',
+      buyerEmail: '',
       amount: '',
       earnestMoney: '',
       financing: 'conventional',
@@ -113,22 +192,162 @@ export function AddOfferModal({ open, onOpenChange, listPrice = 825000, onAdd }:
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col h-[calc(90vh-140px)]">
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
               {/* Buyer Information */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Buyer Name *
+              <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+                <div className="flex items-center gap-2 text-gray-800 font-medium">
+                  <User className="w-5 h-5 text-gray-600" />
+                  Buyer Information
+                </div>
+
+                {/* Source selector */}
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { id: 'lead' as BuyerSource, label: 'From a Lead', icon: Users, color: 'blue' },
+                    { id: 'client' as BuyerSource, label: 'Existing Client', icon: UserCheck, color: 'purple' },
+                    { id: 'new' as BuyerSource, label: 'New Buyer', icon: UserPlus, color: 'green' },
+                  ] as const).map(({ id, label, icon: Icon, color }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleBuyerSourceChange(id)}
+                      className={`flex items-center gap-2.5 p-3 rounded-lg border-2 transition-all text-left ${
+                        buyerSource === id
+                          ? color === 'blue' ? 'border-blue-500 bg-blue-50'
+                          : color === 'purple' ? 'border-purple-500 bg-purple-50'
+                          : 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${
+                        buyerSource === id
+                          ? color === 'blue' ? 'text-blue-600'
+                          : color === 'purple' ? 'text-purple-600'
+                          : 'text-green-600'
+                          : 'text-gray-400'
+                      }`} />
+                      <span className={`text-sm font-medium ${
+                        buyerSource === id ? 'text-gray-900' : 'text-gray-600'
+                      }`}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Lead / Client search */}
+                {(buyerSource === 'lead' || buyerSource === 'client') && (
+                  <div ref={searchRef} className="relative">
+                    {selectedContact ? (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                            {selectedContact.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 text-sm">{selectedContact.name}</div>
+                            <div className="text-xs text-gray-500">{selectedContact.email ?? 'No email'}</div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedContact(null);
+                            setFormData(f => ({ ...f, buyer: '', buyerEmail: '' }));
+                          }}
+                          className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder={buyerSource === 'lead' ? 'Search leads by name or email…' : 'Search clients by name or email…'}
+                          />
+                          {searchLoading && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          )}
+                        </div>
+
+                        {showDropdown && searchResults.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                            {searchResults.map((lead) => (
+                              <button
+                                key={lead.id}
+                                type="button"
+                                onClick={() => handleSelectContact(lead)}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-100 last:border-0"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                  {lead.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm text-gray-900 truncate">{lead.name}</div>
+                                  <div className="text-xs text-gray-500 truncate">{lead.email ?? 'No email'}</div>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                  lead.temperature === 'hot' ? 'bg-red-100 text-red-700'
+                                  : lead.temperature === 'warm' ? 'bg-orange-100 text-orange-700'
+                                  : 'bg-blue-100 text-blue-700'
+                                }`}>{lead.temperature}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {showDropdown && searchResults.length === 0 && !searchLoading && searchQuery.trim() && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-500">
+                            No {buyerSource === 'lead' ? 'leads' : 'clients'} found for "{searchQuery}"
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Required hidden validation */}
+                    <input
+                      type="text"
+                      required
+                      value={formData.buyer}
+                      onChange={() => {}}
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-hidden
+                    />
                   </div>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.buyer}
-                  onChange={(e) => setFormData({ ...formData, buyer: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Jennifer Martinez or Martinez Family Trust"
-                />
+                )}
+
+                {/* New buyer manual entry */}
+                {buyerSource === 'new' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.buyer}
+                        onChange={(e) => setFormData({ ...formData, buyer: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Jennifer Martinez"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        value={formData.buyerEmail}
+                        onChange={(e) => setFormData({ ...formData, buyerEmail: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="buyer@example.com"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Offer Amount Section */}

@@ -398,3 +398,26 @@ export class CheckInAttendeeDto {
   @IsString()
   notes?: string;
 }
+
+
+export class RegisterGuestDto {
+  @IsNotEmpty()
+  @IsString()
+  guestName!: string;
+
+  @IsOptional()
+  @IsString()
+  guestEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  guestPhone?: string;
+
+  @IsOptional()
+  @IsIn(['high', 'medium', 'low'])
+  interestLevel?: 'high' | 'medium' | 'low';
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}

@@ -307,7 +307,7 @@ export default function ListingDetailPage() {
                 {activeTab === 'notes'      && <Notes propertyId={listingId} authToken={authToken} />}
                 {activeTab === 'showings'   && <Showings propertyId={listingId} authToken={authToken} />}
                 {activeTab === 'leads'      && <Leads propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'offers'     && <Offers propertyId={listingId} authToken={authToken} />}
+                {activeTab === 'offers'     && <Offers propertyId={listingId} authToken={authToken} listPrice={property ? parseFloat(property.price) : undefined} />}
                 {activeTab === 'sale'       && <SaleDetails propertyId={listingId} authToken={authToken} />}
                 {activeTab === 'postsale'   && <PostSaleActivities propertyId={listingId} authToken={authToken} />}
               </div>

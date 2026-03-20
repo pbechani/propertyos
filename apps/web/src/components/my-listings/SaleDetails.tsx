@@ -6,7 +6,7 @@ import { InitiateSaleModal } from './InitiateSaleModal';
 
 interface Props { propertyId: string; authToken: string; }
 
-export function SaleDetails({ propertyId: _propertyId, authToken: _authToken }: Props) {
+export function SaleDetails({ propertyId: _propertyId, authToken }: Props) {
   const [isInitiateSaleOpen, setIsInitiateSaleOpen] = useState(false);
   const [isUnderContract, _setIsUnderContract] = useState(false);
 
@@ -262,6 +262,7 @@ export function SaleDetails({ propertyId: _propertyId, authToken: _authToken }: 
         open={isInitiateSaleOpen}
         onOpenChange={setIsInitiateSaleOpen}
         listingPrice={800000}
+        authToken={authToken}
       />
     </div>
   );
