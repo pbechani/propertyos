@@ -14,7 +14,58 @@ Related docs:
 
 ### Added
 
-- **Offer Detail Page — full offer view with counter offer history (2026-03-19)**
+- **Sprint 05-D — Workflow Automation: Approval Form action node (2026-03-22)**
+  - **New node type `approval_form`** — pauses a workflow and waits for a human approve/reject response before continuing
+  - **Backend `workflow-engine.service.ts`** — `executeAction()` gains `case 'approval_form'`:
+    - Generates a UUID one-time token, stores it in `enrollment.context` (`approval_token`, `approval_node_id`)
+    - Sets enrollment `status = 'waiting_approval'`
+    - Sends an email to the contact with two links: `GET /api/v1/workflows/approval/{token}?action=approve` and `…?action=reject`
+    - Returns `{ status: 'waiting' }` to halt the engine loop until the respondent clicks a link
+  - **Backend `workflow-engine.service.ts`** — new public method `resumeAfterApproval(token, action)`:
+    - Looks up enrollment by `context->>'approval_token'` with `status = 'waiting_approval'`; throws if not found or already used (single-use token)
+    - Routes to `connections[0]` (Approved branch) or `connections[1]` (Rejected branch) based on `action`
+    - Clears the token, records `approval_result` and `approval_responded_at` in context, sets `status = 'active'`, updates `current_node_id`
+    - Logs the step, calls `runEnrollment()` asynchronously to resume from the chosen branch
+  - **Backend `viewing.controller.ts`** — new `WorkflowApprovalController` at `GET /api/v1/workflows/approval/:token`:
+    - Fully public — no `JwtAuthGuard` (leads click from email)
+    - Calls `workflowEngine.resumeAfterApproval(token, action)` and returns a self-contained styled HTML confirmation page
+    - Green ✅ card for approved, red ❌ card for rejected, yellow ⚠️ "Link Expired" card for already-used / invalid tokens
+  - **Backend `property.module.ts`** — `WorkflowApprovalController` imported and registered in the controllers array
+  - **Frontend `EnhancedWorkflowBuilder.tsx`** — `approval_form` node fully integrated:
+    - Added `CheckSquare` to lucide imports; new `approval_form` template in `nodeTemplates.actions` (sky-blue theme)
+    - Canvas SVG: `isCondition` logic generalised to `isTwoOutput` (covers both `condition` and `approval_form`); dashed branch lines labelled **APPROVED / REJECTED**
+    - Connection preview line offset updated to handle approval_form two-output layout
+    - `CanvasNode` output dots: green **Approved** dot (right) + red **Rejected** dot (left) with contextual hover tooltips
+    - `CanvasNode` body: shows "If approved / If rejected" branch indicators (same visual pattern as `condition` node)
+    - `ConfigurationPanel`: four config fields — **Form Title**, **Message to Recipient**, **Approve Button Label**, **Reject Button Label**
+
+- **Sprint 05-D — Workflow Automation: canvas UX fixes (2026-03-22)**
+  - **Blank canvas for new workflows** — `nodes` default changed from 6 hardcoded demo nodes to `[]`; default workflow name changed to `'New Workflow'`
+  - **Node connection system** — full interactive draw-connect-delete wiring:
+    - Output dots (bottom of each node) clicked → enters `connecting` state; live bezier preview tracks the mouse; clicking an input dot (top of another node) completes the connection
+    - `condition` nodes have two output dots: green YES (right) and red NO (left)
+    - Any connection line can be clicked to remove it (invisible wide hit-area + visual hover feedback)
+    - Empty canvas hint displayed when no nodes are present
+  - **Stale closure fix** — `addNode`, `moveNode`, `deleteNode` all use `setNodes(prev => ...)` functional form; prevents second dropped node from wiping the first
+
+- **Sprint 05-D — Workflow Automation: developer guide (2026-03-22)**
+  - Created `docs/workflow-trigger-guide.md` — 11-section reference guide covering: trigger/action architecture, key files, data flow, UI usage, adding new triggers (step-by-step), passing custom data, adding new action types, full trigger + action inventory, testing guide, troubleshooting table, and quick-reference box
+
+- **Sprint 05-D — Open House API wiring (frontend + backend) (2026-03-21)**
+  - **Backend** `UpdateOpenHouseDto` added to `mandate.dto.ts` with optional `preparationChecklist`, `marketingOptions`, `scheduledAt`, `endAt`, `maxAttendees`, `description` fields
+  - **Backend** `ViewingService.updateOpenHouse()` — CASE-WHEN UPDATE pattern for partial updates; patching any combination of fields; audit logged
+  - **Backend** `ViewingService.getOpenHouseAnalytics()` — aggregate stats: `totalOpenHouses`, `totalRegistrations`, `totalAttended`, `attendanceRate`, `walkInCount`, `registrationsByDate[]`, `sourceBreakdown[]`, `propertyPerformance[]` via 4 parallel raw SQL queries
+  - **Backend** `PATCH /agent/open-houses/:id` endpoint in `AgentOpenHouseController`
+  - **Backend** `GET /agent/open-houses/analytics?from=&to=` endpoint in `AgentOpenHouseController`
+  - **API client** `agentApi.updateOpenHouse(token, openHouseId, payload)` and `agentApi.getOpenHouseAnalytics(token, from?, to?)` added to `api-client.ts`
+  - **Prisma schema** `OpenHouse` model updated: added `preparationChecklist Json?` and `marketingOptions Json?`; `OpenHouseRegistration` model updated: `buyerId` made optional, `@@unique` removed, added `qrToken`, `checkedInAt`, `interestLevel`, `notes`, `guestName`, `guestEmail`, `guestPhone` fields; `prisma generate` run
+  - **`CreateOpenHouseWizard.tsx`** — Step 1 redesigned from manual form fields to a `PropertyPickerStep` that loads the agent's listings via `propertiesApi.getMyListings(token)` and presents a selection card list; `handleSubmit` wired to `agentApi.createOpenHouse`; `onSuccess?: (id: string) => void` prop added; wizard simplified to 4 steps: Property → Schedule → Description → Settings
+  - **`TabletSignIn.tsx`** — added `openHouseId: string` prop; `handleSubmit` wired to `viewingActionsApi.agentRegisterGuest(token, openHouseId, { guestName, guestEmail, guestPhone, interestLevel })`; `submitting` + `submitError` state with UI feedback; `submitting` passed to `QuestionsForm` to disable Submit button during API call
+  - **`OpenHouseDetailView.tsx`** — `TabletSignIn` now receives `openHouseId={id}`; `TasksTab` receives `openHouseId={id}` and `toggleTask` calls `agentApi.updateOpenHouse(token, id, { preparationChecklist: [...] })` optimistically; `RSVPsTab` receives `openHouseId={id}` and each row has a "✓ Attended" button calling `viewingActionsApi.checkInAttendee(token, id, { registrationId })` with optimistic update
+  - **`OHAnalyticsView.tsx`** — `useEffect` loads from `agentApi.getOpenHouseAnalytics(token)` on mount and on date range change; `useMemo` maps `registrationsByDate → leadsOverTimeData`, `sourceBreakdown → leadSourceData`, `propertyPerformance → propertyPerformanceData`; KPI cards updated to show real `totalRegistrations`, `totalOpenHouses`, `totalAttended`, `attendanceRate` with static fallback when API returns no data
+  - **`LeadManagement.tsx`** — `useEffect` fetches all open houses then all registrations per house via `viewingActionsApi.getOpenHouseRegistrations`; maps registration rows to `Lead[]` format with name/email/phone/source/status/score from open house attendance data; falls back to static demo data when no API data available
+
+
   - New Next.js page `apps/web/src/app/app/my-listings/[id]/offers/[offerId]/page.tsx` (ported from `sample_ui/Agentlistingdetailpage-main/offerdetail.tsx`)
   - Displays a full offer breakdown: price comparison card (offer vs list price, % above/below, earnest money, closing date), buyer info card, offer terms, counter offer history timeline, and quick action buttons (Accept, Counter, Reject, Request More Info)
   - Top card shows: offer amount, list price, difference with colour coding (green above list, red below), and earnest money

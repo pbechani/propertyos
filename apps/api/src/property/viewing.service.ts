@@ -21,6 +21,7 @@ import {
   CreateOpenHouseDto,
   CancelOpenHouseDto,
   RescheduleOpenHouseDto,
+  UpdateOpenHouseDto,
 } from './mandate.dto';
 
 export type ViewingRecord = {
@@ -111,6 +112,22 @@ export type UserNotificationRecord = {
   resource_id: string | null;
   read_at: Date | null;
   created_at: Date;
+};
+
+export type WorkflowRecord = {
+  id: string;
+  company_id: string;
+  created_by: string;
+  name: string;
+  description: string | null;
+  status: 'active' | 'inactive' | 'draft';
+  trigger_type: string;
+  steps: unknown[];
+  performance: { sent: number; opened: number; clicked: number };
+  enrolled_count: number;
+  completed_count: number;
+  created_at: Date;
+  updated_at: Date;
 };
 
 @Injectable()
@@ -893,6 +910,169 @@ The PropertyOS Team
   }
 
   // ──────────────────────────────────────────────────────────
+  // UPDATE OPEN HOUSE (preparation checklist, marketing, etc.)
+  // ──────────────────────────────────────────────────────────
+
+  async updateOpenHouse(
+    openHouseId: string,
+    agentId: string,
+    dto: {
+      preparationChecklist?: { task: string; completed: boolean }[];
+      marketingOptions?: { channel: string; enabled: boolean }[];
+      scheduledAt?: string;
+      endAt?: string;
+      maxAttendees?: number;
+      description?: string;
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<OpenHouseRecord> {
+    const existing = await this.prisma.$queryRaw<OpenHouseRecord[]>`
+      SELECT * FROM property.open_houses WHERE id = ${openHouseId}::uuid AND agent_id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!existing.length) throw new NotFoundException('Open house not found');
+
+    const prep = dto.preparationChecklist !== undefined ? JSON.stringify(dto.preparationChecklist) : null;
+    const mkt = dto.marketingOptions !== undefined ? JSON.stringify(dto.marketingOptions) : null;
+    const schedAt = dto.scheduledAt ?? null;
+    const endAt = dto.endAt ?? null;
+    const maxAtt = dto.maxAttendees ?? null;
+    const desc = dto.description ?? null;
+
+    const updated = await this.prisma.$queryRaw<OpenHouseRecord[]>`
+      UPDATE property.open_houses
+      SET
+        preparation_checklist = CASE WHEN ${prep}::text IS NOT NULL THEN ${prep}::jsonb ELSE preparation_checklist END,
+        marketing_options      = CASE WHEN ${mkt}::text IS NOT NULL THEN ${mkt}::jsonb ELSE marketing_options END,
+        scheduled_at           = CASE WHEN ${schedAt}::text IS NOT NULL THEN ${schedAt}::timestamptz ELSE scheduled_at END,
+        end_at                 = CASE WHEN ${endAt}::text IS NOT NULL THEN ${endAt}::timestamptz ELSE end_at END,
+        max_attendees          = CASE WHEN ${maxAtt}::smallint IS NOT NULL THEN ${maxAtt}::smallint ELSE max_attendees END,
+        description            = CASE WHEN ${desc}::text IS NOT NULL THEN ${desc} ELSE description END
+      WHERE id = ${openHouseId}::uuid AND agent_id = ${agentId}::uuid
+      RETURNING *
+    `;
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: 'agent',
+      action: 'open_house.updated',
+      resourceType: 'open_house',
+      resourceId: openHouseId,
+      payload: { fields: Object.keys(dto).filter((k) => (dto as Record<string, unknown>)[k] !== undefined) },
+      ipAddress,
+      userAgent,
+    });
+
+    return updated[0];
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // OPEN HOUSE ANALYTICS (aggregate stats for current agent)
+  // ──────────────────────────────────────────────────────────
+
+  async getOpenHouseAnalytics(
+    agentId: string,
+    from?: string,
+    to?: string,
+  ): Promise<{
+    totalOpenHouses: number;
+    totalRegistrations: number;
+    totalAttended: number;
+    attendanceRate: number;
+    walkInCount: number;
+    registrationsByDate: { date: string; count: number }[];
+    sourceBreakdown: { source: string; count: number }[];
+    propertyPerformance: { property_id: string; title: string; openHouseCount: number; attendeeCount: number }[];
+  }> {
+    const fromDate = from ? new Date(from) : null;
+    const toDate = to ? new Date(to) : null;
+
+    // Summary stats
+    const summary = await this.prisma.$queryRaw<Array<{
+      total_open_houses: bigint;
+      total_registrations: bigint;
+      total_attended: bigint;
+      walk_in_count: bigint;
+    }>>`
+      SELECT
+        COUNT(DISTINCT oh.id)                                         AS total_open_houses,
+        COUNT(r.id)                                                   AS total_registrations,
+        COUNT(r.id) FILTER (WHERE r.attended = true)                  AS total_attended,
+        COUNT(r.id) FILTER (WHERE r.buyer_id IS NULL)                 AS walk_in_count
+      FROM property.open_houses oh
+      LEFT JOIN property.open_house_registrations r ON r.open_house_id = oh.id
+      WHERE oh.agent_id = ${agentId}::uuid
+        AND (${fromDate} IS NULL OR oh.scheduled_at >= ${fromDate}::timestamptz)
+        AND (${toDate} IS NULL OR oh.scheduled_at <= ${toDate}::timestamptz)
+    `;
+    const s = summary[0];
+    const totalReg = Number(s?.total_registrations ?? 0);
+    const totalAtt = Number(s?.total_attended ?? 0);
+
+    // Registrations by date
+    const byDate = await this.prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+      SELECT
+        DATE_TRUNC('day', r.registered_at)::date::text AS date,
+        COUNT(*)                                        AS count
+      FROM property.open_house_registrations r
+      JOIN property.open_houses oh ON oh.id = r.open_house_id
+      WHERE oh.agent_id = ${agentId}::uuid
+        AND (${fromDate} IS NULL OR oh.scheduled_at >= ${fromDate}::timestamptz)
+        AND (${toDate} IS NULL OR oh.scheduled_at <= ${toDate}::timestamptz)
+      GROUP BY 1
+      ORDER BY 1
+    `;
+
+    // Source breakdown
+    const sources = await this.prisma.$queryRaw<Array<{ source: string; count: bigint }>>`
+      SELECT
+        CASE WHEN r.buyer_id IS NULL THEN 'Walk-in' ELSE 'App' END AS source,
+        COUNT(*)                                                    AS count
+      FROM property.open_house_registrations r
+      JOIN property.open_houses oh ON oh.id = r.open_house_id
+      WHERE oh.agent_id = ${agentId}::uuid
+      GROUP BY 1
+    `;
+
+    // Per-property performance
+    const perProp = await this.prisma.$queryRaw<Array<{
+      property_id: string;
+      title: string;
+      open_house_count: bigint;
+      attendee_count: bigint;
+    }>>`
+      SELECT
+        p.id           AS property_id,
+        p.title,
+        COUNT(DISTINCT oh.id)                                AS open_house_count,
+        COUNT(r.id) FILTER (WHERE r.attended = true)         AS attendee_count
+      FROM property.open_houses oh
+      JOIN property.properties p ON p.id = oh.property_id
+      LEFT JOIN property.open_house_registrations r ON r.open_house_id = oh.id
+      WHERE oh.agent_id = ${agentId}::uuid
+      GROUP BY p.id, p.title
+      ORDER BY attendee_count DESC
+      LIMIT 10
+    `;
+
+    return {
+      totalOpenHouses:   Number(s?.total_open_houses ?? 0),
+      totalRegistrations: totalReg,
+      totalAttended:      totalAtt,
+      attendanceRate:     totalReg > 0 ? Math.round((totalAtt / totalReg) * 100 * 10) / 10 : 0,
+      walkInCount:        Number(s?.walk_in_count ?? 0),
+      registrationsByDate: byDate.map((r) => ({ date: r.date, count: Number(r.count) })),
+      sourceBreakdown: sources.map((s) => ({ source: s.source, count: Number(s.count) })),
+      propertyPerformance: perProp.map((p) => ({
+        property_id:    p.property_id,
+        title:          p.title,
+        openHouseCount: Number(p.open_house_count),
+        attendeeCount:  Number(p.attendee_count),
+      })),
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // AGENT BOOK VIEWING (on behalf of a buyer who called in)
   // ──────────────────────────────────────────────────────────
 
@@ -1451,5 +1631,196 @@ The PropertyOS Team
       'END:VCALENDAR',
     ].join('\r\n');
   }
+
+  // ──────────────────────────────────────────────────────────────
+  // AGENT WORKFLOWS
+  // ──────────────────────────────────────────────────────────────
+
+  async listWorkflows(companyId: string): Promise<WorkflowRecord[]> {
+    return this.prisma.$queryRaw<WorkflowRecord[]>`
+      SELECT * FROM property.agent_workflows
+      WHERE company_id = ${companyId}::uuid
+      ORDER BY updated_at DESC
+    `;
+  }
+
+  async createWorkflow(
+    agentId: string,
+    companyId: string,
+    dto: {
+      name: string;
+      description?: string;
+      status?: string;
+      triggerType?: string;
+      steps?: unknown[];
+    },
+  ): Promise<WorkflowRecord> {
+    const rows = await this.prisma.$queryRaw<WorkflowRecord[]>`
+      INSERT INTO property.agent_workflows
+        (company_id, created_by, name, description, status, trigger_type, steps)
+      VALUES (
+        ${companyId}::uuid,
+        ${agentId}::uuid,
+        ${dto.name},
+        ${dto.description ?? null},
+        ${dto.status ?? 'draft'},
+        ${dto.triggerType ?? ''},
+        ${JSON.stringify(dto.steps ?? [])}::jsonb
+      )
+      RETURNING *
+    `;
+    return rows[0];
+  }
+
+  async updateWorkflow(
+    agentId: string,
+    companyId: string,
+    workflowId: string,
+    dto: {
+      name?: string;
+      description?: string;
+      status?: string;
+      triggerType?: string;
+      steps?: unknown[];
+      performance?: { sent: number; opened: number; clicked: number };
+      enrolledCount?: number;
+      completedCount?: number;
+    },
+  ): Promise<WorkflowRecord> {
+    const rows = await this.prisma.$queryRaw<WorkflowRecord[]>`
+      UPDATE property.agent_workflows SET
+        name            = COALESCE(${dto.name ?? null}, name),
+        description     = COALESCE(${dto.description ?? null}, description),
+        status          = COALESCE(${dto.status ?? null}, status),
+        trigger_type    = COALESCE(${dto.triggerType ?? null}, trigger_type),
+        steps           = CASE WHEN ${dto.steps != null ? JSON.stringify(dto.steps) : null}::text IS NOT NULL
+                               THEN ${dto.steps != null ? JSON.stringify(dto.steps) : null}::jsonb
+                               ELSE steps END,
+        performance     = CASE WHEN ${dto.performance != null ? JSON.stringify(dto.performance) : null}::text IS NOT NULL
+                               THEN ${dto.performance != null ? JSON.stringify(dto.performance) : null}::jsonb
+                               ELSE performance END,
+        enrolled_count  = COALESCE(${dto.enrolledCount ?? null}, enrolled_count),
+        completed_count = COALESCE(${dto.completedCount ?? null}, completed_count),
+        updated_at      = now()
+      WHERE id = ${workflowId}::uuid
+        AND company_id = ${companyId}::uuid
+      RETURNING *
+    `;
+    if (!rows[0]) throw new Error('Workflow not found');
+    return rows[0];
+  }
+
+  async deleteWorkflow(
+    companyId: string,
+    workflowId: string,
+  ): Promise<void> {
+    await this.prisma.$queryRaw`
+      DELETE FROM property.agent_workflows
+      WHERE id = ${workflowId}::uuid
+        AND company_id = ${companyId}::uuid
+    `;
+  }
+
+  // ── Workflow Logs ─────────────────────────────────────────────────────────
+
+  async listWorkflowLogs(companyId: string, workflowId: string): Promise<WorkflowEnrollmentSummary[]> {
+    return this.prisma.$queryRaw<WorkflowEnrollmentSummary[]>`
+      SELECT
+        e.id,
+        e.status,
+        e.lead_id,
+        e.lead_email,
+        e.lead_name,
+        e.current_node_id,
+        e.resume_at,
+        e.created_at,
+        e.updated_at,
+        COALESCE(l.step_count, 0)::int   AS step_count,
+        COALESCE(l.failed_steps, 0)::int AS failed_steps
+      FROM property.workflow_enrollments e
+      LEFT JOIN LATERAL (
+        SELECT
+          COUNT(*)                                               AS step_count,
+          COUNT(*) FILTER (WHERE status = 'failed')             AS failed_steps
+        FROM property.workflow_step_logs
+        WHERE enrollment_id = e.id
+      ) l ON true
+      WHERE e.workflow_id = ${workflowId}::uuid
+        AND e.company_id  = ${companyId}::uuid
+      ORDER BY e.created_at DESC
+      LIMIT 200
+    `;
+  }
+
+  async getWorkflowEnrollmentDetail(
+    companyId: string,
+    workflowId: string,
+    enrollmentId: string,
+  ): Promise<WorkflowEnrollmentDetail> {
+    const enrollments = await this.prisma.$queryRaw<WorkflowEnrollmentRow[]>`
+      SELECT e.*
+      FROM property.workflow_enrollments e
+      WHERE e.id          = ${enrollmentId}::uuid
+        AND e.workflow_id = ${workflowId}::uuid
+        AND e.company_id  = ${companyId}::uuid
+      LIMIT 1
+    `;
+    if (!enrollments[0]) throw new Error('Enrollment not found');
+
+    const stepLogs = await this.prisma.$queryRaw<WorkflowStepLog[]>`
+      SELECT * FROM property.workflow_step_logs
+      WHERE enrollment_id = ${enrollmentId}::uuid
+      ORDER BY executed_at ASC
+    `;
+
+    const workflows = await this.prisma.$queryRaw<{ steps: unknown[] }[]>`
+      SELECT steps FROM property.agent_workflows
+      WHERE id = ${workflowId}::uuid AND company_id = ${companyId}::uuid
+      LIMIT 1
+    `;
+
+    return {
+      enrollment: enrollments[0],
+      stepLogs,
+      workflowSteps: (workflows[0]?.steps ?? []) as unknown[],
+    };
+  }
 }
+
+// ── Supporting types for workflow logs ────────────────────────────────────────
+
+export type WorkflowEnrollmentSummary = {
+  id: string;
+  status: 'active' | 'paused' | 'completed' | 'cancelled' | 'failed';
+  lead_id: string | null;
+  lead_email: string | null;
+  lead_name: string | null;
+  current_node_id: string | null;
+  resume_at: Date | null;
+  step_count: number;
+  failed_steps: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type WorkflowEnrollmentRow = WorkflowEnrollmentSummary & {
+  context: Record<string, unknown>;
+};
+
+export type WorkflowStepLog = {
+  id: string;
+  enrollment_id: string;
+  step_node_id: string;
+  step_type: string;
+  step_label: string | null;
+  status: 'executed' | 'skipped' | 'failed' | 'waiting';
+  result: Record<string, unknown>;
+  executed_at: Date;
+};
+
+export type WorkflowEnrollmentDetail = {
+  enrollment: WorkflowEnrollmentRow;
+  stepLogs: WorkflowStepLog[];
+  workflowSteps: unknown[];
+};
 

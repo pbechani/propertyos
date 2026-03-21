@@ -4,9 +4,10 @@ import { LeadsService } from './leads.service';
 import { LeadActivityService } from './lead-activity.service';
 import { LeadTaskService } from './lead-task.service';
 import { IdentityModule } from '../identity/identity.module';
+import { PropertyModule } from '../property/property.module';
 
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, PropertyModule],
   controllers: [LeadsController],
   providers: [LeadsService, LeadActivityService, LeadTaskService],
   exports: [LeadsService],

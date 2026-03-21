@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert, HardHat } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert, HardHat, DoorOpen, Megaphone, Zap, CheckSquare } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
 import { getIsPlatformAdminFromToken } from '@/lib/auth-session';
 
@@ -86,6 +86,19 @@ const myListingsNavigation = [
   { name: 'Settings', href: '/app/my-listings/settings', icon: Settings },
 ];
 
+/** Open Houses sub-navigation — available for all roles. */
+const openHousesNavigation = [
+  { name: 'Dashboard',   href: '/app/open-houses/dashboard',  icon: LayoutDashboard },
+  { name: 'Properties',  href: '/app/open-houses/properties', icon: Home },
+  { name: 'Open Houses', href: '/app/open-houses/events',     icon: Calendar },
+  { name: 'Leads',       href: '/app/open-houses/leads',      icon: Users },
+  { name: 'Marketing',   href: '/app/open-houses/marketing',  icon: Megaphone },
+  { name: 'Workflows',   href: '/app/open-houses/workflows',  icon: Zap },
+  { name: 'Tasks',       href: '/app/open-houses/tasks',      icon: CheckSquare },
+  { name: 'Analytics',   href: '/app/open-houses/analytics',  icon: BarChart3 },
+  { name: 'Settings',    href: '/app/open-houses/settings',   icon: Settings },
+];
+
 /** Navigation shown when the user is operating under a real company context (non-admin, non-agent). */
 const companyNavigation = [
   { name: 'Company Overview', href: '/app/my-dashboard', icon: LayoutDashboard },
@@ -150,6 +163,7 @@ export function AppSidebar({
   const [showLeadManagement, setShowLeadManagement] = useState(true);
   const [showConveyancerCockpit, setShowConveyancerCockpit] = useState(true);
   const [showMyListings, setShowMyListings] = useState(true);
+  const [showOpenHouses, setShowOpenHouses] = useState(true);
 
   const companyName = activeCompany?.name ?? currentUser?.companyName ?? null;
   const companyRole = activeCompany?.role ?? currentUser?.role ?? null;
@@ -521,6 +535,46 @@ export function AppSidebar({
                       {!isSidebarCollapsed && <span className="text-sm font-medium">{item.name}</span>}
                     </Link>
                   ))}
+                  {/* Open Houses */}
+                  <div>
+                    <button
+                      onClick={() => setShowOpenHouses((v) => !v)}
+                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                        pathname.startsWith('/app/open-houses')
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-muted-foreground hover:bg-accent'
+                      }`}
+                      title="Open Houses"
+                    >
+                      <DoorOpen className="w-4 h-4 shrink-0" />
+                      {!isSidebarCollapsed && (
+                        <>
+                          <span className="text-sm font-medium flex-1 text-left">Open Houses</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showOpenHouses ? 'rotate-180' : ''}`} />
+                        </>
+                      )}
+                    </button>
+                    {showOpenHouses && (
+                      <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
+                        {openHousesNavigation.map((item) => (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                            className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
+                              isActive(pathname, item.href)
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-muted-foreground hover:bg-accent'
+                            }`}
+                            title={item.name}
+                          >
+                            <item.icon className="w-3.5 h-3.5" />
+                            {!isSidebarCollapsed && <span className="text-xs font-medium">{item.name}</span>}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -584,6 +638,7 @@ export function AppSidebar({
               )
             ))
           )}
+
         </nav>
 
         {/* Quick links — only show for non-admin roles (dev/prototype navigation) */}
@@ -898,6 +953,41 @@ export function AppSidebar({
                           <span className="text-sm font-medium">{item.name}</span>
                         </Link>
                       ))}
+                      {/* Open Houses */}
+                      <div>
+                        <button
+                          onClick={() => setShowOpenHouses((v) => !v)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                            pathname.startsWith('/app/open-houses')
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <DoorOpen className="w-4 h-4 shrink-0" />
+                          <span className="text-sm font-medium flex-1 text-left">Open Houses</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform ${showOpenHouses ? 'rotate-180' : ''}`} />
+                        </button>
+                        {showOpenHouses && (
+                          <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
+                            {openHousesNavigation.map((item) => (
+                              <Link
+                                key={item.name}
+                                href={item.href}
+                                onClick={() => setShowMobileMenu(false)}
+                                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                  isActive(pathname, item.href)
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-muted-foreground hover:bg-accent'
+                                }`}
+                              >
+                                <item.icon className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{item.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -956,6 +1046,7 @@ export function AppSidebar({
                   )
                 ))
               )}
+
             </nav>
 
             <div className="p-4 border-t border-border">

@@ -13,7 +13,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export const MANDATE_TYPES = ['sole', 'open'] as const;
 export type MandateType = (typeof MANDATE_TYPES)[number];
@@ -319,6 +319,40 @@ export class PreparationChecklistItemDto {
 
   @IsBoolean()
   completed!: boolean;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsIn(['todo', 'inProgress', 'review', 'done'])
+  status?: string;
+
+  @IsOptional()
+  @IsIn(['low', 'medium', 'high'])
+  priority?: string;
+
+  @IsOptional()
+  @IsString()
+  taskDueDate?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  assignedTo?: string[];
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsIn(['before', 'during', 'after', ''])
+  eventTiming?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }
 
 export class CreateOpenHouseDto {
@@ -420,4 +454,96 @@ export class RegisterGuestDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class UpdateOpenHouseDto {
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PreparationChecklistItemDto)
+  preparationChecklist?: PreparationChecklistItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MarketingOptionDto)
+  marketingOptions?: MarketingOptionDto[];
+
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endAt?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  maxAttendees?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+// ─── Workflow DTOs ────────────────────────────────────────────────
+
+export class CreateWorkflowDto {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsIn(['active', 'inactive', 'draft'])
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  triggerType?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => value)
+  steps?: unknown[];
+}
+
+export class UpdateWorkflowDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsIn(['active', 'inactive', 'draft'])
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  triggerType?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => value)
+  steps?: unknown[];
+
+  @IsOptional()
+  performance?: { sent: number; opened: number; clicked: number };
+
+  @IsOptional()
+  @IsNumber()
+  enrolledCount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  completedCount?: number;
 }

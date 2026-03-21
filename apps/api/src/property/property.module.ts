@@ -22,6 +22,8 @@ import {
   ViewingActionController,
   AgentViewingCalendarController,
   AgentOpenHouseController,
+  AgentWorkflowController,
+  WorkflowApprovalController,
   OpenHouseController,
   BuyerOpenHouseController,
   BuyerViewingController,
@@ -43,6 +45,8 @@ import { SellingPointService } from './selling-point.service';
 import { NoteService } from './note.service';
 import { CommunicationLogService } from './communication-log.service';
 import { PropertyConditionService } from './property-condition.service';
+import { WorkflowEngineService } from './workflow-engine.service';
+import { WorkflowSchedulerService } from './workflow-scheduler.service';
 
 @Module({
   controllers: [
@@ -71,6 +75,8 @@ import { PropertyConditionService } from './property-condition.service';
     ViewingActionController,
     AgentViewingCalendarController,
     AgentOpenHouseController,
+    AgentWorkflowController,
+    WorkflowApprovalController,
     OpenHouseController,
     PropertyNeighbourhoodController,
     NeighbourhoodController,
@@ -101,7 +107,9 @@ import { PropertyConditionService } from './property-condition.service';
     SellingPointService,
     NoteService,
     CommunicationLogService,
+    WorkflowEngineService,
+    WorkflowSchedulerService,
   ],
-  exports: [PropertyService, PropertyAuditService],
+  exports: [PropertyService, PropertyAuditService, WorkflowEngineService],
 })
 export class PropertyModule {}

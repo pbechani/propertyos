@@ -1801,6 +1801,53 @@ export type OpenHouseRecord = {
   created_at: string;
 };
 
+export type WorkflowRecord = {
+  id: string;
+  company_id: string;
+  created_by: string;
+  name: string;
+  description: string | null;
+  status: 'active' | 'inactive' | 'draft';
+  trigger_type: string;
+  steps: unknown[];
+  performance: { sent: number; opened: number; clicked: number };
+  enrolled_count: number;
+  completed_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkflowEnrollmentSummary = {
+  id: string;
+  status: 'active' | 'paused' | 'completed' | 'cancelled' | 'failed';
+  lead_id: string | null;
+  lead_email: string | null;
+  lead_name: string | null;
+  current_node_id: string | null;
+  resume_at: string | null;
+  step_count: number;
+  failed_steps: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkflowStepLog = {
+  id: string;
+  enrollment_id: string;
+  step_node_id: string;
+  step_type: string;
+  step_label: string | null;
+  status: 'executed' | 'skipped' | 'failed' | 'waiting';
+  result: Record<string, unknown>;
+  executed_at: string;
+};
+
+export type WorkflowEnrollmentDetail = {
+  enrollment: WorkflowEnrollmentSummary & { context: Record<string, unknown> };
+  stepLogs: WorkflowStepLog[];
+  workflowSteps: unknown[];
+};
+
 export type OpenHouseAttendee = {
   id: string;
   open_house_id: string;
@@ -2024,6 +2071,45 @@ export const agentApi = {
       authToken,
     }),
 
+  updateOpenHouse: (
+    authToken: string,
+    openHouseId: string,
+    payload: {
+      preparationChecklist?: { task: string; completed: boolean }[];
+      marketingOptions?: { channel: string; enabled: boolean }[];
+      scheduledAt?: string;
+      endAt?: string;
+      maxAttendees?: number;
+      description?: string;
+    },
+  ) =>
+    apiRequest<OpenHouseRecord>(`/agent/open-houses/${openHouseId}`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getOpenHouseAnalytics: (authToken: string, from?: string, to?: string) => {
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to) qs.set('to', to);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return apiRequest<{
+      totalOpenHouses: number;
+      totalRegistrations: number;
+      totalAttended: number;
+      attendanceRate: number;
+      walkInCount: number;
+      registrationsByDate: { date: string; count: number }[];
+      sourceBreakdown: { source: string; count: number }[];
+      propertyPerformance: { property_id: string; title: string; openHouseCount: number; attendeeCount: number }[];
+    }>(`/agent/open-houses/analytics${query}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
+
   getMandates: (authToken: string) =>
     apiRequest<MandateRecord[]>('/agent/mandates', {
       method: 'GET',
@@ -2038,6 +2124,59 @@ export const agentApi = {
 
   getActivityFeed: (authToken: string) =>
     apiRequest<ActivityFeedItem[]>('/agent/listings/activity-feed', {
+      method: 'GET',
+      authToken,
+    }),
+
+  getWorkflows: (authToken: string) =>
+    apiRequest<WorkflowRecord[]>('/agent/workflows', {
+      method: 'GET',
+      authToken,
+    }),
+
+  createWorkflow: (
+    authToken: string,
+    payload: { name: string; description?: string; status?: string; triggerType?: string; steps?: unknown[] },
+  ) =>
+    apiRequest<WorkflowRecord>('/agent/workflows', {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  updateWorkflow: (
+    authToken: string,
+    workflowId: string,
+    payload: Partial<{ name: string; description: string; status: string; triggerType: string; steps: unknown[]; performance: { sent: number; opened: number; clicked: number }; enrolledCount: number; completedCount: number }>,
+  ) =>
+    apiRequest<WorkflowRecord>(`/agent/workflows/${workflowId}`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  deleteWorkflow: (authToken: string, workflowId: string) =>
+    apiRequest<void>(`/agent/workflows/${workflowId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  testRunWorkflow: (authToken: string, workflowId: string, steps?: unknown[]) =>
+    apiRequest<{ workflow: string; steps: { nodeId: string; type: string; label: string; status: string; message: string }[] }>(
+      `/agent/workflows/${workflowId}/test-run`,
+      { method: 'POST', authToken, ...(steps?.length ? { body: JSON.stringify({ steps }) } : {}) },
+    ),
+
+  getWorkflowLogs: (authToken: string, workflowId: string) =>
+    apiRequest<WorkflowEnrollmentSummary[]>(`/agent/workflows/${workflowId}/logs`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  getWorkflowEnrollmentDetail: (authToken: string, workflowId: string, enrollmentId: string) =>
+    apiRequest<WorkflowEnrollmentDetail>(`/agent/workflows/${workflowId}/logs/${enrollmentId}`, {
       method: 'GET',
       authToken,
     }),

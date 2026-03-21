@@ -1,7 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../database';
 import { CreateLeadDto, LEAD_STAGES, ListLeadsQueryDto, UpdateLeadDto } from './leads.dto';
+import { WorkflowEngineService } from '../property/workflow-engine.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Row types
@@ -114,7 +115,10 @@ const DEFAULT_LIMIT = 20;
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly workflowEngine?: WorkflowEngineService,
+  ) {}
 
   // ──────────────────────────────────────────────────────────────────────────
   // List leads — company-scoped with optional filters
@@ -270,6 +274,17 @@ export class LeadsService {
         'Lead created'
       )
     `;
+
+    // Fire workflow trigger asynchronously — does not affect lead creation response
+    if (this.workflowEngine) {
+      this.workflowEngine
+        .triggerFor('New Lead', companyId, {
+          leadId: lead.id,
+          leadEmail: lead.email,
+          leadName: lead.name,
+        })
+        .catch(() => { /* non-critical */ });
+    }
 
     return lead;
   }
