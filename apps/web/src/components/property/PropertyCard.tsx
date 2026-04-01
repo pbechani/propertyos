@@ -59,7 +59,7 @@ export default function PropertyCard({
     : `/properties/${property.id}`;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group">
+    <div className="rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group" style={{background:'#F2E8D5',border:'1.5px solid #EAD9C4'}}>
       {/* Company / Owner header */}
       {property.agentName && (
         <PropertyCardHeader
@@ -90,7 +90,7 @@ export default function PropertyCard({
           {/* Badges overlay — top-left */}
           <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             {property.verified && (
-              <span className="flex items-center gap-1 bg-[#22C55E] text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full shadow" style={{background:'#00E87A',color:'#0C0D10',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,letterSpacing:'0.05em'}}>
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 1l2.39 4.84 5.35.78-3.87 3.77.91 5.31L10 13.27 5.22 15.7l.91-5.31L2.26 6.62l5.35-.78L10 1z" clipRule="evenodd" />
                 </svg>
@@ -103,13 +103,13 @@ export default function PropertyCard({
               </span>
             )}
             {property.fraudAlert && (
-              <span className="flex items-center gap-1 bg-[#F59E0B] text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full shadow" style={{background:'#C4562A',color:'#fff',fontFamily:"'IBM Plex Mono',monospace",fontSize:9}}>
                 ⚠ Unverified
               </span>
             )}
             {property.underInvestigation && (
-              <span className="flex items-center gap-1 bg-yellow-400 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-full shadow">
-                ⚠ Caution: Under Investigation
+              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full shadow" style={{background:'#C4562A',color:'#fff',fontFamily:"'IBM Plex Mono',monospace",fontSize:9}}>
+                ⚠ Under Review
               </span>
             )}
           </div>
@@ -134,11 +134,11 @@ export default function PropertyCard({
         </div>
 
         {/* Description — 1/4 width */}
-        <div className="w-1/4 p-3 flex flex-col gap-2 border-l border-gray-100 min-w-0">
+        <div className="w-1/4 p-3 flex flex-col gap-2 min-w-0" style={{borderLeft:'1px solid #EAD9C4'}}>
           {/* Price */}
           <div>
-            <p className="text-base font-bold text-[#0A1628] leading-tight">{formatPrice(property.price, property.currency)}</p>
-            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{property.title}</p>
+            <p className="leading-tight" style={{fontFamily:"'Fraunces',serif",color:'#1A3C28',fontSize:16,fontWeight:700}}>{formatPrice(property.price, property.currency)}</p>
+            <p className="text-xs mt-0.5 line-clamp-2" style={{color:'#6B7280'}}>{property.title}</p>
           </div>
 
           {/* Specs */}
@@ -152,7 +152,7 @@ export default function PropertyCard({
             {property.sqm && (
               <span className="flex items-center gap-1">📐 {property.sqm}m²</span>
             )}
-            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded w-fit">{property.propertyType}</span>
+            <span className="text-xs px-2 py-0.5 rounded w-fit" style={{background:'#EAD9C4',color:'#1A3C28',fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{property.propertyType}</span>
           </div>
 
           {/* Location */}
@@ -193,7 +193,8 @@ export default function PropertyCard({
           <div className="mt-auto pt-1">
             <Link
               href={detailHref}
-              className="block w-full bg-[#0A1628] text-white text-xs font-semibold py-2 rounded-lg text-center hover:bg-[#0F2040] transition-colors"
+              className="block w-full text-xs font-semibold py-2 rounded-lg text-center transition-colors"
+              style={{background:'#1A3C28',color:'#00E87A',fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700}}
             >
               View Details
             </Link>

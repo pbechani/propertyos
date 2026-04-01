@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { MapPin, Filter, Grid3x3, List, Heart, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, BedDouble, Bath, CarFront, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper, Plus, RefreshCw, Eye, Camera, Clock, Landmark, Warehouse, DollarSign, Flame, BarChart3, Bell, Home, Tag } from "lucide-react";
+import { MapPin, Filter, Grid3x3, List, Shield, Search, Map as MapIcon, X, Mic, MicOff, Sparkles, Volume2, Maximize, ChevronDown, ChevronUp, TrendingUp, Users, Newspaper, Plus, RefreshCw, BarChart3, Bell, Home, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import PropertyCardHeader from "@/components/property/PropertyCardHeader";
+import ListingCardOptA from "@/components/property/ListingCardOptA";
 import MultiListingDialog from "@/components/property/MultiListingDialog";
 import type { MultiListingItem } from "@/components/property/MultiListingDialog";
 import { Link, useNavigate } from "@/lib/router-compat";
@@ -124,15 +124,11 @@ function formatRandValue(value: number): string {
   return `R ${value.toLocaleString('en-ZA').replace(/,/g, ' ')}`;
 }
 
-function normalizeCurrencyDigits(value: string): string {
-  return value.replace(/[^\d]/g, '');
-}
-
 function formatSquareMeters(value: number): string {
   return `${value.toLocaleString('en-ZA').replace(/,/g, ' ')} m²`;
 }
 
-type ListingCard = {
+export type ListingCard = {
   id: string;
   title: string;
   location: string;
@@ -403,21 +399,6 @@ function mapPropertyToListingCard(
   };
 }
 
-function getListingStatusBadge(status: ListingCard['status']) {
-  switch (status) {
-    case 'active':
-      return { label: 'ON SHOW', className: 'bg-blue-600 text-white' };
-    case 'under_offer':
-      return { label: 'OFFER SUBMITTED', className: 'bg-amber-600 text-white' };
-    case 'sold':
-      return { label: 'SOLD', className: 'bg-emerald-600 text-white' };
-    case 'withdrawn':
-      return { label: 'WITHDRAWN', className: 'bg-gray-600 text-white' };
-    default:
-      return { label: 'DRAFT', className: 'bg-gray-500 text-white' };
-  }
-}
-
 function formatRandAmount(amount: number): string {
   if (amount >= 1_000_000) {
     return `R ${(amount / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
@@ -675,14 +656,15 @@ export default function Listings() {
   const [showParkingDropdown, setShowParkingDropdown] = useState(false);
   const [showFloorSizeDropdown, setShowFloorSizeDropdown] = useState(false);
   const [showErfSizeDropdown, setShowErfSizeDropdown] = useState(false);
-  const [showMinPriceCustomInput, setShowMinPriceCustomInput] = useState(false);
-  const [showMaxPriceCustomInput, setShowMaxPriceCustomInput] = useState(false);
-  const [showFloorSizeCustomInput, setShowFloorSizeCustomInput] = useState(false);
-  const [showErfSizeCustomInput, setShowErfSizeCustomInput] = useState(false);
-  const [minPriceCustomInput, setMinPriceCustomInput] = useState("");
-  const [maxPriceCustomInput, setMaxPriceCustomInput] = useState("");
-  const [floorSizeCustomInput, setFloorSizeCustomInput] = useState("");
-  const [erfSizeCustomInput, setErfSizeCustomInput] = useState("");
+  const [showCustomMinPrice, setShowCustomMinPrice] = useState(false);
+  const [showCustomMaxPrice, setShowCustomMaxPrice] = useState(false);
+  const [showCustomFloorSize, setShowCustomFloorSize] = useState(false);
+  const [showCustomErfSize, setShowCustomErfSize] = useState(false);
+  const [customMinPriceInput, setCustomMinPriceInput] = useState('');
+  const [customMaxPriceInput, setCustomMaxPriceInput] = useState('');
+  const [customFloorSizeInput, setCustomFloorSizeInput] = useState('');
+  const [customErfSizeInput, setCustomErfSizeInput] = useState('');
+
   const [pendingFilters, setPendingFilters] = useState(getDefaultFilters);
   const [appliedFilters, setAppliedFilters] = useState(getDefaultFilters);
   const [properties, setProperties] = useState<ListingCard[]>([]);
@@ -949,6 +931,7 @@ export default function Listings() {
   };
 
   const openMinPriceDropdown = () => {
+    setShowCustomMinPrice(false);
     setShowMinPriceDropdown((prev) => !prev);
     setShowMaxPriceDropdown(false);
     setShowBedroomsDropdown(false);
@@ -956,10 +939,10 @@ export default function Listings() {
     setShowParkingDropdown(false);
     setShowFloorSizeDropdown(false);
     setShowErfSizeDropdown(false);
-    setShowMinPriceCustomInput(false);
   };
 
   const openMaxPriceDropdown = () => {
+    setShowCustomMaxPrice(false);
     setShowMaxPriceDropdown((prev) => !prev);
     setShowMinPriceDropdown(false);
     setShowBedroomsDropdown(false);
@@ -967,7 +950,6 @@ export default function Listings() {
     setShowParkingDropdown(false);
     setShowFloorSizeDropdown(false);
     setShowErfSizeDropdown(false);
-    setShowMaxPriceCustomInput(false);
   };
 
   const openBedroomsDropdown = () => {
@@ -1001,6 +983,7 @@ export default function Listings() {
   };
 
   const openFloorSizeDropdown = () => {
+    setShowCustomFloorSize(false);
     setShowFloorSizeDropdown((prev) => !prev);
     setShowErfSizeDropdown(false);
     setShowBedroomsDropdown(false);
@@ -1008,10 +991,10 @@ export default function Listings() {
     setShowParkingDropdown(false);
     setShowMinPriceDropdown(false);
     setShowMaxPriceDropdown(false);
-    setShowFloorSizeCustomInput(false);
   };
 
   const openErfSizeDropdown = () => {
+    setShowCustomErfSize(false);
     setShowErfSizeDropdown((prev) => !prev);
     setShowFloorSizeDropdown(false);
     setShowBedroomsDropdown(false);
@@ -1019,31 +1002,6 @@ export default function Listings() {
     setShowParkingDropdown(false);
     setShowMinPriceDropdown(false);
     setShowMaxPriceDropdown(false);
-    setShowErfSizeCustomInput(false);
-  };
-
-  const selectBedrooms = (value: number) => {
-    setPendingFilters((prev) => ({
-      ...prev,
-      minBedrooms: value,
-    }));
-    setShowBedroomsDropdown(false);
-  };
-
-  const selectBathrooms = (value: number) => {
-    setPendingFilters((prev) => ({
-      ...prev,
-      minBathrooms: value,
-    }));
-    setShowBathroomsDropdown(false);
-  };
-
-  const selectParking = (value: number) => {
-    setPendingFilters((prev) => ({
-      ...prev,
-      minGarage: value,
-    }));
-    setShowParkingDropdown(false);
   };
 
   const selectFloorSize = (value: string) => {
@@ -1052,7 +1010,6 @@ export default function Listings() {
       minFloorSize: value,
     }));
     setShowFloorSizeDropdown(false);
-    setShowFloorSizeCustomInput(false);
   };
 
   const selectErfSize = (value: string) => {
@@ -1061,84 +1018,23 @@ export default function Listings() {
       minErfSize: value,
     }));
     setShowErfSizeDropdown(false);
-    setShowErfSizeCustomInput(false);
   };
 
-  const applyCustomFloorSize = () => {
-    const normalized = normalizeCurrencyDigits(floorSizeCustomInput);
-    const parsed = Number(normalized);
 
-    setPendingFilters((prev) => ({
-      ...prev,
-      minFloorSize: Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '',
-    }));
-
-    setShowFloorSizeDropdown(false);
-    setShowFloorSizeCustomInput(false);
-  };
-
-  const applyCustomErfSize = () => {
-    const normalized = normalizeCurrencyDigits(erfSizeCustomInput);
-    const parsed = Number(normalized);
-
-    setPendingFilters((prev) => ({
-      ...prev,
-      minErfSize: Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '',
-    }));
-
-    setShowErfSizeDropdown(false);
-    setShowErfSizeCustomInput(false);
-  };
-
-  const handleSelectMinPrice = (value: string) => {
-    setPendingFilters((prev) => ({
-      ...prev,
-      minPrice: value,
-    }));
-    setShowMinPriceDropdown(false);
-    setShowMinPriceCustomInput(false);
-  };
-
-  const handleSelectMaxPrice = (value: string) => {
-    setPendingFilters((prev) => ({
-      ...prev,
-      maxPrice: value,
-    }));
-    setShowMaxPriceDropdown(false);
-    setShowMaxPriceCustomInput(false);
-  };
-
-  const applyCustomMinPrice = () => {
-    const normalized = normalizeCurrencyDigits(minPriceCustomInput);
-    const parsed = Number(normalized);
-
-    setPendingFilters((prev) => ({
-      ...prev,
-      minPrice: Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '',
-    }));
-
-    setShowMinPriceDropdown(false);
-    setShowMinPriceCustomInput(false);
-  };
-
-  const applyCustomMaxPrice = () => {
-    const normalized = normalizeCurrencyDigits(maxPriceCustomInput);
-    const parsed = Number(normalized);
-
-    setPendingFilters((prev) => ({
-      ...prev,
-      maxPrice: Number.isFinite(parsed) && parsed > 0 ? String(parsed) : '',
-    }));
-
-    setShowMaxPriceDropdown(false);
-    setShowMaxPriceCustomInput(false);
-  };
 
   const handleResetFilters = () => {
     const defaults = getDefaultFilters();
     setLocationInput("");
     setPendingFilters(defaults);
     setAppliedFilters(defaults);
+    setShowCustomMinPrice(false);
+    setShowCustomMaxPrice(false);
+    setShowCustomFloorSize(false);
+    setShowCustomErfSize(false);
+    setCustomMinPriceInput('');
+    setCustomMaxPriceInput('');
+    setCustomFloorSizeInput('');
+    setCustomErfSizeInput('');
   };
 
   const addPendingLocation = (locationValue?: string) => {
@@ -1850,9 +1746,9 @@ export default function Listings() {
     const minPrice = parsePriceInput(appliedFilters.minPrice);
     const maxPrice = parsePriceInput(appliedFilters.maxPrice);
     if (minPrice !== null || maxPrice !== null) {
-      const minLabel = minPrice !== null ? `R ${(minPrice / 1_000_000).toFixed(0)}M` : 'Any';
-      const maxLabel = maxPrice !== null ? `R ${(maxPrice / 1_000_000).toFixed(0)}M` : 'Any';
-      badges.push(`${minLabel} - ${maxLabel}`);
+      const minLabel = minPrice !== null ? formatRandValue(minPrice) : 'Any';
+      const maxLabel = maxPrice !== null ? formatRandValue(maxPrice) : 'Any';
+      badges.push(`${minLabel} – ${maxLabel}`);
     }
 
     if (appliedFilters.minBedrooms > 0) badges.push(`${appliedFilters.minBedrooms}+ Beds`);
@@ -2075,896 +1971,763 @@ export default function Listings() {
   }, [appliedFilters, hasSearched, sortBy, listingCategory]);
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-[#F2E8D5] min-h-screen">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
-        <div className="bg-primary rounded-lg p-3 md:p-4 mb-4">
-          <div className="bg-card border border-border rounded-lg p-2 md:p-3">
-          <div className="flex flex-col lg:flex-row gap-1.5 bg-foreground text-background rounded-xl border border-border/40 shadow-md p-1.5">
-            <div className="relative w-full lg:w-44">
+        {/* ── Option A: 4-row inline search ──────────────────────────────── */}
+        <div
+          style={{ background: '#0C0D10', border: '1px solid rgba(0,232,122,0.1)' }}
+          className="rounded-xl mb-4 relative overflow-visible"
+        >
+          {/* ── Row 1: category · location · map · AI · Search ── */}
+          <div className="flex flex-col lg:flex-row gap-1.5 p-2">
+
+            {/* Listing Category */}
+            <div className="relative shrink-0">
               <button
                 type="button"
-                className="w-full h-11 px-3 border-0 lg:border-r lg:border-background/20 bg-transparent rounded-lg text-sm font-medium text-background flex items-center justify-between"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#F2E8D5', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, height: 44, minWidth: 130, padding: '0 14px', fontSize: 14, fontWeight: 500 }}
+                className="flex items-center justify-between gap-2 w-full lg:w-auto"
                 onClick={() => setShowListingCategoryDropdown((prev) => !prev)}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setShowListingCategoryDropdown(false);
-                  }, 120);
-                }}
+                onBlur={() => setTimeout(() => setShowListingCategoryDropdown(false), 120)}
                 aria-label="Listing category"
               >
                 <span>{listingCategory}</span>
-                {showListingCategoryDropdown ? <ChevronUp className="w-4 h-4 text-background/70" /> : <ChevronDown className="w-4 h-4 text-background/70" />}
+                {showListingCategoryDropdown ? <ChevronUp className="w-4 h-4 opacity-60" /> : <ChevronDown className="w-4 h-4 opacity-60" />}
               </button>
-
               {showListingCategoryDropdown && (
                 <div
-                  className="absolute left-0 top-[calc(100%+6px)] z-40 w-full min-w-44 rounded-lg border border-background/20 bg-[#101518] p-1 shadow-xl"
-                  onMouseDown={(event) => event.preventDefault()}
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 160 }}
+                  className="absolute left-0 top-[calc(100%+6px)] shadow-2xl p-1"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
-                  {LISTING_CATEGORY_OPTIONS.map((option) => {
-                    const isActive = option === listingCategory;
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => {
-                          setListingCategory(option);
-                          setShowListingCategoryDropdown(false);
-                        }}
-                        className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                          isActive
-                            ? 'bg-[#1f5cab] text-white'
-                            : 'text-background/85 hover:bg-background/10 hover:text-background'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="relative flex-1 min-w-0">
-              <div className="rounded-lg border border-background/20 bg-transparent px-3 min-h-11 flex items-center gap-2 overflow-x-auto">
-                <Search className="w-4 h-4 text-background/60 shrink-0" />
-                {pendingFilters.locations.map((location) => (
-                  <Badge key={location} className="shrink-0 h-8 px-2.5 text-xs font-medium rounded-md gap-1 bg-primary text-primary-foreground hover:bg-primary/90">
-                    {location}
+                  {LISTING_CATEGORY_OPTIONS.map((option) => (
                     <button
+                      key={option}
                       type="button"
-                      aria-label={`Remove ${location}`}
-                      onClick={() => removePendingLocation(location)}
-                      className="text-primary-foreground/80 hover:text-primary-foreground"
+                      onClick={() => { setListingCategory(option); setShowListingCategoryDropdown(false); }}
+                      style={{ color: option === listingCategory ? '#00E87A' : '#F2E8D5', background: option === listingCategory ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors"
                     >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
-                <input
-                  type="text"
-                  value={locationInput}
-                  onFocus={() => setShowLocationSuggestions(true)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setShowLocationSuggestions(false);
-                    }, 120);
-                  }}
-                  onChange={(event) => {
-                    setLocationInput(event.target.value);
-                    setShowLocationSuggestions(true);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ',' || event.key === 'Tab') {
-                      event.preventDefault();
-                      if (locationSuggestions.length > 0) {
-                        addPendingLocation(locationSuggestions[0]);
-                        return;
-                      }
-
-                      addPendingLocation();
-                    }
-
-                    if (event.key === 'Escape') {
-                      setShowLocationSuggestions(false);
-                    }
-                  }}
-                  placeholder={pendingFilters.locations.length > 0 ? '...add more' : 'Search location'}
-                  className="w-full min-w-28 bg-transparent text-sm text-background placeholder:text-background/55 outline-hidden"
-                />
-
-                {locationInput.trim().length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationInput('');
-                      setShowLocationSuggestions(false);
-                    }}
-                    className="shrink-0 text-background/60 hover:text-background"
-                    aria-label="Clear location input"
-                    title="Clear location input"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {showLocationSuggestions && locationSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-lg border border-input bg-card shadow-lg overflow-hidden">
-                  {locationSuggestions.map((location) => (
-                    <button
-                      key={location}
-                      type="button"
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        addPendingLocation(location);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                    >
-                      {location}
+                      {option}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'outline'}
-              onClick={() => setViewMode((prev) => (prev === 'map' ? 'grid' : 'map'))}
-              className="w-full lg:w-auto h-11 px-5 rounded-lg border-background/30 bg-transparent text-background hover:bg-background/10"
-            >
-              Map
-              <MapIcon className="w-4 h-4 ml-2" />
-            </Button>
+            {/* Location token input */}
+            <div className="relative flex-1 min-w-0">
+              <div
+                style={{ border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, background: 'rgba(255,255,255,0.04)', minHeight: 44 }}
+                className="px-3 flex items-center gap-2 flex-wrap"
+              >
+                <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(242,232,213,0.5)' }} />
+                {pendingFilters.locations.map((location) => (
+                  <span
+                    key={location}
+                    style={{ background: '#1A3C28', border: '1px solid rgba(0,232,122,0.3)', color: '#F2E8D5', borderRadius: 6, padding: '3px 8px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                  >
+                    {location}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${location}`}
+                      onClick={() => removePendingLocation(location)}
+                      style={{ color: 'rgba(242,232,213,0.6)', lineHeight: 1 }}
+                      className="hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={locationInput}
+                  onFocus={() => setShowLocationSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 120)}
+                  onChange={(e) => { setLocationInput(e.target.value); setShowLocationSuggestions(true); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                      e.preventDefault();
+                      if (locationSuggestions.length > 0) { addPendingLocation(locationSuggestions[0]); return; }
+                      addPendingLocation();
+                    }
+                    if (e.key === 'Backspace' && locationInput === '' && pendingFilters.locations.length > 0) {
+                      removePendingLocation(pendingFilters.locations[pendingFilters.locations.length - 1]);
+                    }
+                    if (e.key === 'Escape') setShowLocationSuggestions(false);
+                  }}
+                  placeholder={pendingFilters.locations.length > 0 ? 'Add more...' : 'Search location, suburb or city'}
+                  style={{ background: 'transparent', outline: 'none', color: '#F2E8D5', fontSize: 14, minWidth: 180, flex: 1 }}
+                  className="placeholder:text-white/30 py-2.5"
+                />
+                {locationInput.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setLocationInput(''); setShowLocationSuggestions(false); }}
+                    aria-label="Clear location"
+                    style={{ color: 'rgba(242,232,213,0.5)' }}
+                    className="shrink-0 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {showLocationSuggestions && locationSuggestions.length > 0 && (
+                <div
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60 }}
+                  className="absolute left-0 right-0 top-[calc(100%+6px)] shadow-2xl overflow-hidden"
+                >
+                  {locationSuggestions.map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); addPendingLocation(loc); }}
+                      style={{ color: '#F2E8D5' }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2 transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5 shrink-0" style={{ color: '#00E87A' }} />
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <Button onClick={handleTopSearch} className="w-full lg:w-auto h-11 px-10 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground">
+            {/* Map toggle */}
+            <button
+              type="button"
+              onClick={() => setViewMode((prev) => (prev === 'map' ? 'grid' : 'map'))}
+              style={{
+                background: viewMode === 'map' ? 'rgba(0,232,122,0.15)' : 'rgba(255,255,255,0.06)',
+                border: viewMode === 'map' ? '1px solid rgba(0,232,122,0.4)' : '1px solid rgba(255,255,255,0.12)',
+                color: viewMode === 'map' ? '#00E87A' : '#F2E8D5',
+                borderRadius: 8, height: 44, padding: '0 18px', fontSize: 14, fontWeight: 500,
+              }}
+              className="flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+            >
+              <MapIcon className="w-4 h-4" />
+              Map
+            </button>
+
+            {/* AI Search */}
+            <button
+              type="button"
+              onClick={handleVoiceSearch}
+              style={{ background: '#B89040', color: 'white', borderRadius: 8, height: 44, padding: '0 18px', fontSize: 14, fontWeight: 600, border: 'none' }}
+              className="flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+            >
+              <Mic className="w-4 h-4" />
+              AI Search
+              <Sparkles className="w-4 h-4" />
+            </button>
+
+            {/* Search */}
+            <button
+              type="button"
+              onClick={handleTopSearch}
+              style={{ background: '#C4562A', color: 'white', borderRadius: 8, height: 44, padding: '0 28px', fontSize: 15, fontWeight: 700, border: 'none' }}
+              className="flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+            >
               Search
-            </Button>
+            </button>
           </div>
 
           {searchError && (
-            <div className="mt-2 px-1 flex items-center gap-1.5 text-sm font-medium text-red-500" role="alert">
+            <div className="px-4 pb-2 flex items-center gap-1.5 text-sm font-medium text-red-400" role="alert">
               <span aria-hidden="true">⚠</span> {searchError}
             </div>
           )}
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+          {/* ── Row 2: Property Type · Min Price · Max Price · Bedrooms · More Filters ── */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="flex flex-wrap items-stretch">
+
+            {/* Property Type */}
             <div className="relative">
               <button
                 type="button"
-                className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
-                onClick={() => setShowPropertyTypeDropdown((prev) => !prev)}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setShowPropertyTypeDropdown(false);
-                  }, 120);
+                style={{ color: selectedPropertyTypeCount > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                className="flex items-center gap-2 hover:bg-white/5 transition-colors"
+                onClick={() => {
+                  setShowPropertyTypeDropdown((p) => !p);
+                  setShowMinPriceDropdown(false); setShowMaxPriceDropdown(false);
+                  setShowBedroomsDropdown(false); setShowBathroomsDropdown(false);
+                  setShowParkingDropdown(false); setShowFloorSizeDropdown(false); setShowErfSizeDropdown(false);
                 }}
-                aria-label="Property type"
+                onBlur={() => setTimeout(() => setShowPropertyTypeDropdown(false), 120)}
               >
-                <span>
-                  {selectedPropertyTypeCount > 0 ? `Property Type (${selectedPropertyTypeCount})` : 'Property Type'}
-                </span>
-                {showPropertyTypeDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {selectedPropertyTypeCount > 0 ? `Property Type (${selectedPropertyTypeCount})` : 'Property Type'}
+                {showPropertyTypeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
               </button>
-
               {showPropertyTypeDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-lg border border-input bg-card shadow-lg p-2"
-                  onMouseDown={(event) => event.preventDefault()}
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-2"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {PROPERTY_TYPE_OPTIONS.map((option) => (
-                      <label key={option.key} className="flex items-center gap-2 text-sm px-1 py-1.5">
-                        <input
-                          type="checkbox"
-                          checked={pendingFilters.propertyTypes[option.key]}
-                          onChange={(event) =>
-                            setPendingFilters((prev) => ({
-                              ...prev,
-                              propertyTypes: {
-                                ...prev.propertyTypes,
-                                [option.key]: event.target.checked,
-                              },
-                            }))
-                          }
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <Button
-                    type="button"
-                    className="w-full mt-2"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      setShowPropertyTypeDropdown(false);
-                    }}
-                  >
-                    Done
-                  </Button>
+                  {PROPERTY_TYPE_OPTIONS.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      style={{ color: '#F2E8D5', borderRadius: 6 }}
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-white/10 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        style={{ accentColor: '#00E87A', width: 15, height: 15 }}
+                        checked={(pendingFilters.propertyTypes as Record<string, boolean>)[key] ?? false}
+                        onChange={(e) => setPendingFilters((prev) => ({ ...prev, propertyTypes: { ...prev.propertyTypes, [key]: e.target.checked } }))}
+                      />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
                 </div>
               )}
             </div>
 
-            <div className="relative">
+            {/* Min Price */}
+            <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowMinPriceDropdown(false), 120); }}>
               <button
                 type="button"
-                className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                style={{ color: pendingFilters.minPrice ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                 onClick={openMinPriceDropdown}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setShowMinPriceDropdown(false);
-                    setShowMinPriceCustomInput(false);
-                  }, 120);
-                }}
-                aria-label="Minimum price"
               >
-                <span>{minPriceLabel}</span>
-                {showMinPriceDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {minPriceLabel}
+                {showMinPriceDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
               </button>
-
               {showMinPriceDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                  onMouseDown={(event) => event.preventDefault()}
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
-                  {!showMinPriceCustomInput ? (
-                    <>
-                      <div className="max-h-64 overflow-y-auto pr-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectMinPrice('')}
-                          className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minPrice ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                        >
-                          Any
-                        </button>
-                        {PRICE_PRESET_OPTIONS.map((price) => (
-                          <button
-                            key={price}
-                            type="button"
-                            onClick={() => handleSelectMinPrice(String(price))}
-                            className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minPrice === String(price) ? 'bg-primary text-primary-foreground' : ''}`}
-                          >
-                            {formatRandValue(price)}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-background/20">
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-background/10 rounded-md"
-                          onClick={() => {
-                            setMinPriceCustomInput(pendingFilters.minPrice ? formatRandValue(Number(pendingFilters.minPrice)) : 'R 0');
-                            setShowMinPriceCustomInput(true);
-                          }}
-                        >
-                          Custom Price
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={minPriceCustomInput}
-                        onChange={(event) => setMinPriceCustomInput(event.target.value)}
-                        className="w-full h-10 px-3 border border-background/30 bg-background/20 rounded-md text-sm"
-                        placeholder="R 0"
-                      />
-                      <Button type="button" className="w-full mt-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={applyCustomMinPrice}>
-                        Done
-                      </Button>
+                  {showCustomMinPrice ? (
+                    <div className="p-4">
                       <button
                         type="button"
-                        className="w-full mt-2 text-sm text-background/70 hover:text-background"
-                        onClick={() => setShowMinPriceCustomInput(false)}
-                      >
-                        Switch to List View
-                      </button>
-                    </>
+                        onClick={() => setShowCustomMinPrice(false)}
+                        style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.4)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 4 }}
+                        className="hover:text-[#F2E8D5] transition-colors"
+                      >← LIST VIEW</button>
+                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.35)', marginBottom: 10 }}>CUSTOM MIN PRICE</p>
+                      <div className="flex items-center gap-2 rounded-lg" style={{ border: '1px solid rgba(0,232,122,0.35)', background: 'rgba(0,232,122,0.05)', padding: '8px 12px', marginBottom: 10 }}>
+                        <span style={{ color: 'rgba(242,232,213,0.5)', fontSize: 13, fontWeight: 600 }}>R</span>
+                        <input
+                          autoFocus
+                          type="number"
+                          value={customMinPriceInput}
+                          onChange={(e) => setCustomMinPriceInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && customMinPriceInput) { setPendingFilters((p) => ({ ...p, minPrice: customMinPriceInput })); setShowMinPriceDropdown(false); setShowCustomMinPrice(false); } }}
+                          placeholder="Enter amount"
+                          style={{ background: 'transparent', border: 'none', outline: 'none', color: '#F2E8D5', fontSize: 15, width: '100%', minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 300 }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { if (customMinPriceInput) { setPendingFilters((p) => ({ ...p, minPrice: customMinPriceInput })); setShowMinPriceDropdown(false); setShowCustomMinPrice(false); } }}
+                        style={{ width: '100%', background: customMinPriceInput ? '#00E87A' : 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.4)', borderRadius: 7, color: customMinPriceInput ? '#0C0D10' : '#00E87A', fontSize: 11, padding: '8px 0', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.15em', fontWeight: 600 }}
+                      >APPLY</button>
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 300, overflowY: 'auto' }} className="p-1">
+                      <button type="button" onClick={() => { setPendingFilters((p) => ({ ...p, minPrice: '' })); setShowMinPriceDropdown(false); }} style={{ color: !pendingFilters.minPrice ? '#00E87A' : '#F2E8D5', background: !pendingFilters.minPrice ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">No Min</button>
+                      {PRICE_PRESET_OPTIONS.map((value) => (
+                        <button key={value} type="button" onClick={() => { setPendingFilters((p) => ({ ...p, minPrice: String(value) })); setShowMinPriceDropdown(false); }} style={{ color: String(value) === pendingFilters.minPrice ? '#00E87A' : '#F2E8D5', background: String(value) === pendingFilters.minPrice ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">{formatRandValue(value)}</button>
+                      ))}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: 4, paddingTop: 4 }}>
+                        <button type="button" onClick={() => setShowCustomMinPrice(true)} style={{ color: 'rgba(242,232,213,0.5)', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Custom amount...</button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="relative">
+            {/* Max Price */}
+            <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowMaxPriceDropdown(false), 120); }}>
               <button
                 type="button"
-                className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                style={{ color: pendingFilters.maxPrice ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                 onClick={openMaxPriceDropdown}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setShowMaxPriceDropdown(false);
-                    setShowMaxPriceCustomInput(false);
-                  }, 120);
-                }}
-                aria-label="Maximum price"
               >
-                <span>{maxPriceLabel}</span>
-                {showMaxPriceDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {maxPriceLabel}
+                {showMaxPriceDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
               </button>
-
               {showMaxPriceDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                  onMouseDown={(event) => event.preventDefault()}
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
-                  {!showMaxPriceCustomInput ? (
-                    <>
-                      <div className="max-h-64 overflow-y-auto pr-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSelectMaxPrice('')}
-                          className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.maxPrice ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                        >
-                          Any
-                        </button>
-                        {PRICE_PRESET_OPTIONS.map((price) => (
-                          <button
-                            key={price}
-                            type="button"
-                            onClick={() => handleSelectMaxPrice(String(price))}
-                            className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.maxPrice === String(price) ? 'bg-primary text-primary-foreground' : ''}`}
-                          >
-                            {formatRandValue(price)}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-background/20">
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-background/10 rounded-md"
-                          onClick={() => {
-                            setMaxPriceCustomInput(pendingFilters.maxPrice ? formatRandValue(Number(pendingFilters.maxPrice)) : 'R 0');
-                            setShowMaxPriceCustomInput(true);
-                          }}
-                        >
-                          Custom Price
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={maxPriceCustomInput}
-                        onChange={(event) => setMaxPriceCustomInput(event.target.value)}
-                        className="w-full h-10 px-3 border border-background/30 bg-background/20 rounded-md text-sm"
-                        placeholder="R 0"
-                      />
-                      <Button type="button" className="w-full mt-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={applyCustomMaxPrice}>
-                        Done
-                      </Button>
+                  {showCustomMaxPrice ? (
+                    <div className="p-4">
                       <button
                         type="button"
-                        className="w-full mt-2 text-sm text-background/70 hover:text-background"
-                        onClick={() => setShowMaxPriceCustomInput(false)}
-                      >
-                        Switch to List View
-                      </button>
-                    </>
+                        onClick={() => setShowCustomMaxPrice(false)}
+                        style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.4)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 4 }}
+                        className="hover:text-[#F2E8D5] transition-colors"
+                      >← LIST VIEW</button>
+                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.35)', marginBottom: 10 }}>CUSTOM MAX PRICE</p>
+                      <div className="flex items-center gap-2 rounded-lg" style={{ border: '1px solid rgba(0,232,122,0.35)', background: 'rgba(0,232,122,0.05)', padding: '8px 12px', marginBottom: 10 }}>
+                        <span style={{ color: 'rgba(242,232,213,0.5)', fontSize: 13, fontWeight: 600 }}>R</span>
+                        <input
+                          autoFocus
+                          type="number"
+                          value={customMaxPriceInput}
+                          onChange={(e) => setCustomMaxPriceInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && customMaxPriceInput) { setPendingFilters((p) => ({ ...p, maxPrice: customMaxPriceInput })); setShowMaxPriceDropdown(false); setShowCustomMaxPrice(false); } }}
+                          placeholder="Enter amount"
+                          style={{ background: 'transparent', border: 'none', outline: 'none', color: '#F2E8D5', fontSize: 15, width: '100%', minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 300 }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { if (customMaxPriceInput) { setPendingFilters((p) => ({ ...p, maxPrice: customMaxPriceInput })); setShowMaxPriceDropdown(false); setShowCustomMaxPrice(false); } }}
+                        style={{ width: '100%', background: customMaxPriceInput ? '#00E87A' : 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.4)', borderRadius: 7, color: customMaxPriceInput ? '#0C0D10' : '#00E87A', fontSize: 11, padding: '8px 0', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.15em', fontWeight: 600 }}
+                      >APPLY</button>
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 300, overflowY: 'auto' }} className="p-1">
+                      <button type="button" onClick={() => { setPendingFilters((p) => ({ ...p, maxPrice: '' })); setShowMaxPriceDropdown(false); }} style={{ color: !pendingFilters.maxPrice ? '#00E87A' : '#F2E8D5', background: !pendingFilters.maxPrice ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">No Max</button>
+                      {PRICE_PRESET_OPTIONS.map((value) => (
+                        <button key={value} type="button" onClick={() => { setPendingFilters((p) => ({ ...p, maxPrice: String(value) })); setShowMaxPriceDropdown(false); }} style={{ color: String(value) === pendingFilters.maxPrice ? '#00E87A' : '#F2E8D5', background: String(value) === pendingFilters.maxPrice ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">{formatRandValue(value)}</button>
+                      ))}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: 4, paddingTop: 4 }}>
+                        <button type="button" onClick={() => setShowCustomMaxPrice(true)} style={{ color: 'rgba(242,232,213,0.5)', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Custom amount...</button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
             </div>
 
+            {/* Bedrooms */}
             <div className="relative">
               <button
                 type="button"
-                className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                style={{ color: pendingFilters.minBedrooms > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                 onClick={openBedroomsDropdown}
-                onBlur={() => {
-                  setTimeout(() => {
-                    setShowBedroomsDropdown(false);
-                  }, 120);
-                }}
-                aria-label="Minimum bedrooms"
+                onBlur={() => setTimeout(() => setShowBedroomsDropdown(false), 120)}
               >
-                <span className="flex flex-col items-start leading-tight">
-                  <span className="text-xs">Bedrooms</span>
-                  {pendingFilters.minBedrooms > 0 && <span className="text-sm font-medium">{bedroomsLabel}</span>}
-                </span>
-                {showBedroomsDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {bedroomsLabel}
+                {showBedroomsDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
               </button>
-
               {showBedroomsDropdown && (
                 <div
-                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                  onMouseDown={(event) => event.preventDefault()}
+                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                  className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
-                  <div className="max-h-64 overflow-y-auto pr-1">
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'rgba(242,232,213,0.35)', marginBottom: 12 }} className="uppercase">Min Bedrooms</p>
+                  <div className="flex items-center justify-center gap-5 mb-4">
                     <button
                       type="button"
-                      onClick={() => selectBedrooms(0)}
-                      className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minBedrooms > 0 ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                    >
-                      Any
-                    </button>
-                    {[1, 2, 3, 4, 5].map((value) => (
+                      onClick={() => setPendingFilters((p) => ({ ...p, minBedrooms: Math.max(0, p.minBedrooms - 1) }))}
+                      style={{ width: 36, height: 36, borderRadius: '50%', border: `1px solid ${pendingFilters.minBedrooms > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, color: pendingFilters.minBedrooms > 0 ? 'rgba(242,232,213,0.8)' : 'rgba(242,232,213,0.25)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                      className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                    >−</button>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: '#F2E8D5', minWidth: 52, textAlign: 'center', fontWeight: 500 }}>
+                      {pendingFilters.minBedrooms <= 0 ? 'Any' : `${pendingFilters.minBedrooms}+`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPendingFilters((p) => ({ ...p, minBedrooms: Math.min(10, p.minBedrooms + 1) }))}
+                      style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(242,232,213,0.8)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                      className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                    >+</button>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2, 3, 4, 5].map((n) => (
                       <button
-                        key={value}
+                        key={n}
                         type="button"
-                        onClick={() => selectBedrooms(value)}
-                        className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minBedrooms === value ? 'bg-primary text-primary-foreground' : ''}`}
-                      >
-                        {value}+
-                      </button>
+                        onClick={() => { setPendingFilters((p) => ({ ...p, minBedrooms: n })); setShowBedroomsDropdown(false); }}
+                        style={{
+                          background: pendingFilters.minBedrooms === n ? 'rgba(0,232,122,0.12)' : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${pendingFilters.minBedrooms === n ? '#00E87A' : 'rgba(255,255,255,0.1)'}`,
+                          color: pendingFilters.minBedrooms === n ? '#00E87A' : 'rgba(242,232,213,0.65)',
+                          borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 500,
+                        }}
+                        className="hover:border-[#00E87A]/50 transition-colors"
+                      >{n === 0 ? 'Any' : `${n}+`}</button>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => setShowTopMoreFilters((prev) => !prev)}
-              className="w-full h-11"
+            {/* More / Less Filters */}
+            <button
+              type="button"
+              onClick={() => setShowTopMoreFilters((p) => !p)}
+              style={{
+                color: showTopMoreFilters ? '#00E87A' : 'rgba(242,232,213,0.75)',
+                background: showTopMoreFilters ? 'rgba(0,232,122,0.06)' : 'transparent',
+                borderLeft: 'none', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500,
+                marginLeft: 'auto',
+              }}
+              className="flex items-center gap-2 hover:bg-white/5 transition-colors"
             >
-              {showTopMoreFilters ? 'Less Filters −' : 'More Filters +'}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleVoiceSearch}
-              className="w-full h-11"
-            >
-              <Mic className="w-4 h-4 mr-2" />
-              AI Search
-              <Sparkles className="w-4 h-4 ml-2" />
-            </Button>
+              {showTopMoreFilters ? 'Less Filters —' : 'More Filters +'}
+            </button>
           </div>
 
+          {/* ── Row 3 (expanded): Bathrooms · Parking · Floor Size · Erf Size ── */}
           {showTopMoreFilters && (
             <>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="flex flex-wrap items-stretch">
+
+                {/* Bathrooms */}
                 <div className="relative">
                   <button
                     type="button"
-                    className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                    style={{ color: pendingFilters.minBathrooms > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openBathroomsDropdown}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        setShowBathroomsDropdown(false);
-                      }, 120);
-                    }}
-                    aria-label="Minimum bathrooms"
+                    onBlur={() => setTimeout(() => setShowBathroomsDropdown(false), 120)}
                   >
-                    <span className="flex flex-col items-start leading-tight">
-                      <span className="text-xs">Bathrooms</span>
-                      {pendingFilters.minBathrooms > 0 && <span className="text-sm font-medium">{bathroomsLabel}</span>}
-                    </span>
-                    {showBathroomsDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {bathroomsLabel}
+                    {showBathroomsDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
-
                   {showBathroomsDropdown && (
                     <div
-                      className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                      onMouseDown={(event) => event.preventDefault()}
+                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                      className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
-                      <div className="max-h-64 overflow-y-auto pr-1">
+                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'rgba(242,232,213,0.35)', marginBottom: 12 }} className="uppercase">Min Bathrooms</p>
+                      <div className="flex items-center justify-center gap-5 mb-4">
                         <button
                           type="button"
-                          onClick={() => selectBathrooms(0)}
-                          className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minBathrooms > 0 ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                        >
-                          Any
-                        </button>
-                        {[1, 2, 3, 4, 5].map((value) => (
+                          onClick={() => setPendingFilters((p) => ({ ...p, minBathrooms: Math.max(0, p.minBathrooms - 1) }))}
+                          style={{ width: 36, height: 36, borderRadius: '50%', border: `1px solid ${pendingFilters.minBathrooms > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, color: pendingFilters.minBathrooms > 0 ? 'rgba(242,232,213,0.8)' : 'rgba(242,232,213,0.25)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                          className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                        >−</button>
+                        <span style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: '#F2E8D5', minWidth: 52, textAlign: 'center', fontWeight: 500 }}>
+                          {pendingFilters.minBathrooms <= 0 ? 'Any' : `${pendingFilters.minBathrooms}+`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingFilters((p) => ({ ...p, minBathrooms: Math.min(10, p.minBathrooms + 1) }))}
+                          style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(242,232,213,0.8)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                          className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                        >+</button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {[0, 1, 2, 3, 4, 5].map((n) => (
                           <button
-                            key={value}
+                            key={n}
                             type="button"
-                            onClick={() => selectBathrooms(value)}
-                            className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minBathrooms === value ? 'bg-primary text-primary-foreground' : ''}`}
-                          >
-                            {value}+
-                          </button>
+                            onClick={() => { setPendingFilters((p) => ({ ...p, minBathrooms: n })); setShowBathroomsDropdown(false); }}
+                            style={{
+                              background: pendingFilters.minBathrooms === n ? 'rgba(0,232,122,0.12)' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${pendingFilters.minBathrooms === n ? '#00E87A' : 'rgba(255,255,255,0.1)'}`,
+                              color: pendingFilters.minBathrooms === n ? '#00E87A' : 'rgba(242,232,213,0.65)',
+                              borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 500,
+                            }}
+                            className="hover:border-[#00E87A]/50 transition-colors"
+                          >{n === 0 ? 'Any' : `${n}+`}</button>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
 
+                {/* Parking / Garage */}
                 <div className="relative">
                   <button
                     type="button"
-                    className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                    style={{ color: pendingFilters.minGarage > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openParkingDropdown}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        setShowParkingDropdown(false);
-                      }, 120);
-                    }}
-                    aria-label="Minimum parking or garage"
+                    onBlur={() => setTimeout(() => setShowParkingDropdown(false), 120)}
                   >
-                    <span className="flex flex-col items-start leading-tight">
-                      <span className="text-xs">Parking / Garage</span>
-                      {pendingFilters.minGarage > 0 && <span className="text-sm font-medium">{parkingLabel}</span>}
-                    </span>
-                    {showParkingDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {parkingLabel}
+                    {showParkingDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
-
                   {showParkingDropdown && (
                     <div
-                      className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                      onMouseDown={(event) => event.preventDefault()}
+                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                      className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
-                      <div className="max-h-64 overflow-y-auto pr-1">
+                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.12em', color: 'rgba(242,232,213,0.35)', marginBottom: 12 }} className="uppercase">Min Parking</p>
+                      <div className="flex items-center justify-center gap-5 mb-4">
                         <button
                           type="button"
-                          onClick={() => selectParking(0)}
-                          className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minGarage > 0 ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                        >
-                          Any
-                        </button>
-                        {[1, 2, 3, 4].map((value) => (
+                          onClick={() => setPendingFilters((p) => ({ ...p, minGarage: Math.max(0, p.minGarage - 1) }))}
+                          style={{ width: 36, height: 36, borderRadius: '50%', border: `1px solid ${pendingFilters.minGarage > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`, color: pendingFilters.minGarage > 0 ? 'rgba(242,232,213,0.8)' : 'rgba(242,232,213,0.25)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                          className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                        >−</button>
+                        <span style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: '#F2E8D5', minWidth: 52, textAlign: 'center', fontWeight: 500 }}>
+                          {pendingFilters.minGarage <= 0 ? 'Any' : `${pendingFilters.minGarage}+`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingFilters((p) => ({ ...p, minGarage: Math.min(6, p.minGarage + 1) }))}
+                          style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(242,232,213,0.8)', background: 'transparent', fontSize: 20, lineHeight: 1 }}
+                          className="flex items-center justify-center hover:border-[#00E87A] hover:text-[#00E87A] transition-colors"
+                        >+</button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {[0, 1, 2, 3, 4].map((n) => (
                           <button
-                            key={value}
+                            key={n}
                             type="button"
-                            onClick={() => selectParking(value)}
-                            className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minGarage === value ? 'bg-primary text-primary-foreground' : ''}`}
-                          >
-                            {value}+
-                          </button>
+                            onClick={() => { setPendingFilters((p) => ({ ...p, minGarage: n })); setShowParkingDropdown(false); }}
+                            style={{
+                              background: pendingFilters.minGarage === n ? 'rgba(0,232,122,0.12)' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${pendingFilters.minGarage === n ? '#00E87A' : 'rgba(255,255,255,0.1)'}`,
+                              color: pendingFilters.minGarage === n ? '#00E87A' : 'rgba(242,232,213,0.65)',
+                              borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 500,
+                            }}
+                            className="hover:border-[#00E87A]/50 transition-colors"
+                          >{n === 0 ? 'Any' : `${n}+`}</button>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="relative">
+                {/* Floor Size */}
+                <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowFloorSizeDropdown(false), 120); }}>
                   <button
                     type="button"
-                    className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                    style={{ color: pendingFilters.minFloorSize ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openFloorSizeDropdown}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        setShowFloorSizeDropdown(false);
-                        setShowFloorSizeCustomInput(false);
-                      }, 120);
-                    }}
-                    aria-label="Minimum floor size"
                   >
-                    <span>{floorSizeLabel}</span>
-                    {showFloorSizeDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {floorSizeLabel}
+                    {showFloorSizeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
-
                   {showFloorSizeDropdown && (
                     <div
-                      className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                      onMouseDown={(event) => event.preventDefault()}
+                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                      className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
-                      {!showFloorSizeCustomInput ? (
-                        <>
-                          <div className="max-h-64 overflow-y-auto pr-1">
-                            <button
-                              type="button"
-                              onClick={() => selectFloorSize('')}
-                              className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minFloorSize ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                            >
-                              Any
-                            </button>
-                            {SIZE_PRESET_OPTIONS.map((size) => (
-                              <button
-                                key={size}
-                                type="button"
-                                onClick={() => selectFloorSize(String(size))}
-                                className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minFloorSize === String(size) ? 'bg-primary text-primary-foreground' : ''}`}
-                              >
-                                {formatSquareMeters(size)}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-background/20">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-background/10 rounded-md"
-                              onClick={() => {
-                                setFloorSizeCustomInput(pendingFilters.minFloorSize ? formatSquareMeters(Number(pendingFilters.minFloorSize)) : '0');
-                                setShowFloorSizeCustomInput(true);
-                              }}
-                            >
-                              Custom Size
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <input
-                            type="text"
-                            value={floorSizeCustomInput}
-                            onChange={(event) => setFloorSizeCustomInput(event.target.value)}
-                            className="w-full h-10 px-3 border border-background/30 bg-background/20 rounded-md text-sm"
-                            placeholder="0"
-                          />
-                          <Button type="button" className="w-full mt-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={applyCustomFloorSize}>
-                            Done
-                          </Button>
+                      {showCustomFloorSize ? (
+                        <div className="p-4">
                           <button
                             type="button"
-                            className="w-full mt-2 text-sm text-background/70 hover:text-background"
-                            onClick={() => setShowFloorSizeCustomInput(false)}
-                          >
-                            Switch to List View
-                          </button>
-                        </>
+                            onClick={() => setShowCustomFloorSize(false)}
+                            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.4)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 4 }}
+                            className="hover:text-[#F2E8D5] transition-colors"
+                          >← LIST VIEW</button>
+                          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.35)', marginBottom: 10 }}>CUSTOM FLOOR SIZE</p>
+                          <div className="flex items-center gap-2 rounded-lg" style={{ border: '1px solid rgba(0,232,122,0.35)', background: 'rgba(0,232,122,0.05)', padding: '8px 12px', marginBottom: 10 }}>
+                            <input
+                              autoFocus
+                              type="number"
+                              value={customFloorSizeInput}
+                              onChange={(e) => setCustomFloorSizeInput(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' && customFloorSizeInput) { selectFloorSize(customFloorSizeInput); setShowFloorSizeDropdown(false); setShowCustomFloorSize(false); } }}
+                              placeholder="Enter size"
+                              style={{ background: 'transparent', border: 'none', outline: 'none', color: '#F2E8D5', fontSize: 15, width: '100%', minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 300 }}
+                            />
+                            <span style={{ color: 'rgba(242,232,213,0.4)', fontSize: 12, whiteSpace: 'nowrap', fontFamily: "'IBM Plex Mono', monospace" }}>m²</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { if (customFloorSizeInput) { selectFloorSize(customFloorSizeInput); setShowFloorSizeDropdown(false); setShowCustomFloorSize(false); } }}
+                            style={{ width: '100%', background: customFloorSizeInput ? '#00E87A' : 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.4)', borderRadius: 7, color: customFloorSizeInput ? '#0C0D10' : '#00E87A', fontSize: 11, padding: '8px 0', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.15em', fontWeight: 600 }}
+                          >APPLY</button>
+                        </div>
+                      ) : (
+                          <div style={{ maxHeight: 300, overflowY: 'auto' }} className="p-1">
+                            <button type="button" onClick={() => { selectFloorSize(''); setShowCustomFloorSize(false); }} style={{ color: !pendingFilters.minFloorSize ? '#00E87A' : '#F2E8D5', background: !pendingFilters.minFloorSize ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Any Size</button>
+                            {SIZE_PRESET_OPTIONS.map((value) => (
+                              <button key={value} type="button" onClick={() => { selectFloorSize(String(value)); setShowCustomFloorSize(false); }} style={{ color: String(value) === pendingFilters.minFloorSize ? '#00E87A' : '#F2E8D5', background: String(value) === pendingFilters.minFloorSize ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">{formatSquareMeters(value)}</button>
+                            ))}
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: 4, paddingTop: 4 }}>
+                              <button type="button" onClick={() => setShowCustomFloorSize(true)} style={{ color: 'rgba(242,232,213,0.5)', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Custom size...</button>
+                            </div>
+                          </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="relative">
+                {/* Erf Size */}
+                <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowErfSizeDropdown(false), 120); }}>
                   <button
                     type="button"
-                    className="w-full h-11 px-3 border border-input bg-input-background rounded-lg text-sm flex items-center justify-between"
+                    style={{ color: pendingFilters.minErfSize ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openErfSizeDropdown}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        setShowErfSizeDropdown(false);
-                        setShowErfSizeCustomInput(false);
-                      }, 120);
-                    }}
-                    aria-label="Minimum erf size"
                   >
-                    <span>{erfSizeLabel}</span>
-                    {showErfSizeDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {erfSizeLabel}
+                    {showErfSizeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
-
                   {showErfSizeDropdown && (
                     <div
-                      className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 rounded-xl border border-background/20 bg-foreground text-background shadow-2xl p-2"
-                      onMouseDown={(event) => event.preventDefault()}
+                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                      className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
-                      {!showErfSizeCustomInput ? (
-                        <>
-                          <div className="max-h-64 overflow-y-auto pr-1">
-                            <button
-                              type="button"
-                              onClick={() => selectErfSize('')}
-                              className={`w-full px-3 py-2 text-left text-sm rounded-md ${pendingFilters.minErfSize ? 'hover:bg-background/10' : 'bg-primary text-primary-foreground'}`}
-                            >
-                              Any
-                            </button>
-                            {SIZE_PRESET_OPTIONS.map((size) => (
-                              <button
-                                key={size}
-                                type="button"
-                                onClick={() => selectErfSize(String(size))}
-                                className={`w-full px-3 py-2 text-left text-sm rounded-md hover:bg-background/10 ${pendingFilters.minErfSize === String(size) ? 'bg-primary text-primary-foreground' : ''}`}
-                              >
-                                {formatSquareMeters(size)}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-background/20">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-background/10 rounded-md"
-                              onClick={() => {
-                                setErfSizeCustomInput(pendingFilters.minErfSize ? formatSquareMeters(Number(pendingFilters.minErfSize)) : '0');
-                                setShowErfSizeCustomInput(true);
-                              }}
-                            >
-                              Custom Size
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <input
-                            type="text"
-                            value={erfSizeCustomInput}
-                            onChange={(event) => setErfSizeCustomInput(event.target.value)}
-                            className="w-full h-10 px-3 border border-background/30 bg-background/20 rounded-md text-sm"
-                            placeholder="0"
-                          />
-                          <Button type="button" className="w-full mt-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={applyCustomErfSize}>
-                            Done
-                          </Button>
+                      {showCustomErfSize ? (
+                        <div className="p-4">
                           <button
                             type="button"
-                            className="w-full mt-2 text-sm text-background/70 hover:text-background"
-                            onClick={() => setShowErfSizeCustomInput(false)}
-                          >
-                            Switch to List View
-                          </button>
-                        </>
+                            onClick={() => setShowCustomErfSize(false)}
+                            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.4)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 4 }}
+                            className="hover:text-[#F2E8D5] transition-colors"
+                          >← LIST VIEW</button>
+                          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.15em', color: 'rgba(242,232,213,0.35)', marginBottom: 10 }}>CUSTOM ERF SIZE</p>
+                          <div className="flex items-center gap-2 rounded-lg" style={{ border: '1px solid rgba(0,232,122,0.35)', background: 'rgba(0,232,122,0.05)', padding: '8px 12px', marginBottom: 10 }}>
+                            <input
+                              autoFocus
+                              type="number"
+                              value={customErfSizeInput}
+                              onChange={(e) => setCustomErfSizeInput(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' && customErfSizeInput) { selectErfSize(customErfSizeInput); setShowErfSizeDropdown(false); setShowCustomErfSize(false); } }}
+                              placeholder="Enter size"
+                              style={{ background: 'transparent', border: 'none', outline: 'none', color: '#F2E8D5', fontSize: 15, width: '100%', minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 300 }}
+                            />
+                            <span style={{ color: 'rgba(242,232,213,0.4)', fontSize: 12, whiteSpace: 'nowrap', fontFamily: "'IBM Plex Mono', monospace" }}>m²</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { if (customErfSizeInput) { selectErfSize(customErfSizeInput); setShowErfSizeDropdown(false); setShowCustomErfSize(false); } }}
+                            style={{ width: '100%', background: customErfSizeInput ? '#00E87A' : 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.4)', borderRadius: 7, color: customErfSizeInput ? '#0C0D10' : '#00E87A', fontSize: 11, padding: '8px 0', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.15em', fontWeight: 600 }}
+                          >APPLY</button>
+                        </div>
+                      ) : (
+                          <div style={{ maxHeight: 300, overflowY: 'auto' }} className="p-1">
+                            <button type="button" onClick={() => { selectErfSize(''); setShowCustomErfSize(false); }} style={{ color: !pendingFilters.minErfSize ? '#00E87A' : '#F2E8D5', background: !pendingFilters.minErfSize ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Any Size</button>
+                            {SIZE_PRESET_OPTIONS.map((value) => (
+                              <button key={value} type="button" onClick={() => { selectErfSize(String(value)); setShowCustomErfSize(false); }} style={{ color: String(value) === pendingFilters.minErfSize ? '#00E87A' : '#F2E8D5', background: String(value) === pendingFilters.minErfSize ? 'rgba(0,232,122,0.08)' : 'transparent', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">{formatSquareMeters(value)}</button>
+                            ))}
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: 4, paddingTop: 4 }}>
+                              <button type="button" onClick={() => setShowCustomErfSize(true)} style={{ color: 'rgba(242,232,213,0.5)', borderRadius: 6 }} className="w-full px-3 py-2 text-left text-sm hover:bg-white/10 transition-colors">Custom size...</button>
+                            </div>
+                          </div>
                       )}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-semibold mb-3">Features</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <label className="flex items-center gap-2">
+              {/* ── Row 4: Feature + Other checkboxes ── */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="px-4 py-3">
+                <div className="flex flex-wrap gap-x-7 gap-y-2.5">
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.14em', color: 'rgba(242,232,213,0.35)' }} className="uppercase w-full mb-0.5">Features &amp; Other</p>
+                  {[
+                    { section: 'features', key: 'petFriendly', label: 'Pet Friendly' },
+                    { section: 'features', key: 'garden', label: 'Garden' },
+                    { section: 'features', key: 'pool', label: 'Pool' },
+                    { section: 'features', key: 'flatlet', label: 'Flatlet' },
+                    { section: 'features', key: 'security', label: 'Security Estate / Cluster' },
+                    { section: 'other', key: 'retirement', label: 'Retirement' },
+                    { section: 'other', key: 'onShow', label: 'On Show' },
+                    { section: 'other', key: 'repossessed', label: 'Repossessed' },
+                    { section: 'other', key: 'auction', label: 'Auction' },
+                  ].map(({ section, key, label }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={pendingFilters.features.petFriendly}
-                        onChange={(event) =>
+                        style={{ accentColor: '#00E87A', width: 14, height: 14 }}
+                        checked={(pendingFilters[section as 'features' | 'other'] as Record<string, boolean>)[key] ?? false}
+                        onChange={(e) =>
                           setPendingFilters((prev) => ({
                             ...prev,
-                            features: { ...prev.features, petFriendly: event.target.checked },
+                            [section]: { ...(prev[section as 'features' | 'other'] as Record<string, boolean>), [key]: e.target.checked },
                           }))
                         }
                       />
-                      <span>Pet Friendly</span>
+                      <span style={{ color: 'rgba(242,232,213,0.7)', fontSize: 13 }}>{label}</span>
                     </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.features.garden}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            features: { ...prev.features, garden: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Garden</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.features.pool}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            features: { ...prev.features, pool: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Pool</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.features.flatlet}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            features: { ...prev.features, flatlet: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Flatlet</span>
-                    </label>
-                  </div>
+                  ))}
                 </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold mb-3">Other</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.other.retirement}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            other: { ...prev.other, retirement: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Retirement</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.other.repossessed}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            other: { ...prev.other, repossessed: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Repossessed</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.other.onShow}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            other: { ...prev.other, onShow: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>On Show</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.features.security}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            features: { ...prev.features, security: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Security Estate / Cluster</span>
-                    </label>
-                    <label className="flex items-center gap-2 sm:col-span-2">
-                      <input
-                        type="checkbox"
-                        checked={pendingFilters.other.auction}
-                        onChange={(event) =>
-                          setPendingFilters((prev) => ({
-                            ...prev,
-                            other: { ...prev.other, auction: event.target.checked },
-                          }))
-                        }
-                      />
-                      <span>Auction</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-muted-foreground">
-                  Click search to browse <span className="font-semibold text-foreground">{properties.length.toLocaleString('en-ZA')}</span> properties
-                </span>
-                <span className="text-muted-foreground">•</span>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="text-primary hover:underline"
-                >
-                  Clear Filters
-                </button>
               </div>
             </>
           )}
 
-
+          {/* ── Footer strip: count + clear ── */}
+          <div
+            style={{ borderTop: '1px solid rgba(255,255,255,0.07)', borderRadius: '0 0 12px 12px', background: 'rgba(255,255,255,0.02)' }}
+            className="px-4 py-2.5 flex items-center justify-between gap-4"
+          >
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(242,232,213,0.45)' }}>
+              {hasSearched
+                ? <>Click search to browse <strong style={{ color: '#F2E8D5' }}>{properties.length.toLocaleString('en-ZA')}</strong> {properties.length === 1 ? 'property' : 'properties'}</>
+                : 'Enter a location and click Search to explore verified properties'}
+            </span>
+            {activeFilterBadges.length > 0 && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: '#C4562A', letterSpacing: '0.1em' }}
+                className="hover:opacity-80 transition-opacity uppercase shrink-0"
+              >
+                · Clear Filters
+              </button>
+            )}
           </div>
         </div>
 
         <div className="lg:flex lg:items-start lg:gap-6">
         <div className="bg-card border border-border rounded-lg overflow-hidden h-full flex flex-col lg:flex-row overflow-x-hidden flex-1">
-      {/* Filters Sidebar */}
-      <div className={`
-        ${showFilters ? 'block' : 'hidden'}
-        ${showDesktopFilters ? 'lg:block' : 'lg:hidden'}
-        w-full lg:w-80 shrink-0 max-w-full
-        bg-card border-r border-border 
-        p-4 md:p-6 
-        overflow-y-auto overflow-x-hidden
-        ${showFilters ? 'fixed inset-0 z-50 lg:relative' : ''}
-      `}>
-        <div className="flex items-center justify-between gap-2 mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
-          </h2>
-          <div className="flex items-center gap-2">
-            <button className="text-primary text-sm hover:underline" onClick={handleResetFilters}>Reset All</button>
-            <button 
-              onClick={() => setShowFilters(false)}
-              className="lg:hidden p-2 hover:bg-accent rounded"
+      {/* Filters Sidebar — forest-green slide-in overlay */}
+      {(showFilters || showDesktopFilters) && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => { setShowFilters(false); setShowDesktopFilters(false); }}
+          aria-hidden="true"
+        />
+      )}
+      <div
+        className={`
+          fixed top-0 left-0 bottom-0 z-50
+          w-80 max-w-full
+          overflow-y-auto overflow-x-hidden
+          transition-transform duration-300 ease-out
+          ${showFilters || showDesktopFilters ? 'translate-x-0' : '-translate-x-full'}
+          p-5
+        `}
+        style={{ backgroundColor: '#1A3C28' }}
+      >
+        <div className="flex items-center justify-between gap-2 mb-5">
+          <div>
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em' }} className="uppercase mb-1">BUILDTRUST</p>
+            <h2 className="text-white text-lg font-bold flex items-center gap-2">
+              <Filter className="w-4 h-4" style={{ color: '#00E87A' }} />
+              Filters
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              style={{ color: '#00E87A' }}
+              className="text-sm font-medium hover:opacity-80 transition-opacity"
+              onClick={handleResetFilters}
+            >
+              Reset All
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowFilters(false); setShowDesktopFilters(false); }}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Close filters"
               title="Close filters"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
 
         {/* Verified Toggle */}
-        <div className="mb-4 pb-4 border-b border-border">
+        <div className="mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <label className="flex items-center justify-between cursor-pointer">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-green-600" />
-              <span className="font-medium">Verified Only</span>
+              <Shield className="w-4 h-4" style={{ color: '#00E87A' }} />
+              <span className="text-white text-sm font-medium">Verified Only</span>
             </div>
             <input
               type="checkbox"
               className="toggle"
+              style={{ accentColor: '#00E87A' }}
               checked={pendingFilters.verifiedOnly}
               onChange={(event) =>
                 setPendingFilters((prev) => ({
@@ -2977,15 +2740,16 @@ export default function Listings() {
         </div>
 
         {/* More Filters */}
-        <div className="mb-4 pb-4 border-b border-border">
-          <h3 className="font-medium mb-2">Bathrooms</h3>
+        <div className="mb-4 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em' }} className="uppercase mb-2">BATHROOMS</p>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Min Bathrooms</span>
+              <span className="text-white/70 text-sm">Min Bathrooms</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="w-8 h-8 border border-input rounded flex items-center justify-center"
+                  className="w-8 h-8 rounded flex items-center justify-center text-white font-bold"
+                  style={{ border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.08)' }}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -2995,12 +2759,13 @@ export default function Listings() {
                     }));
                   }}
                 >
-                  -
+                  −
                 </button>
-                <span className="w-12 text-center">{pendingFilters.minBathrooms}+</span>
+                <span className="w-12 text-center text-white text-sm font-semibold">{pendingFilters.minBathrooms}+</span>
                 <button
                   type="button"
-                  className="w-8 h-8 border border-input rounded flex items-center justify-center"
+                  className="w-8 h-8 rounded flex items-center justify-center text-white font-bold"
+                  style={{ border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.08)' }}
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -3018,82 +2783,62 @@ export default function Listings() {
         </div>
 
         {/* Features */}
-        <div className="mb-4">
-          <h3 className="font-medium mb-2">Features</h3>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={pendingFilters.features.pool}
-                onChange={(event) =>
-                  setPendingFilters((prev) => ({
-                    ...prev,
-                    features: { ...prev.features, pool: event.target.checked },
-                  }))
-                }
-              />
-              <span className="text-sm">Pool</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={pendingFilters.features.garden}
-                onChange={(event) =>
-                  setPendingFilters((prev) => ({
-                    ...prev,
-                    features: { ...prev.features, garden: event.target.checked },
-                  }))
-                }
-              />
-              <span className="text-sm">Garden</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={pendingFilters.features.petFriendly}
-                onChange={(event) =>
-                  setPendingFilters((prev) => ({
-                    ...prev,
-                    features: { ...prev.features, petFriendly: event.target.checked },
-                  }))
-                }
-              />
-              <span className="text-sm">Pet Friendly</span>
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={pendingFilters.features.security}
-                onChange={(event) =>
-                  setPendingFilters((prev) => ({
-                    ...prev,
-                    features: { ...prev.features, security: event.target.checked },
-                  }))
-                }
-              />
-              <span className="text-sm">Security</span>
-            </label>
+        <div className="mb-5">
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em' }} className="uppercase mb-2">FEATURES</p>
+          <div className="space-y-2.5">
+            {[
+              { key: 'pool', label: 'Pool' },
+              { key: 'garden', label: 'Garden' },
+              { key: 'petFriendly', label: 'Pet Friendly' },
+              { key: 'security', label: 'Security Estate' },
+            ].map(({ key, label }) => (
+              <label key={key} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  style={{ accentColor: '#00E87A', width: 16, height: 16 }}
+                  checked={(pendingFilters.features as Record<string, boolean>)[key] ?? false}
+                  onChange={(event) =>
+                    setPendingFilters((prev) => ({
+                      ...prev,
+                      features: { ...prev.features, [key]: event.target.checked },
+                    }))
+                  }
+                />
+                <span className="text-white/80 text-sm">{label}</span>
+              </label>
+            ))}
           </div>
         </div>
 
-        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={handleApplyFilters}>
-          <Search className="w-4 h-4 mr-2" />
-          Apply Filters
-        </Button>
-
-        {/* Voice Search Button */}
-        <Button 
-          onClick={handleVoiceSearch}
-          className="w-full mt-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-        >
-          <Mic className="w-4 h-4 mr-2" />
-          AI Voice Search
-          <Sparkles className="w-4 h-4 ml-2" />
-        </Button>
-
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Try: "Show me 3 bedroom houses in Cape Town with a pool"
-        </p>
+        {/* Drawer footer: apply + voice */}
+        <div className="mt-6 space-y-3">
+          <button
+            type="button"
+            style={{ backgroundColor: '#00E87A', color: '#0C0D10' }}
+            className="w-full h-11 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            onClick={() => {
+              handleApplyFilters();
+              setShowFilters(false);
+              setShowDesktopFilters(false);
+            }}
+          >
+            <Search className="w-4 h-4" />
+            Apply Filters
+          </button>
+          <button
+            type="button"
+            style={{ backgroundColor: '#B89040' }}
+            className="w-full h-11 rounded-lg text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            onClick={handleVoiceSearch}
+          >
+            <Mic className="w-4 h-4" />
+            AI Voice Search
+            <Sparkles className="w-4 h-4" />
+          </button>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: 'rgba(255,255,255,0.35)' }} className="text-center">
+            Try: &ldquo;3 bed house in Cape Town with pool&rdquo;
+          </p>
+        </div>
       </div>
 
       {/* Voice Search Modal */}
@@ -3269,41 +3014,68 @@ export default function Listings() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Landing Panel — shown before any search is submitted */}
         {!hasSearched && (
-          <div className="flex-1 p-6 md:p-12 flex flex-col items-center justify-center text-center">
-            <div className="max-w-2xl w-full">
-              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-10 h-10 text-primary" />
+          <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12" style={{ background: '#0C0D10', position: 'relative', overflow: 'hidden' }}>
+            {/* Grid overlay */}
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(0,232,122,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,232,122,0.035) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
+
+            <div className="max-w-2xl w-full text-center" style={{ position: 'relative', zIndex: 1 }}>
+              {/* Shield icon */}
+              <div style={{ width: 58, height: 58, background: 'rgba(0,232,122,0.07)', border: '1px solid rgba(0,232,122,0.22)', borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 22px' }}>
+                <Shield style={{ width: 26, height: 26, color: '#00E87A' }} />
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">Southern Africa&apos;s Trusted Property Platform</h2>
-              <p className="text-muted-foreground text-base mb-8 max-w-xl mx-auto">
-                PRIBEC combines financial-grade transparency with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.
+
+              {/* Eyebrow */}
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.22em', color: '#00E87A', marginBottom: 12 }}>
+                PROPERTY MARKETPLACE — VERIFIED LISTINGS
+              </div>
+
+              {/* Title */}
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 300, color: '#F2E8D5', lineHeight: 1.25, marginBottom: 12 }}>
+                Your <span style={{ color: '#00E87A' }}>Trusted</span><br />Property Platform
+              </h2>
+
+              {/* Body */}
+              <p style={{ fontSize: 13, color: 'rgba(242,232,213,0.52)', lineHeight: 1.65, maxWidth: 320, margin: '0 auto 28px' }}>
+                BuildTrust combines financial-grade transparency with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left mb-8">
-                <div className="bg-muted/50 rounded-xl p-4">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mb-3">
-                    <Shield className="w-4 h-4 text-green-600" />
+
+              {/* Feature cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left mb-5">
+                {/* Fraud Protection */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(0,232,122,0.5)', borderRadius: 10, padding: '14px 14px' }}>
+                  <div style={{ width: 28, height: 28, background: 'rgba(0,232,122,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+                    <Shield style={{ width: 14, height: 14, color: '#00E87A' }} />
                   </div>
-                  <h4 className="font-semibold text-sm mb-1">Fraud Protection</h4>
-                  <p className="text-xs text-muted-foreground">Every listing is verified against title deeds with immutable audit trails that prevent double-selling.</p>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#00E87A', marginBottom: 4 }}>PROTECTION</div>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>Fraud Protection</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Verified against title deeds with immutable audit trails that prevent double-selling.</p>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-4">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                    <MapPin className="w-4 h-4 text-blue-600" />
+
+                {/* Diaspora Ready */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(184,144,64,0.5)', borderRadius: 10, padding: '14px 14px' }}>
+                  <div style={{ width: 28, height: 28, background: 'rgba(184,144,64,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+                    <MapPin style={{ width: 14, height: 14, color: '#B89040' }} />
                   </div>
-                  <h4 className="font-semibold text-sm mb-1">Diaspora Ready</h4>
-                  <p className="text-xs text-muted-foreground">Geo-tagged progress photos, escrow protection, and remote oversight tools built for international buyers.</p>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#B89040', marginBottom: 4 }}>DIASPORA</div>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>Diaspora Ready</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Geo-tagged photos, escrow protection, and remote oversight tools built for international buyers.</p>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-4">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
+
+                {/* 14-Stage Pipeline */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(196,86,42,0.5)', borderRadius: 10, padding: '14px 14px' }}>
+                  <div style={{ width: 28, height: 28, background: 'rgba(196,86,42,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+                    <TrendingUp style={{ width: 14, height: 14, color: '#C4562A' }} />
                   </div>
-                  <h4 className="font-semibold text-sm mb-1">14-Stage Pipeline</h4>
-                  <p className="text-xs text-muted-foreground">Track your purchase through every legal stage with full document visibility and milestone escrow.</p>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#C4562A', marginBottom: 4 }}>PIPELINE</div>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>14-Stage Pipeline</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Full document visibility at every legal stage with milestone escrow releases.</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm text-muted-foreground">
-                <Search className="w-4 h-4 inline mr-2 text-primary" />
-                Enter a location above and click <strong className="text-foreground">Search</strong> to explore verified {listingCategory === 'Estate Agencies' ? 'estate agents' : listingCategory === 'News' ? 'news &amp; updates' : 'properties'}
+
+              {/* Search hint bar */}
+              <div style={{ border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, background: 'rgba(242,232,213,0.025)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(242,232,213,0.4)', justifyContent: 'center' }}>
+                <Search style={{ width: 14, height: 14, flexShrink: 0 }} />
+                Enter a location above and click&nbsp;<strong style={{ color: 'rgba(242,232,213,0.82)', fontWeight: 600 }}>Search</strong>&nbsp;to explore verified {listingCategory === 'Estate Agencies' ? 'estate agents' : listingCategory === 'News' ? 'news & updates' : 'properties'}
               </div>
             </div>
           </div>
@@ -3478,213 +3250,60 @@ export default function Listings() {
                       : 'No properties found in the database for the selected filters.'}
                   </div>
                 )}
-                <div className={viewMode === "grid" ? "grid grid-cols-1 gap-4 md:gap-6" : "flex flex-col gap-4 md:gap-6"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "flex flex-col gap-4 md:gap-6"}>
                 {deduplicatedProperties.map((property) => {
                   const multiAgentCount = multiListingCountById.get(property.id);
                   const isMultiAgent = multiAgentCount !== undefined && multiAgentCount >= 2;
 
-                  const cardContent = (() => {
-                      const statusBadge = getListingStatusBadge(property.status);
-                      const verificationBadge = property.fraudFlagged
-                        ? { label: 'FLAGGED', className: 'bg-red-600 text-white' }
-                        : property.verified
-                          ? { label: 'VERIFIED', className: 'bg-green-500 text-white' }
-                          : { label: 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
-
-                      return (
-                    <Card className={`overflow-hidden hover:shadow-lg transition-shadow gap-0 ${viewMode === "list" ? "flex flex-col md:flex-row" : ""}`}>
-                      {/* Company / Owner header banner */}
-                      <PropertyCardHeader
-                        isPrivateListing={property.isPrivateListing}
-                        companyLogoUrl={property.agentCompanyLogoUrl}
-                        companyName={property.agentCompany}
-                        companyBrandColor={property.agentCompanyBrandColor}
-                        personName={property.agent}
-                        personAvatarUrl={property.agentAvatarUrl}
+                  const cardContent = (
+                    <>
+                      <ListingCardOptA
+                        property={property}
+                        onSave={(id) => { void handleAddToFavourites(id); }}
+                        isSaved={savedPropertyIds.has(property.id)}
+                        isSaving={savingPropertyIds.has(property.id)}
                       />
-                      <div className={`relative ${viewMode === "list" ? "md:w-80 shrink-0" : ""}`}>
-                        <img
-                          src={property.image}
-                          alt={property.title}
-                          className={`w-full object-cover ${viewMode === "list" ? "h-48 md:h-full" : "h-48 md:h-64"}`}
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_PROPERTY_IMAGE; }}
-                        />
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
-                          <Badge className={verificationBadge.className}>
-                            {verificationBadge.label === 'VERIFIED' && <Shield className="w-3 h-3 mr-1" />}
-                            {verificationBadge.label}
-                          </Badge>
-                          <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
-                          {property.nextOpenHouseAt && (
-                            <Badge className="bg-purple-600 text-white">
-                              🏡 OPEN HOUSE · {new Date(property.nextOpenHouseAt).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            </Badge>
-                          )}
-                          {property.viewCount >= 20 && (
-                            <Badge className="bg-orange-500 text-white"><Flame className="w-3 h-3 mr-1" />Hot</Badge>
-                          )}
-                        </div>
-                        {/* Bottom-left: photo count */}
-                        {property.mediaCount > 1 && (
-                          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1">
-                            <Camera className="w-3 h-3" />{property.mediaCount}
-                          </div>
-                        )}
-                        {/* Bottom-right: view count */}
-                        {property.viewCount > 0 && (
-                          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1">
-                            <Eye className="w-3 h-3" />{property.viewCount}
-                          </div>
-                        )}
-                        <button
-                          className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${
-                            savedPropertyIds.has(property.id)
-                              ? 'bg-red-50 hover:bg-red-100'
-                              : 'bg-white hover:bg-red-50'
-                          }`}
-                          aria-label={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
-                          title={savedPropertyIds.has(property.id) ? 'Remove from saved' : 'Save property'}
-                          disabled={savingPropertyIds.has(property.id)}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void handleAddToFavourites(property.id);
-                          }}
-                        >
-                          {savedPropertyIds.has(property.id)
-                            ? <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                            : <Heart className="w-4 h-4 text-gray-400" />}
-                        </button>
-                      </div>
-                      <div className="p-4 md:p-5 flex-1">
-                        <div className="flex items-start justify-between mb-2 gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold mb-1 group-hover:text-blue-600 transition-colors truncate">
-                              {property.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 flex items-center gap-1">
-                              <MapPin className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{property.location}</span>
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-lg md:text-xl font-bold text-blue-600 whitespace-nowrap">{property.price}</div>
-                            {property.pricePerSqm !== null && (
-                              <div className="text-[10px] text-gray-400 font-medium">{formatRandAmount(property.pricePerSqm)}/m²</div>
-                            )}
-                          </div>
-                        </div>
-                        {/* Days on market + property type + title type */}
-                        <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {(() => {
-                              const days = Math.max(0, Math.floor((Date.now() - new Date(property.createdAt).getTime()) / 86_400_000));
-                              return days === 0 ? 'Listed today' : days === 1 ? '1 day ago' : `${days} days ago`;
-                            })()}
-                          </span>
-                          <span className="inline-flex items-center gap-1 capitalize">
-                            <Home className="w-3 h-3" />
-                            {property.propertyType}
-                          </span>
-                          {property.titleType && (
-                            <span className="inline-flex items-center gap-1">
-                              <Landmark className="w-3 h-3" />
-                              {property.titleType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                            </span>
-                          )}
-                          {property.verified && property.verifiedAt && (
-                            <span className="inline-flex items-center gap-1 text-green-500">
-                              <Shield className="w-3 h-3" />
-                              Verified {(() => {
-                                const days = Math.max(0, Math.floor((Date.now() - new Date(property.verifiedAt).getTime()) / 86_400_000));
-                                return days === 0 ? 'today' : days === 1 ? '1d ago' : `${days}d ago`;
-                              })()}
-                            </span>
-                          )}
-                        </div>
-                        {/* Core metrics row */}
-                        <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-600 mb-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1" title="Bedrooms">
-                            <BedDouble className="w-3.5 h-3.5" />
-                            <span>{property.beds}</span>
-                          </span>
-                          <span className="inline-flex items-center gap-1" title="Bathrooms">
-                            <Bath className="w-3.5 h-3.5" />
-                            <span>{property.baths}</span>
-                          </span>
-                          <span className="inline-flex items-center gap-1" title={property.garages || property.carports ? `${property.garages} garage${property.garages !== 1 ? 's' : ''}, ${property.carports} carport${property.carports !== 1 ? 's' : ''}` : 'Parking'}>
-                            <CarFront className="w-3.5 h-3.5" />
-                            <span>{property.garages > 0 || property.carports > 0 ? `${property.garages}G ${property.carports}C` : property.garage}</span>
-                          </span>
-                          <span className="inline-flex items-center gap-1" title="Floor area">
-                            <Maximize className="w-3.5 h-3.5" />
-                            <span>{property.sqm} m²</span>
-                          </span>
-                          {property.erfSizeSqm !== null && property.erfSizeSqm > 0 && (
-                            <span className="inline-flex items-center gap-1" title="Erf / land size">
-                              <Warehouse className="w-3.5 h-3.5" />
-                              <span>{property.erfSizeSqm.toLocaleString('en-ZA')} m²</span>
-                            </span>
-                          )}
-                        </div>
-                        {/* Monthly costs row */}
-                        {(property.monthlyLevy !== null || property.monthlyRates !== null) && (
-                          <div className="flex items-center gap-3 text-[11px] text-gray-400 mb-2 flex-wrap">
-                            <DollarSign className="w-3 h-3 shrink-0" />
-                            {property.monthlyLevy !== null && <span>Levy R{property.monthlyLevy.toLocaleString('en-ZA')}</span>}
-                            {property.monthlyRates !== null && <span>Rates R{property.monthlyRates.toLocaleString('en-ZA')}</span>}
-                            {property.monthlyUtilities !== null && <span>Utils R{property.monthlyUtilities.toLocaleString('en-ZA')}</span>}
-                            <span className="font-medium text-gray-500">
-                              = R{((property.monthlyLevy ?? 0) + (property.monthlyRates ?? 0) + (property.monthlyUtilities ?? 0)).toLocaleString('en-ZA')}/mo
-                            </span>
-                          </div>
-                        )}
-                        <div className="pt-3 border-t border-gray-200">
-                        </div>
-                        {property.agentId && property.agentId === currentUserId && property.companyId === currentCompanyId && (() => {
-                          const activeSale = propertySaleMap[property.id];
-                          if (activeSale) {
-                            return (
-                              <div className="mt-3 space-y-1.5">
-                                <div className="w-full text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 flex items-center justify-center gap-1.5">
-                                  <Shield className="w-3.5 h-3.5 shrink-0" />
-                                  Sale in Progress · Stage {activeSale.currentStage}
-                                </div>
-                                <Link
-                                  to={`/workspace/${activeSale.id}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
-                                >
-                                  View Workspace →
-                                </Link>
-                              </div>
-                            );
-                          }
+                      {property.agentId && property.agentId === currentUserId && property.companyId === currentCompanyId && (() => {
+                        const activeSale = propertySaleMap[property.id];
+                        if (activeSale) {
                           return (
-                            <button
-                              type="button"
-                              className="mt-3 w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setInitiateCardProp({ id: property.id, title: property.title, price: property.rawPrice, currency: property.currency });
-                                setInitCardAgreedPrice(String(property.rawPrice));
-                                setInitCardCurrency(property.currency);
-                                setInitCardBuyerId('');
-                                setInitCardDeposit('');
-                                setInitCardError(null);
-                              }}
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              Initiate Sale
-                            </button>
+                            <div className="mt-1 space-y-1.5">
+                              <div className="w-full text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 flex items-center justify-center gap-1.5">
+                                <Shield className="w-3.5 h-3.5 shrink-0" />
+                                Sale in Progress · Stage {activeSale.currentStage}
+                              </div>
+                              <Link
+                                to={`/workspace/${activeSale.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                View Workspace →
+                              </Link>
+                            </div>
                           );
-                        })()}
-                      </div>
-                    </Card>
-                      );
-                    })();
+                        }
+                        return (
+                          <button
+                            type="button"
+                            className="mt-1 w-full text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1.5"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setInitiateCardProp({ id: property.id, title: property.title, price: property.rawPrice, currency: property.currency });
+                              setInitCardAgreedPrice(String(property.rawPrice));
+                              setInitCardCurrency(property.currency);
+                              setInitCardBuyerId('');
+                              setInitCardDeposit('');
+                              setInitCardError(null);
+                            }}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Initiate Sale
+                          </button>
+                        );
+                      })()}
+                    </>
+                  );
 
                   return isMultiAgent ? (
                     <div
@@ -3817,11 +3436,11 @@ export default function Listings() {
         </div>
 
         {viewMode !== "map" && hasSearched && listingCategory === 'For Sale' && (
-          <aside className="hidden lg:block w-70 shrink-0 pt-4 pb-4 lg:pl-4 lg:pr-4 lg:border-l lg:border-border/60">
+          <aside className="hidden lg:block w-70 shrink-0 pt-4 pb-4 lg:pl-4 lg:pr-4 lg:border-l lg:border-border/60" style={{ fontFamily: 'var(--font-jakarta)' }}>
             <div className="sticky top-4 space-y-4">
               <Card className="border border-border bg-foreground text-background p-4">
-                <h3 className="text-xl font-semibold">{insightsTrendsHeading}</h3>
-                <p className="text-sm text-background/70 mb-4">Average Property Price</p>
+                <h3 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsTrendsHeading}</h3>
+                <p className="text-sm text-background/70 mb-4" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em' }}>AVERAGE PROPERTY PRICE</p>
 
                 <div className="relative h-48 rounded-lg bg-background/5 border border-background/10 p-3">
                   <svg viewBox="0 0 100 100" className="absolute inset-3 h-[calc(100%-1.5rem)] w-[calc(100%-1.5rem)]" preserveAspectRatio="none">
@@ -3833,10 +3452,10 @@ export default function Listings() {
                       points={insightsTrend.points.map((point) => `${point.x},${point.y}`).join(' ')}
                     />
                   </svg>
-                  <div className="absolute right-3 top-3 rounded-xl bg-sky-500 px-3 py-1 text-xs font-semibold text-white">
+                  <div className="absolute right-3 top-3 rounded-xl bg-sky-500 px-3 py-1 text-xs font-semibold text-white" style={{ fontFamily: 'var(--font-mono)' }}>
                     {formatRandAmount(Math.round(insightsTrend.latestValue))}
                   </div>
-                  <div className="absolute left-3 bottom-2 right-3 flex items-center justify-between text-[10px] text-background/65">
+                  <div className="absolute left-3 bottom-2 right-3 flex items-center justify-between text-[10px] text-background/65" style={{ fontFamily: 'var(--font-mono)' }}>
                     {insightsTrend.years.map((year) => (
                       <span key={year}>{year}</span>
                     ))}
@@ -3845,6 +3464,7 @@ export default function Listings() {
 
                 <Button
                   className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
                   onClick={() => navigate('/app/risk-analytics')}
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
@@ -3855,68 +3475,68 @@ export default function Listings() {
               {/* Average Price per m² */}
               {insightsAvgPricePerSqm > 0 && (
                 <Card className="border border-border bg-foreground text-background p-4">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                     <Maximize className="w-4 h-4" />
                     Avg Price per m²
                   </h3>
-                  <div className="text-2xl font-bold text-blue-400">{formatRandAmount(insightsAvgPricePerSqm)}/m²</div>
-                  <p className="text-xs text-background/60 mt-1">Based on {sortedProperties.filter((p) => p.sqm > 0).length} listings with floor area data</p>
+                  <div className="text-2xl font-bold text-blue-400" style={{ fontFamily: 'var(--font-fraunces)' }}>{formatRandAmount(insightsAvgPricePerSqm)}/m²</div>
+                  <p className="text-xs text-background/60 mt-1" style={{ fontFamily: 'var(--font-jakarta)' }}>Based on {sortedProperties.filter((p) => p.sqm > 0).length} listings with floor area data</p>
                 </Card>
               )}
 
               {/* Price Distribution Histogram */}
               {insightsPriceHistogram && (
                 <Card className="border border-border bg-foreground text-background p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                     <BarChart3 className="w-4 h-4" />
                     Price Distribution
                   </h3>
                   <div className="space-y-1.5">
                     {insightsPriceHistogram.buckets.map((bucket, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-[10px]">
-                        <span className="w-16 text-right text-background/60 shrink-0">{formatRandAmount(Math.round(bucket.rangeStart))}</span>
+                        <span className="w-16 text-right text-background/60 shrink-0" style={{ fontFamily: 'var(--font-mono)' }}>{formatRandAmount(Math.round(bucket.rangeStart))}</span>
                         <div className="flex-1 h-4 bg-background/10 rounded overflow-hidden">
                           <div
                             className="h-full bg-blue-400 rounded transition-all"
                             style={{ width: `${insightsPriceHistogram.maxCount > 0 ? (bucket.count / insightsPriceHistogram.maxCount) * 100 : 0}%` }}
                           />
                         </div>
-                        <span className="w-6 text-background/60">{bucket.count}</span>
+                        <span className="w-6 text-background/60" style={{ fontFamily: 'var(--font-mono)' }}>{bucket.count}</span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[10px] text-background/50 mt-2">{insightsPriceHistogram.total} properties</p>
+                  <p className="text-[10px] text-background/50 mt-2" style={{ fontFamily: 'var(--font-mono)' }}>{insightsPriceHistogram.total} properties</p>
                 </Card>
               )}
 
               {/* Neighbourhood Quick Stats */}
               {insightsNeighbourhoodStats && (
                 <Card className="border border-border bg-foreground text-background p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                     <Home className="w-4 h-4" />
                     Area Snapshot
                   </h3>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-background/10 rounded p-2 text-center">
-                      <div className="text-lg font-bold text-green-400">{insightsNeighbourhoodStats.active}</div>
-                      <div className="text-background/60">Active</div>
+                      <div className="text-lg font-bold text-green-400" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsNeighbourhoodStats.active}</div>
+                      <div className="text-background/60" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em' }}>ACTIVE</div>
                     </div>
                     <div className="bg-background/10 rounded p-2 text-center">
-                      <div className="text-lg font-bold text-amber-400">{insightsNeighbourhoodStats.underOffer}</div>
-                      <div className="text-background/60">Under Offer</div>
+                      <div className="text-lg font-bold text-amber-400" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsNeighbourhoodStats.underOffer}</div>
+                      <div className="text-background/60" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em' }}>UNDER OFFER</div>
                     </div>
                     <div className="bg-background/10 rounded p-2 text-center">
-                      <div className="text-lg font-bold text-red-400">{insightsNeighbourhoodStats.sold}</div>
-                      <div className="text-background/60">Sold</div>
+                      <div className="text-lg font-bold text-red-400" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsNeighbourhoodStats.sold}</div>
+                      <div className="text-background/60" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em' }}>SOLD</div>
                     </div>
                     <div className="bg-background/10 rounded p-2 text-center">
-                      <div className="text-lg font-bold text-blue-400">{insightsNeighbourhoodStats.avgDaysOnMarket}d</div>
-                      <div className="text-background/60">Avg DOM</div>
+                      <div className="text-lg font-bold text-blue-400" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsNeighbourhoodStats.avgDaysOnMarket}d</div>
+                      <div className="text-background/60" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em' }}>AVG DOM</div>
                     </div>
                   </div>
                   {insightsNeighbourhoodStats.medianPrice > 0 && (
-                    <div className="mt-2 text-[11px] text-background/60 text-center">
-                      Median Price: <span className="text-background/90 font-medium">{formatRandAmount(insightsNeighbourhoodStats.medianPrice)}</span>
+                    <div className="mt-2 text-[11px] text-background/60 text-center" style={{ fontFamily: 'var(--font-jakarta)' }}>
+                      Median Price: <span className="text-background/90 font-medium" style={{ fontFamily: 'var(--font-mono)' }}>{formatRandAmount(insightsNeighbourhoodStats.medianPrice)}</span>
                     </div>
                   )}
                 </Card>
@@ -3925,7 +3545,7 @@ export default function Listings() {
               {/* Recently Sold */}
               {insightsRecentlySold.length > 0 && (
                 <Card className="border border-border bg-foreground text-background p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                     <Tag className="w-4 h-4" />
                     Recently Sold ({insightsRecentlySold.length})
                   </h3>
@@ -3944,9 +3564,9 @@ export default function Listings() {
                             onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_PROPERTY_IMAGE; }}
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-medium truncate">{property.title}</p>
-                            <p className="text-[10px] text-background/60 truncate">{property.location}</p>
-                            <p className="text-[11px] font-bold text-red-400">{property.price}</p>
+                            <p className="text-[11px] font-medium truncate" style={{ fontFamily: 'var(--font-jakarta)' }}>{property.title}</p>
+                            <p className="text-[10px] text-background/60 truncate" style={{ fontFamily: 'var(--font-jakarta)' }}>{property.location}</p>
+                            <p className="text-[11px] font-bold text-red-400" style={{ fontFamily: 'var(--font-mono)' }}>{property.price}</p>
                           </div>
                         </div>
                       </Link>
@@ -3957,15 +3577,16 @@ export default function Listings() {
 
               {/* Save Search Alert */}
               <Card className="border border-border bg-foreground text-background p-4">
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   <Bell className="w-4 h-4" />
                   Search Alerts
                 </h3>
-                <p className="text-[11px] text-background/60 mb-3">Get notified when new properties match your current search criteria.</p>
+                <p className="text-[11px] text-background/60 mb-3" style={{ fontFamily: 'var(--font-jakarta)' }}>Get notified when new properties match your current search criteria.</p>
                 <Button
                   variant="outline"
                   size="sm"
                   className="w-full border-background/20 text-background hover:bg-background/10 text-xs"
+                  style={{ fontFamily: 'var(--font-jakarta)' }}
                   onClick={() => {
                     // TODO: Wire to saved search API when available
                     alert('Save Search feature coming soon! You will receive email alerts when new properties match your filters.');
@@ -3977,15 +3598,15 @@ export default function Listings() {
               </Card>
 
               <Card className="border border-border bg-foreground text-background p-4">
-                <h3 className="text-xl font-semibold mb-3">{insightsPropertyForSaleHeading}</h3>
-                <div className="space-y-2 text-sm">
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('house')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Houses for Sale{insightsLocationSuffix} ({insightsTypeCounts.house})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('apartment')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Apartments / Flats for Sale{insightsLocationSuffix} ({insightsTypeCounts.apartment})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('townhouse')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Townhouses for Sale{insightsLocationSuffix} ({insightsTypeCounts.townhouse})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('land')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Vacant Land / Plots for Sale{insightsLocationSuffix} ({insightsTypeCounts.land})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('farm')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Farms for Sale{insightsLocationSuffix} ({insightsTypeCounts.farm})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('commercial')} className="w-full text-left border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Commercial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.commercial})</button>
-                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('industrial')} className="w-full text-left border-b border-background/15 pb-1 hover:underline focus:outline-none focus:underline">Industrial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.industrial})</button>
+                <h3 className="text-sm font-semibold mb-3" style={{ fontFamily: 'var(--font-fraunces)' }}>{insightsPropertyForSaleHeading}</h3>
+                <div className="space-y-2" style={{ fontFamily: 'var(--font-jakarta)' }}>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('house')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Houses for Sale{insightsLocationSuffix} ({insightsTypeCounts.house})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('apartment')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Apartments / Flats for Sale{insightsLocationSuffix} ({insightsTypeCounts.apartment})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('townhouse')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Townhouses for Sale{insightsLocationSuffix} ({insightsTypeCounts.townhouse})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('land')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Vacant Land / Plots for Sale{insightsLocationSuffix} ({insightsTypeCounts.land})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('farm')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Farms for Sale{insightsLocationSuffix} ({insightsTypeCounts.farm})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('commercial')} className="w-full text-left text-[11px] border-b border-background/15 pb-2 hover:underline focus:outline-none focus:underline">Commercial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.commercial})</button>
+                  <button type="button" onClick={() => applyInsightsPropertyTypeFilter('industrial')} className="w-full text-left text-[11px] border-b border-background/15 pb-1 hover:underline focus:outline-none focus:underline">Industrial Property for Sale{insightsLocationSuffix} ({insightsTypeCounts.industrial})</button>
                 </div>
               </Card>
             </div>

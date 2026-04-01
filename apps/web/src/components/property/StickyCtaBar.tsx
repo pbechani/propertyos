@@ -47,15 +47,16 @@ export default function StickyCtaBar({
   return (
     <div
       data-testid="sticky-cta-bar"
-      className={`fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg transition-transform duration-300 ${
+      className={`fixed bottom-0 left-0 right-0 z-40 shadow-lg transition-transform duration-300 ${
         visible ? 'translate-y-0' : 'translate-y-full'
       }`}
+      style={{ background: '#F2E8D5', borderTop: '1px solid #EAD9C4' }}
     >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Property summary */}
         <div className="hidden sm:block min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{propertyTitle}</p>
-          <p className="text-sm text-blue-600 font-bold">{price}</p>
+          <p className="text-sm font-semibold truncate" style={{ color: '#1A3C28', fontFamily: 'var(--font-jakarta)' }}>{propertyTitle}</p>
+          <p className="text-sm font-bold" style={{ color: '#C4562A', fontFamily: 'var(--font-fraunces)' }}>{price}</p>
         </div>
 
         {/* Action buttons */}
@@ -66,6 +67,7 @@ export default function StickyCtaBar({
             onClick={onToggleSave}
             disabled={disabled}
             className="flex items-center gap-1.5"
+            style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
             <span className="hidden sm:inline">{isSaved ? 'Saved' : 'Save'}</span>
@@ -76,6 +78,7 @@ export default function StickyCtaBar({
             onClick={onContactAgent}
             disabled={disabled}
             className="flex items-center gap-1.5"
+            style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}
           >
             <Phone className="w-4 h-4" />
             <span className="hidden sm:inline">Contact Agent</span>
@@ -84,7 +87,8 @@ export default function StickyCtaBar({
             size="sm"
             onClick={onScheduleViewing}
             disabled={disabled}
-            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5"
+            className="flex items-center gap-1.5"
+            style={{ background: '#1A3C28', color: '#00E87A', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}
           >
             <Calendar className="w-4 h-4" />
             Schedule Viewing

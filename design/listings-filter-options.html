@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BuildTrust — Listings Filter Options A / B / C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── Design Tokens ───────────────────────────────────── */
+:root{
+  --forest:#1A3C28; --parch:#F2E8D5; --cream:#EAD9C4;
+  --terra:#C4562A;  --eg:#00E87A;    --amber:#B89040;
+  --carbon:#0C0D10; --mid:#2E3035;   --muted:#6B7280;
+  --border:#E5E0D8; --rad:10px;
+  --ff-head:'Fraunces',serif;
+  --ff-body:'Plus Jakarta Sans',sans-serif;
+  --ff-mono:'IBM Plex Mono',monospace;
+}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:#F7F3EC;color:var(--carbon);font-size:15px}
+
+/* ── Switcher bar (fixed top) ──────────────────────────── */
+#switcher{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  background:var(--carbon);display:flex;align-items:center;
+  gap:6px;padding:8px 20px;border-bottom:1px solid #2a2b2e;
+}
+#switcher span{font-family:var(--ff-mono);font-size:11px;color:#888;margin-right:8px}
+.sw{
+  padding:5px 18px;border-radius:20px;border:1px solid #444;
+  background:transparent;color:#999;cursor:pointer;font-size:12px;
+  font-family:var(--ff-mono);transition:all .2s;
+}
+.sw.active,.sw:hover{background:var(--eg);border-color:var(--eg);color:var(--carbon);}
+.sw .rec{font-size:9px;vertical-align:super;margin-left:3px;color:var(--terra)}
+.sw.active .rec{color:var(--carbon)}
+
+/* ── Shared Layout ─────────────────────────────────────── */
+.page{padding-top:44px}
+.panel{display:none}
+.panel.on{display:block}
+
+/* ── Navbar ────────────────────────────────────────────── */
+.nav{
+  background:var(--forest);color:white;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;
+}
+.nav-logo{font-family:var(--ff-head);font-size:22px;font-weight:700;letter-spacing:-.3px}
+.nav-logo sup{font-size:10px;background:var(--eg);color:var(--carbon);
+  border-radius:4px;padding:1px 5px;font-family:var(--ff-mono)}
+.nav-links{display:flex;gap:22px;font-size:13px;color:rgba(255,255,255,.7)}
+.nav-links a{color:inherit;text-decoration:none}
+.nav-links a:hover{color:white}
+.nav-cta{
+  background:var(--eg);color:var(--carbon);border:none;
+  padding:8px 18px;border-radius:8px;cursor:pointer;
+  font-weight:600;font-size:13px
+}
+
+/* ── Hero ──────────────────────────────────────────────── */
+.hero{
+  background:linear-gradient(135deg,var(--forest) 0%,#214D35 100%);
+  padding:52px 28px 44px;color:white;
+}
+.hero h1{font-family:var(--ff-head);font-size:36px;font-weight:600;
+  max-width:540px;line-height:1.15;margin-bottom:12px}
+.hero p{color:rgba(255,255,255,.65);max-width:460px;font-size:14px;line-height:1.6}
+.hero .stats{display:flex;gap:32px;margin-top:24px}
+.hero .stat label{font-family:var(--ff-mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.5)}
+.hero .stat value{display:block;font-family:var(--ff-head);
+  font-size:26px;font-weight:600;color:var(--eg)}
+
+/* ── Trust Strip ───────────────────────────────────────── */
+.ts{
+  background:var(--carbon);display:flex;align-items:center;
+  gap:24px;padding:10px 28px;overflow-x:auto;
+}
+.ts-item{display:flex;align-items:center;gap:6px;white-space:nowrap;
+  font-family:var(--ff-mono);font-size:11px;color:#888}
+.ts-item .dot{width:6px;height:6px;border-radius:50%;background:var(--eg)}
+.ts-item.warn .dot{background:var(--amber)}
+
+/* ── Property Grid ─────────────────────────────────────── */
+.body-wrap{display:flex;gap:0;min-height:600px}
+.main-area{flex:1;padding:24px 28px}
+.result-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;
+}
+.result-bar h2{font-family:var(--ff-head);font-size:18px;font-weight:600}
+.sort-sel{
+  border:1px solid var(--border);border-radius:8px;
+  padding:6px 12px;font-size:13px;background:white;color:var(--carbon);
+  cursor:pointer;
+}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+/* ── Property Card ─────────────────────────────────────── */
+.card{background:white;border-radius:var(--rad);border:1px solid var(--border);
+  overflow:hidden;transition:box-shadow .2s}
+.card:hover{box-shadow:0 6px 24px rgba(0,0,0,.1)}
+.ch{height:5px}
+.ch.v{background:var(--forest)}
+.ch.p{background:#3B82F6}
+.ch.w{background:var(--terra)}
+.cimg{height:140px;background:var(--cream);position:relative;overflow:hidden}
+.cimg img{width:100%;height:100%;object-fit:cover}
+.cbadge{
+  position:absolute;top:8px;left:8px;
+  background:var(--forest);color:white;
+  font-family:var(--ff-mono);font-size:10px;
+  border-radius:4px;padding:3px 7px;display:flex;align-items:center;gap:4px;
+}
+.cbadge.warn{background:var(--terra)}
+.cbadge.pend{background:var(--amber);color:var(--carbon)}
+.cprice{
+  position:absolute;bottom:8px;right:8px;
+  background:rgba(12,13,16,.85);color:white;
+  font-family:var(--ff-head);font-size:16px;font-weight:600;
+  border-radius:6px;padding:4px 10px;
+}
+.cbody{padding:12px}
+.ctitle{font-weight:600;font-size:14px;margin-bottom:3px}
+.cloc{font-size:12px;color:var(--muted);margin-bottom:10px;
+  display:flex;align-items:center;gap:4px}
+.cloc svg{flex-shrink:0}
+.cmeta{
+  display:flex;gap:10px;flex-wrap:wrap;
+  font-family:var(--ff-mono);font-size:11px;color:var(--muted);
+  padding-top:10px;border-top:1px solid var(--border);
+}
+.cmeta span{display:flex;align-items:center;gap:3px}
+.cacts{
+  display:flex;gap:8px;padding:10px 12px;
+  border-top:1px solid var(--border);
+}
+.cact{
+  flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;
+  font-size:12px;font-weight:600;
+}
+.cact.pri{background:var(--forest);color:white}
+.cact.sec{background:var(--parch);color:var(--forest)}
+.fs{
+  background:#FEF2F2;border:1px solid #FECACA;
+  border-radius:6px;padding:6px 10px;margin:8px 12px 0;
+  font-size:11px;color:#B91C1C;display:flex;align-items:center;gap:5px;
+}
+
+/* ── Sidebar (shared) ──────────────────────────────────── */
+.sidebar{
+  width:270px;background:white;border-left:1px solid var(--border);
+  padding:20px;flex-shrink:0;
+}
+.sidebar h3{font-family:var(--ff-head);font-size:15px;margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sf-group{margin-bottom:16px}
+.sf-group label{display:block;font-size:12px;font-weight:600;
+  color:var(--muted);margin-bottom:8px;text-transform:uppercase;
+  font-family:var(--ff-mono);letter-spacing:.3px}
+.sf-opt{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;margin-bottom:6px;cursor:pointer;
+}
+.sf-opt input{accent-color:var(--forest)}
+.sf-range{width:100%;accent-color:var(--forest)}
+.sf-go{
+  width:100%;background:var(--forest);color:white;
+  border:none;border-radius:8px;padding:10px;
+  font-weight:600;cursor:pointer;margin-top:8px;
+}
+
+/* ── Anonymous CTA ─────────────────────────────────────── */
+.acta{
+  background:var(--forest);color:white;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 28px;
+}
+.acta p{font-size:14px;max-width:500px;line-height:1.5;
+  color:rgba(255,255,255,.85)}
+.acta p strong{color:white;font-weight:700}
+.acta-btn{
+  background:var(--eg);color:var(--carbon);border:none;
+  padding:10px 22px;border-radius:8px;cursor:pointer;
+  font-weight:700;white-space:nowrap;font-size:14px;
+}
+
+/* ════════════════════════════════════════════════════════
+   OPTION A — Chip Bar
+   ════════════════════════════════════════════════════════ */
+.chbar{
+  background:white;border-bottom:1px solid var(--border);
+  padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.chip{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);background:white;
+  font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s;
+  position:relative;
+}
+.chip:hover,.chip.sel{
+  border-color:var(--forest);color:var(--forest);
+  background:rgba(26,60,40,.05);
+}
+.chip.sel .carrow{transform:rotate(180deg)}
+.carrow{transition:transform .2s;font-size:10px;color:var(--muted)}
+.cdw{position:relative}
+.cdrop{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:500;
+  background:white;border:1px solid var(--border);border-radius:10px;
+  padding:8px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+.cdw:focus-within .cdrop,.cdrop.open{display:block}
+.cdrop label{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer;
+}
+.cdrop label:hover{background:var(--parch)}
+.cdrop input{accent-color:var(--forest)}
+.cdsep{height:1px;background:var(--border);margin:6px 0}
+.cdapply{
+  width:100%;background:var(--forest);color:white;
+  border:none;border-radius:6px;padding:7px;
+  font-size:12px;font-weight:600;cursor:pointer;margin-top:4px;
+}
+.vres{
+  margin-left:auto;background:var(--parch);border-radius:20px;
+  padding:5px 14px;font-size:12px;font-family:var(--ff-mono);
+  display:flex;align-items:center;gap:6px;color:var(--forest);
+}
+.vres .vclear{
+  background:none;border:none;color:var(--terra);
+  cursor:pointer;font-size:14px;font-family:inherit;padding:0;
+}
+
+/* ════════════════════════════════════════════════════════
+   OPTION B — Drawer / Slide-in
+   ════════════════════════════════════════════════════════ */
+.fbar{
+  background:white;border-bottom:1px solid var(--border);
+  padding:10px 28px;display:flex;align-items:center;gap:12px;
+}
+.filtb{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 18px;background:var(--forest);color:white;
+  border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;
+}
+.filtb .fcount{
+  background:var(--eg);color:var(--carbon);
+  border-radius:10px;padding:1px 7px;font-size:11px;font-family:var(--ff-mono)
+}
+.fsearch{
+  flex:1;display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border);border-radius:8px;padding:7px 14px;
+  background:white;
+}
+.fsearch input{
+  border:none;outline:none;flex:1;font-size:13px;
+  font-family:var(--ff-body);background:transparent;
+}
+.fsearch label{font-size:11px;color:var(--muted);font-family:var(--ff-mono)}
+.fvoice{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 18px;border:1px solid var(--border);background:white;
+  border-radius:8px;cursor:pointer;font-size:13px;
+}
+.btags{display:flex;gap:6px;flex-wrap:wrap;padding:8px 28px;background:var(--parch)}
+.btag{
+  display:flex;align-items:center;gap:5px;
+  background:white;border:1px solid var(--border);
+  border-radius:20px;padding:4px 10px;font-size:12px;font-family:var(--ff-mono);
+}
+.btag button{
+  background:none;border:none;cursor:pointer;color:var(--terra);
+  font-size:13px;line-height:1;padding:0;
+}
+
+/* Drawer overlay */
+.dov{
+  position:fixed;inset:0;z-index:800;
+  display:none;
+}
+.dov.open{display:flex}
+.dmask{flex:1;background:rgba(0,0,0,.45)}
+.dpanel{
+  width:320px;background:var(--forest);color:white;
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.dpanel-head{
+  padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.dpanel-head h2{font-family:var(--ff-head);font-size:18px;font-weight:600}
+.dclose{
+  background:rgba(255,255,255,.1);border:none;color:white;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;
+}
+.dpanel-body{padding:16px 20px;flex:1}
+.dgrp{margin-bottom:20px}
+.dgrp h4{
+  font-family:var(--ff-mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:.5px;color:rgba(255,255,255,.5);margin-bottom:10px;
+}
+.dopt{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;margin-bottom:8px;cursor:pointer;
+}
+.dopt input{accent-color:var(--eg)}
+.drange{width:100%;accent-color:var(--eg);margin-top:6px}
+.drange-lbl{
+  display:flex;justify-content:space-between;
+  font-family:var(--ff-mono);font-size:11px;color:rgba(255,255,255,.55);margin-top:4px
+}
+.dpanel-foot{
+  padding:14px 20px;border-top:1px solid rgba(255,255,255,.12);
+  display:flex;gap:10px;
+}
+.dapply{
+  flex:1;background:var(--eg);color:var(--carbon);
+  border:none;border-radius:8px;padding:10px;
+  font-weight:700;cursor:pointer;font-size:13px;
+}
+.dreset{
+  flex:0 0 auto;background:rgba(255,255,255,.1);color:white;
+  border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-size:13px;
+}
+
+/* ════════════════════════════════════════════════════════
+   OPTION C — Hybrid
+   ════════════════════════════════════════════════════════ */
+.hbar{
+  background:white;border-bottom:1px solid var(--border);
+  padding:10px 28px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.hchip{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);background:white;
+  font-size:13px;cursor:pointer;white-space:nowrap;
+}
+.hchip:hover,.hchip.sel{
+  border-color:var(--forest);color:var(--forest);
+  background:rgba(26,60,40,.05);
+}
+.hmmore{
+  margin-left:auto;
+  display:flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:20px;
+  background:var(--forest);color:white;
+  border:none;font-size:13px;cursor:pointer;font-weight:600;
+}
+.hmmore .hmc{
+  background:var(--eg);color:var(--carbon);
+  border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--ff-mono)
+}
+.vban{
+  background:var(--parch);border-bottom:1px solid var(--cream);
+  padding:8px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.vban .vlabel{
+  font-family:var(--ff-mono);font-size:11px;color:var(--muted);
+  white-space:nowrap;
+}
+.vtag{
+  display:flex;align-items:center;gap:5px;
+  background:white;border:1px solid var(--border);
+  border-radius:20px;padding:4px 10px;font-size:12px;font-family:var(--ff-mono);
+}
+.vtag button{
+  background:none;border:none;cursor:pointer;color:var(--terra);
+  font-size:13px;line-height:1;padding:0;
+}
+
+/* Mini More-Filters Drawer */
+.hov{position:fixed;inset:0;z-index:800;display:none}
+.hov.open{display:flex;justify-content:flex-end;align-items:flex-start;padding-top:92px}
+.hmask{position:fixed;inset:0;background:rgba(0,0,0,.35)}
+.hcont{
+  position:relative;z-index:1;
+  width:250px;background:white;border-radius:12px 0 0 12px;
+  box-shadow:-8px 0 32px rgba(0,0,0,.12);
+  display:flex;flex-direction:column;max-height:76vh;overflow-y:auto;
+}
+.mdraw{padding:16px}
+.mdraw-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.mdraw-head h3{font-family:var(--ff-head);font-size:15px;font-weight:600}
+.mclose{
+  background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted)
+}
+.mgrp{margin-bottom:14px}
+.mgrp h4{
+  font-family:var(--ff-mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:.4px;color:var(--muted);margin-bottom:8px;
+}
+.mopt{
+  display:flex;align-items:center;gap:7px;
+  font-size:13px;margin-bottom:6px;cursor:pointer
+}
+.mopt input{accent-color:var(--forest)}
+.mrange{width:100%;accent-color:var(--forest);margin-top:4px}
+.mapply{
+  width:100%;background:var(--forest);color:white;
+  border:none;border-radius:8px;padding:9px;
+  font-weight:600;cursor:pointer;font-size:13px;
+  margin-top:6px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Switcher ─────────────────────────────────────────── -->
+<div id="switcher">
+  <span>Filter UI:</span>
+  <button class="sw" onclick="show('a')">Option A — Chips</button>
+  <button class="sw active" onclick="show('b')">Option B — Drawer <span class="rec">★ SELECTED</span></button>
+  <button class="sw" onclick="show('c')">Option C — Hybrid</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     OPTION A — Chip Bar
+     ══════════════════════════════════════════════════════ -->
+<div id="pa" class="panel page">
+
+  <!-- Navbar -->
+  <nav class="nav">
+    <div class="nav-logo">BuildTrust <sup>PRE-LAUNCH</sup></div>
+    <div class="nav-links">
+      <a href="#">Properties</a><a href="#">Construction</a>
+      <a href="#">Agents</a><a href="#">Escrow</a>
+    </div>
+    <button class="nav-cta">Get Started</button>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Find Verified Properties in Zimbabwe</h1>
+    <p>Every listing is title-deed-checked, SPOG-registered or flagged. Browse with confidence across 14 provinces.</p>
+    <div class="stats">
+      <div class="stat"><label>Verified Listings</label><value>1,247</value></div>
+      <div class="stat"><label>Under Escrow</label><value>84</value></div>
+      <div class="stat"><label>Fraud Flags</label><value>12</value></div>
+    </div>
+  </div>
+
+  <!-- Trust Strip -->
+  <div class="ts">
+    <div class="ts-item"><span class="dot"></span> SPOG Integration Active</div>
+    <div class="ts-item"><span class="dot"></span> Deeds Office Live</div>
+    <div class="ts-item warn"><span class="dot"></span> 12 Fraud Warnings This Week</div>
+    <div class="ts-item"><span class="dot"></span> 3 New Agents Verified Today</div>
+    <div class="ts-item"><span class="dot"></span> Last Price Index Update: 2h ago</div>
+  </div>
+
+  <!-- Chip Filter Bar -->
+  <div class="chbar">
+    <!-- Type chip -->
+    <div class="cdw">
+      <button class="chip sel" tabindex="0">
+        Type: Residential <span class="carrow">▾</span>
+      </button>
+      <div class="cdrop open" id="adrop1">
+        <label><input type="checkbox" checked> Residential</label>
+        <label><input type="checkbox"> Land / Plot</label>
+        <label><input type="checkbox"> Commercial</label>
+        <label><input type="checkbox"> Off-Plan</label>
+        <label><input type="checkbox"> Industrial</label>
+        <div class="cdsep"></div>
+        <button class="cdapply" onclick="document.getElementById('adrop1').classList.remove('open')">Apply</button>
+      </div>
+    </div>
+
+    <!-- Location chip -->
+    <div class="cdw">
+      <button class="chip" tabindex="0">
+        Location <span class="carrow">▾</span>
+      </button>
+      <div class="cdrop" id="adrop2">
+        <label><input type="checkbox"> Harare</label>
+        <label><input type="checkbox"> Bulawayo</label>
+        <label><input type="checkbox"> Mutare</label>
+        <label><input type="checkbox"> Gweru</label>
+        <label><input type="checkbox"> Masvingo</label>
+        <div class="cdsep"></div>
+        <button class="cdapply" onclick="document.getElementById('adrop2').classList.remove('open')">Apply</button>
+      </div>
+    </div>
+
+    <!-- Price chip -->
+    <div class="cdw">
+      <button class="chip" tabindex="0">
+        Price: Any <span class="carrow">▾</span>
+      </button>
+      <div class="cdrop" id="adrop3">
+        <label><input type="checkbox"> Under $50K</label>
+        <label><input type="checkbox"> $50K – $150K</label>
+        <label><input type="checkbox"> $150K – $300K</label>
+        <label><input type="checkbox"> $300K+</label>
+        <div class="cdsep"></div>
+        <button class="cdapply" onclick="document.getElementById('adrop3').classList.remove('open')">Apply</button>
+      </div>
+    </div>
+
+    <!-- Bedrooms chip -->
+    <div class="cdw">
+      <button class="chip" tabindex="0">
+        Beds <span class="carrow">▾</span>
+      </button>
+      <div class="cdrop" id="adrop4">
+        <label><input type="checkbox"> Studio</label>
+        <label><input type="checkbox"> 1 Bed</label>
+        <label><input type="checkbox"> 2 Beds</label>
+        <label><input type="checkbox"> 3 Beds</label>
+        <label><input type="checkbox"> 4+ Beds</label>
+        <div class="cdsep"></div>
+        <button class="cdapply" onclick="document.getElementById('adrop4').classList.remove('open')">Apply</button>
+      </div>
+    </div>
+
+    <!-- Verification chip -->
+    <button class="chip sel">✓ Verified Only</button>
+
+    <!-- Voice result pill -->
+    <div class="vres">
+      🎙 "3-bed Borrowdale under $200K" &nbsp;
+      <button class="vclear" title="Clear voice search">✕</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body-wrap">
+    <div class="main-area">
+      <div class="result-bar">
+        <h2>1,247 Properties Found</h2>
+        <select class="sort-sel">
+          <option>Sort: Newest First</option>
+          <option>Price: Low → High</option>
+          <option>Price: High → Low</option>
+          <option>Most Verified</option>
+        </select>
+      </div>
+      <div class="grid" id="a-grid"></div>
+    </div>
+    <div class="sidebar">
+      <h3>Save Search</h3>
+      <div class="sf-group">
+        <label>Alert Frequency</label>
+        <div class="sf-opt"><input type="radio" name="af" checked> Instant</div>
+        <div class="sf-opt"><input type="radio" name="af"> Daily Digest</div>
+        <div class="sf-opt"><input type="radio" name="af"> Weekly</div>
+      </div>
+      <div class="sf-group">
+        <label>Price Change Alert</label>
+        <input type="range" class="sf-range" min="0" max="30" value="10">
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Notify if drops ≥ 10%</div>
+      </div>
+      <div class="sf-group">
+        <label>New Fraud Flags</label>
+        <div class="sf-opt"><input type="checkbox" checked> Email me immediately</div>
+      </div>
+      <button class="sf-go">Save This Search</button>
+    </div>
+  </div>
+
+  <div class="acta">
+    <p><strong>You're browsing anonymously.</strong> Create a free account to save searches, track properties, and access escrow protection.</p>
+    <button class="acta-btn">Sign Up Free</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     OPTION B — Drawer / Slide-in
+     ══════════════════════════════════════════════════════ -->
+<div id="pb" class="panel on page">
+
+  <nav class="nav">
+    <div class="nav-logo">BuildTrust <sup>PRE-LAUNCH</sup></div>
+    <div class="nav-links">
+      <a href="#">Properties</a><a href="#">Construction</a>
+      <a href="#">Agents</a><a href="#">Escrow</a>
+    </div>
+    <button class="nav-cta">Get Started</button>
+  </nav>
+
+  <div class="hero">
+    <h1>Find Verified Properties in Zimbabwe</h1>
+    <p>Every listing is title-deed-checked, SPOG-registered or flagged. Browse with confidence across 14 provinces.</p>
+    <div class="stats">
+      <div class="stat"><label>Verified Listings</label><value>1,247</value></div>
+      <div class="stat"><label>Under Escrow</label><value>84</value></div>
+      <div class="stat"><label>Fraud Flags</label><value>12</value></div>
+    </div>
+  </div>
+
+  <div class="ts">
+    <div class="ts-item"><span class="dot"></span> SPOG Integration Active</div>
+    <div class="ts-item"><span class="dot"></span> Deeds Office Live</div>
+    <div class="ts-item warn"><span class="dot"></span> 12 Fraud Warnings This Week</div>
+    <div class="ts-item"><span class="dot"></span> 3 New Agents Verified Today</div>
+  </div>
+
+  <!-- Filter Bar (drawer trigger + keyword search + voice) -->
+  <div class="fbar">
+    <button class="filtb" onclick="tog('bdrawer')">
+      ☰ Filters <span class="fcount">3</span>
+    </button>
+    <div class="fsearch">
+      <svg width="14" height="14" fill="none" stroke="#6B7280" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search by area, suburb, landmark…"/>
+      <label>Ctrl K</label>
+    </div>
+    <button class="fvoice">
+      🎙 Voice Search
+    </button>
+  </div>
+
+  <!-- Active filter tags (post-filter-apply) -->
+  <div class="btags">
+    <div class="btag">Residential <button>✕</button></div>
+    <div class="btag">Harare <button>✕</button></div>
+    <div class="btag">$50K – $150K <button>✕</button></div>
+    <div class="btag" style="color:var(--muted)">+ Clear All</div>
+  </div>
+
+  <!-- Drawer overlay -->
+  <div class="dov" id="bdrawer">
+    <div class="dmask" onclick="tog('bdrawer')"></div>
+    <div class="dpanel">
+      <div class="dpanel-head">
+        <h2>Filters</h2>
+        <button class="dclose" onclick="tog('bdrawer')">✕</button>
+      </div>
+      <div class="dpanel-body">
+        <div class="dgrp">
+          <h4>Property Type</h4>
+          <div class="dopt"><input type="checkbox" checked> Residential</div>
+          <div class="dopt"><input type="checkbox"> Land / Plot</div>
+          <div class="dopt"><input type="checkbox"> Commercial</div>
+          <div class="dopt"><input type="checkbox"> Off-Plan</div>
+        </div>
+        <div class="dgrp">
+          <h4>Location</h4>
+          <div class="dopt"><input type="checkbox" checked> Harare</div>
+          <div class="dopt"><input type="checkbox"> Bulawayo</div>
+          <div class="dopt"><input type="checkbox"> Mutare</div>
+          <div class="dopt"><input type="checkbox"> Gweru</div>
+        </div>
+        <div class="dgrp">
+          <h4>Price Range (USD)</h4>
+          <input type="range" class="drange" min="0" max="500" value="150">
+          <div class="drange-lbl"><span>$0</span><span>$150K</span><span>$500K+</span></div>
+        </div>
+        <div class="dgrp">
+          <h4>Bedrooms</h4>
+          <div class="dopt"><input type="checkbox"> 1+</div>
+          <div class="dopt"><input type="checkbox" checked> 2+</div>
+          <div class="dopt"><input type="checkbox"> 3+</div>
+          <div class="dopt"><input type="checkbox"> 4+</div>
+        </div>
+        <div class="dgrp">
+          <h4>Verification Status</h4>
+          <div class="dopt"><input type="checkbox" checked> Verified Only</div>
+          <div class="dopt"><input type="checkbox"> Pending Verification</div>
+          <div class="dopt"><input type="checkbox"> Show All (inc. unverified)</div>
+        </div>
+        <div class="dgrp">
+          <h4>Amenities</h4>
+          <div class="dopt"><input type="checkbox"> Borehole</div>
+          <div class="dopt"><input type="checkbox"> Solar Panel</div>
+          <div class="dopt"><input type="checkbox"> Swimming Pool</div>
+          <div class="dopt"><input type="checkbox"> Garage</div>
+          <div class="dopt"><input type="checkbox"> Servants Quarters</div>
+        </div>
+      </div>
+      <div class="dpanel-foot">
+        <button class="dreset">Reset</button>
+        <button class="dapply" onclick="tog('bdrawer')">Show 1,247 Results</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="body-wrap">
+    <div class="main-area">
+      <div class="result-bar">
+        <h2>1,247 Properties Found</h2>
+        <select class="sort-sel">
+          <option>Sort: Newest First</option>
+          <option>Price: Low → High</option>
+          <option>Price: High → Low</option>
+        </select>
+      </div>
+      <div class="grid" id="b-grid"></div>
+    </div>
+    <div class="sidebar">
+      <h3>Save Search</h3>
+      <div class="sf-group">
+        <label>Alert Frequency</label>
+        <div class="sf-opt"><input type="radio" name="bf" checked> Instant</div>
+        <div class="sf-opt"><input type="radio" name="bf"> Daily Digest</div>
+        <div class="sf-opt"><input type="radio" name="bf"> Weekly</div>
+      </div>
+      <div class="sf-group">
+        <label>Price Change Alert</label>
+        <input type="range" class="sf-range" min="0" max="30" value="10">
+      </div>
+      <button class="sf-go">Save This Search</button>
+    </div>
+  </div>
+
+  <div class="acta">
+    <p><strong>You're browsing anonymously.</strong> Create a free account to save searches, track properties, and access escrow protection.</p>
+    <button class="acta-btn">Sign Up Free</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     OPTION C — Hybrid ★ RECOMMENDED
+     ══════════════════════════════════════════════════════ -->
+<div id="pc" class="panel page">
+
+  <nav class="nav">
+    <div class="nav-logo">BuildTrust <sup>PRE-LAUNCH</sup></div>
+    <div class="nav-links">
+      <a href="#">Properties</a><a href="#">Construction</a>
+      <a href="#">Agents</a><a href="#">Escrow</a>
+    </div>
+    <button class="nav-cta">Get Started</button>
+  </nav>
+
+  <div class="hero">
+    <h1>Find Verified Properties in Zimbabwe</h1>
+    <p>Every listing is title-deed-checked, SPOG-registered or flagged. Browse with confidence across 14 provinces.</p>
+    <div class="stats">
+      <div class="stat"><label>Verified Listings</label><value>1,247</value></div>
+      <div class="stat"><label>Under Escrow</label><value>84</value></div>
+      <div class="stat"><label>Fraud Flags</label><value>12</value></div>
+    </div>
+  </div>
+
+  <div class="ts">
+    <div class="ts-item"><span class="dot"></span> SPOG Integration Active</div>
+    <div class="ts-item"><span class="dot"></span> Deeds Office Live</div>
+    <div class="ts-item warn"><span class="dot"></span> 12 Fraud Warnings This Week</div>
+    <div class="ts-item"><span class="dot"></span> 3 New Agents Verified Today</div>
+  </div>
+
+  <!-- Hybrid Chip Bar -->
+  <div class="hbar">
+    <button class="hchip sel">Residential ▾</button>
+    <button class="hchip sel">📍 Harare ▾</button>
+    <button class="hchip">Price ▾</button>
+    <button class="hchip">Beds ▾</button>
+    <button class="hchip sel">✓ Verified</button>
+    <button class="hmmore" onclick="tog('hdrawer')">
+      + More Filters <span class="hmc">5</span>
+    </button>
+  </div>
+
+  <!-- Voice banner (parsed chips) -->
+  <div class="vban">
+    <span class="vlabel">🎙 Voice:</span>
+    <div class="vtag">3 Beds <button>✕</button></div>
+    <div class="vtag">Borrowdale <button>✕</button></div>
+    <div class="vtag">Under $200K <button>✕</button></div>
+    <span style="font-size:12px;color:var(--muted);margin-left:auto">Matched 143 results</span>
+  </div>
+
+  <!-- Mini More-Filters drawer -->
+  <div class="hov" id="hdrawer">
+    <div class="hmask" onclick="tog('hdrawer')"></div>
+    <div class="hcont">
+      <div class="mdraw">
+        <div class="mdraw-head">
+          <h3>More Filters</h3>
+          <button class="mclose" onclick="tog('hdrawer')">✕</button>
+        </div>
+        <div class="mgrp">
+          <h4>Property Size (m²)</h4>
+          <input type="range" class="mrange" min="50" max="2000" value="500">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px">
+            <span>50m²</span><span>500m²</span><span>2000m²+</span>
+          </div>
+        </div>
+        <div class="mgrp">
+          <h4>Title Type</h4>
+          <div class="mopt"><input type="checkbox" checked> Freehold</div>
+          <div class="mopt"><input type="checkbox"> 99-Year Lease</div>
+          <div class="mopt"><input type="checkbox"> State Land</div>
+        </div>
+        <div class="mgrp">
+          <h4>Amenities</h4>
+          <div class="mopt"><input type="checkbox"> Borehole</div>
+          <div class="mopt"><input type="checkbox"> Solar</div>
+          <div class="mopt"><input type="checkbox"> Pool</div>
+          <div class="mopt"><input type="checkbox"> Garage</div>
+          <div class="mopt"><input type="checkbox"> SQ</div>
+        </div>
+        <div class="mgrp">
+          <h4>Listing Age</h4>
+          <div class="mopt"><input type="radio" name="la"> Today</div>
+          <div class="mopt"><input type="radio" name="la"> Last 7 Days</div>
+          <div class="mopt"><input type="radio" name="la" checked> Any</div>
+        </div>
+        <div class="mgrp">
+          <h4>Escrow Ready</h4>
+          <div class="mopt"><input type="checkbox" checked> Only Escrow-Ready</div>
+        </div>
+        <button class="mapply" onclick="tog('hdrawer')">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="body-wrap">
+    <div class="main-area">
+      <div class="result-bar">
+        <h2>143 Properties Found</h2>
+        <select class="sort-sel">
+          <option>Sort: Newest First</option>
+          <option>Price: Low → High</option>
+          <option>Price: High → Low</option>
+          <option>Most Verified</option>
+        </select>
+      </div>
+      <div class="grid" id="c-grid"></div>
+    </div>
+    <div class="sidebar">
+      <h3>Save Search</h3>
+      <div class="sf-group">
+        <label>Alert Frequency</label>
+        <div class="sf-opt"><input type="radio" name="cf" checked> Instant</div>
+        <div class="sf-opt"><input type="radio" name="cf"> Daily Digest</div>
+        <div class="sf-opt"><input type="radio" name="cf"> Weekly</div>
+      </div>
+      <div class="sf-group">
+        <label>Price Change Alert</label>
+        <input type="range" class="sf-range" min="0" max="30" value="10">
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Notify if drops ≥ 10%</div>
+      </div>
+      <div class="sf-group">
+        <label>New Fraud Flags</label>
+        <div class="sf-opt"><input type="checkbox" checked> Email me immediately</div>
+      </div>
+      <button class="sf-go">Save This Search</button>
+    </div>
+  </div>
+
+  <div class="acta">
+    <p><strong>You're browsing anonymously.</strong> Create a free account to save searches, track properties, and access escrow protection.</p>
+    <button class="acta-btn">Sign Up Free</button>
+  </div>
+</div>
+
+
+<script>
+/* ─── Shared card data ─────────────────────────────────── */
+const PROPERTIES = [
+  {title:"5 Mashonaland Road, Borrowdale",loc:"Borrowdale, Harare",price:"$185,000",ppsm:"$411/m²",
+   beds:3,baths:2,size:"450m²",type:"Residential",ver:"v",
+   badge:"✓ Title Verified",badgeType:"",img:"https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&q=70",
+   agency:"Pam Golding Properties",agentName:"Sarah Moyo",brandColor:"#8B1A4A",agentInitial:"P"},
+  {title:"Plot 12, Ruwa Estates",loc:"Ruwa, Harare",price:"$42,000",ppsm:"$35/m²",
+   beds:0,baths:0,size:"1,200m²",type:"Land",ver:"p",
+   badge:"⏳ Pending",badgeType:"pend",img:"https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&q=70",
+   fraud:"Agent has 2 prior fraud complaints",
+   agency:"Individual Seller",agentName:"James Ndlovu",brandColor:"#1A3C28",agentInitial:"I",isPrivate:true},
+  {title:"14 Avondale Way, Avondale",loc:"Avondale, Harare",price:"$230,000",ppsm:"$397/m²",
+   beds:4,baths:3,size:"580m²",type:"Residential",ver:"v",
+   badge:"✓ Escrow Ready",badgeType:"",img:"https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&q=70",
+   agency:"Knight Frank Zimbabwe",agentName:"Tendai Khumalo",brandColor:"#002B5C",agentInitial:"K"},
+  {title:"Unit 7, Newlands Flats",loc:"Newlands, Harare",price:"$68,000",ppsm:"$716/m²",
+   beds:2,baths:1,size:"95m²",type:"Residential",ver:"v",
+   badge:"✓ Title Verified",badgeType:"",img:"https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=400&q=70",
+   agency:"Century 21 Zimbabwe",agentName:"Rutendo Musa",brandColor:"#C8102E",agentInitial:"C"},
+  {title:"Commercial Stand, CBD",loc:"Harare CBD",price:"$310,000",ppsm:"$378/m²",
+   beds:0,baths:0,size:"820m²",type:"Commercial",ver:"w",
+   badge:"⚠ Disputed",badgeType:"warn",img:"https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&q=70",
+   fraud:"Double-sale risk — 2 claimants on record",
+   agency:"RE/MAX Zimbabwe",agentName:"Brian Chikwanda",brandColor:"#003DA5",agentInitial:"R"},
+  {title:"3 Greystone Park Drive",loc:"Greystone Park, Harare",price:"$415,000",ppsm:"$377/m²",
+   beds:5,baths:4,size:"1,100m²",type:"Residential",ver:"v",
+   badge:"✓ Title Verified",badgeType:"",img:"https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=70",
+   agency:"Harcourts Zimbabwe",agentName:"Chipo Rusike",brandColor:"#E5001E",agentInitial:"H"},
+];
+
+function mkCard(p){
+  /* Agency header strip */
+  const agencyStrip = `
+    <div style="border-bottom:2px solid ${p.brandColor||'#1A3C28'};background:${p.brandColor||'#1A3C28'};padding:8px 12px;display:flex;align-items:center;gap:8px;min-height:52px">
+      <div style="width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${p.agentInitial}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em">${p.isPrivate ? 'INDIVIDUAL SELLER' : 'LISTED BY'}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.agency}</div>
+      </div>
+    </div>`;
+
+  /* Verified / disputed badge */
+  const badge = p.ver === 'v'
+    ? `<div class="cbadge" style="background:#00E87A;color:#0C0D10;font-family:'IBM Plex Mono',monospace">${p.badge}</div>`
+    : p.ver === 'w'
+    ? `<div class="cbadge warn" style="background:#C4562A;font-family:'IBM Plex Mono',monospace">${p.badge}</div>`
+    : `<div class="cbadge pend" style="font-family:'IBM Plex Mono',monospace">${p.badge}</div>`;
+
+  return `
+  <div class="card" style="background:#F2E8D5;border:1.5px solid #EAD9C4">
+    ${agencyStrip}
+    <div class="cimg">
+      <img src="${p.img}" alt="${p.title}" loading="lazy"/>
+      ${badge}
+    </div>
+    ${p.fraud ? `<div class="fs">⚠ ${p.fraud}</div>` : ''}
+    <div class="cbody">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="ctitle">${p.title}</div>
+          <div class="cloc">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            ${p.loc}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'Fraunces',serif;color:#1A3C28;font-size:18px;font-weight:700;white-space:nowrap;line-height:1.1">${p.price}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;color:#B89040;font-size:10px">${p.ppsm}</div>
+        </div>
+      </div>
+      <div class="cmeta" style="border-top:1px solid #EAD9C4">
+        ${p.beds ? `<span>🛏 ${p.beds}</span>` : ''}
+        ${p.baths ? `<span>🚿 ${p.baths}</span>` : ''}
+        <span>📐 ${p.size}</span>
+        <span style="background:#EAD9C4;color:#1A3C28;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:2px 6px;border-radius:3px">${p.type}</span>
+      </div>
+      <!-- Agent footer -->
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0 2px;border-top:1px solid #EAD9C4;margin-top:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${p.brandColor||'#1A3C28'};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">${p.agentInitial}</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;color:#6B7280;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.agentName}</div>
+        <div style="width:3px;height:16px;border-radius:2px;background:${p.brandColor||'#1A3C28'};flex-shrink:0"></div>
+      </div>
+    </div>
+    <div class="cacts" style="border-top:1px solid #EAD9C4">
+      <button class="cact pri" style="background:#1A3C28;color:#00E87A;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">View Details</button>
+      <button class="cact sec" style="background:#F2E8D5;border:1.5px solid #EAD9C4;color:#1A3C28">💾 Save</button>
+    </div>
+  </div>`;
+}
+
+/* Render grids */
+['a','b','c'].forEach(k => {
+  const el = document.getElementById(`${k}-grid`);
+  if(el) el.innerHTML = PROPERTIES.map(mkCard).join('');
+});
+
+/* ─── Switcher ─────────────────────────────────────────── */
+function show(k){
+  ['a','b','c'].forEach(id => {
+    document.getElementById('p'+id).classList.toggle('on', id === k);
+  });
+  document.querySelectorAll('.sw').forEach((btn,i) => {
+    btn.classList.toggle('active', ['a','b','c'][i] === k);
+  });
+}
+
+/* ─── Toggle overlay drawers ───────────────────────────── */
+function tog(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+/* Close chip dropdowns when clicking outside */
+document.addEventListener('click', e => {
+  if(!e.target.closest('.cdw')){
+    document.querySelectorAll('.cdrop').forEach(d => d.classList.remove('open'));
+  }
+});
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', e => {
+    const drop = btn.closest('.cdw')?.querySelector('.cdrop');
+    if(drop){ e.stopPropagation(); drop.classList.toggle('open'); }
+  });
+});
+</script>
+</body>
+</html>

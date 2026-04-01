@@ -53,15 +53,15 @@ type SimilarProperty = {
 function getListingStatusBadge(status: string) {
   switch (status.toLowerCase()) {
     case 'active':
-      return { label: 'ON SHOW', className: 'bg-blue-600 text-white' };
+      return { label: 'ON SHOW', className: '', style: { background: '#1A3C28', color: '#00E87A', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.14em' } };
     case 'under_offer':
-      return { label: 'OFFER SUBMITTED', className: 'bg-amber-600 text-white' };
+      return { label: 'OFFER SUBMITTED', className: '', style: { background: '#B89040', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.14em' } };
     case 'sold':
-      return { label: 'SOLD', className: 'bg-emerald-600 text-white' };
+      return { label: 'SOLD', className: '', style: { background: '#0C0D10', color: '#00E87A', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.14em' } };
     case 'withdrawn':
-      return { label: 'WITHDRAWN', className: 'bg-gray-600 text-white' };
+      return { label: 'WITHDRAWN', className: 'bg-gray-600 text-white', style: undefined };
     default:
-      return { label: 'DRAFT', className: 'bg-gray-500 text-white' };
+      return { label: 'DRAFT', className: 'bg-gray-500 text-white', style: undefined };
   }
 }
 
@@ -69,14 +69,14 @@ function getVerificationBadge(status: string) {
   const normalizedStatus = status.toUpperCase();
 
   if (normalizedStatus === 'FLAGGED') {
-    return { label: 'FLAGGED', className: 'bg-red-600 text-white' };
+    return { label: 'FLAGGED', className: 'bg-red-600 text-white', style: undefined };
   }
 
   if (normalizedStatus === 'VERIFIED') {
-    return { label: 'VERIFIED', className: 'bg-green-500 text-white' };
+    return { label: 'VERIFIED', className: '', style: { background: '#00E87A', color: '#0C0D10', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.14em' } };
   }
 
-  return { label: normalizedStatus || 'UNVERIFIED', className: 'bg-yellow-600 text-white' };
+  return { label: normalizedStatus || 'UNVERIFIED', className: '', style: { background: '#B89040', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.14em' } };
 }
 
 function toFeatureLabel(feature: string): string {
@@ -1628,7 +1628,7 @@ export default function PropertyDetailEnhanced() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen" style={{ background: '#F2E8D5' }}>
       {/* Breadcrumb + Back */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
@@ -1668,7 +1668,7 @@ export default function PropertyDetailEnhanced() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <BarChart2 className="w-5 h-5 text-blue-400" />
-                    <h2 className="text-lg font-bold text-white">Listing Intelligence</h2>
+                    <h2 className="text-lg font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: '#F2E8D5' }}>Listing Intelligence</h2>
                   </div>
                   <p className="text-slate-400 text-sm">Your listing — performance & management overview</p>
                 </div>
@@ -1680,9 +1680,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="bg-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Eye className="w-4 h-4 text-blue-400" />
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Views</span>
+                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Views</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.views ?? 0)}
                   </div>
                 </div>
@@ -1691,9 +1691,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="bg-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Heart className="w-4 h-4 text-rose-400" />
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Saves</span>
+                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Saves</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.saves ?? 0)}
                   </div>
                 </div>
@@ -1702,9 +1702,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="bg-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageCircle className="w-4 h-4 text-orange-400" />
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Enquiries</span>
+                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Enquiries</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.inquiries ?? 0)}
                   </div>
                 </div>
@@ -1713,9 +1713,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="bg-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-emerald-400" />
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Viewings</span>
+                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Viewings</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (
                       (listingStats?.viewings_requested ?? 0) +
                       (listingStats?.viewings_confirmed ?? 0) +
@@ -1735,9 +1735,9 @@ export default function PropertyDetailEnhanced() {
                 <div className="bg-slate-700/60 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-purple-400" />
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Days Listed</span>
+                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Days Listed</span>
                   </div>
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.days_on_market ?? 0)}
                   </div>
                   {listingStats && listingStats.open_houses_scheduled > 0 && (
@@ -2432,11 +2432,11 @@ export default function PropertyDetailEnhanced() {
                 </div>
                 {/* Verification Badge Overlay */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  <Badge className={`${verificationBadge.className} flex items-center gap-2 px-4 py-2`}>
+                  <Badge className={`${verificationBadge.className} flex items-center gap-2 px-4 py-2`} style={verificationBadge.style}>
                     <Shield className="w-4 h-4" />
                     {verificationBadge.label}
                   </Badge>
-                  <Badge className={`${statusBadge.className} px-4 py-2`}>
+                  <Badge className={`${statusBadge.className} px-4 py-2`} style={statusBadge.style}>
                     {statusBadge.label}
                   </Badge>
                   {property.isPrivateListing && (
@@ -2549,50 +2549,50 @@ export default function PropertyDetailEnhanced() {
             <Card className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <h1 className="text-2xl md:text-3xl font-semibold mb-2">{property.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-semibold mb-2" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>{property.title}</h1>
                   <p className="text-gray-600 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     {property.address}
                   </p>
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-blue-600">{property.price}</div>
+                <div className="text-2xl md:text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: '#C4562A' }}>{property.price}</div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-lg" style={{ background: '#F2E8D5', border: '1px solid #EAD9C4' }}>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Bed className="w-5 h-5 text-blue-600" />
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(26,60,40,.12)' }}>
+                    <Bed className="w-5 h-5" style={{ color: '#C4562A' }} />
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm text-gray-600">BEDROOMS</div>
-                    <div className="font-semibold">{property.beds}</div>
+                    <div className="text-[9px] uppercase" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.15em', color: '#B89040' }}>BEDROOMS</div>
+                    <div className="text-lg" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>{property.beds}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <Bath className="w-5 h-5 text-purple-600" />
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(26,60,40,.12)' }}>
+                    <Bath className="w-5 h-5" style={{ color: '#C4562A' }} />
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm text-gray-600">BATHROOMS</div>
-                    <div className="font-semibold">{property.baths}</div>
+                    <div className="text-[9px] uppercase" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.15em', color: '#B89040' }}>BATHROOMS</div>
+                    <div className="text-lg" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>{property.baths}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Car className="w-5 h-5 text-green-600" />
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(26,60,40,.12)' }}>
+                    <Car className="w-5 h-5" style={{ color: '#C4562A' }} />
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm text-gray-600">PARKING</div>
-                    <div className="font-semibold">{property.garage}</div>
+                    <div className="text-[9px] uppercase" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.15em', color: '#B89040' }}>PARKING</div>
+                    <div className="text-lg" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>{property.garage}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <Maximize className="w-5 h-5 text-orange-600" />
+                  <div className="p-3 rounded-lg" style={{ background: 'rgba(26,60,40,.12)' }}>
+                    <Maximize className="w-5 h-5" style={{ color: '#C4562A' }} />
                   </div>
                   <div>
-                    <div className="text-xs md:text-sm text-gray-600">FLOOR AREA</div>
-                    <div className="font-semibold">{property.floorArea} m²</div>
+                    <div className="text-[9px] uppercase" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.15em', color: '#B89040' }}>FLOOR AREA</div>
+                    <div className="text-lg" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>{property.floorArea} m²</div>
                   </div>
                 </div>
               </div>
@@ -2610,17 +2610,17 @@ export default function PropertyDetailEnhanced() {
             <Card className="p-6">
               <div className="flex items-center gap-2 mb-4">
                 <History className="w-5 h-5 text-green-600" />
-                <h3 className="font-semibold">Listing Timeline & Status</h3>
+                <h3 className="font-semibold" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Listing Timeline &amp; Status</h3>
               </div>
               <PropertyDaysOnMarket createdAt={property.createdAt} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Listing Status</span>
-                  <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+                  <Badge className={statusBadge.className} style={statusBadge.style}>{statusBadge.label}</Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Verification</span>
-                  <Badge className={verificationBadge.className}>
+                  <Badge className={verificationBadge.className} style={verificationBadge.style}>
                     <CheckCircle2 className="w-3 h-3 mr-1" />
                     {verificationBadge.label}
                   </Badge>
@@ -2648,7 +2648,7 @@ export default function PropertyDetailEnhanced() {
 
             {/* Property Description */}
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Property Description</h2>
+              <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Property Description</h2>
               <div className="text-gray-700 whitespace-pre-line leading-relaxed text-sm md:text-base">
                 {property.description || "No description available for this listing."}
               </div>
@@ -2656,12 +2656,12 @@ export default function PropertyDetailEnhanced() {
 
             {/* Features & Amenities */}
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Features & Amenities</h2>
+              <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Features &amp; Amenities</h2>
               {property.features.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {property.features.map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: '#1A3C28' }} />
                       <span className="text-sm">{feature.label}</span>
                     </div>
                   ))}
@@ -2674,7 +2674,7 @@ export default function PropertyDetailEnhanced() {
             {/* Location */}
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Location</h2>
+                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Location</h2>
                 <span className="text-sm text-blue-500">{property.address}</span>
               </div>
               <div className="bg-gray-200 rounded-lg h-64 md:h-80 overflow-hidden border border-gray-200">
@@ -2746,12 +2746,12 @@ export default function PropertyDetailEnhanced() {
           <div className="space-y-6">
             {/* Schedule Viewing Button - Prominent */}
             {isOwnListing ? (
-              <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-                <Home className="w-8 h-8 mb-3 text-blue-500" />
-                <h3 className="font-bold text-xl mb-1 text-blue-800">Your Listing</h3>
+              <Card className="p-6" style={{ background: 'rgba(26,60,40,.05)', border: '1px solid rgba(26,60,40,.2)' }}>
+                <Home className="w-8 h-8 mb-3" style={{ color: '#1A3C28' }} />
+                <h3 className="font-bold text-xl mb-1" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Your Listing</h3>
                 {existingSale ? (
                   <>
-                    <p className="text-blue-600 text-sm mb-3">
+                    <p className="text-sm mb-3" style={{ color: '#1A3C28' }}>
                       A sale is already in progress for this property.
                     </p>
                     <div className="mb-4 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
@@ -2759,7 +2759,8 @@ export default function PropertyDetailEnhanced() {
                       Stage {existingSale.currentStage} · {existingSale.status.charAt(0).toUpperCase() + existingSale.status.slice(1)}
                     </div>
                     <Button
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      className="w-full text-white"
+                      style={{ background: '#C4562A' }}
                       onClick={() => navigate(`/workspace/${existingSale.id}`)}
                     >
                       View Sale Workspace →
@@ -2767,11 +2768,12 @@ export default function PropertyDetailEnhanced() {
                   </>
                 ) : (
                   <>
-                    <p className="text-blue-600 text-sm mb-4">
+                    <p className="text-sm mb-4" style={{ color: '#1A3C28' }}>
                       Initiate a sale to begin the 14-stage purchase pipeline for this property.
                     </p>
                     <Button
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      className="w-full text-white"
+                      style={{ background: '#C4562A' }}
                       onClick={() => {
                         setInitiateSaleAgreedPrice('');
                         setInitiateSaleCurrency(rawListingCurrency);
@@ -2789,16 +2791,17 @@ export default function PropertyDetailEnhanced() {
                 )}
               </Card>
             ) : (
-              <Card className="p-6 bg-linear-to-br from-blue-500 to-purple-600 text-white">
+              <Card className="p-6 text-white" style={{ background: '#1A3C28' }}>
                 <Calendar className="w-8 h-8 mb-3" />
-                <h3 className="font-bold text-xl mb-2">Schedule a Viewing</h3>
-                <p className="text-blue-100 text-sm mb-4">
+                <h3 className="font-bold text-xl mb-2" style={{ fontFamily: 'var(--font-fraunces)', color: '#F2E8D5' }}>Schedule a Viewing</h3>
+                <p className="text-sm mb-4" style={{ color: 'rgba(242,232,213,.65)' }}>
                   {isSoldListing
                     ? "Viewing is unavailable because this property is sold"
                     : "Book a time to see this property in person"}
                 </p>
                 <Button
-                  className="w-full bg-white text-blue-600 hover:bg-blue-50"
+                  className="w-full font-medium"
+                  style={{ background: '#00E87A', color: '#0C0D10', fontFamily: 'var(--font-mono)', fontSize: '12px', letterSpacing: '.06em' }}
                   onClick={() => {
                     if (!isSoldListing) {
                       if (currentUser) {
@@ -3121,12 +3124,12 @@ export default function PropertyDetailEnhanced() {
 
               return (
                 <Card className="p-5 space-y-4">
-                  <h3 className="font-semibold">Property Valuation</h3>
+                  <h3 className="font-semibold" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Property Valuation</h3>
 
                   {/* AI Estimate — agents/valuers/admins only */}
                   {canViewAiEstimate && (
-                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-                      <p className="text-xs font-medium text-blue-600 mb-1.5 flex items-center gap-1">
+                    <div className="rounded-lg p-3" style={{ border: '1px solid rgba(26,60,40,.18)', background: 'rgba(26,60,40,.05)' }}>
+                      <p className="text-xs font-medium mb-1.5 flex items-center gap-1" style={{ fontFamily: 'var(--font-mono)', color: '#1A3C28', letterSpacing: '.06em' }}>
                         <span>AI Estimate</span>
                         {aiEstimate && (
                           <span className={`ml-auto text-xs px-1.5 py-0.5 rounded-full border font-medium ${confidenceColor}`}>
@@ -3141,14 +3144,14 @@ export default function PropertyDetailEnhanced() {
                         </div>
                       ) : aiEstimate && aiEstimate.estimate > 0 ? (
                         <>
-                          <p className="text-xl font-bold text-blue-900">
+                          <p className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: '#C4562A' }}>
                             {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.estimate)}
                           </p>
-                          <p className="text-xs text-blue-600 mt-0.5">
+                          <p className="text-xs mt-0.5" style={{ color: '#1A3C28', opacity: 0.7 }}>
                             Range: {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.low)} – {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: aiEstimate.currency, maximumFractionDigits: 0 }).format(aiEstimate.high)}
                           </p>
-                          <p className="text-xs text-blue-500 mt-1 italic">{aiEstimate.methodology}</p>
-                          <p className="text-xs text-blue-400 mt-0.5">Based on {aiEstimate.comparables_count} comparable sale{aiEstimate.comparables_count !== 1 ? 's' : ''}</p>
+                          <p className="text-xs mt-1 italic" style={{ color: '#B89040' }}>{aiEstimate.methodology}</p>
+                          <p className="text-xs mt-0.5" style={{ color: '#1A3C28', opacity: 0.5 }}>Based on {aiEstimate.comparables_count} comparable sale{aiEstimate.comparables_count !== 1 ? 's' : ''}</p>
                         </>
                       ) : (
                         <p className="text-sm text-blue-500">Insufficient data for estimate.</p>
@@ -3192,7 +3195,8 @@ export default function PropertyDetailEnhanced() {
 
                   <Button
                     variant="outline"
-                    className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                    className="w-full"
+                    style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}
                     onClick={() => setShowValuationModal(true)}
                   >
                     Request Valuation
@@ -3279,7 +3283,8 @@ export default function PropertyDetailEnhanced() {
                   <div className="flex items-center gap-2">
                     <Link 
                       to={`/agent-profile/${property.agent.id}?${property.isPrivateListing ? 'privateOwner=true&' : ''}back=${encodeURIComponent(`${pathname || '/app/listings'}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`}
-                      className="font-semibold hover:text-blue-600 transition-colors"
+                      className="font-semibold hover:text-[#C4562A] transition-colors"
+                      style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}
                     >
                       {property.agent.name}
                     </Link>
@@ -3364,7 +3369,8 @@ export default function PropertyDetailEnhanced() {
                   <div className="text-sm text-green-600">{inquirySuccess}</div>
                 )}
                 <Button
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                  className="w-full text-white"
+                  style={{ background: isSubmittingInquiry || isSoldListing ? undefined : '#C4562A', fontFamily: 'var(--font-mono)', letterSpacing: '.06em', fontSize: '12px' }}
                   onClick={handleSubmitInquiry}
                   disabled={isSubmittingInquiry || isSoldListing}
                 >
@@ -3374,6 +3380,7 @@ export default function PropertyDetailEnhanced() {
                   <Button
                     variant="outline"
                     className="flex items-center justify-center gap-2"
+                    style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.04em' }}
                     disabled={isSoldListing || !agentPhone}
                     title={agentPhone ? `Call agent: ${agentPhone}` : 'Agent phone not available'}
                     onClick={() => { void handleCallAgent(); }}
@@ -3384,6 +3391,7 @@ export default function PropertyDetailEnhanced() {
                   <Button
                     variant="outline"
                     className="flex items-center justify-center gap-2"
+                    style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.04em' }}
                     disabled={isSoldListing || !agentPhone}
                     title={agentPhone ? `WhatsApp agent: ${agentPhone}` : 'Agent phone not available'}
                     onClick={() => { void handleWhatsAppAgent(); }}
@@ -3485,7 +3493,7 @@ export default function PropertyDetailEnhanced() {
 
             {/* Similar Properties */}
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Similar Properties</h3>
+              <h3 className="font-semibold mb-4" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Similar Properties</h3>
               <div className="space-y-4">
                 {similarProperties.map((item) => (
                   <div key={`${item.title}-${item.location}`} className="flex gap-3 pb-4 border-b border-gray-200 last:border-0">
@@ -3499,7 +3507,7 @@ export default function PropertyDetailEnhanced() {
                       }}
                     />
                     <div className="flex-1 min-w-0">
-                      <Link to={`/app/property/${item.id}`} className="font-medium text-sm truncate block hover:text-blue-600 transition-colors">
+                      <Link to={`/app/property/${item.id}`} className="font-medium text-sm truncate block hover:text-[#C4562A] transition-colors" style={{ fontFamily: 'var(--font-jakarta)', color: '#1A3C28' }}>
                         {item.title}
                       </Link>
                       <div className="text-xs text-gray-600 truncate">{item.location}</div>
@@ -3508,7 +3516,7 @@ export default function PropertyDetailEnhanced() {
                           Match {Math.round(item.similarityScore * 100)}%
                         </div>
                       )}
-                      <div className="font-bold text-blue-600 text-sm mt-1">{item.price}</div>
+                      <div className="font-bold text-sm mt-1" style={{ fontFamily: 'var(--font-fraunces)', color: '#C4562A' }}>{item.price}</div>
                     </div>
                   </div>
                 ))}
@@ -3516,7 +3524,7 @@ export default function PropertyDetailEnhanced() {
                   <div className="text-sm text-gray-600">No similar properties available right now.</div>
                 )}
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4" style={{ borderColor: '#1A3C28', color: '#1A3C28', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}>
                 View More
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>

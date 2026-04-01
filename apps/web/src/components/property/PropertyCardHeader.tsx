@@ -5,6 +5,14 @@ import { UserAvatarContent } from '@/components/UserAvatarContent';
 const DEFAULT_COMPANY_COLOR = '#4A9E8E';
 const OWNER_HEADER_COLOR = '#2563EB';
 
+/** IBM Plex Mono micro-label style applied inline so no global CSS import is needed. */
+const MONO_LABEL: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', monospace",
+  fontSize: 9,
+  letterSpacing: '0.12em',
+  lineHeight: 1,
+};
+
 export interface PropertyCardHeaderProps {
   /** True when the property was listed privately (Self company) rather than under a real company. */
   isPrivateListing: boolean;
@@ -40,15 +48,24 @@ export default function PropertyCardHeader({
   if (isPrivateListing) {
     return (
       <div
-        className="flex items-center justify-between px-4 py-2.5"
+        className="flex items-center justify-between px-4 py-3 min-h-[72px]"
         style={{ backgroundColor: OWNER_HEADER_COLOR }}
       >
-        <span className="text-white text-sm font-bold tracking-wide">LISTED BY OWNER</span>
-        <div className="flex items-center gap-2.5">
-          <span className="text-white text-sm font-semibold truncate max-w-[140px]">
-            {personName}
-          </span>
-          <div className="w-9 h-9 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0">
+        {/* Left: listing type label */}
+        <div className="flex flex-col gap-0.5">
+          <span style={{ ...MONO_LABEL, color: 'rgba(255,255,255,0.6)' }}>LISTED BY</span>
+          <span className="text-white text-sm font-bold tracking-wide">Owner</span>
+        </div>
+
+        {/* Right: seller name + avatar */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex flex-col items-end gap-0.5">
+            <span style={{ ...MONO_LABEL, color: 'rgba(255,255,255,0.6)' }}>SELLER</span>
+            <span className="text-white text-xs font-semibold truncate max-w-[120px]">
+              {personName}
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0">
             <UserAvatarContent
               avatarUrl={personAvatarUrl}
               initials={getInitials(personName)}
@@ -64,33 +81,49 @@ export default function PropertyCardHeader({
 
   return (
     <div
-      className="flex items-center justify-between px-4 py-2.5"
+      className="flex items-center justify-between px-4 py-3 min-h-[72px]"
       style={{ backgroundColor: bgColor }}
     >
-      {/* Company logo */}
-      <div className="flex items-center gap-2 min-w-0">
+      {/* Left: company logo + name */}
+      <div className="flex items-center gap-2.5 min-w-0">
         {companyLogoUrl ? (
-          <img
-            src={companyLogoUrl}
-            alt={companyName ?? 'Company'}
-            className="h-8 max-w-[140px] object-contain"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-          />
+          <>
+            <img
+              src={companyLogoUrl}
+              alt={companyName ?? 'Company'}
+              className="h-10 max-w-[120px] object-contain shrink-0"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            {companyName && (
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span style={{ ...MONO_LABEL, color: 'rgba(255,255,255,0.6)' }}>LISTED BY</span>
+                <span className="text-white text-xs font-semibold truncate max-w-[110px]">
+                  {companyName}
+                </span>
+              </div>
+            )}
+          </>
         ) : (
-          <span className="text-white text-sm font-bold truncate max-w-[160px]">
-            {companyName ?? 'Estate Agency'}
-          </span>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span style={{ ...MONO_LABEL, color: 'rgba(255,255,255,0.6)' }}>LISTED BY</span>
+            <span className="text-white text-sm font-bold truncate max-w-[160px]">
+              {companyName ?? 'Estate Agency'}
+            </span>
+          </div>
         )}
       </div>
 
-      {/* Agent avatar + name */}
+      {/* Right: agent name + avatar */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <span className="text-white text-sm font-semibold truncate max-w-[140px]">
-          {personName}
-        </span>
-        <div className="w-9 h-9 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0">
+        <div className="flex flex-col items-end gap-0.5">
+          <span style={{ ...MONO_LABEL, color: 'rgba(255,255,255,0.6)' }}>AGENT</span>
+          <span className="text-white text-xs font-semibold truncate max-w-[110px]">
+            {personName}
+          </span>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0">
           <UserAvatarContent
             avatarUrl={personAvatarUrl}
             initials={getInitials(personName)}

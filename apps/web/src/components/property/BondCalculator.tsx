@@ -45,8 +45,8 @@ export default function BondCalculator({ price, currency }: BondCalculatorProps)
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Calculator className="w-5 h-5 text-blue-600" />
-        <h3 className="font-semibold">Bond Calculator</h3>
+        <Calculator className="w-5 h-5" style={{ color: '#C4562A' }} />
+        <h3 className="font-semibold" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Bond Calculator</h3>
       </div>
 
       <div className="space-y-4">
@@ -63,7 +63,7 @@ export default function BondCalculator({ price, currency }: BondCalculatorProps)
             step={10000}
             value={deposit}
             onChange={(e) => setDeposit(Math.max(0, Number(e.target.value)))}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3C28]"
           />
         </div>
 
@@ -80,7 +80,7 @@ export default function BondCalculator({ price, currency }: BondCalculatorProps)
             step={0.25}
             value={annualRate}
             onChange={(e) => setAnnualRate(Math.max(0.1, Number(e.target.value)))}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3C28]"
           />
         </div>
 
@@ -97,15 +97,15 @@ export default function BondCalculator({ price, currency }: BondCalculatorProps)
             step={1}
             value={termYears}
             onChange={(e) => setTermYears(Math.max(1, Math.min(30, Number(e.target.value))))}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3C28]"
           />
         </div>
 
         {/* Results */}
         <div className="border-t border-gray-200 pt-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Monthly Payment</span>
-            <span className="text-lg font-bold text-blue-700">
+            <span className="text-sm text-gray-600" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.12em', textTransform: 'uppercase', color: '#B89040' }}>Monthly Payment</span>
+            <span className="text-lg font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: '#C4562A' }}>
               {formatCurrency(monthly, currency)}
             </span>
           </div>

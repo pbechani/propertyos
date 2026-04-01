@@ -76,8 +76,8 @@ export default function PropertyVerificationChecklist({
   return (
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-3">
-        <Shield className="w-5 h-5 text-blue-600" />
-        <h3 className="font-semibold">Verification Checklist</h3>
+        <Shield className="w-5 h-5" style={{ color: '#1A3C28' }} />
+        <h3 className="font-semibold" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>Verification Checklist</h3>
       </div>
 
       <div className="flex items-center gap-2 mb-4">
@@ -87,8 +87,8 @@ export default function PropertyVerificationChecklist({
               overallStatus.toLowerCase() === 'flagged'
                 ? 'bg-red-500'
                 : verifiedCount === documents.length
-                ? 'bg-green-500'
-                : 'bg-blue-500'
+                ? 'bg-[#00E87A]'
+                : 'bg-[#1A3C28]'
             }`}
             style={{ width: `${(verifiedCount / documents.length) * 100}%` }}
           />

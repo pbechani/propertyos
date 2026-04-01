@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listings Search — 3 Design Options | BuildTrust</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --carbon: #0C0D10;
+  --carbon-soft: #16181D;
+  --carbon-mid: #1E2026;
+  --parchment: #F2E8D5;
+  --forest: #1A3C28;
+  --egreen: #00E87A;
+  --amber: #B89040;
+  --terracotta: #C4562A;
+  --border: rgba(255,255,255,0.08);
+  --ff: 'Fraunces', serif;
+  --fm: 'IBM Plex Mono', monospace;
+  --fb: 'Plus Jakarta Sans', sans-serif;
+}
+body {
+  background: #08090B;
+  font-family: var(--fb);
+  color: var(--parchment);
+  padding: 48px 32px 80px;
+}
+
+/* PAGE HEADER */
+.ph { text-align:center; margin-bottom:56px; }
+.ph-eye { font-family:var(--fm); font-size:10px; letter-spacing:.22em; color:var(--egreen); margin-bottom:10px; }
+.ph-title { font-family:var(--ff); font-size:2.2rem; font-weight:300; margin-bottom:6px; }
+.ph-sub { font-size:13px; color:rgba(242,232,213,.45); }
+
+/* SECTION */
+.section { margin-bottom:64px; max-width:1100px; margin-left:auto; margin-right:auto; }
+.section-head { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.option-badge { font-family:var(--fm); font-size:9px; letter-spacing:.18em; padding:4px 12px; border-radius:100px; font-weight:500; }
+.badge-a { background:rgba(0,232,122,.1); color:var(--egreen); border:1px solid rgba(0,232,122,.25); }
+.badge-b { background:rgba(184,144,64,.1); color:var(--amber); border:1px solid rgba(184,144,64,.25); }
+.badge-c { background:rgba(196,86,42,.1); color:var(--terracotta); border:1px solid rgba(196,86,42,.25); }
+.section-name { font-family:var(--ff); font-size:1.15rem; font-weight:300; }
+.rec { font-family:var(--fm); font-size:8px; letter-spacing:.12em; background:rgba(0,232,122,.12); color:var(--egreen); border:1px solid rgba(0,232,122,.2); padding:2px 8px; border-radius:100px; margin-left:4px; vertical-align:middle; }
+.section-desc { font-size:12px; color:rgba(242,232,213,.45); line-height:1.6; margin-bottom:20px; max-width:680px; }
+.section-desc strong { color:rgba(242,232,213,.8); }
+
+/* shared search elements */
+.dropdown {
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--carbon-mid); border:1px solid var(--border);
+  border-radius:8px; padding:9px 14px; font-size:13px;
+  color:rgba(242,232,213,.85); cursor:pointer; white-space:nowrap;
+  font-family:var(--fb);
+}
+.dropdown svg { opacity:.5; flex-shrink:0; }
+.dropdown.active { border-color:rgba(0,232,122,.3); color:var(--parchment); }
+
+.token {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(0,232,122,.12); border:1px solid rgba(0,232,122,.25);
+  color:var(--egreen); border-radius:6px; padding:5px 10px;
+  font-size:12.5px; font-weight:500;
+}
+.token-x { opacity:.6; cursor:pointer; font-size:11px; }
+
+.search-btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  background:var(--terracotta); color:#fff;
+  border-radius:8px; padding:9px 22px;
+  font-size:13.5px; font-weight:600; cursor:pointer;
+  font-family:var(--fb); border:none; white-space:nowrap;
+}
+.map-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  background:var(--carbon-mid); border:1px solid var(--border);
+  border-radius:8px; padding:9px 16px; font-size:13px;
+  color:rgba(242,232,213,.75); cursor:pointer;
+}
+.ai-btn {
+  display:inline-flex; align-items:center; gap:7px;
+  background:var(--amber); color:#fff;
+  border-radius:8px; padding:9px 16px;
+  font-size:12.5px; font-weight:600; cursor:pointer;
+}
+
+.row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.loc-input {
+  flex:1; min-width:180px;
+  background:transparent; border:none; outline:none;
+  color:rgba(242,232,213,.45); font-size:13px; font-family:var(--fb);
+  padding:9px 0;
+}
+.loc-wrap {
+  flex:1; display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  background:var(--carbon-mid); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px; min-height:42px;
+}
+.divider { width:1px; background:rgba(255,255,255,.07); align-self:stretch; flex-shrink:0; }
+.count-bar {
+  padding:10px 18px; font-size:12px;
+  color:rgba(242,232,213,.4); display:flex; align-items:center; gap:12px;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+.count-bar strong { color:var(--parchment); }
+.clear-link { color:rgba(242,232,213,.4); font-size:12px; cursor:pointer; text-decoration:underline; margin-left:auto; }
+.feat-label { font-size:12px; font-weight:600; color:rgba(242,232,213,.6); }
+.checkbox-row { display:flex; flex-wrap:wrap; gap:10px 24px; }
+.cb-item { display:flex; align-items:center; gap:7px; font-size:12.5px; color:rgba(242,232,213,.65); cursor:pointer; }
+.cb-box { width:14px; height:14px; border:1.5px solid rgba(255,255,255,.2); border-radius:3px; background:rgba(255,255,255,.04); flex-shrink:0; }
+.section-label { font-family:var(--fm); font-size:9px; letter-spacing:.15em; color:rgba(242,232,213,.3); padding:0 2px; }
+.more-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  border:1px solid rgba(255,255,255,.15); border-radius:8px;
+  padding:9px 14px; font-size:13px; color:rgba(242,232,213,.7);
+  cursor:pointer; white-space:nowrap;
+}
+
+/* ══ OPTION A — Full-bleed 4-row ══ */
+.oa {
+  background:var(--carbon);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.oa-r1 {
+  display:flex; align-items:center; gap:8px;
+  padding:14px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.oa-r1 .dropdown.type { min-width:110px; }
+.oa-r2 {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  background:rgba(255,255,255,.015);
+}
+.oa-r3 {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.oa-r4 {
+  padding:14px 18px 10px;
+  display:flex; flex-direction:column; gap:12px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.oa-count { padding:10px 18px; }
+
+/* ══ OPTION B — Sticky condensed + dropdown ══ */
+.ob-sticky {
+  background:var(--carbon);
+  border:1px solid var(--border);
+  border-radius:14px 14px 0 0;
+  overflow:hidden;
+}
+.ob-r1 {
+  display:flex; align-items:center; gap:8px;
+  padding:14px 18px;
+}
+.ob-panel {
+  background:var(--carbon-soft);
+  border:1px solid var(--border);
+  border-top:none;
+  border-radius:0 0 14px 14px;
+  padding:18px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.ob-panel-row { display:flex; gap:10px; flex-wrap:wrap; }
+.ob-feat-row { display:flex; flex-wrap:wrap; gap:10px 24px; }
+.ob-closed {
+  background:var(--carbon); border:1px solid var(--border);
+  border-radius:14px; padding:14px 18px;
+  display:flex; align-items:center; gap:8px;
+}
+.expand-hint {
+  font-family:var(--fm); font-size:9px; letter-spacing:.15em;
+  color:rgba(242,232,213,.3); margin-left:auto;
+}
+
+/* ══ OPTION C — Two rows only ══ */
+.oc {
+  background:var(--carbon);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.oc-r1 {
+  display:flex; align-items:center; gap:8px;
+  padding:14px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.oc-r2 {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:12px 18px;
+  background:rgba(255,255,255,.015);
+}
+
+/* LABEL PILL */
+.above-label {
+  font-family:var(--fm); font-size:8.5px; letter-spacing:.15em;
+  color:rgba(242,232,213,.35); margin-bottom:8px;
+}
+
+svg { display:inline-block; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<div class="ph">
+  <div class="ph-eye">BUILDTRUST — LISTINGS SEARCH REDESIGN</div>
+  <h1 class="ph-title">Three Search Bar Directions</h1>
+  <p class="ph-sub">All options remove the "Find Your Verified Property" section. Reference: Property24 / property.co.za style.</p>
+</div>
+
+<!-- ══════════════════════════════════════
+     OPTION A — Full Inline 4-Row (Recommended)
+══════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <span class="option-badge badge-a">OPTION A</span>
+    <span class="section-name">Full Inline Exposure — Property24 Parity <span class="rec">RECOMMENDED</span></span>
+  </div>
+  <p class="section-desc">
+    <strong>4 rows always visible.</strong> Row 1: listing type + location tokens + Map + AI Search + Search.
+    Row 2: Property Type · Min Price · Max Price · Bedrooms · More Filters toggle.
+    Row 3 (revealed on More Filters): Bathrooms · Parking · Floor Size · Erf Size.
+    Row 4: Feature checkboxes inline. Footer: live property count + Clear Filters.
+    No slide-over panel — everything exposed directly. Exact match to reference images.
+  </p>
+
+  <div class="oa">
+
+    <!-- Row 1: Type + Location + Actions -->
+    <div class="oa-r1">
+      <div class="dropdown type">
+        For Sale
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="divider" style="height:30px"></div>
+      <div class="loc-wrap">
+        <div class="token">Cape Town <span class="token-x">×</span></div>
+        <div class="token">Harare <span class="token-x">×</span></div>
+        <input class="loc-input" placeholder="Add location..." readonly>
+      </div>
+      <div class="divider" style="height:30px"></div>
+      <div class="map-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Map
+      </div>
+      <div class="ai-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        AI Search
+      </div>
+      <div class="search-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </div>
+    </div>
+
+    <!-- Row 2: Core filters -->
+    <div class="oa-r2">
+      <div class="dropdown">
+        Property Type
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Min Price
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Max Price
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Bedrooms
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div style="margin-left:auto">
+        <div class="more-btn">
+          More Filters
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Extended filters (revealed) -->
+    <div class="oa-r3">
+      <div class="section-label">MORE FILTERS</div>
+      <div class="dropdown">
+        Bathrooms
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Parking / Garage
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Floor Size (m²)
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Erf Size (m²)
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+
+    <!-- Row 4: Feature checkboxes -->
+    <div class="oa-r4">
+      <div class="row">
+        <div class="section-label">FEATURES</div>
+        <div class="checkbox-row">
+          <label class="cb-item"><div class="cb-box"></div> Pet Friendly</label>
+          <label class="cb-item"><div class="cb-box"></div> Garden</label>
+          <label class="cb-item"><div class="cb-box"></div> Pool</label>
+          <label class="cb-item"><div class="cb-box"></div> Flatlet</label>
+        </div>
+        <div style="margin-left:24px; display:flex; align-items:center; gap:24px;">
+          <div class="section-label">OTHER</div>
+          <div class="checkbox-row">
+            <label class="cb-item"><div class="cb-box"></div> Retirement</label>
+            <label class="cb-item"><div class="cb-box"></div> On Show</label>
+            <label class="cb-item"><div class="cb-box"></div> Auction</label>
+            <label class="cb-item"><div class="cb-box"></div> Repossessed</label>
+            <label class="cb-item"><div class="cb-box"></div> Security Estate</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer count bar -->
+    <div class="count-bar">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(242,232,213,.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Click Search to browse <strong style="color:var(--egreen); margin:0 3px">4,188</strong> properties
+      <span class="clear-link">Clear Filters</span>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     OPTION B — Sticky Condensed + Expanding Panel
+══════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <span class="option-badge badge-b">OPTION B</span>
+    <span class="section-name">Sticky Condensed Bar + Expanding Filter Panel</span>
+  </div>
+  <p class="section-desc">
+    <strong>One always-visible row</strong> that sticks to the top on scroll. Click "Filters" to drop down the full panel with all rows. Cleaner on desktop, intuitive on mobile. All filters hidden by default — lower visual noise. Similar to Airbnb / Zillow pattern.
+  </p>
+
+  <!-- Closed state (what you see by default / on scroll) -->
+  <div class="above-label">DEFAULT STATE (compact — sticky on scroll)</div>
+  <div class="ob-closed" style="margin-bottom:16px">
+    <div class="dropdown type">
+      For Sale
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="divider" style="height:30px"></div>
+    <div class="loc-wrap" style="flex:1">
+      <div class="token">Cape Town <span class="token-x">×</span></div>
+      <input class="loc-input" placeholder="Add location..." readonly>
+    </div>
+    <div class="divider" style="height:30px"></div>
+    <div class="more-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+      Filters
+      <span style="background:var(--terracotta); color:#fff; border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">3</span>
+    </div>
+    <div class="map-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+      Map
+    </div>
+    <div class="ai-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      AI Search
+    </div>
+    <div class="search-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Search
+    </div>
+    <div class="expand-hint">▼ CLICK FILTERS TO EXPAND</div>
+  </div>
+
+  <!-- Expanded state (panel dropped down) -->
+  <div class="above-label">EXPANDED STATE (after clicking Filters)</div>
+  <div>
+    <div class="ob-sticky">
+      <div class="ob-r1">
+        <div class="dropdown type">
+          For Sale
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="divider" style="height:30px"></div>
+        <div class="loc-wrap" style="flex:1">
+          <div class="token">Cape Town <span class="token-x">×</span></div>
+          <input class="loc-input" placeholder="Add location..." readonly>
+        </div>
+        <div class="divider" style="height:30px"></div>
+        <div class="more-btn" style="border-color:rgba(0,232,122,.3); color:var(--egreen)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+          Filters ▲
+        </div>
+        <div class="map-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg> Map
+        </div>
+        <div class="ai-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg> AI Search
+        </div>
+        <div class="search-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </div>
+      </div>
+    </div>
+    <div class="ob-panel">
+      <div class="ob-panel-row">
+        <div class="dropdown">Property Type <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Min Price <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Max Price <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Bedrooms <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Bathrooms <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Parking <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Floor Size (m²) <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        <div class="dropdown">Erf Size (m²) <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+      </div>
+      <div>
+        <div style="display:flex; gap:32px; flex-wrap:wrap;">
+          <div>
+            <div class="section-label" style="margin-bottom:8px">FEATURES</div>
+            <div class="ob-feat-row">
+              <label class="cb-item"><div class="cb-box"></div> Pet Friendly</label>
+              <label class="cb-item"><div class="cb-box"></div> Garden</label>
+              <label class="cb-item"><div class="cb-box"></div> Pool</label>
+              <label class="cb-item"><div class="cb-box"></div> Flatlet</label>
+            </div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px">OTHER</div>
+            <div class="ob-feat-row">
+              <label class="cb-item"><div class="cb-box"></div> Retirement</label>
+              <label class="cb-item"><div class="cb-box"></div> On Show</label>
+              <label class="cb-item"><div class="cb-box"></div> Auction</label>
+              <label class="cb-item"><div class="cb-box"></div> Repossessed</label>
+              <label class="cb-item"><div class="cb-box"></div> Security Estate</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="count-bar" style="border-top:1px solid rgba(255,255,255,.05); margin:-4px -18px -18px; padding:10px 18px;">
+        Click Search to browse <strong style="color:var(--egreen); margin:0 3px">4,188</strong> properties
+        <span class="clear-link">Clear Filters</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     OPTION C — Two Rows Only (Simplified)
+══════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <span class="option-badge badge-c">OPTION C</span>
+    <span class="section-name">Two-Row Simplified — Core Filters Only</span>
+  </div>
+  <p class="section-desc">
+    <strong>Just 2 visible rows.</strong> Row 1: listing type + location + Map + AI Search + Search.
+    Row 2: 8 dropdowns all inline — Property Type · Min · Max · Beds · Baths · Parking · Floor Size · Erf Size.
+    Features (checkboxes) moved into the existing slide-over panel. No "More Filters" toggle needed. Cleanest, lowest height, but Bathrooms/Floor/Erf always visible instead of hidden.
+  </p>
+
+  <div class="oc">
+
+    <!-- Row 1 -->
+    <div class="oc-r1">
+      <div class="dropdown type">
+        For Sale
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="divider" style="height:30px"></div>
+      <div class="loc-wrap">
+        <div class="token">Cape Town <span class="token-x">×</span></div>
+        <div class="token">Harare <span class="token-x">×</span></div>
+        <input class="loc-input" placeholder="Add location..." readonly>
+      </div>
+      <div class="divider" style="height:30px"></div>
+      <div class="map-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        Map
+      </div>
+      <div class="ai-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+        AI Search
+      </div>
+      <div class="search-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </div>
+    </div>
+
+    <!-- Row 2: All 8 dropdowns -->
+    <div class="oc-r2">
+      <div class="dropdown">
+        Property Type
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Min Price
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Max Price
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Bedrooms
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Bathrooms
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Parking
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Floor Size (m²)
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        Erf Size (m²)
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div style="margin-left:auto">
+        <div class="more-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+          Features
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- count bar -->
+    <div class="count-bar">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(242,232,213,.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Click Search to browse <strong style="color:var(--egreen); margin:0 3px">4,188</strong> properties
+      <span class="clear-link">Clear Filters</span>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- COMPARISON TABLE -->
+<div style="max-width:1100px; margin:0 auto;">
+  <div style="font-family:var(--fm); font-size:9px; letter-spacing:.18em; color:rgba(242,232,213,.3); margin-bottom:16px;">COMPARISON</div>
+  <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+    <thead>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+        <th style="text-align:left; padding:10px 14px; color:rgba(242,232,213,.4); font-weight:500;"></th>
+        <th style="text-align:center; padding:10px 14px; color:var(--egreen); font-family:var(--fm); font-size:9px; letter-spacing:.15em;">OPTION A</th>
+        <th style="text-align:center; padding:10px 14px; color:var(--amber); font-family:var(--fm); font-size:9px; letter-spacing:.15em;">OPTION B</th>
+        <th style="text-align:center; padding:10px 14px; color:var(--terracotta); font-family:var(--fm); font-size:9px; letter-spacing:.15em;">OPTION C</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">Matches reference images (Property24)</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓✓✓</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">✓✓</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">✓✓</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">All filters visible without extra clicks</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">—</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">Feature checkboxes inline</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">—</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">Low visual height (compact)</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">—</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓✓✓</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓✓</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">Implementation complexity</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.5)">Low</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.5)">Medium</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.5)">Low</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px; color:rgba(242,232,213,.6)">Removes "more filters" slide-over panel</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+        <td style="text-align:center; padding:10px 14px; color:var(--egreen)">✓</td>
+        <td style="text-align:center; padding:10px 14px; color:rgba(242,232,213,.4)">Partial</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

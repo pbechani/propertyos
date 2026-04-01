@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @source '../**/*.{tsx,ts,jsx,js}';
 @import 'tw-animate-css';
+@import 'leaflet/dist/leaflet.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -9,6 +10,19 @@
 */
 :root {
   --font-size: 14px;
+
+  /* BuildTrust Brand Palette */
+  --bt-parchment: #F2E8D5;
+  --bt-cream: #EAD9C4;
+  --bt-forest: #1A3C28;
+  --bt-forest-light: #2D5A40;
+  --bt-terracotta: #C4562A;
+  --bt-carbon: #0C0D10;
+  --bt-carbon-soft: #1A1B1F;
+  --bt-carbon-mid: #2A2B30;
+  --bt-egreen: #00E87A;
+  --bt-amber: #B89040;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -199,6 +213,18 @@
   .animate-wave {
     animation: wave 1s ease-in-out infinite;
   }
+}
+
+/* ── AppSidebar — brand-themed nav items ────────────────────────────────── */
+aside nav a[aria-current="page"] {
+  background-color: rgba(26, 60, 40, 0.08) !important;
+  color: var(--bt-forest) !important;
+}
+
+/* All nav item labels use Plus Jakarta Sans */
+aside nav span.font-medium,
+aside nav button span.font-medium {
+  font-family: var(--font-jakarta) !important;
 }
 
 @layer components {

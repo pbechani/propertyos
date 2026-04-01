@@ -12,7 +12,96 @@ Related docs:
 
 ## [Unreleased]
 
+### Changed
+
+- **UI — Homepage brand theme applied to Property Detail, Listings & Sidebar (2026-04-01)**
+  - **`PropertyDetailEnhanced.tsx`** — full brand-theme pass:
+    - Page shell: `bg-gray-50` → parchment `#F2E8D5`
+    - Property `h1`: system sans → Fraunces serif, forest `#1A3C28`
+    - Price: `text-blue-600` → Fraunces, terracotta `#C4562A`
+    - Stats bar icon pills: 4 ad-hoc colours → unified forest-tinted with terracotta icons
+    - Stat labels: system font → IBM Plex Mono, amber `#B89040`, uppercase tracked
+    - Stat values: `font-semibold` → Fraunces, forest
+    - All card `h2`/`h3` section headings → Fraunces, forest
+    - Feature check icons: `text-blue-500` → forest
+    - "Schedule a Viewing" sidebar: blue→purple gradient → deep forest `#1A3C28`; "Schedule Now" button → electric green `#00E87A`, Mono
+    - "Your Listing" sidebar: blue gradient → forest-tinted card; CTA button → terracotta
+    - Listing Intelligence heading → Fraunces / parchment; stat numbers → IBM Plex Mono / egreen
+    - Agent enquiry card: Send Enquiry → terracotta, Call/WhatsApp → forest outline Mono
+    - Property Valuation card: AI estimate → Fraunces/terracotta; "Request Valuation" → forest outline
+    - Similar Properties: heading → Fraunces/forest; price → Fraunces/terracotta
+    - Verification badges: ON SHOW → forest/egreen, VERIFIED → egreen/carbon, OFFER SUBMITTED → amber, SOLD → carbon/egreen; all use Mono
+    - Sticky CTA bar: parchment bg; price → Fraunces/terracotta; buttons → forest/egreen Mono
+  - **`BondCalculator.tsx`** — heading → Fraunces/forest; "Monthly Payment" label → Mono/amber; value → Fraunces/terracotta; focus rings → forest
+  - **`PropertyVerificationChecklist.tsx`** — shield icon → forest; heading → Fraunces/forest; progress bars → forest/egreen
+  - **`PropertyCardHeader.tsx`** — "Individual Seller" label corrected to "Owner"
+  - **`Listings.tsx`** — right-panel aside cards: font system (Fraunces/Mono/Jakarta) applied to all headings, stat labels, values and link buttons
+  - **`AppSidebar.tsx`** — logo bg → forest; wordmark → Fraunces serif; role badge → Mono; all active link states → forest-tinted (all roles including buyer/seller); nav item labels → Plus Jakarta Sans; Quick Links section removed
+  - **`globals.css`** — added `aside nav` font CSS rules for nav labels across all roles
+
+- **apps/mobile — React Native Migration (Expo SDK 51)**
+  - Replaced React 19 + Vite 6 web SPA with **Expo SDK 51** (Managed Workflow, React Native 0.74.5 / React 18.2.0)
+  - **NativeWind v4** — Tailwind CSS `className` props via `metro.config.js` + `tailwind.config.js`
+  - **React Navigation v6** — `native-stack` + `bottom-tabs` replaces `useState`-based screen switching
+  - **Offline-first sync engine** — `expo-sqlite` WAL database, push/pull sync, last-write-wins conflict resolution, financial entity protection
+  - **Token storage** — `expo-secure-store` (encrypted) + `AsyncStorage` replace `localStorage`
+  - **Env vars** — `EXPO_PUBLIC_API_URL` replaces `VITE_API_URL`
+  - **`buffer`** npm package replaces `window.atob` for base64 JWT decoding in RN
+  - **`moti`** replaces `motion/react` for animations; **`@expo/vector-icons`** replaces `lucide-react`
+  - New files: `app.json`, `babel.config.js`, `metro.config.js`, `tailwind.config.js`, `index.js`, `src/global.css`, `nativewind-env.d.ts`, `.env.example`
+  - New modules: `src/lib/storage.ts`, `src/navigation/` (4 files), `src/db/database.ts`, `src/sync/` (4 files), `src/hooks/useSync.ts`, `src/components/compat/dom.tsx`
+  - Dead web files (`index.html`, `vite.config.ts`, `src/main.tsx`) overwritten with inert placeholders
+
 ### Added
+
+- **Sprint 07 — Contractor & Supplier Marketplace (2026-03-22)**
+  - **Prisma schema** — 12 new models in the `marketplace` schema:
+    `ContractorProfile`, `ContractorPortfolioItem`, `SupplierProfile`, `SupplierProduct`,
+    `MarketplaceRfq`, `MarketplaceQuote`, `MarketplaceContract`, `MarketplaceOrder`,
+    `DeliveryConfirmation`, `MarketplaceRating`, `MaterialPrice`, `MarketplaceAuditLog`
+  - **Migration** `202603220048_sprint07_marketplace` — applied via manual SQL flow
+  - **`MarketplaceModule`** registered in `AppModule`; provides 6 controllers + 7 services
+  - **Contractor sub-module** (`POST /contractors`, `GET /contractors`, `GET /contractors/:id`, `PATCH /contractors/:id`, `POST /contractors/:id/portfolio`):
+    - Profile creation, listing (paginated, filterable by verification status), update, portfolio item upload
+    - Reputation score auto-recalculated after each new rating
+  - **Supplier sub-module** (`POST /suppliers`, `GET /suppliers`, `GET /suppliers/:id`, `PATCH /suppliers/:id`, `POST /suppliers/:id/products`, `PATCH /suppliers/products/:id`, `GET /suppliers/products`):
+    - Profile + product CRUD; product list filterable by category and search term
+  - **RFQ sub-module** (`POST /rfqs`, `GET /rfqs`, `GET /rfqs/:id`, `POST /rfqs/:id/quotes`, `GET /rfqs/:id/quotes`, `POST /rfqs/:id/quotes/:quoteId/accept`, `POST /rfqs/:id/quotes/:quoteId/reject`):
+    - Auto-generated `RFQ-YYYY-XXXXXXXX` references
+    - Deadline + status enforcement on quote submission
+    - Accepting a quote rejects all other quotes (single DB transaction); auto-generates `MarketplaceContract` for contractor RFQs
+  - **Order sub-module** (`POST /orders`, `GET /orders`, `GET /orders/:id`, `POST /orders/:id/confirm`, `POST /orders/:id/ship`, `POST /orders/:id/deliver`, `POST /orders/:id/cancel`):
+    - Full order lifecycle: `PLACED → CONFIRMED → PREPARING → SHIPPED → DELIVERED / CANCELLED`
+    - Delivery confirmation records geo / photo proof in a single transaction
+  - **Rating sub-module** (`POST /ratings`, `GET /ratings/contractor/:id`, `GET /ratings/supplier/:id`):
+    - Self-rating prevention; supports contractor and supplier entity types
+    - Aggregate `avg(overallScore)` updates `reputationScore` on the rated entity's profile
+  - **Market Intelligence sub-module** (`GET /market/material-prices`, `GET /market/price-trends`):
+    - Paginated, filterable material price catalogue
+    - Chart-ready grouped price trend output by `priceTier` for a given material and time window
+  - **`MarketplaceAuditService`** — centralized audit logging to `marketplace.MarketplaceAuditLog`
+  - **Unit tests** — 54 tests across 6 service spec files (contractor, supplier, rfq, order, rating, market); all pass
+
+- **Sprint 07-B — Job Execution System (2026-03-22)**
+  - **Prisma schema** — 5 new models: `MarketplaceJob`, `JobQuote`, `JobMilestone`, `JobConversation`, `JobMessage`; added `locationLat/Lng`, `radiusKm` geo fields to `ContractorProfile`
+  - **`JobService`** — 15+ methods covering the full job lifecycle:
+    - `createJob / publishJob / updateJob / cancelJob / startJob / completeJob`
+    - `submitQuote / respondToQuote / listJobQuotes`
+    - `createMilestone / updateMilestoneStatus / listMilestones`
+    - `sendMessage / getMessages / markMessagesRead`
+    - Job reference auto-generation; haversine client-side geo filter for `listJobs`
+  - **`ContractorMatchingService`** — weighted scoring (reputation 30%, distance 25%, price 15%, availability 20%, response rate 10%)
+  - **`JobController`** — 25 REST endpoints under `/jobs` (CRUD + quotes + milestones + messaging + matching)
+  - **Mobile app wiring** (React + Vite, `apps/mobile`):
+    - `AuthContext.tsx` — `useAuth()` hook with `mobileRole`, login, register, logout, forgotPassword
+    - `App.tsx` — `AuthProvider` + `AppStateContext` with `selectedJobId` and `quoteData` cross-screen state
+    - `AuthScreens.tsx` — all 4 auth flows wired to API
+    - `ManualEntryScreen.tsx` — `jobsApi.create()` + `jobsApi.publish()` on submit
+    - `JobFeedScreen.tsx` — `jobsApi.feed()` with `setSelectedJobId` on tap
+    - `QuotationSystem.tsx` — `CreateQuoteScreen` saves context; `QuotePreviewScreen` reads context and calls `jobsApi.submitQuote()`
+    - `ChatScreen.tsx` — async message load, optimistic send, retry via `jobsApi`
+    - `QuotesListScreen.tsx` — list quotes + Accept / Decline via `jobsApi.respondToQuote()`
+  - **Unit tests** — `job.service.spec.ts`: 28 tests covering `createJob`, `publishJob`, `getJobById`, `cancelJob`, `submitQuote`, `respondToQuote`, `createMilestone`, `sendMessage`, `startJob`, `completeJob`; all pass
 
 - **Sprint 05-D — Workflow Automation: Approval Form action node (2026-03-22)**
   - **New node type `approval_form`** — pauses a workflow and waits for a human approve/reject response before continuing

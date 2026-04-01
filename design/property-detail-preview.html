@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Property Detail — Before / After Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --forest:     #1A3C28;
+    --terracotta: #C4562A;
+    --parchment:  #F2E8D5;
+    --cream:      #EAD9C4;
+    --carbon:     #0C0D10;
+    --egreen:     #00E87A;
+    --amber:      #B89040;
+
+    --font-fraunces: 'Fraunces', serif;
+    --font-jakarta:  'Plus Jakarta Sans', sans-serif;
+    --font-mono:     'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-jakarta);
+    background: #111;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  .page-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .page-header h1 {
+    font-family: var(--font-fraunces);
+    font-size: 28px;
+    color: var(--parchment);
+  }
+  .page-header p {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #666;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .badge-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+  .badge-before { background: #2a2a2a; color: #888; border: 1px solid #333; }
+  .badge-after  { background: var(--forest); color: var(--egreen); }
+
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 32px 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .col-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: 0 0 12px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #222;
+  }
+  .col-label.before { color: #555; }
+  .col-label.after  { color: var(--amber); }
+
+  .col { padding: 0 24px 0 0; }
+  .col:last-child { padding: 0 0 0 24px; border-left: 1px solid #222; }
+
+  /* ── Shared card shell ────────────────────────────────────────────────── */
+  .preview-root {
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  /* BEFORE — bg-gray-50 */
+  .before-root { background: #f9fafb; }
+
+  /* AFTER — parchment */
+  .after-root { background: var(--parchment); }
+
+  /* ── Card ─────────────────────────────────────────────────────────────── */
+  .card {
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+  }
+  .after-root .card { background: #fff; border-color: var(--cream); }
+
+  /* ── Title + price block ──────────────────────────────────────────────── */
+  .title-price { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+
+  /* BEFORE */
+  .before-h1 { font-size: 24px; font-weight: 600; color: #111827; font-family: sans-serif; line-height: 1.25; }
+  .before-addr { font-size: 13px; color: #6b7280; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .before-price { font-size: 24px; font-weight: 700; color: #2563eb; font-family: sans-serif; white-space: nowrap; }
+
+  /* AFTER */
+  .after-h1 { font-family: var(--font-fraunces); font-size: 24px; font-weight: 700; color: var(--forest); line-height: 1.25; }
+  .after-addr { font-size: 13px; color: #6b7280; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .after-price { font-family: var(--font-fraunces); font-size: 24px; font-weight: 700; color: var(--terracotta); white-space: nowrap; }
+
+  /* ── Stats bar ────────────────────────────────────────────────────────── */
+  .stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 14px; border-radius: 8px; }
+  .before-stats-bar { background: #f9fafb; }
+  .after-stats-bar   { background: var(--parchment); border: 1px solid var(--cream); }
+
+  .stat-item { display: flex; align-items: center; gap: 10px; }
+  .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+
+  /* BEFORE – each icon pill its own color */
+  .icon-blue   { background: #dbeafe; color: #2563eb; }
+  .icon-purple { background: #f3e8ff; color: #9333ea; }
+  .icon-green  { background: #dcfce7; color: #16a34a; }
+  .icon-orange { background: #ffedd5; color: #ea580c; }
+
+  /* AFTER – unified forest-tinted pill */
+  .icon-forest { background: rgba(26,60,40,.12); color: var(--terracotta); }
+
+  .stat-label-before { font-size: 11px; color: #6b7280; font-family: sans-serif; text-transform: uppercase; }
+  .stat-val-before   { font-size: 14px; font-weight: 600; color: #111827; font-family: sans-serif; }
+
+  .stat-label-after { font-family: var(--font-mono); font-size: 9px; color: var(--amber); text-transform: uppercase; letter-spacing: .15em; }
+  .stat-val-after   { font-family: var(--font-fraunces); font-size: 16px; color: var(--forest); line-height: 1.1; }
+
+  /* ── Section headings ─────────────────────────────────────────────────── */
+  .section-heading-before { font-size: 18px; font-weight: 600; color: #111827; font-family: sans-serif; margin-bottom: 8px; }
+  .section-sub-before     { font-size: 13px; color: #6b7280; }
+
+  .section-heading-after { font-family: var(--font-fraunces); font-size: 18px; font-weight: 700; color: var(--forest); margin-bottom: 8px; }
+  .section-sub-after     { font-size: 13px; color: #6b7280; font-family: var(--font-jakarta); }
+
+  /* ── Sidebar cards ────────────────────────────────────────────────────── */
+  /* BEFORE — Schedule a Viewing */
+  .sidebar-cta-before {
+    border-radius: 8px;
+    padding: 20px;
+    background: linear-gradient(135deg, #3b82f6, #9333ea);
+    color: white;
+  }
+  .sidebar-cta-before h3 { font-size: 18px; font-weight: 700; margin: 8px 0 6px; font-family: sans-serif; }
+  .sidebar-cta-before p  { font-size: 13px; color: #bfdbfe; margin-bottom: 14px; }
+  .btn-before { background: white; color: #2563eb; border: none; border-radius: 6px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+
+  /* AFTER — Schedule a Viewing */
+  .sidebar-cta-after {
+    border-radius: 8px;
+    padding: 20px;
+    background: var(--forest);
+    color: white;
+  }
+  .sidebar-cta-after h3 { font-family: var(--font-fraunces); font-size: 18px; font-weight: 700; color: var(--parchment); margin: 8px 0 6px; }
+  .sidebar-cta-after p  { font-size: 13px; color: rgba(242,232,213,.6); font-family: var(--font-jakarta); margin-bottom: 14px; }
+  .btn-after { background: var(--egreen); color: var(--carbon); border: none; border-radius: 6px; padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .06em; cursor: pointer; width: 100%; }
+
+  /* BEFORE — Your Listing */
+  .your-listing-before {
+    border-radius: 8px;
+    padding: 20px;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+  }
+  .your-listing-before h3 { font-size: 18px; font-weight: 700; color: #1e40af; margin-bottom: 4px; }
+  .your-listing-before p  { font-size: 13px; color: #2563eb; margin-bottom: 14px; }
+  .btn-blue { background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+
+  /* AFTER — Your Listing */
+  .your-listing-after {
+    border-radius: 8px;
+    padding: 20px;
+    background: rgba(26,60,40,.05);
+    border: 1px solid rgba(26,60,40,.2);
+  }
+  .your-listing-after h3 { font-family: var(--font-fraunces); font-size: 18px; font-weight: 700; color: var(--forest); margin-bottom: 4px; }
+  .your-listing-after p  { font-size: 13px; color: #6b7280; font-family: var(--font-jakarta); margin-bottom: 14px; }
+  .btn-terracotta { background: var(--terracotta); color: white; border: none; border-radius: 6px; padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; cursor: pointer; width: 100%; }
+
+  /* ── Listing Intelligence ─────────────────────────────────────────────── */
+  .intel-card {
+    border-radius: 8px;
+    background: #0f172a;
+    padding: 20px;
+    color: white;
+  }
+  .intel-card h2-before { display: block; font-size: 16px; font-weight: 700; color: white; margin-bottom: 4px; font-family: sans-serif; }
+  .intel-card .intel-sub { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+  .intel-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  .intel-item { text-align: center; }
+
+  /* BEFORE intel numbers */
+  .intel-num-before  { font-size: 22px; font-weight: 700; color: white; font-family: sans-serif; }
+  .intel-label-before{ font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* AFTER intel numbers */
+  .intel-num-after   { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--egreen); }
+  .intel-label-after { font-family: var(--font-mono); font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .12em; }
+
+  .intel-heading-before { font-size: 16px; font-weight: 700; color: white; font-family: sans-serif; margin-bottom: 4px; }
+  .intel-heading-after  { font-family: var(--font-fraunces); font-size: 16px; font-weight: 600; color: var(--parchment); margin-bottom: 4px; }
+
+  /* After-column contextual overrides */
+  .after-root .intel-card .intel-sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; }
+  .after-root .section-divider { color: rgba(26,60,40,.45); }
+  .after-root .section-divider::after { background: rgba(26,60,40,.2); }
+
+  /* ── Change tags ──────────────────────────────────────────────────────── */
+  .change-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+    background: rgba(0,232,122,.12);
+    color: var(--egreen);
+    border: 1px solid rgba(0,232,122,.25);
+  }
+
+  /* ── Connectors ───────────────────────────────────────────────────────── */
+  .section-divider {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #444;
+    margin: 20px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-divider::after { content: ''; flex: 1; height: 1px; background: #222; }
+
+  /* ── Legend ───────────────────────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    gap: 24px;
+    padding: 20px 40px;
+    border-top: 1px solid #1a1a1a;
+    background: #0a0a0a;
+  }
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-family: var(--font-jakarta);
+    font-size: 12px;
+    color: #888;
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px;
+  }
+  .dot-fraunces { background: var(--terracotta); }
+  .dot-mono     { background: var(--amber); }
+  .dot-forest   { background: var(--forest); border: 1px solid var(--egreen); }
+  .dot-egreen   { background: var(--egreen); }
+
+  svg.icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .icon-sym { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <h1>Property Detail — Theme Preview</h1>
+    <p>PropertyDetailEnhanced.tsx · Typography &amp; Palette Changes</p>
+  </div>
+  <div style="display:flex;gap:8px">
+    <span class="badge-pill badge-before">Before</span>
+    <span class="badge-pill badge-after">After</span>
+  </div>
+</div>
+
+<div class="columns">
+
+  <!-- ═══════════════════════  BEFORE  ═══════════════════════ -->
+  <div class="col">
+    <div class="col-label before">Current — bg-gray-50 · system fonts · blue accent</div>
+
+    <div class="preview-root before-root">
+
+      <!-- Listing Intelligence -->
+      <div class="intel-card">
+        <span class="intel-heading-before">Listing Intelligence</span>
+        <div class="intel-sub">Your listing — performance &amp; management overview</div>
+        <div class="intel-stats">
+          <div class="intel-item">
+            <div class="intel-num-before">247</div>
+            <div class="intel-label-before">Views</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-before">18</div>
+            <div class="intel-label-before">Saves</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-before">6</div>
+            <div class="intel-label-before">Enquiries</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-before">12</div>
+            <div class="intel-label-before">Days Live</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Detail card -->
+      <div class="card">
+        <div class="title-price">
+          <div>
+            <div class="before-h1">4-Bedroom Home in Sandton Central</div>
+            <div class="before-addr">
+              <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+              24 Rivonia Road, Sandton, Johannesburg
+            </div>
+          </div>
+          <div class="before-price">R 4,250,000</div>
+        </div>
+
+        <div class="stats-bar before-stats-bar">
+          <div class="stat-item">
+            <div class="stat-icon icon-blue">🛏</div>
+            <div>
+              <div class="stat-label-before">Bedrooms</div>
+              <div class="stat-val-before">4</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-purple">🛁</div>
+            <div>
+              <div class="stat-label-before">Bathrooms</div>
+              <div class="stat-val-before">3</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-green">🚗</div>
+            <div>
+              <div class="stat-label-before">Parking</div>
+              <div class="stat-val-before">2</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-orange">⬜</div>
+            <div>
+              <div class="stat-label-before">Floor Area</div>
+              <div class="stat-val-before">320 m²</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description card -->
+      <div class="card">
+        <div class="section-heading-before">Property Description</div>
+        <div class="section-sub-before">This beautiful family home is situated in a secure estate in the heart of Sandton. Features include a modern kitchen, spacious living areas, and a sparkling pool.</div>
+      </div>
+
+      <!-- Features card -->
+      <div class="card">
+        <div class="section-heading-before">Features &amp; Amenities</div>
+        <div class="section-sub-before" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span style="background:#f3f4f6;border-radius:4px;padding:3px 10px;font-size:12px">Swimming Pool</span>
+          <span style="background:#f3f4f6;border-radius:4px;padding:3px 10px;font-size:12px">Solar Panels</span>
+          <span style="background:#f3f4f6;border-radius:4px;padding:3px 10px;font-size:12px">Double Garage</span>
+          <span style="background:#f3f4f6;border-radius:4px;padding:3px 10px;font-size:12px">Fibre Internet</span>
+        </div>
+      </div>
+
+      <!-- Timeline card -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="color:#16a34a;font-size:16px">🕒</span>
+          <div class="section-heading-before" style="margin:0">Listing Timeline &amp; Status</div>
+        </div>
+        <div class="section-sub-before">Listed 12 days ago · Active</div>
+      </div>
+
+      <!-- Sidebar section label -->
+      <div class="section-divider">Sidebar</div>
+
+      <!-- Your Listing (owner view) -->
+      <div class="your-listing-before">
+        <span style="font-size:20px">🏠</span>
+        <h3>Your Listing</h3>
+        <p>Initiate a sale to begin the 14-stage purchase pipeline for this property.</p>
+        <button class="btn-blue">+ Initiate Sale</button>
+      </div>
+
+      <!-- Schedule Viewing (buyer view) -->
+      <div class="sidebar-cta-before">
+        <span style="font-size:20px">📅</span>
+        <h3>Schedule a Viewing</h3>
+        <p>Book a time to see this property in person</p>
+        <button class="btn-before">📅 Schedule Now</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════  AFTER  ════════════════════════ -->
+  <div class="col">
+    <div class="col-label after">After — Parchment bg · Fraunces / Mono / Jakarta · Forest + Terracotta</div>
+
+    <div class="preview-root after-root">
+
+      <!-- Listing Intelligence -->
+      <div class="intel-card">
+        <span class="intel-heading-after">Listing Intelligence <span class="change-tag">fraunces</span></span>
+        <div class="intel-sub">Your listing — performance &amp; management overview</div>
+        <div class="intel-stats">
+          <div class="intel-item">
+            <div class="intel-num-after">247 <span class="change-tag">mono + egreen</span></div>
+            <div class="intel-label-after">Views</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-after">18</div>
+            <div class="intel-label-after">Saves</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-after">6</div>
+            <div class="intel-label-after">Enquiries</div>
+          </div>
+          <div class="intel-item">
+            <div class="intel-num-after">12</div>
+            <div class="intel-label-after">Days Live</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Detail card -->
+      <div class="card">
+        <div class="title-price">
+          <div>
+            <div class="after-h1">4-Bedroom Home in Sandton Central <span class="change-tag">fraunces + forest</span></div>
+            <div class="after-addr">
+              <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+              24 Rivonia Road, Sandton, Johannesburg
+            </div>
+          </div>
+          <div class="after-price">R 4,250,000 <span class="change-tag">fraunces + terracotta</span></div>
+        </div>
+
+        <div class="stats-bar after-stats-bar">
+          <div class="stat-item">
+            <div class="stat-icon icon-forest">🛏</div>
+            <div>
+              <div class="stat-label-after">Bedrooms <span class="change-tag">mono + amber</span></div>
+              <div class="stat-val-after">4</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-forest">🛁</div>
+            <div>
+              <div class="stat-label-after">Bathrooms</div>
+              <div class="stat-val-after">3</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-forest">🚗</div>
+            <div>
+              <div class="stat-label-after">Parking</div>
+              <div class="stat-val-after">2</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon icon-forest">⬜</div>
+            <div>
+              <div class="stat-label-after">Floor Area</div>
+              <div class="stat-val-after">320 m²</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description card -->
+      <div class="card">
+        <div class="section-heading-after">Property Description <span class="change-tag">fraunces + forest</span></div>
+        <div class="section-sub-after">This beautiful family home is situated in a secure estate in the heart of Sandton. Features include a modern kitchen, spacious living areas, and a sparkling pool.</div>
+      </div>
+
+      <!-- Features card -->
+      <div class="card">
+        <div class="section-heading-after">Features &amp; Amenities <span class="change-tag">fraunces + forest</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span style="background:rgba(26,60,40,.08);color:#1A3C28;border-radius:4px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace">Swimming Pool</span>
+          <span style="background:rgba(26,60,40,.08);color:#1A3C28;border-radius:4px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace">Solar Panels</span>
+          <span style="background:rgba(26,60,40,.08);color:#1A3C28;border-radius:4px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace">Double Garage</span>
+          <span style="background:rgba(26,60,40,.08);color:#1A3C28;border-radius:4px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace">Fibre Internet</span>
+        </div>
+      </div>
+
+      <!-- Timeline card -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="color:#1A3C28;font-size:16px">🕒</span>
+          <div class="section-heading-after" style="margin:0">Listing Timeline &amp; Status <span class="change-tag">fraunces + forest</span></div>
+        </div>
+        <div class="section-sub-after">Listed 12 days ago · Active</div>
+      </div>
+
+      <!-- Sidebar section label -->
+      <div class="section-divider">Sidebar</div>
+
+      <!-- Your Listing (owner view) -->
+      <div class="your-listing-after">
+        <span style="font-size:20px">🏠</span>
+        <h3>Your Listing <span class="change-tag">fraunces + forest bg</span></h3>
+        <p>Initiate a sale to begin the 14-stage purchase pipeline for this property.</p>
+        <button class="btn-terracotta">+ INITIATE SALE <span class="change-tag">terracotta btn</span></button>
+      </div>
+
+      <!-- Schedule Viewing (buyer view) -->
+      <div class="sidebar-cta-after">
+        <span style="font-size:20px">📅</span>
+        <h3>Schedule a Viewing <span class="change-tag">fraunces + forest bg</span></h3>
+        <p>Book a time to see this property in person</p>
+        <button class="btn-after">📅 SCHEDULE NOW <span class="change-tag">egreen btn</span></button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot dot-fraunces"></div>
+    <div><strong style="color:#ddd">Fraunces</strong> — display headings, price, stat values, section titles</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot dot-mono"></div>
+    <div><strong style="color:#ddd">IBM Plex Mono</strong> — stat labels, feature chips, button text, micro-labels</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#6b7280"></div>
+    <div><strong style="color:#ddd">Plus Jakarta Sans</strong> — body copy, descriptions (base font, mostly unchanged)</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot dot-forest"></div>
+    <div><strong style="color:#ddd">Forest #1A3C28</strong> — headings, icon pills bg, Your Listing card</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot dot-terracotta" style="background:#C4562A"></div>
+    <div><strong style="color:#ddd">Terracotta #C4562A</strong> — price, icon color, Initiate Sale button</div>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot dot-egreen"></div>
+    <div><strong style="color:#ddd">Electric Green #00E87A</strong> — Schedule Now CTA, Listing Intelligence numbers</div>
+  </div>
+</div>
+
+</body>
+</html>

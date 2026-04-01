@@ -120,22 +120,6 @@ const adminCompanyNavigation = [
   { name: 'AI Command Center', href: '/admin/ai-command-center', icon: Brain },
 ];
 
-const quickLinks = [
-  { name: 'Buyer View', href: '/buyer-workspace' },
-  { name: 'Conveyancer View', href: '/conveyancer' },
-  { name: 'Property Workspace', href: '/workspace/1' },
-  { name: 'Escrow & Financial', href: '/escrow' },
-  { name: 'Construction', href: '/construction' },
-  { name: 'Marketplace', href: '/service-providers' },
-  { name: 'BOQ Workspace', href: '/boq-workspace' },
-  { name: 'Inspection & Verification', href: '/inspection-verification' },
-  { name: 'Logistics & Delivery', href: '/logistics-delivery-marketplace' },
-  { name: 'Risk & Analytics', href: '/risk-analytics' },
-  { name: 'AI Design Studio', href: '/ai-design-studio' },
-  { name: 'Property Lifecycle', href: '/property-lifecycle' },
-  { name: 'Compare Properties', href: '/app/compare' },
-];
-
 function isActive(pathname: string, href: string) {
   // Exact-match roots to prevent parent paths from always staying active
   if (href === '/app') return pathname === '/app';
@@ -212,10 +196,10 @@ export function AppSidebar({
             aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
             title="PropertyOS"
           >
-            <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: '#1A3C28' }}>
               <Home className="w-4 h-4 text-white" />
             </div>
-            {!isSidebarCollapsed && <span className="font-semibold text-sm">PropertyOS</span>}
+            {!isSidebarCollapsed && <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>PropertyOS</span>}
           </Link>
           <button
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -258,7 +242,7 @@ export function AppSidebar({
                     <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {showRoleBadge && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(26,60,40,0.1)', color: '#1A3C28', fontFamily: 'var(--font-mono)' }}>
                           {companyRole}
                         </span>
                       )}
@@ -436,9 +420,10 @@ export function AppSidebar({
                       onClick={() => setShowMyListings((v) => !v)}
                       className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
                         pathname.startsWith('/app/my-listings')
-                          ? 'bg-blue-50 text-blue-600'
+                          ? 'text-[#1A3C28]'
                           : 'text-muted-foreground hover:bg-accent'
                       }`}
+                      style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                       title="My Listings"
                     >
                       <ClipboardList className="w-4 h-4 shrink-0" />
@@ -541,9 +526,10 @@ export function AppSidebar({
                       onClick={() => setShowOpenHouses((v) => !v)}
                       className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
                         pathname.startsWith('/app/open-houses')
-                          ? 'bg-blue-50 text-blue-600'
+                          ? 'text-[#1A3C28]'
                           : 'text-muted-foreground hover:bg-accent'
                       }`}
+                      style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                       title="Open Houses"
                     >
                       <DoorOpen className="w-4 h-4 shrink-0" />
@@ -586,9 +572,10 @@ export function AppSidebar({
                     onClick={() => setShowMyListings((v) => !v)}
                     className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
                       pathname.startsWith('/app/my-listings')
-                        ? 'bg-blue-50 text-blue-600'
+                        ? 'text-[#1A3C28]'
                         : 'text-muted-foreground hover:bg-accent'
                     }`}
+                    style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                     title="My Listings"
                   >
                     <item.icon className="w-5 h-5 shrink-0" />
@@ -608,13 +595,14 @@ export function AppSidebar({
                           aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
                           className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
                             isActive(pathname, subItem.href)
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'text-[#1A3C28]'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
+                          style={isActive(pathname, subItem.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                           title={subItem.name}
                         >
                           <subItem.icon className="w-4 h-4" />
-                          {!isSidebarCollapsed && <span className="text-sm font-medium">{subItem.name}</span>}
+                          {!isSidebarCollapsed && <span className="text-sm font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{subItem.name}</span>}
                         </Link>
                       ))}
                     </div>
@@ -627,13 +615,14 @@ export function AppSidebar({
                 aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                 className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
                   isActive(pathname, item.href)
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'text-[#1A3C28]'
                     : 'text-muted-foreground hover:bg-accent'
                 }`}
+                style={isActive(pathname, item.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                 title={item.name}
               >
                 <item.icon className="w-5 h-5" />
-                {!isSidebarCollapsed && <span className="font-medium">{item.name}</span>}
+                {!isSidebarCollapsed && <span className="font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{item.name}</span>}
               </Link>
               )
             ))
@@ -641,22 +630,6 @@ export function AppSidebar({
 
         </nav>
 
-        {/* Quick links — only show for non-admin roles (dev/prototype navigation) */}
-        {!isSidebarCollapsed && !isPlatformAdmin && (
-          <div className="p-4 border-t border-border">
-            <div className="mt-2">
-              {quickLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </aside>
 
       {/* ── Mobile drawer ────────────────────────────────────────── */}
@@ -673,10 +646,10 @@ export function AppSidebar({
                 className="flex items-center gap-2 text-foreground"
                 aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
               >
-                <div className="w-8 h-8 bg-black rounded-md flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: '#1A3C28' }}>
                   <Home className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-semibold text-sm">PropertyOS</span>
+                <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>PropertyOS</span>
               </Link>
               <button
                 onClick={() => setShowMobileMenu(false)}
@@ -709,7 +682,7 @@ export function AppSidebar({
                       <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         {showRoleBadge && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-500 uppercase tracking-wide">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(26,60,40,0.1)', color: '#1A3C28', fontFamily: 'var(--font-mono)' }}>
                             {companyRole}
                           </span>
                         )}
@@ -864,9 +837,10 @@ export function AppSidebar({
                           onClick={() => setShowMyListings((v) => !v)}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                             pathname.startsWith('/app/my-listings')
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'text-[#1A3C28]'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
+                          style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                         >
                           <ClipboardList className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium flex-1 text-left">My Listings</span>
@@ -959,9 +933,10 @@ export function AppSidebar({
                           onClick={() => setShowOpenHouses((v) => !v)}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                             pathname.startsWith('/app/open-houses')
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'text-[#1A3C28]'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
+                          style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                         >
                           <DoorOpen className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium flex-1 text-left">Open Houses</span>
@@ -999,9 +974,10 @@ export function AppSidebar({
                         onClick={() => setShowMyListings((v) => !v)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                           pathname.startsWith('/app/my-listings')
-                            ? 'bg-blue-50 text-blue-600'
+                            ? 'text-[#1A3C28]'
                             : 'text-muted-foreground hover:bg-accent'
                         }`}
+                        style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                       >
                         <item.icon className="w-5 h-5 shrink-0" />
                         <span className="font-medium flex-1 text-left">My Listings</span>
@@ -1017,12 +993,13 @@ export function AppSidebar({
                               aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
                               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                 isActive(pathname, subItem.href)
-                                  ? 'bg-blue-50 text-blue-600'
+                                  ? 'text-[#1A3C28]'
                                   : 'text-muted-foreground hover:bg-accent'
                               }`}
+                              style={isActive(pathname, subItem.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                             >
                               <subItem.icon className="w-4 h-4" />
-                              <span className="text-sm font-medium">{subItem.name}</span>
+                              <span className="text-sm font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{subItem.name}</span>
                             </Link>
                           ))}
                         </div>
@@ -1036,12 +1013,13 @@ export function AppSidebar({
                     aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive(pathname, item.href)
-                        ? 'bg-blue-50 text-blue-600'
+                        ? 'text-[#1A3C28]'
                         : 'text-muted-foreground hover:bg-accent'
                     }`}
+                    style={isActive(pathname, item.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
                   >
                     <item.icon className="w-5 h-5" />
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{item.name}</span>
                   </Link>
                   )
                 ))
@@ -1049,20 +1027,6 @@ export function AppSidebar({
 
             </nav>
 
-            <div className="p-4 border-t border-border">
-              <div className="mt-2">
-                {quickLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setShowMobileMenu(false)}
-                    className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
           </aside>
         </div>
       )}
