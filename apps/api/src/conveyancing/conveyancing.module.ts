@@ -15,6 +15,7 @@ import {
   FeeCalculatorController,
   DocumentTemplatesController,
   ClientPortalController,
+  ConveyancingPropertiesController,
 } from './conveyancing.controller';
 import { ReportsController } from './reports.controller';
 
@@ -25,6 +26,7 @@ import { ReportsController } from './reports.controller';
     FeeCalculatorController,
     DocumentTemplatesController,
     ClientPortalController,
+    ConveyancingPropertiesController,
     ReportsController,
   ],
   providers: [

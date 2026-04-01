@@ -526,3 +526,43 @@ export class ClientPortalController {
     return this.portalService.getPortalSummary(token, caseId, req.ip);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Properties  /api/v1/conveyancing/properties
+// ─────────────────────────────────────────────────────────────────────────────
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('conveyancer', 'admin')
+@Controller('conveyancing/properties')
+export class ConveyancingPropertiesController {
+  constructor(private readonly conveyancingService: ConveyancingService) {}
+
+  @Get()
+  listProperties(
+    @Request() req: AuthRequest,
+    @Query('search') search?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.conveyancingService.listProperties(
+      req.user.roles,
+      req.user.active_company_id ?? undefined,
+      req.user.sub,
+      search,
+      parseInt(page, 10),
+      parseInt(limit, 10),
+    );
+  }
+
+  @Get(':propertyId')
+  getProperty(
+    @Request() req: AuthRequest,
+    @Param('propertyId', ParseUUIDPipe) propertyId: string,
+  ) {
+    return this.conveyancingService.getPropertyDetail(
+      req.user.roles,
+      propertyId,
+      req.user.active_company_id ?? undefined,
+    );
+  }
+}

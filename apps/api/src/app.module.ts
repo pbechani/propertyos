@@ -17,6 +17,9 @@ import { AIIntelligenceModule } from './ai-intelligence/ai-intelligence.module';
 import { MindsDBModule } from './mindsdb/mindsdb.module';
 import { FinancialModule } from './financial/financial.module';
 import { ConveyancingModule } from './conveyancing/conveyancing.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
+import { PublicStatsModule } from './public-stats/public-stats.module';
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -65,6 +68,9 @@ import { ConveyancingModule } from './conveyancing/conveyancing.module';
     MindsDBModule,
     FinancialModule,
     ConveyancingModule,
+    MarketplaceModule,
+    PublicStatsModule,
+    ContactModule,
   ],
   providers: [
     {

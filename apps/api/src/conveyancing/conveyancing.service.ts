@@ -426,6 +426,188 @@ export class ConveyancingService {
   // Seed tasks from templates when case is created
   // ─────────────────────────────────────────────────────────
 
+  // ─────────────────────────────────────────────────────────
+  // List Properties (via cases for this firm)
+  // ─────────────────────────────────────────────────────────
+
+  async listProperties(
+    actorRoles: string[],
+    firmId?: string,
+    conveyancerId?: string,
+    search?: string,
+    page = 1,
+    limit = 20,
+  ) {
+    const isAdmin = actorRoles.includes('admin');
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const offset = (Math.max(page, 1) - 1) * safeLimit;
+    const firmFilter = !isAdmin && firmId ? firmId : null;
+    const convFilter = actorRoles.includes('conveyancer') && !isAdmin && conveyancerId ? conveyancerId : null;
+    const searchFilter = search ? `%${search}%` : null;
+
+    const rows = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT DISTINCT ON (p.id)
+        p.id,
+        p.title,
+        p.property_type,
+        p.price::text                                                         AS asking_price,
+        p.currency,
+        p.bedrooms,
+        p.bathrooms,
+        p.area_sqm::text,
+        p.verification_status,
+        COALESCE(
+          pl.address_line1 || CASE WHEN pl.city IS NOT NULL THEN ', ' || pl.city ELSE '' END,
+          p.title,
+          'Unknown'
+        )                                                                     AS address,
+        COALESCE(
+          owner_u.first_name || ' ' || owner_u.last_name,
+          seller_u.first_name || ' ' || seller_u.last_name,
+          'Unknown'
+        )                                                                     AS current_owner,
+        ps.agreed_price::text                                                 AS last_sale_price,
+        ps.currency                                                           AS sale_currency,
+        c.id                                                                  AS case_id,
+        c.case_reference,
+        c.status                                                              AS case_status,
+        CASE
+          WHEN c.status IN ('closed', 'cancelled') THEN c.status
+          WHEN c.target_registration_date IS NOT NULL
+           AND c.target_registration_date < CURRENT_DATE THEN 'delayed'
+          ELSE 'on_track'
+        END                                                                   AS display_status,
+        COUNT(*) OVER ()                                                      AS total_count
+      FROM property.properties p
+      JOIN sales.property_sales ps        ON ps.property_id = p.id
+      JOIN conveyancing.cases c           ON c.sale_id      = ps.id
+      LEFT JOIN property.property_locations pl ON pl.property_id = p.id
+      LEFT JOIN identity.users seller_u   ON seller_u.id = ps.seller_id
+      LEFT JOIN identity.users owner_u    ON owner_u.id  = p.owner_id
+      WHERE
+        (${firmFilter}::uuid IS NULL OR c.firm_id = ${firmFilter}::uuid)
+        AND (${convFilter}::uuid IS NULL OR c.lead_conveyancer_id = ${convFilter}::uuid)
+        AND (
+          ${searchFilter}::varchar IS NULL
+          OR pl.address_line1 ILIKE ${searchFilter}
+          OR p.title ILIKE ${searchFilter}
+          OR (owner_u.first_name  || ' ' || owner_u.last_name)  ILIKE ${searchFilter}
+          OR (seller_u.first_name || ' ' || seller_u.last_name) ILIKE ${searchFilter}
+        )
+      ORDER BY p.id, c.opened_at DESC
+      LIMIT ${safeLimit} OFFSET ${offset}
+    `;
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count as string, 10) : 0;
+    return { data: rows, total };
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Get Property Detail (via conveyancing context)
+  // ─────────────────────────────────────────────────────────
+
+  async getPropertyDetail(
+    actorRoles: string[],
+    propertyId: string,
+    firmId?: string,
+  ) {
+    // 1. Basic property info
+    const propRows = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT
+        p.id,
+        p.title,
+        p.property_type,
+        p.price::text   AS price,
+        p.currency,
+        p.bedrooms,
+        p.bathrooms,
+        p.area_sqm::text,
+        p.verification_status,
+        p.title_type,
+        p.zoning,
+        COALESCE(
+          pl.address_line1 || CASE WHEN pl.city IS NOT NULL THEN ', ' || pl.city ELSE '' END,
+          p.title
+        )               AS address,
+        pl.address_line1,
+        pl.city,
+        pl.region,
+        pl.country      AS location_country,
+        pl.postal_code,
+        COALESCE(owner_u.first_name || ' ' || owner_u.last_name, 'Unknown') AS current_owner,
+        pv.status       AS deed_verification_status,
+        pv.deed_number,
+        pv.registry_reference
+      FROM property.properties p
+      LEFT JOIN property.property_locations pl ON pl.property_id = p.id
+      LEFT JOIN identity.users owner_u         ON owner_u.id     = p.owner_id
+      LEFT JOIN property.verifications pv      ON pv.property_id = p.id
+      WHERE p.id = ${propertyId}::uuid
+      LIMIT 1
+    `;
+
+    if (!propRows.length) throw new NotFoundException('Property not found');
+    const property = propRows[0];
+
+    // 2. Related conveyancing cases for this property
+    const cases = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT
+        c.id,
+        c.case_reference,
+        c.status,
+        c.priority,
+        c.opened_at,
+        CASE
+          WHEN c.target_registration_date IS NOT NULL
+           AND c.target_registration_date < CURRENT_DATE THEN 'delayed'
+          ELSE 'on_track'
+        END                                               AS display_status,
+        EXTRACT(DAY FROM NOW() - c.opened_at)::int        AS days_active,
+        ROUND((ps.current_stage::numeric / 14.0) * 100)::int AS progress_pct,
+        ps.agreed_price::text,
+        ps.currency,
+        ps.current_stage,
+        COALESCE(buyer_u.first_name  || ' ' || buyer_u.last_name,  'Unknown') AS buyer_name,
+        COALESCE(seller_u.first_name || ' ' || seller_u.last_name, 'Unknown') AS seller_name
+      FROM conveyancing.cases c
+      JOIN sales.property_sales ps      ON ps.id          = c.sale_id
+      LEFT JOIN identity.users buyer_u  ON buyer_u.id     = ps.buyer_id
+      LEFT JOIN identity.users seller_u ON seller_u.id    = ps.seller_id
+      WHERE ps.property_id = ${propertyId}::uuid
+        AND (${firmId ?? null}::uuid IS NULL OR c.firm_id = ${firmId ?? null}::uuid)
+      ORDER BY c.opened_at DESC
+    `;
+
+    // 3. Ownership history
+    const ownershipHistory = await this.prisma.$queryRaw<Record<string, unknown>[]>`
+      SELECT
+        oh.id,
+        oh.transfer_date,
+        oh.transfer_price::text,
+        oh.transfer_currency,
+        oh.notes,
+        COALESCE(u.first_name || ' ' || u.last_name, oh.owner_name, 'Unknown') AS owner_name
+      FROM property.ownership_history oh
+      LEFT JOIN identity.users u ON u.id = oh.owner_id
+      WHERE oh.property_id = ${propertyId}::uuid
+      ORDER BY oh.transfer_date DESC NULLS LAST
+    `;
+
+    // 4. Generated compliance documents linked to any case on this property
+    const caseIds = (cases as Array<{ id: string }>).map((c) => c.id);
+    const documents =
+      caseIds.length > 0
+        ? await this.prisma.$queryRaw<Record<string, unknown>[]>`
+            SELECT gd.id, gd.document_name, gd.document_type, gd.status, gd.created_at
+            FROM conveyancing.generated_documents gd
+            WHERE gd.case_id = ANY(${caseIds}::uuid[])
+            ORDER BY gd.created_at DESC
+          `
+        : [];
+
+    return { property, cases, ownershipHistory, documents };
+  }
+
   private async seedTasksForCase(
     caseId: string,
     caseType: string,

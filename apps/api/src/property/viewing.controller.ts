@@ -1,25 +1,19 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
   Request,
-  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import { JwtAuthGuard } from '../identity/rbac/jwt-auth.guard';
 import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { ViewingService } from './viewing.service';
-import { WorkflowEngineService } from './workflow-engine.service';
 import {
   AgentBookViewingDto,
   AgentDeclineViewingDto,
@@ -29,12 +23,9 @@ import {
   CheckInAttendeeDto,
   CreateOpenHouseDto,
   CreateViewingDto,
-  CreateWorkflowDto,
   RegisterGuestDto,
   RescheduleOpenHouseDto,
   RescheduleViewingDto,
-  UpdateOpenHouseDto,
-  UpdateWorkflowDto,
   ViewingFeedbackDto,
 } from './mandate.dto';
 import { AuthRequest } from '../common/types';
@@ -286,34 +277,6 @@ export class AgentOpenHouseController {
       req.headers['user-agent'],
     );
   }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
-  @Patch(':id')
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateOpenHouseDto,
-    @Request() req: AuthRequest,
-  ) {
-    return this.viewingService.updateOpenHouse(
-      id,
-      req.user.sub,
-      dto,
-      req.ip,
-      req.headers['user-agent'],
-    );
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin')
-  @Get('analytics')
-  async analytics(
-    @Request() req: AuthRequest,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-  ) {
-    return this.viewingService.getOpenHouseAnalytics(req.user.sub, from, to);
-  }
 }
 
 /**
@@ -471,142 +434,4 @@ export class NotificationsController {
     await this.viewingService.markNotificationRead(id, req.user.sub);
     return { success: true };
   }
-}
-
-/**
- * GET    /api/v1/agent/workflows        — list company workflows
- * POST   /api/v1/agent/workflows        — create workflow
- * PATCH  /api/v1/agent/workflows/:id   — update workflow
- * DELETE /api/v1/agent/workflows/:id   — delete workflow
- */
-@Controller('agent/workflows')
-export class AgentWorkflowController {
-  constructor(
-    private readonly viewingService: ViewingService,
-    private readonly workflowEngine: WorkflowEngineService,
-  ) {}
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Get()
-  async list(@Request() req: AuthRequest) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) return [];
-    return this.viewingService.listWorkflows(companyId);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Post()
-  async create(@Request() req: AuthRequest, @Body() dto: CreateWorkflowDto) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) throw new NotFoundException('No active company context');
-    return this.viewingService.createWorkflow(req.user.sub, companyId, dto);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Patch(':id')
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: AuthRequest,
-    @Body() dto: UpdateWorkflowDto,
-  ) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) throw new NotFoundException('No active company context');
-    return this.viewingService.updateWorkflow(req.user.sub, companyId, id, dto);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Delete(':id')
-  @HttpCode(204)
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: AuthRequest,
-  ) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) return;
-    await this.viewingService.deleteWorkflow(companyId, id);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Post(':id/test-run')
-  async testRun(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: AuthRequest,
-    @Body() body: { steps?: unknown[] },
-  ) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) throw new NotFoundException('No active company context');
-    return this.workflowEngine.testRun(id, companyId, body?.steps);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Get(':id/logs')
-  async listLogs(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: AuthRequest,
-  ) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) return [];
-    return this.viewingService.listWorkflowLogs(companyId, id);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('agent', 'admin', 'brokerage_admin')
-  @Get(':id/logs/:enrollmentId')
-  async getLogDetail(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('enrollmentId', ParseUUIDPipe) enrollmentId: string,
-    @Request() req: AuthRequest,
-  ) {
-    const companyId = req.user.active_company_id;
-    if (!companyId) throw new NotFoundException('No active company context');
-    return this.viewingService.getWorkflowEnrollmentDetail(companyId, id, enrollmentId);
-  }
-}
-
-/**
- * GET /api/v1/workflows/approval/:token?action=approve|reject
- *
- * Public endpoint — no auth required. Called when a lead clicks an
- * Approve / Reject link from a workflow approval-form email.
- */
-@Controller('workflows/approval')
-export class WorkflowApprovalController {
-  constructor(private readonly workflowEngine: WorkflowEngineService) {}
-
-  @Get(':token')
-  async respond(
-    @Param('token') token: string,
-    @Query('action') action: string,
-    @Res() res: Response,
-  ) {
-    const isApproved = action === 'approve';
-    try {
-      await this.workflowEngine.resumeAfterApproval(token, isApproved ? 'approve' : 'reject');
-      res.type('html').send(approvalPage(isApproved, true));
-    } catch {
-      res.status(400).type('html').send(approvalPage(isApproved, false));
-    }
-  }
-}
-
-function approvalPage(approved: boolean, success: boolean): string {
-  if (!success) {
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link Expired</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08)}.icon{font-size:52px;margin-bottom:16px}h1{font-size:21px;font-weight:700;color:#1e293b;margin-bottom:10px}p{font-size:15px;color:#64748b;line-height:1.6}.badge{display:inline-block;margin-top:18px;padding:5px 16px;border-radius:100px;font-size:13px;font-weight:600;background:#fef3c7;color:#92400e}</style></head><body><div class="card"><div class="icon">⚠️</div><h1>Link Expired</h1><p>This approval link has already been used or is no longer valid. You may close this tab.</p><span class="badge">ALREADY RESPONDED</span></div></body></html>`;
-  }
-  const icon    = approved ? '✅' : '❌';
-  const heading = approved ? 'Approved — thank you!' : 'Rejected — response recorded';
-  const sub     = approved
-    ? 'Your approval has been recorded and the process will continue automatically.'
-    : 'Your rejection has been recorded. The team will be notified.';
-  const badgeStyle = approved
-    ? 'background:#dcfce7;color:#16a34a'
-    : 'background:#fee2e2;color:#dc2626';
-  const badgeText = approved ? 'APPROVED' : 'REJECTED';
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Response Recorded</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh}.card{background:#fff;border-radius:16px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08)}.icon{font-size:52px;margin-bottom:16px}h1{font-size:21px;font-weight:700;color:#1e293b;margin-bottom:10px}p{font-size:15px;color:#64748b;line-height:1.6}.badge{display:inline-block;margin-top:18px;padding:5px 16px;border-radius:100px;font-size:13px;font-weight:600;${badgeStyle}}</style></head><body><div class="card"><div class="icon">${icon}</div><h1>${heading}</h1><p>${sub}</p><span class="badge">${badgeText}</span></div></body></html>`;
 }
