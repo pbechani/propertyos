@@ -72,4 +72,7 @@ infrastructure/terraform/.terraform.lock.hcl
 tmp/
 temp/
 
+# Expo
+.expo/
+
 sample_ui/
