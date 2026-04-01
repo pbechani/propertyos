@@ -1,9 +1,8 @@
 'use client';
 
 import { Link } from "@/lib/router-compat";
-import { 
-  Home, 
-  LogIn, 
+import {
+  LogIn,
   UserPlus, 
   Mail, 
   Lock, 
@@ -17,6 +16,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+const C = { forest: '#1A3C28', cream: '#EAD9C4', egreen: '#00E87A', parchment: '#F2E8D5', amber: '#B89040' };
 
 export default function AuthenticationFlow() {
   const authScreens = [
@@ -128,60 +129,58 @@ export default function AuthenticationFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: C.parchment }}>
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-                <Home className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-black">Authentication Flow</h1>
-                <p className="text-sm text-gray-600">Complete authentication system overview</p>
-              </div>
+      <div style={{ borderBottom: `1px solid ${C.cream}`, background: C.forest, padding: '1rem 1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '2.25rem', height: '2.25rem', background: C.egreen, borderRadius: '0.375rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Shield style={{ width: '1.125rem', height: '1.125rem', color: C.forest }} />
             </div>
-            <Link to="/">
-              <Button variant="outline" className="border-gray-300">
-                Back to Home
-              </Button>
-            </Link>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: '1.25rem', fontWeight: 700, color: C.cream, margin: 0 }}>Authentication Flow</h1>
+              <p style={{ fontSize: '0.8125rem', color: `${C.cream}90`, margin: 0 }}>Complete authentication system overview</p>
+            </div>
           </div>
+          <Link to="/">
+            <Button variant="outline" style={{ borderColor: `${C.cream}60`, color: C.cream, background: 'transparent', fontSize: '0.875rem' }}>
+              Back to Home
+            </Button>
+          </Link>
+        </div>
 
-          <div className="flex gap-2">
-            <Badge className="bg-black text-white">
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <Badge style={{ background: C.egreen, color: C.forest, fontWeight: 700, fontSize: '0.75rem' }}>
               {authScreens.filter(s => s.status === "primary").length} Primary
             </Badge>
-            <Badge className="bg-gray-600 text-white">
+            <Badge style={{ background: `${C.cream}`, color: C.forest, fontWeight: 700, fontSize: '0.75rem' }}>
               {authScreens.filter(s => s.status === "secondary").length} Secondary
             </Badge>
-            <Badge className="bg-blue-600 text-white">
+            <Badge style={{ background: `${C.forest}40`, color: C.forest, fontWeight: 700, fontSize: '0.75rem' }}>
               {authScreens.filter(s => s.status === "optional").length} Optional
             </Badge>
-            <Badge className="bg-red-600 text-white">
+            <Badge style={{ background: `${C.amber}30`, color: C.forest, fontWeight: 700, fontSize: '0.75rem' }}>
               {authScreens.filter(s => s.status === "error").length} Error State
             </Badge>
           </div>
-        </div>
       </div>
 
       {/* Main Content */}
       <div className="p-6">
         <div className="mb-8">
-          <Card className="p-6 bg-blue-50 border-blue-200">
+          <Card className="p-6" style={{ background: `${C.forest}08`, border: `1.5px solid ${C.forest}30` }}>
             <div className="flex items-start gap-3">
-              <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+              <Shield style={{ width: '1.5rem', height: '1.5rem', color: C.forest, flexShrink: 0, marginTop: '0.25rem' }} />
               <div>
-                <h3 className="font-semibold text-blue-900 mb-2">
+                <h3 style={{ fontWeight: 600, color: C.forest, marginBottom: '0.5rem', margin: '0 0 0.5rem' }}>
                   Complete Authentication System
                 </h3>
-                <p className="text-sm text-blue-800 mb-3">
+                <p style={{ fontSize: '0.875rem', color: `${C.forest}CC`, marginBottom: '0.75rem' }}>
                   This comprehensive authentication flow includes all necessary screens for secure
                   user management: login, registration, email verification, password reset,
                   multi-factor authentication, and session management.
                 </p>
-                <div className="text-xs text-blue-700">
+                <div style={{ fontSize: '0.75rem', color: C.forest, fontFamily: 'var(--font-mono)' }}>
                   ✓ OAuth Integration • ✓ MFA Support • ✓ Password Recovery • ✓ Email Verification
                 </div>
               </div>

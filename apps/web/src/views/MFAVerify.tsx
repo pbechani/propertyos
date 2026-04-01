@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Home, Shield, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Shield, AlertCircle } from "lucide-react";
+import { AuthLayout } from "@/components/AuthLayout";
+
+const C = { forest: '#1A3C28', cream: '#EAD9C4', egreen: '#00E87A', parchment: '#F2E8D5' };
 
 export default function MFAVerify() {
   const navigate = useNavigate();
@@ -75,93 +76,91 @@ export default function MFAVerify() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-            <Home className="w-7 h-7 text-white" />
-          </div>
-          <span className="font-bold text-2xl">PropertyOS</span>
-        </Link>
-
-        <Card className="p-8 border-gray-200">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-green-600" />
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Two-Factor Authentication</h1>
-            <p className="text-gray-600">
-              Enter the 6-digit code from your authenticator app
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-red-800">{error}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="mb-6">
-            <div className="flex gap-2 justify-center">
-              {code.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type="text"
-                  title={`MFA digit ${index + 1}`}
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onPaste={index === 0 ? handlePaste : undefined}
-                  className="w-12 h-14 text-center text-2xl font-mono border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
-                  disabled={isVerifying}
-                />
-              ))}
-            </div>
-          </div>
-
-          <Button
-            onClick={() => handleVerify(code.join(""))}
-            disabled={code.some((d) => !d) || isVerifying}
-            className="w-full bg-black hover:bg-gray-800 text-white mb-4"
+    <AuthLayout variant="centered">
+      <div>
+        <div className="text-center mb-6">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ background: `${C.egreen}18` }}
           >
-            {isVerifying ? "Verifying..." : "Verify"}
-          </Button>
-
-          <div className="text-center space-y-3">
-            <button
-              onClick={handleResend}
-              className="text-sm text-gray-600 hover:text-black"
-              disabled={isVerifying}
-            >
-              Didn't receive a code? Try again
-            </button>
-            <div>
-              <Link
-                to="/login"
-                className="text-sm text-black font-semibold hover:underline"
-              >
-                Back to Sign In
-              </Link>
-            </div>
+            <Shield className="w-7 h-7" style={{ color: C.forest }} />
           </div>
+          <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 24, fontWeight: 700, color: C.forest, marginBottom: 6 }}>
+            Two-Factor Authentication
+          </h1>
+          <p className="text-sm" style={{ color: `${C.forest}70` }}>
+            Enter the 6-digit code from your authenticator app
+          </p>
+        </div>
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800 leading-relaxed">
-              <strong>Tip:</strong> If you've lost access to your authenticator app, contact
-              support for account recovery options.
-            </p>
+        {error && (
+          <div className="mb-5 p-3.5 rounded-xl flex items-start gap-2.5" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5' }}>
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <span className="text-sm text-red-800">{error}</span>
           </div>
-        </Card>
+        )}
+
+        <div className="mb-6">
+          <div className="flex gap-2 justify-center">
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => { inputRefs.current[index] = el; }}
+                type="text"
+                title={`MFA digit ${index + 1}`}
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={index === 0 ? handlePaste : undefined}
+                className="w-11 h-13 text-center text-xl font-mono rounded-xl focus:outline-none focus:ring-2"
+                style={{
+                  border: `2px solid ${digit ? C.forest : C.cream}`,
+                  background: digit ? `${C.forest}08` : 'rgba(255,255,255,0.7)',
+                  color: C.forest,
+                  height: 52,
+                }}
+                disabled={isVerifying}
+              />
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => handleVerify(code.join(""))}
+          disabled={code.some((d) => !d) || isVerifying}
+          className="w-full py-3 rounded-xl text-sm font-semibold mb-4 disabled:opacity-60"
+          style={{ background: C.forest, color: C.parchment }}
+        >
+          {isVerifying ? "Verifying…" : "Verify"}
+        </button>
+
+        <div className="text-center space-y-3">
+          <button
+            onClick={handleResend}
+            className="text-sm"
+            disabled={isVerifying}
+            style={{ color: `${C.forest}70` }}
+          >
+            Didn&apos;t receive a code? Try again
+          </button>
+          <div>
+            <Link to="/login" className="text-sm font-semibold hover:underline" style={{ color: C.forest }}>
+              Back to Sign In
+            </Link>
+          </div>
+        </div>
+
+        <div
+          className="mt-5 p-3.5 rounded-xl"
+          style={{ background: `${C.forest}08`, border: `1px solid ${C.forest}18` }}
+        >
+          <p className="text-xs" style={{ color: `${C.forest}70` }}>
+            <strong style={{ color: C.forest }}>Tip:</strong> If you&apos;ve lost access to your authenticator app, contact support for account recovery options.
+          </p>
+        </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

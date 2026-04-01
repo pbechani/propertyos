@@ -14,6 +14,7 @@ type JwtPayload = {
   sub?: string;
   roles?: string[];
   email?: string;
+  exp?: number;
   kyc_status?: string | null;
   /** Company context embedded by the backend at selectContext time */
   active_company_id?: string | null;
@@ -132,7 +133,25 @@ export function getAccessToken(): string | null {
     return null;
   }
 
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!token) {
+    return null;
+  }
+
+  const payload = decodeJwtPayload(token);
+  if (!payload) {
+    // Non-JWT value in storage (e.g. dev placeholder like "mock-token") — purge it.
+    clearAuthSession();
+    return null;
+  }
+
+  if (payload.exp !== undefined && Math.floor(Date.now() / 1000) > payload.exp) {
+    // Token has expired — clear the stale session.
+    clearAuthSession();
+    return null;
+  }
+
+  return token;
 }
 
 export function getRefreshToken(): string | null {
@@ -145,6 +164,11 @@ export function getRefreshToken(): string | null {
 
 export function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
+    return null;
+  }
+
+  // If the access token is absent or invalid, the session is expired — no user.
+  if (!getAccessToken()) {
     return null;
   }
 

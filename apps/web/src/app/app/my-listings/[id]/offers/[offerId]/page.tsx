@@ -25,6 +25,7 @@ import { getAccessToken } from '@/lib/auth-session';
 import { AcceptOfferModal } from '@/components/my-listings/AcceptOfferModal';
 import { CounterOfferModal } from '@/components/my-listings/CounterOfferModal';
 import { RejectOfferModal } from '@/components/my-listings/RejectOfferModal';
+import { ListingBreadcrumbHeader } from '@/components/my-listings/ListingBreadcrumbHeader';
 
 function formatCurrency(value: string | number) {
   const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -151,68 +152,52 @@ export default function OfferDetailPage() {
   }
 
   const statusConfig = getStatusConfig(offer.status);
-  const StatusIcon = statusConfig.icon;
   const offerAmount = parseFloat(offer.amount);
   const earnestAmount = offer.earnest_money ? parseFloat(offer.earnest_money) : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <ListingBreadcrumbHeader
+        backHref={`/app/my-listings/${listingId}?tab=offers`}
+        listingId={listingId}
+        address={property?.location?.address_line1 ?? property?.title ?? null}
+        listingStatus={property?.status ?? null}
+        crumbs={[
+          { label: 'Offers', href: `/app/my-listings/${listingId}?tab=offers` },
+          { label: `Offer from ${offer.buyer_name}` },
+        ]}
+        titleOverride={`Offer from ${offer.buyer_name}`}
+        rightSlot={
+          offer.status === 'pending' ? (
+            <>
               <button
-                onClick={() => router.push(`/app/my-listings/${listingId}?tab=offers`)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                disabled={updatingStatus}
+                onClick={() => setShowRejectModal(true)}
+                className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <ThumbsDown className="w-4 h-4" />
+                Reject
               </button>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-semibold text-gray-900">Offer from {offer.buyer_name}</h1>
-                  <span className={`px-3 py-1 rounded-full ${statusConfig.color} flex items-center gap-2 font-medium text-sm`}>
-                    <StatusIcon className="w-4 h-4" />
-                    {statusConfig.label}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  Submitted {formatTimestamp(offer.submitted_at)}
-                </p>
-              </div>
-            </div>
-
-            {offer.status === 'pending' && (
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={updatingStatus}
-                  onClick={() => setShowRejectModal(true)}
-                  className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  <ThumbsDown className="w-4 h-4" />
-                  Reject
-                </button>
-                <button
-                  disabled={updatingStatus}
-                  onClick={() => setShowCounterModal(true)}
-                  className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Counter
-                </button>
-                <button
-                  disabled={updatingStatus}
-                  onClick={() => setShowAcceptModal(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  <ThumbsUp className="w-4 h-4" />
-                  Accept Offer
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              <button
+                disabled={updatingStatus}
+                onClick={() => setShowCounterModal(true)}
+                className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Counter
+              </button>
+              <button
+                disabled={updatingStatus}
+                onClick={() => setShowAcceptModal(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <ThumbsUp className="w-4 h-4" />
+                Accept Offer
+              </button>
+            </>
+          ) : null
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-3 gap-6">

@@ -14,6 +14,7 @@ import {
 } from '@/lib/api-client';
 import { getAccessToken, getStoredUser } from '@/lib/auth-session';
 import { formatMoney } from '@/lib/formatters';
+import { ListingBreadcrumbHeader } from '@/components/my-listings/ListingBreadcrumbHeader';
 
 const DECLINE_REASONS = [
   'Property already sold',
@@ -21,6 +22,15 @@ const DECLINE_REASONS = [
   'Schedule conflict',
   'Property temporarily unavailable',
   'Client requested cancellation',
+  'other',
+];
+
+const CANCEL_REASONS = [
+  'Schedule conflict',
+  'Property no longer available',
+  'Seller request',
+  'Client requested cancellation',
+  'Emergency / unforeseen circumstance',
   'other',
 ];
 
@@ -68,6 +78,10 @@ export default function ViewingDetailPage() {
   const [rescheduleReason, setRescheduleReason] = useState('');
   const [showConfirmSuccess, setShowConfirmSuccess] = useState(false);
   const [showDeclineSuccess, setShowDeclineSuccess] = useState(false);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState('');
+  const [cancelReasonText, setCancelReasonText] = useState('');
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
   const [agentNotes, setAgentNotes] = useState('');
 
   useEffect(() => {
@@ -114,6 +128,25 @@ export default function ViewingDetailPage() {
       setShowDeclineSuccess(true);
       setShowDeclineForm(false);
       setTimeout(() => setShowDeclineSuccess(false), 3000);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  async function handleCancelSubmit() {
+    if (!viewing) return;
+    const reason = selectedCancelReason === 'other' ? cancelReasonText : selectedCancelReason;
+    if (!reason.trim()) return;
+    setActionPending(true);
+    setActionError('');
+    try {
+      await viewingsApi.cancel(authToken, viewing.id, { reason });
+      setViewing({ ...viewing, status: 'cancelled' });
+      setShowCancelSuccess(true);
+      setShowCancelForm(false);
+      setTimeout(() => setShowCancelSuccess(false), 3000);
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -169,15 +202,19 @@ export default function ViewingDetailPage() {
   const displayStatus = viewing.status === 'requested' ? 'pending' : viewing.status;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      {/* Back */}
-      <button
-        onClick={() => router.push(`/app/my-listings/${listingId}`)}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to listing
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      <ListingBreadcrumbHeader
+        backHref={`/app/my-listings/${listingId}`}
+        listingId={listingId}
+        address={property?.location?.address_line1 ?? property?.title ?? null}
+        listingStatus={viewing.status}
+        crumbs={[
+          { label: 'Viewings', href: `/app/my-listings/${listingId}?tab=viewings` },
+          { label: `${buyerName}${viewing ? ' · ' + new Date(viewing.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}` },
+        ]}
+        titleOverride={buyerName}
+      />
+      <div className="max-w-4xl mx-auto px-4 py-6">
 
       {/* Card */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden relative">
@@ -203,6 +240,18 @@ export default function ViewingDetailPage() {
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-2">Viewing Declined</h3>
               <p className="text-gray-600">The client has been notified.</p>
+            </div>
+          </div>
+        )}
+
+        {showCancelSuccess && (
+          <div className="absolute inset-0 bg-white z-10 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <XCircle className="w-12 h-12 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Viewing Cancelled</h3>
+              <p className="text-gray-600">The client and relevant parties have been notified.</p>
             </div>
           </div>
         )}
@@ -553,6 +602,65 @@ export default function ViewingDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Cancel Form */}
+          {showCancelForm && (
+            <div className="mt-6 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
+              <div className="flex items-start gap-3 mb-4">
+                <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 mb-1">Cancel Confirmed Viewing</h3>
+                  <p className="text-sm text-red-800">
+                    The buyer and all relevant parties will be notified by email. This cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">Reason for Cancellation *</label>
+                  <select
+                    value={selectedCancelReason}
+                    onChange={(e) => setSelectedCancelReason(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  >
+                    <option value="">Select a reason...</option>
+                    {CANCEL_REASONS.map(r => (
+                      <option key={r} value={r}>{r === 'other' ? 'Other (specify below)' : r}</option>
+                    ))}
+                  </select>
+                </div>
+                {selectedCancelReason === 'other' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">Additional Details *</label>
+                    <textarea
+                      value={cancelReasonText}
+                      onChange={(e) => setCancelReasonText(e.target.value)}
+                      placeholder="Please provide details..."
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                    />
+                  </div>
+                )}
+                {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCancelSubmit}
+                    disabled={actionPending || !selectedCancelReason || (selectedCancelReason === 'other' && !cancelReasonText)}
+                    className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {actionPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Confirm Cancellation
+                  </button>
+                  <button
+                    onClick={() => { setShowCancelForm(false); setSelectedCancelReason(''); setCancelReasonText(''); }}
+                    className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Keep Viewing
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -597,13 +705,22 @@ export default function ViewingDetailPage() {
               <span className="font-medium">This viewing has been confirmed</span>
             </div>
             <div className="flex gap-3">
-              {!showRescheduleForm && (
+              {!showRescheduleForm && !showCancelForm && (
                 <button
                   onClick={() => setShowRescheduleForm(true)}
                   className="px-6 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
                 >
                   <Edit2 className="w-4 h-4" />
                   Reschedule
+                </button>
+              )}
+              {!showRescheduleForm && !showCancelForm && (
+                <button
+                  onClick={() => setShowCancelForm(true)}
+                  className="px-6 py-2.5 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel Viewing
                 </button>
               )}
               <button
@@ -631,5 +748,6 @@ export default function ViewingDetailPage() {
         )}
       </div>
     </div>
+  </div>
   );
 }

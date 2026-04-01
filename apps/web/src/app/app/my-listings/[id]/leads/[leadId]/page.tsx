@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   Mail,
   Phone,
   MessageSquare,
@@ -43,6 +42,7 @@ import { getAccessToken } from '@/lib/auth-session';
 import { ConvertToClientModal } from '@/components/my-listings/ConvertToClientModal';
 import { ScheduleFollowUpModal } from '@/components/my-listings/ScheduleFollowUpModal';
 import { SendPropertiesModal } from '@/components/my-listings/SendPropertiesModal';
+import { ListingBreadcrumbHeader } from '@/components/my-listings/ListingBreadcrumbHeader';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -213,6 +213,7 @@ export default function LeadDetailPage() {
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showSendPropsModal, setShowSendPropsModal] = useState(false);
   const [authToken, setAuthToken]   = useState<string | null>(null);
+  const [listingProperty, setListingProperty] = useState<PropertyListing | null>(null);
   const [interestedInTitle, setInterestedInTitle] = useState<string | null>(null);
   const [matchedProperties, setMatchedProperties] = useState<MatchedProperty[]>([]);
 
@@ -223,12 +224,14 @@ export default function LeadDetailPage() {
       const token = await getAccessToken();
       if (!token) throw new Error('Not authenticated');
       setAuthToken(token);
-      const [leadData, activityData] = await Promise.all([
+      const [leadData, activityData, listingProp] = await Promise.all([
         leadsApi.getById(token, leadId),
         leadsApi.listActivities(token, leadId),
+        propertiesApi.getById(listingId, token).catch(() => null),
       ]);
       setLead(leadData);
       setActivities(activityData);
+      setListingProperty(listingProp);
 
       // Resolve UUID in "Interested in listing" preference to a title
       const parsed = parsePreferences(leadData.preferences);
@@ -313,52 +316,38 @@ export default function LeadDetailPage() {
 
   const statusConfig = getStatusConfig(lead.temperature, lead.stage);
   const StatusIcon   = statusConfig.icon;
-  const initials     = lead.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const budgetLabel  = formatBudget(lead.budget_min, lead.budget_max, lead.budget_currency);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push(`/app/my-listings/${listingId}?tab=leads`)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
-                  {initials}
-                </div>
-                <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">{lead.name}</h1>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {lead.source ? `${lead.source} • ` : ''}Created {formatTimestamp(lead.created_at)}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowConvertModal(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                Convert to Client
-              </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-                <Edit className="w-4 h-4" />
-                Edit
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreVertical className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ListingBreadcrumbHeader
+        backHref={`/app/my-listings/${listingId}?tab=leads`}
+        listingId={listingId}
+        address={listingProperty?.location?.address_line1 ?? listingProperty?.title ?? null}
+        listingStatus={listingProperty?.status ?? null}
+        crumbs={[
+          { label: 'Leads', href: `/app/my-listings/${listingId}?tab=leads` },
+          { label: lead.name },
+        ]}
+        titleOverride={lead.name}
+        rightSlot={
+          <>
+            <button
+              onClick={() => setShowConvertModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Convert to Client
+            </button>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <Edit className="w-4 h-4" />
+              Edit
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5 text-gray-600" />
+            </button>
+          </>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-3 gap-6">

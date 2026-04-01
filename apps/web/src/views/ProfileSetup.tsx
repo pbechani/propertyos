@@ -20,6 +20,8 @@ import { ApiError, kycApi, usersApi } from "@/lib/api-client";
 import { getAccessToken, getStoredUser, updateStoredUser } from "@/lib/auth-session";
 import { requiresBusinessLicenseForRole } from "@/lib/kyc-requirements";
 
+const C = { forest: '#1A3C28', cream: '#EAD9C4', egreen: '#00E87A', parchment: '#F2E8D5', amber: '#B89040' };
+
 export default function ProfileSetup() {
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState("profile");
@@ -345,13 +347,13 @@ export default function ProfileSetup() {
   const isBusinessLicenseRequired = requiresBusinessLicenseForRole(pendingRole);
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div style={{ minHeight: '100vh', background: C.parchment }} className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Complete Role Setup</h1>
+              <h1 style={{ fontFamily: 'var(--font-fraunces)', color: C.forest }} className="text-2xl md:text-3xl font-bold mb-2">Complete Role Setup</h1>
               <p className="text-sm md:text-base text-muted-foreground">
                 Help us verify your identity to access all features
               </p>

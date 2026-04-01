@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   Save,
   X,
   Upload,
@@ -20,11 +19,24 @@ import {
   Sparkles,
 } from 'lucide-react';
 import * as Switch from '@radix-ui/react-switch';
+import { propertiesApi, type PropertyListing } from '@/lib/api-client';
+import { getAccessToken } from '@/lib/auth-session';
+import { ListingBreadcrumbHeader } from '@/components/my-listings/ListingBreadcrumbHeader';
 
 export default function EditListingPage() {
   const router = useRouter();
   const params = useParams();
   const listingId = params.id as string;
+
+  const [property, setProperty] = useState<PropertyListing | null>(null);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token || !listingId) return;
+    propertiesApi.getById(listingId, token)
+      .then(setProperty)
+      .catch(() => null);
+  }, [listingId]);
 
   const [listingStatus, setListingStatus] = useState('active');
   const [isPublished, setIsPublished] = useState(true);
@@ -98,36 +110,30 @@ export default function EditListingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={handleCancel} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold">Edit Listing</h1>
-                <p className="text-sm text-gray-600">Make changes to your property listing</p>
-              </div>
-              {hasUnsavedChanges && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  Unsaved changes
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={handleCancel} className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2">
-                <X className="w-4 h-4" /> Cancel
-              </button>
-              <button onClick={handleSave} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
-                <Save className="w-4 h-4" /> Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ListingBreadcrumbHeader
+        backHref={`/app/my-listings/${listingId}`}
+        listingId={listingId}
+        address={property?.location?.address_line1 ?? property?.title ?? null}
+        listingStatus={property?.status ?? null}
+        crumbs={[{ label: 'Edit Listing' }]}
+        titleOverride="Edit Listing"
+        rightSlot={
+          <>
+            {hasUnsavedChanges && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-full text-sm">
+                <AlertCircle className="w-4 h-4" />
+                Unsaved changes
+              </span>
+            )}
+            <button onClick={handleCancel} className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2">
+              <X className="w-4 h-4" /> Cancel
+            </button>
+            <button onClick={handleSave} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+              <Save className="w-4 h-4" /> Save Changes
+            </button>
+          </>
+        }
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">

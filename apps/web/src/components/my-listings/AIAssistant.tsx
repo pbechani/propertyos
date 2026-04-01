@@ -191,17 +191,195 @@ Based on your current listing status, here's what needs your attention:
 **Bottom Line:** You're in a strong position with multiple interested buyers. Focus on closing the Martinez offer while keeping your pipeline warm. The property's 75% interest rate from showings is exceptional.`
 };
 
+interface ListingContext {
+  address: string;
+  agentFirstName: string;
+  agentFullName: string;
+  price?: number;
+  currency?: string;
+  beds?: number;
+  baths?: number;
+  areaSqm?: number;
+  status?: string;
+  daysOnMarket?: number;
+  viewings?: number;
+  leads?: number;
+  enquiries?: number;
+}
+
+function buildListingResponse(actionId: string, l: ListingContext): string | null {
+  const fmt = (n: number) => n.toLocaleString();
+  const priceStr = l.price
+    ? new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency: l.currency ?? 'ZAR',
+        maximumFractionDigits: 0,
+      }).format(l.price)
+    : null;
+  const specLine = [
+    l.beds    && `${l.beds} Bed`,
+    l.baths   && `${l.baths} Bath`,
+    l.areaSqm && `${fmt(l.areaSqm)} m²`,
+    priceStr,
+  ].filter(Boolean).join(' | ');
+  const dom      = l.daysOnMarket ?? 0;
+  const views    = l.viewings    ?? 0;
+  const leads    = l.leads       ?? 0;
+  const enquiries = l.enquiries  ?? 0;
+
+  switch (actionId) {
+    case 'description':
+      return [
+        `**Well-Presented Property — ${l.address}**`,
+        '',
+        `Presenting ${l.address}${l.beds ? ` — a ${l.beds}-bedroom, ${l.baths ? `${l.baths}-bathroom ` : ''}home` : ''} in a highly sought-after location.`,
+        '',
+        'This property offers a thoughtful layout, quality finishes, and excellent access to local amenities — making it an outstanding choice for owner-occupiers and investors alike.',
+        '',
+        '**Key Highlights:**',
+        '• Light-filled living spaces throughout',
+        '• Well-appointed kitchen with quality appliances',
+        '• Generous outdoor entertaining area',
+        '• Secure parking and storage',
+        '• Convenient access to schools, shops, and transport',
+        priceStr ? `Asking price: **${priceStr}**` : null,
+        l.areaSqm ? `Floor area: **${fmt(l.areaSqm)} m²**` : null,
+        '',
+        `Contact ${l.agentFullName} today to arrange a private viewing.`,
+      ].filter(s => s !== null).join('\n');
+
+    case 'email-enquiry':
+      return [
+        `Subject: Re: Your Enquiry About ${l.address}`,
+        '',
+        'Hi [Buyer Name],',
+        '',
+        `Thank you for your enquiry about ${l.address}! The property is still available and I'd love to arrange a viewing for you.`,
+        '',
+        'I currently have the following slots available:',
+        '• This Saturday at 10:00 AM or 2:00 PM',
+        '• This Sunday at 11:00 AM or 3:00 PM',
+        '',
+        views > 0 ? `The property has attracted strong interest with ${views} viewings to date — I recommend booking early.` : 'This is a great opportunity — I recommend booking a time to view it soon.',
+        '',
+        'Would any of these times suit you? If not, please let me know your preferred time and I will do my best to accommodate.',
+        '',
+        'Looking forward to showing you through.',
+        '',
+        `Kind regards,\n${l.agentFullName}`,
+      ].join('\n');
+
+    case 'social-post':
+      return [
+        `🏡 Just Listed — ${l.address}!`,
+        specLine ? `\n${specLine}\n` : '',
+        'This well-presented property is ready for its next owner:',
+        '',
+        '✨ Bright, spacious living areas',
+        '🌿 Generous outdoor entertaining space',
+        '🚗 Secure off-street parking',
+        '📍 Excellent location close to schools, shops & transport',
+        '',
+        "Move-in ready — this one won't last!",
+        '',
+        '📩 DM or call to arrange your private inspection.',
+        '',
+        '#JustListed #RealEstate #PropertyForSale #NewListing',
+      ].join('\n');
+
+    case 'pricing-analysis':
+      return [
+        `**Pricing Strategy Analysis — ${l.address}**`,
+        '',
+        '**Current Position:**',
+        priceStr ? `• List Price: ${priceStr}` : null,
+        `• Days on Market: ${dom} day${dom !== 1 ? 's' : ''}`,
+        `• Activity: ${views} viewing${views !== 1 ? 's' : ''}, ${enquiries} enquir${enquiries !== 1 ? 'ies' : 'y'}, ${leads} lead${leads !== 1 ? 's' : ''}`,
+        '',
+        '**Market Assessment:**',
+        dom < 14
+          ? `At only ${dom} days on market, the listing is within the prime visibility window. Focus on converting enquiries to viewings.`
+          : dom < 30
+            ? `At ${dom} days on market, the listing has had solid exposure. Review whether showing-to-lead conversion reflects genuine buyer intent.`
+            : `At ${dom} days, consider refreshing pricing or marketing strategy to re-engage buyers and restore portal visibility.`,
+        '',
+        '**Activity Analysis:**',
+        `1. **Enquiries (${enquiries})** — ${enquiries >= 5 ? 'Strong digital interest. Convert these to viewings.' : 'Boost online visibility to generate more enquiries.'}`,
+        `2. **Viewings (${views})** — ${views >= 10 ? 'Good volume. Focus on converting to formal offers.' : 'Increase open house frequency to drive foot traffic.'}`,
+        `3. **Active Leads (${leads})** — ${leads >= 3 ? 'Healthy pipeline. Follow up consistently.' : 'Build the lead base through proactive follow-up and open houses.'}`,
+        '',
+        '**Recommendation:**',
+        dom < 21
+          ? 'Maintain current pricing — the listing is active and gaining traction.'
+          : `After ${dom} days, consider a targeted price adjustment or refreshed campaign to re-activate buyer interest.`,
+      ].filter(s => s !== null).join('\n');
+
+    case 'showing-summary':
+      return [
+        `**Showing Feedback Summary — ${l.address}**`,
+        `*Based on ${views} viewing${views !== 1 ? 's' : ''} to date*`,
+        '',
+        '**Activity Snapshot:**',
+        `• Total Viewings: ${views}`,
+        `• Active Leads: ${leads}`,
+        `• Enquiries Received: ${enquiries}`,
+        `• Days on Market: ${dom}`,
+        '',
+        views >= 5
+          ? `**Positive Signals:**\n1. ${views} viewings indicates solid buyer interest\n2. ${leads} active lead${leads !== 1 ? 's' : ''} provide a pipeline to progress\n3. Enquiry activity suggests good digital visibility`
+          : `**Building Momentum:**\nWith ${views} viewing${views !== 1 ? 's' : ''} so far, focus on:\n1. Converting online enquiries (${enquiries}) into booked viewings\n2. Scheduling open houses to increase foot traffic\n3. Following up all enquiries within 24 hours`,
+        '',
+        '**Recommendation:**',
+        leads > 0
+          ? `Reach out to all ${leads} active lead${leads !== 1 ? 's' : ''} within 24 hours of their inspection.`
+          : 'Focus on generating first viewings through targeted portal promotion and open houses.',
+      ].join('\n');
+
+    case 'next-steps':
+      return [
+        `**Recommended Next Steps — ${l.address}**`,
+        '',
+        `Current status: **${dom} day${dom !== 1 ? 's' : ''} on market** · ${views} viewing${views !== 1 ? 's' : ''} · ${leads} lead${leads !== 1 ? 's' : ''} · ${enquiries} enquir${enquiries !== 1 ? 'ies' : 'y'}`,
+        '',
+        '🔴 **URGENT**',
+        `1. **Follow up active leads${leads > 0 ? ` (${leads} in pipeline)` : ''}** — Contact every lead within 24 hours.`,
+        `2. **Confirm pending viewings${views > 0 ? ` (${views} total)` : ''}** — Unconfirmed inspections risk losing engaged buyers.`,
+        enquiries > 0 ? `3. **Respond to enquiries (${enquiries})** — Aim for same-day responses.` : null,
+        '',
+        '🟡 **THIS WEEK**',
+        dom > 14
+          ? `• **Review marketing strategy** — At ${dom} days, consider refreshing photos, copy, or portal placement.`
+          : '• **Maintain visibility** — Keep portal listings updated and promote on social media.',
+        '• **Schedule next open house** — Regular open houses sustain foot traffic and generate new leads.',
+        '• **Seller update** — Provide the vendor with a weekly activity report.',
+        '',
+        '🟢 **STRATEGIC**',
+        '• **Comparable sales review** — Validate your pricing against recently sold and active listings.',
+        '• **Build buyer urgency** — Communicate genuine interest from other parties to motivate serious enquirers.',
+        '• **Prepare for negotiation** — Have comparable sales data ready to support your asking price.',
+        '',
+        '**Bottom Line:** ' + (views > 0 || leads > 0
+          ? `With ${views} viewing${views !== 1 ? 's' : ''} and ${leads} active lead${leads !== 1 ? 's' : ''}, you have a pipeline to work from. Stay consistent and follow up promptly.`
+          : 'Focus on generating early momentum — enquiries and viewings are the critical metrics right now.'),
+      ].filter(s => s !== null).join('\n');
+
+    default:
+      return null;
+  }
+}
+
 interface AIAssistantProps {
   isOpen: boolean;
   onClose: () => void;
+  listing: ListingContext;
 }
 
-export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
+export function AIAssistant({ isOpen, onClose, listing }: AIAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
       role: 'assistant',
-      content: "Hi John! I'm your AI listing assistant for **2847 Westwood Blvd**. I can help you draft communications, analyze market data, summarize feedback, and recommend next steps. What would you like help with?",
+      content: `Hi ${listing.agentFirstName}! I'm your AI listing assistant for **${listing.address}**. I can help you draft communications, analyse market data, summarise feedback, and recommend next steps. What would you like help with?`,
       timestamp: new Date()
     }
   ]);
@@ -227,9 +405,21 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
     const delay = 1200 + Math.random() * 800;
 
     setTimeout(() => {
-      const responseContent = actionId && mockResponses[actionId]
-        ? mockResponses[actionId]
-        : "I've analyzed the current listing data. Based on the 46 showings, 3 active offers, and 5 leads in your pipeline, here are my observations:\n\n1. **Strong buyer interest** — 75% of showings result in positive feedback\n2. **Pricing is competitive** — Your highest offer is at 98.2% of asking price\n3. **Pending actions need attention** — You have 3 unconfirmed viewing requests\n\nWould you like me to dive deeper into any of these areas?";
+      const dom        = listing.daysOnMarket ?? 0;
+      const views      = listing.viewings    ?? 0;
+      const leads      = listing.leads       ?? 0;
+      const enquiries  = listing.enquiries   ?? 0;
+      const statusStr  = listing.status ? listing.status.replace(/_/g, ' ') : 'active';
+
+      const fallback = `I've reviewed the current data for **${listing.address}**. Here's a quick summary:\n\n` +
+        `1. **Activity** — ${views} viewing${views !== 1 ? 's' : ''}, ${enquiries} enquir${enquiries !== 1 ? 'ies' : 'y'}, ${leads} active lead${leads !== 1 ? 's' : ''}\n` +
+        `2. **Time on market** — ${dom} day${dom !== 1 ? 's' : ''}\n` +
+        `3. **Status** — ${statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}\n\n` +
+        'Would you like me to dive deeper into any of these areas?';
+
+      const responseContent = actionId
+        ? (buildListingResponse(actionId, listing) ?? mockResponses[actionId] ?? fallback)
+        : fallback;
 
       const assistantMessage: Message = {
         id: Date.now().toString(),
@@ -325,7 +515,7 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">AI Listing Assistant</h3>
-            <p className="text-blue-100 text-xs">2847 Westwood Blvd</p>
+            <p className="text-blue-100 text-xs">{listing.address}</p>
           </div>
         </div>
         <button

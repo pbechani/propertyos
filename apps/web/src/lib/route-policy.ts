@@ -4,6 +4,15 @@
  */
 export const NO_NAVBAR_ROUTES = [
   '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/email-verification',
+  '/mfa-setup',
+  '/mfa-verify',
+  '/auth-flow',
+  '/session-expired',
+  '/oauth-connect',
   '/company-context-select',
   '/invitations',
 ] as const;
@@ -77,6 +86,7 @@ export const PUBLIC_SHELL_ROUTES = [
   '/app/listings',
   '/app/property',
   '/agent-profile',
+  '/listings',
 ] as const;
 
 export function isPublicShellRoute(pathname: string): boolean {

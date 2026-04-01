@@ -7,11 +7,11 @@ import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
-  Calendar,
   CalendarDays,
   Users,
   DollarSign,
   Package,
+  Archive,
   FileText,
   Shield,
   Sparkles,
@@ -20,18 +20,10 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  FileStack,
-  TrendingUp,
-  Wallet,
   Receipt,
   Camera,
   Clipboard,
   FileEdit,
-  PieChart,
-  UserCog,
-  Smartphone,
-  Brain,
-  Crown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -42,46 +34,47 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    label: 'Dashboards',
+    label: 'Overview',
     items: [
       { name: 'Dashboard', href: '/construction', icon: LayoutDashboard },
-      { name: 'Advanced Dashboard', href: '/construction/advanced', icon: TrendingUp },
-      { name: 'Executive Summary', href: '/construction/executive', icon: Crown },
       { name: 'Portfolio', href: '/construction/portfolio', icon: Briefcase },
     ],
   },
   {
-    label: 'Project Management',
+    label: 'Projects',
     items: [
       { name: 'Projects', href: '/construction/projects', icon: FolderKanban },
       { name: 'Tasks', href: '/construction/tasks', icon: CheckSquare },
-      { name: 'Schedule', href: '/construction/schedule', icon: Calendar },
-      { name: 'Project Schedule', href: '/construction/project-schedule', icon: CalendarDays },
-      { name: 'Unified Calendar', href: '/construction/calendar', icon: CalendarDays },
+      { name: 'Calendar', href: '/construction/calendar', icon: CalendarDays },
       { name: 'Change Orders', href: '/construction/change-orders', icon: FileEdit },
     ],
   },
   {
-    label: 'Financial',
+    label: 'Finance',
     items: [
-      { name: 'Budget', href: '/construction/budget', icon: DollarSign },
-      { name: 'Financial Dashboard', href: '/construction/financial', icon: Wallet },
+      { name: 'Budget & Costs', href: '/construction/budget', icon: DollarSign },
       { name: 'Invoices', href: '/construction/invoices', icon: Receipt },
     ],
   },
   {
-    label: 'Procurement & Materials',
+    label: 'Procurement',
     items: [
-      { name: 'Procurement', href: '/construction/procurement', icon: Package },
-      { name: 'Purchase Orders', href: '/construction/purchase-orders', icon: Package },
-      { name: 'Inventory', href: '/construction/inventory', icon: Package },
+      { name: 'Materials & Orders', href: '/construction/procurement', icon: Package },
+      { name: 'Inventory', href: '/construction/inventory', icon: Archive },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { name: 'AI Assistant', href: '/construction/ai', icon: Sparkles },
+      { name: 'Reports', href: '/construction/reports', icon: BarChart3 },
     ],
   },
   {
     label: 'Field Operations',
     items: [
       { name: 'Contractors', href: '/construction/contractors', icon: Users },
-      { name: 'Daily Site Logs', href: '/construction/site-logs', icon: Clipboard },
+      { name: 'Site Logs', href: '/construction/site-logs', icon: Clipboard },
       { name: 'Site Photos', href: '/construction/site-photos', icon: Camera },
     ],
   },
@@ -89,30 +82,13 @@ const navGroups: NavGroup[] = [
     label: 'Documents & Compliance',
     items: [
       { name: 'Documents', href: '/construction/documents', icon: FileText },
-      { name: 'Document Management', href: '/construction/document-management', icon: FileStack },
       { name: 'Risk Management', href: '/construction/risks', icon: Shield },
     ],
   },
   {
-    label: 'AI & Intelligence',
+    label: 'Settings',
     items: [
-      { name: 'AI Command Center', href: '/construction/ai', icon: Sparkles },
-      { name: 'AI Agents', href: '/construction/ai-agent-dashboard', icon: Brain },
-    ],
-  },
-  {
-    label: 'Reports & Analytics',
-    items: [
-      { name: 'Reports', href: '/construction/reports', icon: BarChart3 },
-      { name: 'Report Builder', href: '/construction/report-builder', icon: PieChart },
-    ],
-  },
-  {
-    label: 'Administration',
-    items: [
-      { name: 'User Management', href: '/construction/user-management', icon: UserCog },
       { name: 'Settings', href: '/construction/settings', icon: Settings },
-      { name: 'Mobile App', href: '/construction/mobile-app', icon: Smartphone },
     ],
   },
 ];
