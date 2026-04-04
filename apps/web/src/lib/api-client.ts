@@ -2229,8 +2229,10 @@ export type LeadDashboardResponse = {
   pipelineValue: number;
   pendingTasks: LeadTaskRow[];
   recentActivities: LeadActivityRow[];
+  recentLeads: LeadRow[];
   byType: Record<string, number>;
   byTemperature: Record<string, number>;
+  byStage: Record<string, number>;
 };
 
 export type LeadPipelineStage = {
@@ -2248,6 +2250,9 @@ export type LeadAnalyticsResponse = {
   conversionRate: number;
   closedRevenue: number;
   activeLeads: number;
+  avgDealValue: number;
+  avgTimeToClose: number;
+  responseRate: number;
   bySource: { source: string; count: number }[];
   byType: { type: string; count: number }[];
   funnel: { stage: string; count: number }[];

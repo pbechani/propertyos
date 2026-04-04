@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listing Detail Page — Rebrand Approaches</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Brand Design Tokens ───────────────────────────── */
+    :root {
+      --parchment: #F2E8D5;
+      --cream:     #EAD9C4;
+      --forest:    #1A3C28;
+      --forest-l:  #2D5A40;
+      --terra:     #C4562A;
+      --carbon:    #0C0D10;
+      --carbon-s:  #1A1B1F;
+      --egreen:    #00E87A;
+      --amber:     #B89040;
+      --font-d:    'Fraunces', Georgia, serif;
+      --font-b:    'Plus Jakarta Sans', sans-serif;
+      --font-m:    'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #e8e0d4; font-family: var(--font-b); color: #1a1a1a; }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .page-wrapper { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
+    .page-title {
+      font-family: var(--font-d);
+      font-size: 2.25rem;
+      color: var(--forest);
+      margin-bottom: 8px;
+      font-weight: 400;
+    }
+    .page-sub {
+      font-size: 0.9rem;
+      color: #5a5a50;
+      margin-bottom: 48px;
+      font-family: var(--font-m);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .approach-label {
+      display: inline-block;
+      font-family: var(--font-m);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+    }
+    .approach-title {
+      font-family: var(--font-d);
+      font-size: 1.6rem;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    .approach-desc {
+      font-size: 0.82rem;
+      color: #5a5a50;
+      margin-bottom: 24px;
+      max-width: 540px;
+      line-height: 1.65;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      margin: 64px 0;
+    }
+
+    /* ── Shared Chrome ─────────────────────────────────── */
+    .sidebar {
+      width: 56px;
+      background: var(--forest);
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 0;
+      gap: 10px;
+    }
+    .sidebar-dot {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+    }
+    .sidebar-dot.active { background: rgba(255,255,255,0.22); }
+    .sidebar-dot.active-g { background: var(--egreen); }
+
+    .preview-shell {
+      position: relative;
+      padding-left: 56px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 60px rgba(0,0,0,0.14);
+      min-height: 620px;
+      font-size: 13px;
+    }
+
+    /* ── Tags / Pills ──────────────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .pill-terra  { background: var(--terra); color: #fff; }
+    .pill-active { background: var(--egreen); color: var(--carbon); }
+    .pill-amber  { background: var(--amber); color: #fff; }
+    .pill-forest { background: var(--forest); color: #fff; }
+    .pill-cream  { background: var(--cream); color: var(--forest); border: 1px solid rgba(26,60,40,0.15); }
+
+    /* ── APPROACH A: Warm Editorial ────────────────────── */
+    .a-main { background: var(--parchment); padding: 0; }
+
+    .a-header {
+      background: rgba(242,232,213,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(26,60,40,0.12);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .a-header-left { display: flex; align-items: center; gap: 12px; }
+    .a-back-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(26,60,40,0.08);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .a-back-arrow { width: 10px; height: 10px; border-left: 2px solid var(--forest); border-bottom: 2px solid var(--forest); transform: rotate(45deg); }
+    .a-header-title {
+      font-family: var(--font-d);
+      font-size: 1.35rem;
+      color: var(--forest);
+      font-weight: 400;
+    }
+    .a-header-sub { font-size: 10px; color: rgba(26,60,40,0.55); font-family: var(--font-m); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+
+    .a-ai-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: var(--forest);
+      color: var(--egreen);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .a-ai-dot { width: 6px; height: 6px; background: var(--egreen); border-radius: 50%; }
+
+    /* Gallery strip */
+    .a-gallery {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 160px 80px;
+      gap: 3px;
+    }
+    .a-gallery-main { grid-row: span 2; background: #8a9e90; position: relative; overflow: hidden; }
+    .a-gallery-img { width: 100%; height: 100%; object-fit: cover; display: block; background: #b8c4bc; }
+    .a-gallery-sm { background: #9eaea3; }
+    .a-gallery-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 10px 14px;
+      background: linear-gradient(to top, rgba(26,60,40,0.85) 0%, transparent 100%);
+      display: flex; gap: 6px; align-items: flex-end;
+    }
+
+    /* Price + info strip */
+    .a-info-strip {
+      background: var(--parchment);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(26,60,40,0.1);
+    }
+    .a-price {
+      font-family: var(--font-d);
+      font-size: 2rem;
+      color: var(--forest);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .a-address { font-size: 11px; color: rgba(26,60,40,0.6); display: flex; align-items: center; gap: 5px; }
+    .a-pin-icon { width: 9px; height: 9px; background: var(--terra); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+
+    .a-specs-row {
+      display: flex; gap: 0;
+      border: 1px solid rgba(26,60,40,0.12);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .a-spec {
+      flex: 1;
+      padding: 8px 12px;
+      text-align: center;
+      border-right: 1px solid rgba(26,60,40,0.12);
+    }
+    .a-spec:last-child { border-right: none; }
+    .a-spec-val { font-weight: 700; font-size: 13px; color: var(--forest); }
+    .a-spec-lbl { font-size: 9px; color: rgba(26,60,40,0.45); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .a-tab-bar {
+      display: flex; gap: 0;
+      background: var(--cream);
+      border-bottom: 1px solid rgba(26,60,40,0.12);
+      padding: 0 24px;
+      overflow: hidden;
+    }
+    .a-tab {
+      padding: 10px 14px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(26,60,40,0.5);
+      border-bottom: 2px solid transparent;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .a-tab.active {
+      color: var(--forest);
+      border-bottom-color: var(--terra);
+    }
+
+    .a-content { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .a-section-card {
+      background: white;
+      border: 1px solid rgba(26,60,40,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .a-section-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(26,60,40,0.08);
+      background: rgba(26,60,40,0.03);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .a-section-icon { width: 12px; height: 12px; border-radius: 3px; background: var(--terra); }
+    .a-section-icon.g { background: var(--forest); }
+    .a-section-title { font-size: 10px; font-weight: 700; color: var(--forest); letter-spacing: 0.06em; text-transform: uppercase; }
+    .a-section-body { padding: 12px 14px; }
+    .a-kv-row { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; border-bottom: 1px dashed rgba(0,0,0,0.06); }
+    .a-kv-row:last-child { border-bottom: none; }
+    .a-kv-key { color: rgba(26,60,40,0.55); }
+    .a-kv-val { font-weight: 600; color: var(--forest); }
+
+    /* ── APPROACH B: Dark Carbon Hero ──────────────────── */
+    .b-hero {
+      background: var(--carbon);
+      padding: 0;
+      position: relative;
+    }
+    .b-header {
+      background: rgba(12,13,16,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .b-back-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .b-back-arrow { width: 10px; height: 10px; border-left: 2px solid rgba(255,255,255,0.6); border-bottom: 2px solid rgba(255,255,255,0.6); transform: rotate(45deg); }
+    .b-header-title {
+      font-family: var(--font-d);
+      font-size: 1.2rem;
+      color: white;
+      font-weight: 400;
+    }
+    .b-header-left { display: flex; align-items: center; gap: 12px; }
+    .b-header-sub { font-size: 10px; color: rgba(255,255,255,0.35); font-family: var(--font-m); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+    .b-ai-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.07);
+      color: var(--egreen);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid rgba(0,232,122,0.25);
+    }
+
+    .b-gallery-zone {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+    }
+    .b-gallery-main {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #2a3a32 0%, #1a2820 100%);
+      position: relative;
+    }
+    .b-gallery-grid-inset {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 280px;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+    }
+    .b-gi { background: rgba(255,255,255,0.06); }
+    .b-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 24px;
+      background: linear-gradient(to top, rgba(12,13,16,0.95), transparent);
+    }
+    .b-price {
+      font-family: var(--font-d);
+      font-size: 2.2rem;
+      color: white;
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .b-address { font-size: 11px; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 5px; }
+    .b-pin { width: 9px; height: 9px; background: var(--terra); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); flex-shrink: 0; }
+
+    .b-stats-strip {
+      display: flex; gap: 0;
+      background: var(--carbon-s);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .b-stat {
+      flex: 1;
+      padding: 10px 14px;
+      text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    .b-stat:last-child { border-right: none; }
+    .b-stat-val { font-weight: 700; font-size: 13px; color: var(--egreen); }
+    .b-stat-lbl { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .b-tab-bar {
+      display: flex; gap: 0;
+      background: var(--carbon-s);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 0 24px;
+      overflow: hidden;
+    }
+    .b-tab {
+      padding: 10px 14px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.3);
+      border-bottom: 2px solid transparent;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .b-tab.active {
+      color: var(--egreen);
+      border-bottom-color: var(--egreen);
+    }
+
+    /* Parchment content zone below dark hero */
+    .b-content-zone { background: var(--parchment); padding: 20px 24px; }
+    .b-section-card {
+      background: white;
+      border: 1px solid rgba(26,60,40,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .b-section-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(26,60,40,0.08);
+      background: rgba(26,60,40,0.03);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .b-section-icon { width: 12px; height: 12px; border-radius: 3px; background: var(--terra); }
+    .b-section-title { font-size: 10px; font-weight: 700; color: var(--forest); letter-spacing: 0.06em; text-transform: uppercase; }
+    .b-section-body { padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .b-kv-row { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 6px; background: rgba(26,60,40,0.03); border-radius: 5px; }
+    .b-kv-key { color: rgba(26,60,40,0.55); }
+    .b-kv-val { font-weight: 600; color: var(--forest); }
+
+    /* ── APPROACH C: Forest Command ────────────────────── */
+    .c-main { background: var(--parchment); }
+    .c-hero-band {
+      background: var(--forest);
+      padding: 0;
+    }
+    .c-header {
+      background: var(--forest);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .c-back-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .c-back-arrow { width: 10px; height: 10px; border-left: 2px solid rgba(255,255,255,0.7); border-bottom: 2px solid rgba(255,255,255,0.7); transform: rotate(45deg); }
+    .c-header-left { display: flex; align-items: center; gap: 12px; }
+    .c-header-title-wrap { }
+    .c-eyebrow { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--egreen); margin-bottom: 2px; }
+    .c-header-title {
+      font-family: var(--font-d);
+      font-size: 1.35rem;
+      color: white;
+      font-weight: 400;
+    }
+    .c-ai-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: rgba(0,232,122,0.12);
+      color: var(--egreen);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid rgba(0,232,122,0.3);
+    }
+
+    .c-forest-content {
+      background: var(--forest);
+      padding: 0 24px 0 24px;
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+      padding-bottom: 0;
+    }
+    .c-image-col { position: relative; overflow: hidden; border-radius: 10px 10px 0 0; }
+    .c-image-main { width: 100%; height: 190px; background: linear-gradient(135deg, #2d4a38, #1a3228); object-fit: cover; display: block; }
+    .c-badges { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; }
+
+    .c-price-col { padding: 16px 0; }
+    .c-price-eyebrow { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0,232,122,0.7); margin-bottom: 4px; }
+    .c-price {
+      font-family: var(--font-d);
+      font-size: 1.85rem;
+      color: white;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .c-addr { font-size: 10px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 4px; margin-bottom: 14px; }
+    .c-pin { width: 7px; height: 7px; background: var(--terra); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+
+    .c-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+    .c-metric {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .c-metric-val { font-weight: 700; font-size: 13px; color: white; }
+    .c-metric-lbl { font-size: 9px; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.06em; }
+    .c-metric-val.g { color: var(--egreen); }
+    .c-metric-val.a { color: var(--amber); }
+
+    .c-agent-row {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .c-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--amber);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: white;
+    }
+    .c-agent-name { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.85); }
+    .c-agent-sub { font-size: 9px; color: rgba(255,255,255,0.38); }
+
+    .c-tab-bar {
+      display: flex; gap: 0;
+      background: var(--forest);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 0 24px;
+      overflow: hidden;
+    }
+    .c-tab {
+      padding: 10px 14px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.3);
+      border-bottom: 2px solid transparent;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .c-tab.active {
+      color: white;
+      border-bottom-color: var(--terra);
+    }
+
+    .c-content { background: var(--parchment); padding: 20px 24px; }
+    .c-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .c-section-card {
+      background: white;
+      border: 1px solid rgba(26,60,40,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .c-section-head {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(26,60,40,0.08);
+      background: rgba(26,60,40,0.03);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .c-section-icon { width: 10px; height: 10px; border-radius: 2px; background: var(--terra); }
+    .c-section-icon.f { background: var(--forest); }
+    .c-section-icon.a { background: var(--amber); }
+    .c-section-title { font-size: 10px; font-weight: 700; color: var(--forest); letter-spacing: 0.06em; text-transform: uppercase; }
+    .c-section-body { padding: 12px 14px; }
+    .c-kv-row { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; border-bottom: 1px dashed rgba(0,0,0,0.06); }
+    .c-kv-row:last-child { border-bottom: none; }
+    .c-kv-key { color: rgba(26,60,40,0.55); }
+    .c-kv-val { font-weight: 600; color: var(--forest); }
+
+    /* ── Comparison table ──────────────────────────────── */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 32px;
+    }
+    .compare-table th {
+      background: var(--forest);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .compare-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .compare-table tr:nth-child(even) td { background: rgba(242,232,213,0.4); }
+    .tick { color: var(--forest); font-weight: 700; }
+    .tick-t { color: var(--terra); font-weight: 700; }
+    .dash { color: #aaa; }
+
+    /* ── Nav crumb ─────────────────────────────────────── */
+    .crumb { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26,60,40,0.45); margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ── Master heading ──────────────────────────────── -->
+  <p class="crumb">Listing Detail Page · Rebrand Brainstorm · BuildTrust</p>
+  <h1 class="page-title">Three design directions</h1>
+  <p class="page-sub">Visual companion — choose an approach before any code changes</p>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- APPROACH A                                         -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background: rgba(26,60,40,0.1); color: var(--forest);">A — Warm Editorial</span>
+    <h2 class="approach-title" style="color: var(--forest);">Warm Editorial</h2>
+    <p class="approach-desc">Full parchment background throughout — like a premium property brochure. Fraunces serif display font for price and title. Terracotta accents on tabs and icons. The image gallery is an immersive horizontal strip. Calm and trustworthy — matches the My Listings dashboard header treatment exactly.</p>
+
+    <div class="preview-shell">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-dot active-g"></div>
+        <div class="sidebar-dot active"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+      </div>
+
+      <div class="a-main">
+        <!-- Sticky header -->
+        <div class="a-header">
+          <div class="a-header-left">
+            <div class="a-back-btn"><div class="a-back-arrow"></div></div>
+            <div>
+              <div class="a-header-title">Luxury Villa — Sandton</div>
+              <div class="a-header-sub">listing details · ref #bt-00024</div>
+            </div>
+          </div>
+          <div class="a-ai-btn">
+            <span style="font-size:12px;">✦</span>
+            <span>AI Assistant</span>
+            <div class="a-ai-dot"></div>
+          </div>
+        </div>
+
+        <!-- Gallery strip (3-column grid) -->
+        <div class="a-gallery">
+          <div class="a-gallery-main">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#6a8a72,#4a6a52);"></div>
+            <div class="a-gallery-overlay">
+              <span class="pill pill-active">Active</span>
+              <span class="pill pill-terra">For Sale</span>
+            </div>
+          </div>
+          <div class="a-gallery-sm" style="background:#7a9a82;"></div>
+          <div class="a-gallery-sm" style="background:#5a7a62;"></div>
+          <div class="a-gallery-sm" style="background:#8aaa92;"></div>
+          <div class="a-gallery-sm" style="background:#6a8272;"></div>
+        </div>
+
+        <!-- Price + address + specs -->
+        <div class="a-info-strip">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="a-price">R 4,500,000</div>
+              <div class="a-address">
+                <div class="a-pin-icon"></div>
+                <span>12 Acacia Drive, Sandton, Gauteng</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              <div style="font-size:10px;color:rgba(26,60,40,0.5);font-family:var(--font-m);letter-spacing:0.08em;text-transform:uppercase;">Listed by</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;">PB</div>
+                <div>
+                  <div style="font-size:11px;font-weight:600;color:var(--forest);">Piyush Bechani</div>
+                  <div style="font-size:9px;color:rgba(26,60,40,0.45);">Bechani Enterprises</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="a-specs-row">
+            <div class="a-spec"><div class="a-spec-val">4</div><div class="a-spec-lbl">Beds</div></div>
+            <div class="a-spec"><div class="a-spec-val">3</div><div class="a-spec-lbl">Baths</div></div>
+            <div class="a-spec"><div class="a-spec-val">320</div><div class="a-spec-lbl">m²</div></div>
+            <div class="a-spec"><div class="a-spec-val">12</div><div class="a-spec-lbl">Days on market</div></div>
+            <div class="a-spec"><div class="a-spec-val">47</div><div class="a-spec-lbl">Views</div></div>
+            <div class="a-spec"><div class="a-spec-val">3</div><div class="a-spec-lbl">Enquiries</div></div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="a-tab-bar">
+          <div class="a-tab active">Details</div>
+          <div class="a-tab">Viewings</div>
+          <div class="a-tab">Enquiries</div>
+          <div class="a-tab">Open Houses</div>
+          <div class="a-tab">Documents</div>
+          <div class="a-tab">Leads</div>
+          <div class="a-tab">Offers</div>
+          <div class="a-tab" style="color:rgba(26,60,40,0.3);font-style:italic;">+ 7 more</div>
+        </div>
+
+        <!-- Content cards -->
+        <div class="a-content">
+          <div class="a-section-card">
+            <div class="a-section-head">
+              <div class="a-section-icon g"></div>
+              <span class="a-section-title">Property Details</span>
+            </div>
+            <div class="a-section-body">
+              <div class="a-kv-row"><span class="a-kv-key">Type</span><span class="a-kv-val">Residential House</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">Listing Ref</span><span class="a-kv-val">BT-00024</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">Title Deed</span><span class="a-kv-val" style="color:var(--egreen);display:flex;align-items:center;gap:3px;">✓ Verified</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">Occupancy</span><span class="a-kv-val">Vacant</span></div>
+            </div>
+          </div>
+          <div class="a-section-card">
+            <div class="a-section-head">
+              <div class="a-section-icon"></div>
+              <span class="a-section-title">Location</span>
+            </div>
+            <div class="a-section-body">
+              <div class="a-kv-row"><span class="a-kv-key">Suburb</span><span class="a-kv-val">Sandton</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">City</span><span class="a-kv-val">Johannesburg</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">Province</span><span class="a-kv-val">Gauteng</span></div>
+              <div class="a-kv-row"><span class="a-kv-key">Postal Code</span><span class="a-kv-val">2196</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /preview-shell -->
+  </div>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- APPROACH B                                         -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background: rgba(12,13,16,0.08); color: var(--carbon);">B — Dark Carbon Hero</span>
+    <h2 class="approach-title" style="color: var(--carbon);">Dark Carbon Hero</h2>
+    <p class="approach-desc">The image and key property data live in a dramatic carbon-dark hero section — matching the homepage dashboard panel aesthetic. The price and address display in white Fraunces against near-black. Below the hero, the tab content flips to warm parchment. Electric-green stats reinforce the premium trust signal. High contrast, editorial luxury.</p>
+
+    <div class="preview-shell">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-dot active-g"></div>
+        <div class="sidebar-dot active"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+      </div>
+
+      <div class="b-hero">
+        <!-- Header (dark) -->
+        <div class="b-header">
+          <div class="b-header-left">
+            <div class="b-back-btn"><div class="b-back-arrow"></div></div>
+            <div>
+              <div class="b-header-title">Luxury Villa — Sandton</div>
+              <div class="b-header-sub">ref #bt-00024 · active listing</div>
+            </div>
+          </div>
+          <div class="b-ai-btn">
+            <span style="font-size:12px;">✦</span>
+            <span>AI Assistant</span>
+          </div>
+        </div>
+
+        <!-- Full-bleed dark image zone with overlay data -->
+        <div class="b-gallery-zone">
+          <div class="b-gallery-main">
+            <div style="position:absolute;inset:0;background:linear-gradient(135deg,#2a3a32,#1a2820);"></div>
+            <!-- 2 thumbnail inset top right -->
+            <div class="b-gallery-grid-inset">
+              <div class="b-gi"></div>
+              <div class="b-gi"></div>
+            </div>
+          </div>
+          <div class="b-overlay">
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <span class="pill pill-active">Active</span>
+              <span class="pill pill-terra">For Sale</span>
+            </div>
+            <div class="b-price">R 4,500,000</div>
+            <div class="b-address">
+              <div class="b-pin"></div>
+              <span>12 Acacia Drive, Sandton, Gauteng</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats strip (dark) -->
+        <div class="b-stats-strip">
+          <div class="b-stat"><div class="b-stat-val">4</div><div class="b-stat-lbl">Beds</div></div>
+          <div class="b-stat"><div class="b-stat-val">3</div><div class="b-stat-lbl">Baths</div></div>
+          <div class="b-stat"><div class="b-stat-val">320m²</div><div class="b-stat-lbl">Floor Area</div></div>
+          <div class="b-stat"><div class="b-stat-val" style="color:var(--egreen);">12</div><div class="b-stat-lbl">Days on market</div></div>
+          <div class="b-stat"><div class="b-stat-val" style="color:var(--egreen);">47</div><div class="b-stat-lbl">Views</div></div>
+          <div class="b-stat"><div class="b-stat-val" style="color:var(--terra);">3</div><div class="b-stat-lbl">Enquiries</div></div>
+        </div>
+
+        <!-- Tab bar (dark) -->
+        <div class="b-tab-bar">
+          <div class="b-tab active">Details</div>
+          <div class="b-tab">Viewings</div>
+          <div class="b-tab">Enquiries</div>
+          <div class="b-tab">Open Houses</div>
+          <div class="b-tab">Documents</div>
+          <div class="b-tab">Leads</div>
+          <div class="b-tab">Offers</div>
+          <div class="b-tab" style="color:rgba(255,255,255,0.2);font-style:italic;">+ 7 more</div>
+        </div>
+
+        <!-- Parchment content zone -->
+        <div class="b-content-zone">
+          <div class="b-section-card">
+            <div class="b-section-head">
+              <div class="b-section-icon"></div>
+              <span class="b-section-title">Property Details</span>
+            </div>
+            <div class="b-section-body">
+              <div class="b-kv-row"><span class="b-kv-key">Type</span><span class="b-kv-val">Residential House</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Ref</span><span class="b-kv-val">BT-00024</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Deed</span><span class="b-kv-val" style="color:var(--forest);">✓ Verified</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Status</span><span class="b-kv-val">Active</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Suburb</span><span class="b-kv-val">Sandton</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">City</span><span class="b-kv-val">Johannesburg</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Province</span><span class="b-kv-val">Gauteng</span></div>
+              <div class="b-kv-row"><span class="b-kv-key">Listed</span><span class="b-kv-val">12 June 2025</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /preview-shell -->
+  </div>
+
+  <hr class="section-divider" />
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- APPROACH C                                         -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background: rgba(26,60,40,0.1); color: var(--forest);">C — Forest Command</span>
+    <h2 class="approach-title" style="color: var(--forest);">Forest Command Centre</h2>
+    <p class="approach-desc">A commanding forest-green header band holds the page title, property image, price, specs, and agent badge — like a professional property management dashboard. The whole top third is forest-colored; parchment picks up below. Uses the same visual language as the sidebar. Tabs sit on the forest band with white/terracotta active state — the most "management tool" feeling of the three.</p>
+
+    <div class="preview-shell">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-dot active-g"></div>
+        <div class="sidebar-dot active"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+        <div class="sidebar-dot"></div>
+      </div>
+
+      <div class="c-main">
+        <!-- Forest hero band -->
+        <div class="c-hero-band">
+          <!-- Header row -->
+          <div class="c-header">
+            <div class="c-header-left">
+              <div class="c-back-btn"><div class="c-back-arrow"></div></div>
+              <div class="c-header-title-wrap">
+                <div class="c-eyebrow">My Listings · Agent Dashboard</div>
+                <div class="c-header-title">Modern 4-Bed Villa with Pool</div>
+              </div>
+            </div>
+            <div class="c-ai-btn">
+              <span style="font-size:12px;">✦</span>
+              <span>AI Assistant</span>
+              <div class="a-ai-dot"></div>
+            </div>
+          </div>
+
+          <!-- Forest content: image left + data right -->
+          <div class="c-forest-content">
+            <div class="c-image-col">
+              <div style="width:100%;height:190px;background:linear-gradient(135deg,#2d4a38,#1a3228);border-radius:10px 10px 0 0;overflow:hidden;position:relative;">
+                <div style="position:absolute;inset:0;background:linear-gradient(135deg,#4a6a50,#2d4a38);"></div>
+              </div>
+              <div class="c-badges" style="top:8px;left:8px;">
+                <span class="pill pill-active">Active</span>
+                <span class="pill pill-terra">For Sale</span>
+              </div>
+            </div>
+
+            <div class="c-price-col">
+              <div class="c-price-eyebrow">Listing Price</div>
+              <div class="c-price">R 4,500,000</div>
+              <div class="c-addr">
+                <div class="c-pin"></div>
+                <span>12 Acacia Drive, Sandton</span>
+              </div>
+
+              <div class="c-metric-grid">
+                <div class="c-metric"><div class="c-metric-val">4</div><div class="c-metric-lbl">Bedrooms</div></div>
+                <div class="c-metric"><div class="c-metric-val">3</div><div class="c-metric-lbl">Bathrooms</div></div>
+                <div class="c-metric"><div class="c-metric-val g">47</div><div class="c-metric-lbl">Views</div></div>
+                <div class="c-metric"><div class="c-metric-val a">3</div><div class="c-metric-lbl">Enquiries</div></div>
+              </div>
+
+              <div class="c-agent-row">
+                <div class="c-avatar">PB</div>
+                <div>
+                  <div class="c-agent-name">Piyush Bechani</div>
+                  <div class="c-agent-sub">Bechani Enterprises · Agent</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs on forest band -->
+          <div class="c-tab-bar">
+            <div class="c-tab active">Details</div>
+            <div class="c-tab">Viewings</div>
+            <div class="c-tab">Enquiries</div>
+            <div class="c-tab">Open Houses</div>
+            <div class="c-tab">Documents</div>
+            <div class="c-tab">Leads</div>
+            <div class="c-tab">Offers</div>
+            <div class="c-tab" style="color:rgba(255,255,255,0.2);font-style:italic;">+ 7 more</div>
+          </div>
+        </div>
+
+        <!-- Parchment content -->
+        <div class="c-content">
+          <div class="c-content-grid">
+            <div class="c-section-card">
+              <div class="c-section-head">
+                <div class="c-section-icon f"></div>
+                <span class="c-section-title">Property Details</span>
+              </div>
+              <div class="c-section-body">
+                <div class="c-kv-row"><span class="c-kv-key">Type</span><span class="c-kv-val">Residential House</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Ref</span><span class="c-kv-val">BT-00024</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Title Deed</span><span class="c-kv-val" style="color:var(--forest);">✓ Verified</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Occupancy</span><span class="c-kv-val">Vacant</span></div>
+              </div>
+            </div>
+            <div class="c-section-card">
+              <div class="c-section-head">
+                <div class="c-section-icon a"></div>
+                <span class="c-section-title">Market Metrics</span>
+              </div>
+              <div class="c-section-body">
+                <div class="c-kv-row"><span class="c-kv-key">Days on market</span><span class="c-kv-val">12</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Total views</span><span class="c-kv-val">47</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Viewings booked</span><span class="c-kv-val">2</span></div>
+                <div class="c-kv-row"><span class="c-kv-key">Open houses</span><span class="c-kv-val">1 scheduled</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /preview-shell -->
+  </div>
+
+  <hr class="section-divider" />
+
+  <!-- ── Comparison table ──────────────────────────── -->
+  <h2 class="approach-title" style="color:var(--forest);margin-bottom:6px;">Approach comparison</h2>
+  <p class="approach-desc" style="margin-bottom:0;">Reference all three directions at a glance before choosing.</p>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Aspect</th>
+        <th>A — Warm Editorial</th>
+        <th>B — Dark Carbon Hero</th>
+        <th>C — Forest Command</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Page background</strong></td>
+        <td>Parchment throughout</td>
+        <td>Carbon hero → Parchment</td>
+        <td>Forest hero → Parchment</td>
+      </tr>
+      <tr>
+        <td><strong>Header</strong></td>
+        <td>Parchment sticky bar</td>
+        <td>Carbon sticky bar</td>
+        <td>Forest sticky bar</td>
+      </tr>
+      <tr>
+        <td><strong>Price typography</strong></td>
+        <td>Fraunces, Forest green</td>
+        <td>Fraunces, White on carbon</td>
+        <td>Fraunces, White on forest</td>
+      </tr>
+      <tr>
+        <td><strong>Active tab indicator</strong></td>
+        <td class="tick-t">Terracotta underline</td>
+        <td>Electric green underline</td>
+        <td class="tick-t">Terracotta underline</td>
+      </tr>
+      <tr>
+        <td><strong>Matches sidebar brand</strong></td>
+        <td class="tick">✓ Parchment bg matches</td>
+        <td class="tick">✓ Carbon matches homepage dark panel</td>
+        <td class="tick">✓ Forest header = sidebar color</td>
+      </tr>
+      <tr>
+        <td><strong>Matches My Listings dashboard</strong></td>
+        <td class="tick">✓ Identical parchment bg</td>
+        <td class="dash">○ Different tone (darker)</td>
+        <td class="tick">✓ Forest header = dashboard header</td>
+      </tr>
+      <tr>
+        <td><strong>Drama / wow factor</strong></td>
+        <td>Low — calm editorial</td>
+        <td class="tick">High — magazine cover</td>
+        <td>Medium — executive tool</td>
+      </tr>
+      <tr>
+        <td><strong>Diaspora trust feeling</strong></td>
+        <td class="tick">✓ Warm, approachable</td>
+        <td class="tick">✓ Premium, data-forward</td>
+        <td class="tick">✓ Authoritative, professional</td>
+      </tr>
+      <tr>
+        <td><strong>Image prominence</strong></td>
+        <td>2/3 width strip (good)</td>
+        <td class="tick">Full width bleed (best)</td>
+        <td>Side panel (reduced)</td>
+      </tr>
+      <tr>
+        <td><strong>Tab bar feel</strong></td>
+        <td>Cream bg, terra active</td>
+        <td>Carbon bg, egreen active</td>
+        <td>Forest bg, terra/white active</td>
+      </tr>
+      <tr>
+        <td><strong>Implementation effort</strong></td>
+        <td class="tick">Low — color + font swaps</td>
+        <td>Medium — restructure hero</td>
+        <td>Medium — restructure header</td>
+      </tr>
+      <tr>
+        <td><strong>Recommended for</strong></td>
+        <td>Most conservative rebrand</td>
+        <td>Maximum visual impact</td>
+        <td>Cohesion with overall app chrome</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:40px;padding:20px 24px;background:rgba(26,60,40,0.05);border:1px solid rgba(26,60,40,0.12);border-radius:12px;">
+    <div style="font-family:var(--font-m);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--forest);margin-bottom:8px;">Notes for all approaches</div>
+    <ul style="list-style:disc;padding-left:18px;font-size:11px;color:#3a3a30;line-height:1.8;">
+      <li>Every approach replaces <code>bg-gray-50</code>, <code>border-gray-200</code>, and <code>text-blue-600</code> — the three main off-brand offenders</li>
+      <li>AI Assistant button becomes <code>bg-forest text-egreen</code> or <code>border-egreen/30 text-egreen</code> — no more indigo gradient</li>
+      <li>Status badge: <code>bg-egreen text-carbon</code>; Sale type badge: <code>bg-terra text-white</code></li>
+      <li>SectionCard icons: <code>text-[#1A3C28]</code> (forest) instead of <code>text-blue-600</code>; section header strip: <code>bg-forest/4</code> instead of <code>bg-gray-50/70</code></li>
+      <li>All heading text switches to <code>font-fraunces</code> via <code>style&#123;&#123;fontFamily:'var(--font-fraunces)'&#125;&#125;</code></li>
+      <li>OverflowTabBar overflow dropdown: dark card <code>bg-forest text-white</code> rather than generic popover</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

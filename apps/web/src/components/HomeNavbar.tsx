@@ -107,7 +107,7 @@ export default function HomeNavbar() {
     clearAuthSession();
     setIsAuthenticated(false);
     setCurrentUser(null);
-    router.push('/');
+    window.location.href = '/';
   };
 
   return (

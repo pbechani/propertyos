@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Management – Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest: #1A3C28;
+    --forest-light: #2D5A40;
+    --forest-muted: #3A5E48;
+    --terracotta: #C4562A;
+    --terracotta-hover: #A84422;
+    --parchment: #F2E8D5;
+    --parchment-dark: #E8D9BC;
+    --egreen: #00E87A;
+    --sidebar-border: rgba(242,232,213,0.12);
+    --card-bg: #FFFFFF;
+    --body-bg: #F2E8D5;
+    --text-dark: #1A3C28;
+    --text-muted: #6B8F7A;
+    --border: rgba(26,60,40,0.12);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+    position: relative;
+  }
+
+  /* ── Sidebar ───────────────────────────────────── */
+  .sidebar {
+    width: 248px;
+    min-height: 100vh;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--terracotta);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-icon svg { color: #fff; }
+
+  .logo-text {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.2px;
+  }
+
+  .sidebar-section {
+    padding: 12px 8px 4px;
+  }
+
+  .sidebar-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(242,232,213,0.4);
+    padding: 0 8px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: rgba(242,232,213,0.75);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 1px;
+    text-decoration: none;
+  }
+
+  .sidebar-item:hover {
+    background: rgba(242,232,213,0.08);
+    color: var(--parchment);
+  }
+
+  .sidebar-item.active {
+    background: rgba(0,232,122,0.12);
+    color: var(--egreen);
+  }
+
+  .sidebar-item svg {
+    width: 15px; height: 15px;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .sidebar-item.active svg { opacity: 1; color: var(--egreen); }
+
+  .sidebar-item-text { flex: 1; }
+
+  .badge-count {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--terracotta);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-role-badge {
+    margin: 0 8px 12px;
+    padding: 8px 12px;
+    background: rgba(242,232,213,0.06);
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 8px;
+  }
+
+  .role-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.4);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .role-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--parchment);
+    margin-top: 2px;
+  }
+
+  .role-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 4px;
+    background: rgba(196,86,42,0.2);
+    color: #E8A080;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── Main content ──────────────────────────────── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* ── Page header ───────────────────────────────── */
+  .page-header {
+    background: var(--forest);
+    padding: 32px 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: var(--terracotta);
+    opacity: 0.08;
+    border-radius: 50%;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 10px; left: 40%;
+    width: 160px; height: 160px;
+    background: var(--egreen);
+    opacity: 0.04;
+    border-radius: 50%;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-title-group {}
+
+  .header-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--terracotta);
+    margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .header-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+  }
+
+  .header-subtitle {
+    font-size: 13px;
+    color: rgba(242,232,213,0.55);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative; z-index: 1;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .btn svg { width: 15px; height: 15px; }
+
+  .btn-primary {
+    background: var(--terracotta);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--terracotta-hover); }
+
+  .btn-ghost {
+    background: rgba(242,232,213,0.08);
+    color: rgba(242,232,213,0.8);
+    border: 1px solid rgba(242,232,213,0.14);
+  }
+
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); color: var(--parchment); }
+
+  /* ── KPI strip ─────────────────────────────────── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 0;
+    position: relative; z-index: 1;
+    padding-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgba(242,232,213,0.45);
+    margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .kpi-value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--parchment);
+    line-height: 1;
+  }
+
+  .kpi-delta {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--egreen);
+    margin-top: 4px;
+  }
+
+  .kpi-delta.down { color: #F87171; }
+
+  /* ── Tabs bar ──────────────────────────────────── */
+  .tabs-bar {
+    display: flex;
+    gap: 0;
+    background: var(--forest);
+    border-top: 1px solid rgba(242,232,213,0.08);
+    position: relative;
+    z-index: 2;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(242,232,213,0.5);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .tab:hover { color: rgba(242,232,213,0.85); }
+
+  .tab.active {
+    color: var(--parchment);
+    border-bottom-color: var(--terracotta);
+  }
+
+  .tab svg { width: 15px; height: 15px; }
+
+  .tab-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(196,86,42,0.25);
+    color: var(--terracotta);
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .tab.active .tab-badge {
+    background: var(--terracotta);
+    color: #fff;
+  }
+
+  /* ── Content area ──────────────────────────────── */
+  .content-area {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
+  }
+
+  /* ── Section titles ────────────────────────────── */
+  .section-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 14px;
+  }
+
+  .section-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  /* ── Cards ──────────────────────────────────────── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .card-body { padding: 20px; }
+
+  /* ── Lead row ───────────────────────────────────── */
+  .lead-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lead-row:last-child { border-bottom: none; }
+
+  .lead-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+    color: #fff;
+  }
+
+  .lead-name {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-dark);
+    line-height: 1.3;
+  }
+
+  .lead-meta {
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .lead-info { flex: 1; min-width: 0; }
+
+  .temp-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .temp-hot   { background: #FEE2E2; color: #DC2626; }
+  .temp-warm  { background: #FEF3C7; color: #D97706; }
+  .temp-cold  { background: #DBEAFE; color: #2563EB; }
+  .temp-nurture { background: #EDE9FE; color: #7C3AED; }
+
+  .stage-badge {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .stage-new       { background: #F3F4F6; color: #374151; }
+  .stage-contacted { background: #DBEAFE; color: #1D4ED8; }
+  .stage-qualified { background: #EDE9FE; color: #6D28D9; }
+  .stage-active    { background: #D1FAE5; color: #065F46; }
+
+  /* ── Pipeline columns ───────────────────────────── */
+  .pipeline-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .pipeline-col {
+    background: rgba(26,60,40,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 180px;
+  }
+
+  .pipeline-col-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .pipeline-col-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-dark);
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  .pipeline-count {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--forest);
+    color: var(--parchment);
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .pipeline-card {
+    margin: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  .pipeline-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  .pipcard-name {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .pipcard-value {
+    font-size: 12px; font-weight: 700;
+    color: var(--terracotta);
+    font-family: 'Fraunces', Georgia, serif;
+  }
+
+  .pipcard-meta {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Activity timeline ───────────────────────────── */
+  .activity-item {
+    display: flex; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-item:last-child { border-bottom: none; }
+
+  .activity-dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  .activity-dot svg { width: 13px; height: 13px; }
+
+  .activity-body { flex: 1; }
+
+  .activity-text { font-size: 12px; color: var(--text-dark); line-height: 1.45; }
+  .activity-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Grid layouts ───────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+  /* ── Mini chart bar ─────────────────────────────── */
+  .mini-chart { display: flex; align-items: flex-end; gap: 3px; height: 40px; margin-top: 10px; }
+  .mini-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: var(--terracotta); opacity: 0.25;
+    min-height: 4px;
+  }
+  .mini-bar.highlight { opacity: 0.9; }
+
+  /* ── Task list ──────────────────────────────────── */
+  .task-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+
+  .task-item:last-child { border-bottom: none; }
+
+  .task-check {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .task-text { font-size: 12px; color: var(--text-dark); flex: 1; }
+  .task-due  { font-size: 10px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+
+  .priority-high   { border-color: #EF4444; }
+  .priority-medium { border-color: #F59E0B; }
+  .priority-low    { border-color: #10B981; }
+
+  /* ── Analytics ──────────────────────────────────── */
+  .analytics-kpi-grid {
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .analytics-kpi {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+    text-align: center;
+  }
+
+  .analytics-val {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 24px; font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .analytics-lbl {
+    font-size: 11px; color: var(--text-muted); font-weight: 500;
+  }
+
+  .funnel-container { padding: 20px; }
+
+  .funnel-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .funnel-label { font-size: 11px; font-weight: 600; color: var(--text-dark); width: 110px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; background: rgba(26,60,40,0.06); border-radius: 4px; height: 22px; overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: 4px; background: var(--forest); display: flex; align-items: center; padding-left: 8px; }
+  .funnel-bar-text { font-size: 10px; font-weight: 700; color: rgba(242,232,213,0.8); font-family: 'IBM Plex Mono', monospace; }
+  .funnel-count { font-size: 11px; font-weight: 700; color: var(--text-muted); width: 24px; text-align: right; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Search & filter bar ────────────────────────── */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .search-box {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: var(--text-muted);
+    max-width: 320px;
+  }
+
+  .search-box svg { width: 14px; height: 14px; opacity: 0.5; }
+
+  .filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 12px; font-weight: 600; color: var(--text-dark);
+    cursor: pointer;
+  }
+
+  .filter-btn svg { width: 13px; height: 13px; }
+
+  /* ─── Tabs switcher ─────────────────────────────── */
+  #tab-dashboard { display: block; }
+  #tab-leads     { display: none; }
+  #tab-pipeline  { display: none; }
+  #tab-analytics { display: none; }
+
+  /* ── Annotations ─────────────────────────────────── */
+  .annotation {
+    display: inline-block;
+    background: #FFFBEB;
+    border: 1.5px dashed #F59E0B;
+    color: #92400E;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── View toggle ──────────────────────────────── */
+  .view-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .view-toggle-btn {
+    padding: 6px 10px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .view-toggle-btn svg { width: 13px; height: 13px; }
+  .view-toggle-btn.active {
+    background: var(--forest);
+    color: var(--parchment);
+  }
+  #leads-list-view { display: block; }
+  #leads-grid-view  { display: none; }
+
+  /* ── Lead card grid ───────────────────────────── */
+  .lead-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+  .lead-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s;
+  }
+  .lead-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translateY(-1px); }
+  .lead-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .lead-card-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .lead-card-name { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+  .lead-card-email { font-size: 10px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+  .lead-card-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .lead-card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .lead-card-budget { font-family: 'Fraunces', serif; font-weight: 700; color: var(--terracotta); font-size: 13px; }
+  .lead-card-last { font-size: 10px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Pipeline list / kanban toggle ─────────────── */
+  #pipeline-kanban-view { display: block; }
+  #pipeline-list-view   { display: none; }
+
+  /* ── Tasks tab ──────────────────────────────────── */
+  #tab-tasks { display: none; }
+  .filter-btn.filter-active { background: var(--forest); color: var(--parchment); border-color: var(--forest); }
+  .task-group-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); font-family: 'IBM Plex Mono', monospace;
+    padding: 10px 20px 6px; border-top: 1px solid var(--border);
+  }
+  .task-group-label:first-child { border-top: none; }
+  .task-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 20px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .task-row:hover { background: #FAFAF8; }
+  .task-row-chk {
+    width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .task-row-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .task-row-body { flex: 1; min-width: 0; }
+  .task-row-title { font-size: 13px; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-row-lead { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .task-row-due { font-size: 11px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; flex-shrink: 0; }
+  .task-row-due.overdue { color: #DC2626; font-weight: 700; }
+  .task-row-due.today { color: #D97706; font-weight: 700; }
+  .task-row-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+  .task-row:hover .task-row-actions { opacity: 1; }
+  .task-act-btn {
+    width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .task-act-btn svg { width: 12px; height: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SIDEBAR -->
+<!-- ══════════════════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="logo-text">PropertyOS</span>
+  </div>
+
+  <!-- company context -->
+  <div style="padding: 10px 8px;">
+    <div class="sidebar-role-badge">
+      <div class="role-label">Current Company</div>
+      <div class="role-name">Horizon Realty</div>
+      <span class="role-tag">Agent</span>
+    </div>
+  </div>
+
+  <!-- Agent Cockpit section -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Agent Cockpit</div>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="sidebar-item-text">Agent Dashboard</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="sidebar-item-text">My Listings</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span class="sidebar-item-text">Listings</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4l1.5 3h3.5l-2.8 2 1 3.5L12 11l-3.2 1.5 1-3.5L7 7h3.5z"/></svg>
+      <span class="sidebar-item-text">My Sales</span>
+    </a>
+
+    <!-- ★ LEAD MANAGEMENT — single menu item, navigates to the new screen -->
+    <a class="sidebar-item active" href="#" onclick="return false;">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="sidebar-item-text">Lead Management</span>
+      <span class="badge-count">24</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="sidebar-item-text">Safety</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sidebar-item-text">Analytics</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/><path d="M3 14v1a9 9 0 0018 0v-1"/></svg>
+      <span class="sidebar-item-text">AI Intelligence</span>
+    </a>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MAIN AREA -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Page header ────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-top">
+      <div class="header-title-group">
+        <div class="header-eyebrow">Agent Cockpit &rsaquo; Lead Management</div>
+        <h1 class="header-title">Lead Management</h1>
+        <p class="header-subtitle">Track, nurture, and convert your pipeline — all in one place.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15" height="15"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          Filters
+        </button>
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+        <button class="btn btn-primary">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Lead
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI strip inside header -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Leads</div>
+        <div class="kpi-value">124</div>
+        <div class="kpi-delta">↑ 12 this week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Hot Leads</div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-delta">↑ 3 new today</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pipeline Value</div>
+        <div class="kpi-value">R 4.2M</div>
+        <div class="kpi-delta">↑ 8% vs last month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Conversion Rate</div>
+        <div class="kpi-value">18%</div>
+        <div class="kpi-delta down">↓ 2% vs target</div>
+      </div>
+    </div>
+
+    <!-- Tabs bar -->
+    <div class="tabs-bar">
+      <div class="tab active" onclick="showTab('dashboard', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="tab" onclick="showTab('leads', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        All Leads
+        <span class="tab-badge">124</span>
+      </div>
+      <div class="tab" onclick="showTab('pipeline', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="17" y="5" width="4" height="16"/></svg>
+        Pipeline
+      </div>
+      <div class="tab" onclick="showTab('analytics', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+      </div>
+      <div class="tab" onclick="showTab('tasks', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Tasks
+        <span class="tab-badge" style="background:#DC2626;">5</span>
+      </div>
+    </div>
+  </div><!-- /page-header -->
+
+  <!-- ══════════════════ TAB CONTENT ══════════════════ -->
+  <div class="content-area">
+
+    <!-- ─────────── TAB: DASHBOARD ─────────────────── -->
+    <div id="tab-dashboard">
+      <div class="grid-2" style="margin-bottom:20px;">
+
+        <!-- Recent leads -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Leads</span>
+            <span class="annotation">Live data</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px;">
+            <!-- row -->
+            <div class="lead-row">
+              <div class="lead-avatar" style="background:#1A3C28;">TM</div>
+              <div class="lead-info">
+                <div class="lead-name">Themba Mokoena</div>
+                <div class="lead-meta">Buyer &middot; Sandton &middot; R 1.2M–R 1.8M</div>
+              </div>
+              <span class="temp-badge temp-hot">🔥 Hot</span>
+            </div>
+            <div class="lead-row">
+              <div class="lead-avatar" style="background:#C4562A;">SK</div>
+              <div class="lead-info">
+                <div class="lead-name">Sarah Khumalo</div>
+                <div class="lead-meta">Investor &middot; Cape Town &middot; R 3M+</div>
+              </div>
+              <span class="temp-badge temp-warm">🌡 Warm</span>
+            </div>
+            <div class="lead-row">
+              <div class="lead-avatar" style="background:#2D5A40;">JV</div>
+              <div class="lead-info">
+                <div class="lead-name">Jayden van der Berg</div>
+                <div class="lead-meta">Seller &middot; Johannesburg &middot; R 850K</div>
+              </div>
+              <span class="temp-badge temp-cold">❄ Cold</span>
+            </div>
+            <div class="lead-row">
+              <div class="lead-avatar" style="background:#7C3AED;">NP</div>
+              <div class="lead-info">
+                <div class="lead-name">Nomsa Petersen</div>
+                <div class="lead-meta">Renter &middot; Pretoria &middot; R 12K/mo</div>
+              </div>
+              <span class="temp-badge temp-nurture">🌿 Nurture</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pending Tasks</span>
+            <span style="font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">5 due today</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px;">
+            <div class="task-item">
+              <div class="task-check priority-high"></div>
+              <div class="task-text">Call Themba Mokoena re: Sandton viewing</div>
+              <div class="task-due">Today 10:00</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check priority-high"></div>
+              <div class="task-text">Send offer docs to Sarah Khumalo</div>
+              <div class="task-due">Today 14:00</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check priority-medium"></div>
+              <div class="task-text">Follow up: Jayden van der Berg valuation</div>
+              <div class="task-due">Tomorrow</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check priority-low"></div>
+              <div class="task-text">Schedule Nomsa Petersen site visit</div>
+              <div class="task-due">Mon, 7 Apr</div>
+            </div>
+            <div class="task-item">
+              <div class="task-check priority-medium"></div>
+              <div class="task-text">Update OTP status for Deal #1041</div>
+              <div class="task-due">Overdue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Activity feed -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Activity</span>
+          </div>
+          <div class="card-body" style="padding:12px 20px;">
+            <div class="activity-item">
+              <div class="activity-dot" style="background:#FEE2E2;">
+                <svg fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.66 19.79 19.79 0 01.1 1.09 2 2 0 012.07.07h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.29 6.29l1-1.41a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+              </div>
+              <div class="activity-body">
+                <div class="activity-text">Called <strong>Themba Mokoena</strong> — confirmed viewing interest</div>
+                <div class="activity-time">2 hours ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:#DBEAFE;">
+                <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <div class="activity-body">
+                <div class="activity-text">Sent property brochure to <strong>Sarah Khumalo</strong></div>
+                <div class="activity-time">4 hours ago</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:#D1FAE5;">
+                <svg fill="none" stroke="#065F46" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              </div>
+              <div class="activity-body">
+                <div class="activity-text"><strong>Nomsa Petersen</strong> moved to <em>Qualified</em> stage</div>
+                <div class="activity-time">Yesterday</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:#F3F4F6;">
+                <svg fill="none" stroke="#374151" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <div class="activity-body">
+                <div class="activity-text">Note added on <strong>Jayden van der Berg</strong>: awaiting valuation report</div>
+                <div class="activity-time">Yesterday</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversion funnel mini -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Conversion Funnel</span>
+          </div>
+          <div class="funnel-container">
+            <div class="funnel-row">
+              <span class="funnel-label">New</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;"><span class="funnel-bar-text">41</span></div></div>
+              <span class="funnel-count">41</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Contacted</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:75%;"><span class="funnel-bar-text">31</span></div></div>
+              <span class="funnel-count">31</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Qualified</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:50%;background:#2D5A40;"><span class="funnel-bar-text">21</span></div></div>
+              <span class="funnel-count">21</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Active</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:30%;background:#C4562A;"><span class="funnel-bar-text">12</span></div></div>
+              <span class="funnel-count">12</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Under Contract</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:18%;background:#7C3AED;"><span class="funnel-bar-text">7</span></div></div>
+              <span class="funnel-count">7</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Closed 🏆</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:8%;background:#00795A;"><span class="funnel-bar-text">3</span></div></div>
+              <span class="funnel-count">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-dashboard -->
+
+    <!-- ─────────── TAB: ALL LEADS ──────────────────── -->
+    <div id="tab-leads">
+      <div class="toolbar">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search leads by name, email, phone…
+        </div>
+        <button class="filter-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Stage
+        </button>
+        <button class="filter-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Temperature
+        </button>
+        <button class="filter-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Date Range
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Leads <span style="font-size:12px;font-weight:500;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">(124)</span></span>
+          <div class="view-toggle">
+            <button class="view-toggle-btn active" id="vtbtn-list" onclick="toggleLeadsView('list')" title="List view">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              List
+            </button>
+            <button class="view-toggle-btn" id="vtbtn-grid" onclick="toggleLeadsView('grid')" title="Grid view">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Grid
+            </button>
+          </div>
+        </div>
+        <div id="leads-list-view" style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);background:#FAFAF8;">
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Name</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Type</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Temp</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Stage</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Budget</th>
+                <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Last Contact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Themba Mokoena</div><div style="font-size:10px;color:var(--text-muted);margin-top:1px;">themba@example.com</div></td>
+                <td style="padding:12px 16px;"><span style="font-size:10px;font-weight:600;background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">BUYER</span></td>
+                <td style="padding:12px 16px;"><span class="temp-badge temp-hot">🔥 Hot</span></td>
+                <td style="padding:12px 16px;"><span class="stage-badge stage-active">Active</span></td>
+                <td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 1.2M – 1.8M</td>
+                <td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">2 hrs ago</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Sarah Khumalo</div><div style="font-size:10px;color:var(--text-muted);margin-top:1px;">sarah.k@example.com</div></td>
+                <td style="padding:12px 16px;"><span style="font-size:10px;font-weight:600;background:#EDE9FE;color:#6D28D9;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">INVESTOR</span></td>
+                <td style="padding:12px 16px;"><span class="temp-badge temp-warm">🌡 Warm</span></td>
+                <td style="padding:12px 16px;"><span class="stage-badge stage-qualified">Qualified</span></td>
+                <td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 3M+</td>
+                <td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">4 hrs ago</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Jayden van der Berg</div><div style="font-size:10px;color:var(--text-muted);margin-top:1px;">jayden@example.com</div></td>
+                <td style="padding:12px 16px;"><span style="font-size:10px;font-weight:600;background:#D1FAE5;color:#065F46;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">SELLER</span></td>
+                <td style="padding:12px 16px;"><span class="temp-badge temp-cold">❄ Cold</span></td>
+                <td style="padding:12px 16px;"><span class="stage-badge stage-contacted">Contacted</span></td>
+                <td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 850K</td>
+                <td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">Yesterday</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Nomsa Petersen</div><div style="font-size:10px;color:var(--text-muted);margin-top:1px;">nomsa@example.com</div></td>
+                <td style="padding:12px 16px;"><span style="font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">RENTER</span></td>
+                <td style="padding:12px 16px;"><span class="temp-badge temp-nurture">🌿 Nurture</span></td>
+                <td style="padding:12px 16px;"><span class="stage-badge stage-new">New</span></td>
+                <td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 12K/mo</td>
+                <td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">2 days ago</td>
+              </tr>
+            </tbody>
+          </table>
+        </div><!-- /leads-list-view -->
+
+        <!-- ── Card grid view (hidden by default) ── -->
+        <div id="leads-grid-view" class="lead-card-grid" style="display:none;">
+
+          <!-- Card 1 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#1A3C28;">TM</div>
+                <div>
+                  <div class="lead-card-name">Themba Mokoena</div>
+                  <div class="lead-card-email">themba@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-hot">🔥 Hot</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">BUYER</span>
+              <span class="stage-badge stage-active">Active</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 1.2M – 1.8M</span>
+              <span class="lead-card-last">2 hrs ago</span>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#C4562A;">SK</div>
+                <div>
+                  <div class="lead-card-name">Sarah Khumalo</div>
+                  <div class="lead-card-email">sarah.k@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-warm">🌡 Warm</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#EDE9FE;color:#6D28D9;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">INVESTOR</span>
+              <span class="stage-badge stage-qualified">Qualified</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 3M+</span>
+              <span class="lead-card-last">4 hrs ago</span>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#2D5A40;">JV</div>
+                <div>
+                  <div class="lead-card-name">Jayden van der Berg</div>
+                  <div class="lead-card-email">jayden@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-cold">❄ Cold</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#D1FAE5;color:#065F46;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">SELLER</span>
+              <span class="stage-badge stage-contacted">Contacted</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 850K</span>
+              <span class="lead-card-last">Yesterday</span>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#7C3AED;">NP</div>
+                <div>
+                  <div class="lead-card-name">Nomsa Petersen</div>
+                  <div class="lead-card-email">nomsa@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-nurture">🌿 Nurture</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">RENTER</span>
+              <span class="stage-badge stage-new">New</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 12K/mo</span>
+              <span class="lead-card-last">2 days ago</span>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#0F766E;">AO</div>
+                <div>
+                  <div class="lead-card-name">Amara Osei</div>
+                  <div class="lead-card-email">amara@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-warm">🌡 Warm</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">BUYER</span>
+              <span class="stage-badge stage-new">New</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 2.1M</span>
+              <span class="lead-card-last">3 days ago</span>
+            </div>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="lead-card">
+            <div class="lead-card-top">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="lead-card-avatar" style="background:#B45309;">LS</div>
+                <div>
+                  <div class="lead-card-name">Lerato Sithole</div>
+                  <div class="lead-card-email">lerato@example.com</div>
+                </div>
+              </div>
+              <span class="temp-badge temp-warm">🌡 Warm</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:600;background:#DBEAFE;color:#1D4ED8;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">BUYER</span>
+              <span class="stage-badge stage-contacted">Contacted</span>
+            </div>
+            <hr class="lead-card-divider">
+            <div class="lead-card-footer">
+              <span class="lead-card-budget">R 1.5M</span>
+              <span class="lead-card-last">1 week ago</span>
+            </div>
+          </div>
+
+        </div><!-- /leads-grid-view -->
+      </div><!-- /card -->
+    </div><!-- /tab-leads -->
+
+    <!-- ─────────── TAB: PIPELINE ───────────────────── -->
+    <div id="tab-pipeline">
+      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div>
+            <span class="section-title" style="margin:0;">Pipeline Board</span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:10px;font-family:'IBM Plex Mono',monospace;">R 4.2M total</span>
+          </div>
+          <div class="view-toggle">
+            <button class="view-toggle-btn active" id="ptbtn-kanban" onclick="togglePipelineView('kanban')" title="Kanban">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="17" y="5" width="4" height="16"/></svg>
+              Kanban
+            </button>
+            <button class="view-toggle-btn" id="ptbtn-list" onclick="togglePipelineView('list')" title="List">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              List
+            </button>
+          </div>
+        </div>
+        <button class="filter-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filter by type
+        </button>
+      </div>
+
+      <div id="pipeline-kanban-view"><div class="pipeline-board">
+        <!-- New -->
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <span class="pipeline-col-title">New</span>
+            <span class="pipeline-count">41</span>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipcard-name">Amara Osei</div>
+            <div class="pipcard-value">R 2.1M</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;">Warm</span> Buyer</div>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipcard-name">David Mahlangu</div>
+            <div class="pipcard-value">R 750K</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-cold" style="font-size:9px;padding:2px 6px;">Cold</span> Seller</div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">+39 more</div>
+        </div>
+
+        <!-- Contacted -->
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <span class="pipeline-col-title" style="color:#1D4ED8;">Contacted</span>
+            <span class="pipeline-count" style="background:#1D4ED8;">31</span>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipcard-name">Jayden van der Berg</div>
+            <div class="pipcard-value">R 850K</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-cold" style="font-size:9px;padding:2px 6px;">Cold</span> Seller</div>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipcard-name">Lerato Sithole</div>
+            <div class="pipcard-value">R 1.5M</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;">Warm</span> Buyer</div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">+29 more</div>
+        </div>
+
+        <!-- Qualified -->
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <span class="pipeline-col-title" style="color:#6D28D9;">Qualified</span>
+            <span class="pipeline-count" style="background:#6D28D9;">21</span>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipcard-name">Sarah Khumalo</div>
+            <div class="pipcard-value">R 3M+</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;">Warm</span> Investor</div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">+20 more</div>
+        </div>
+
+        <!-- Active -->
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <span class="pipeline-col-title" style="color:#065F46;">Active</span>
+            <span class="pipeline-count" style="background:#065F46;">12</span>
+          </div>
+          <div class="pipeline-card" style="border-left:3px solid var(--terracotta);">
+            <div class="pipcard-name">Themba Mokoena</div>
+            <div class="pipcard-value">R 1.8M</div>
+            <div class="pipcard-meta"><span class="temp-badge temp-hot" style="font-size:9px;padding:2px 6px;">Hot</span> Buyer</div>
+          </div>
+          <div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">+11 more</div>
+        </div>
+      </div></div><!-- /pipeline-board / kanban-view -->
+
+      <!-- Pipeline list view -->
+      <div id="pipeline-list-view" style="display:none;">
+        <div class="card">
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border);background:#FAFAF8;">
+                  <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Lead</th>
+                  <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Stage</th>
+                  <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Temp</th>
+                  <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Budget</th>
+                  <th style="padding:10px 16px;text-align:left;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;">Last Activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Themba Mokoena</div><div style="font-size:10px;color:var(--text-muted);">Buyer</div></td><td style="padding:12px 16px;"><span class="stage-badge stage-active">Active</span></td><td style="padding:12px 16px;"><span class="temp-badge temp-hot">🔥 Hot</span></td><td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 1.8M</td><td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">2 hrs ago</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Sarah Khumalo</div><div style="font-size:10px;color:var(--text-muted);">Investor</div></td><td style="padding:12px 16px;"><span class="stage-badge stage-qualified">Qualified</span></td><td style="padding:12px 16px;"><span class="temp-badge temp-warm">🌡 Warm</span></td><td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 3M+</td><td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">4 hrs ago</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Jayden van der Berg</div><div style="font-size:10px;color:var(--text-muted);">Seller</div></td><td style="padding:12px 16px;"><span class="stage-badge stage-contacted">Contacted</span></td><td style="padding:12px 16px;"><span class="temp-badge temp-cold">❄ Cold</span></td><td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 850K</td><td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">Yesterday</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Amara Osei</div><div style="font-size:10px;color:var(--text-muted);">Buyer</div></td><td style="padding:12px 16px;"><span class="stage-badge stage-new">New</span></td><td style="padding:12px 16px;"><span class="temp-badge temp-warm">🌡 Warm</span></td><td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 2.1M</td><td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">3 days ago</td></tr>
+                <tr><td style="padding:12px 16px;"><div style="font-weight:600;color:var(--text-dark);">Lerato Sithole</div><div style="font-size:10px;color:var(--text-muted);">Buyer</div></td><td style="padding:12px 16px;"><span class="stage-badge stage-contacted">Contacted</span></td><td style="padding:12px 16px;"><span class="temp-badge temp-warm">🌡 Warm</span></td><td style="padding:12px 16px;font-family:'Fraunces',serif;font-weight:700;color:var(--terracotta);">R 1.5M</td><td style="padding:12px 16px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:10px;">1 week ago</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /pipeline-list-view -->
+    </div><!-- /tab-pipeline -->
+
+    <!-- ─────────── TAB: ANALYTICS ──────────────────── -->
+    <div id="tab-analytics">
+      <div class="analytics-kpi-grid">
+        <div class="analytics-kpi">
+          <div class="analytics-val">18%</div>
+          <div class="analytics-lbl">Conversion Rate</div>
+        </div>
+        <div class="analytics-kpi">
+          <div class="analytics-val">14d</div>
+          <div class="analytics-lbl">Avg Time to Close</div>
+        </div>
+        <div class="analytics-kpi">
+          <div class="analytics-val">R 34K</div>
+          <div class="analytics-lbl">Avg Deal Value</div>
+        </div>
+        <div class="analytics-kpi">
+          <div class="analytics-val">72%</div>
+          <div class="analytics-lbl">Response Rate</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Source breakdown -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Leads by Source</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+                  <span>Referral</span><span style="font-family:'IBM Plex Mono',monospace;">38%</span>
+                </div>
+                <div style="background:rgba(26,60,40,0.08);border-radius:4px;height:8px;"><div style="background:var(--forest);width:38%;height:100%;border-radius:4px;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+                  <span>Online Portal</span><span style="font-family:'IBM Plex Mono',monospace;">27%</span>
+                </div>
+                <div style="background:rgba(26,60,40,0.08);border-radius:4px;height:8px;"><div style="background:var(--terracotta);width:27%;height:100%;border-radius:4px;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+                  <span>Open House</span><span style="font-family:'IBM Plex Mono',monospace;">18%</span>
+                </div>
+                <div style="background:rgba(26,60,40,0.08);border-radius:4px;height:8px;"><div style="background:#2D5A40;width:18%;height:100%;border-radius:4px;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+                  <span>Social Media</span><span style="font-family:'IBM Plex Mono',monospace;">12%</span>
+                </div>
+                <div style="background:rgba(26,60,40,0.08);border-radius:4px;height:8px;"><div style="background:#7C3AED;width:12%;height:100%;border-radius:4px;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+                  <span>Cold Outreach</span><span style="font-family:'IBM Plex Mono',monospace;">5%</span>
+                </div>
+                <div style="background:rgba(26,60,40,0.08);border-radius:4px;height:8px;"><div style="background:#9CA3AF;width:5%;height:100%;border-radius:4px;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly trend -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Monthly Lead Volume</span></div>
+          <div class="card-body">
+            <div class="mini-chart" style="height:80px;align-items:flex-end;">
+              <div class="mini-bar" style="height:40%;"></div>
+              <div class="mini-bar" style="height:55%;"></div>
+              <div class="mini-bar" style="height:35%;"></div>
+              <div class="mini-bar" style="height:65%;"></div>
+              <div class="mini-bar" style="height:50%;"></div>
+              <div class="mini-bar" style="height:80%;"></div>
+              <div class="mini-bar highlight" style="height:100%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+              <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+            </div>
+            <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">
+              <strong style="color:var(--text-dark);font-family:'Fraunces',serif;font-size:20px;">124</strong> leads in Apr — <span style="color:#10B981;font-weight:700;">↑ 23%</span> vs last month
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-analytics -->
+
+    <!-- ─────────── TAB: TASKS ────────────────────── -->
+    <div id="tab-tasks">
+
+      <!-- Summary strip -->
+      <div style="display:flex;gap:12px;margin-bottom:20px;">
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 18px;min-width:100px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:#DC2626;font-family:'Fraunces',serif;">5</div>
+          <div style="font-size:11px;color:#DC2626;font-weight:600;font-family:'IBM Plex Mono',monospace;">OVERDUE</div>
+        </div>
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 18px;min-width:100px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:#D97706;font-family:'Fraunces',serif;">8</div>
+          <div style="font-size:11px;color:#D97706;font-weight:600;font-family:'IBM Plex Mono',monospace;">DUE TODAY</div>
+        </div>
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 18px;min-width:100px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:#16A34A;font-family:'Fraunces',serif;">10</div>
+          <div style="font-size:11px;color:#16A34A;font-weight:600;font-family:'IBM Plex Mono',monospace;">THIS WEEK</div>
+        </div>
+        <div style="background:#F9F8F6;border:1px solid var(--border);border-radius:10px;padding:12px 18px;min-width:100px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:var(--text-dark);font-family:'Fraunces',serif;">23</div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;font-family:'IBM Plex Mono',monospace;">TOTAL OPEN</div>
+        </div>
+        <div style="flex:1;"></div>
+        <button class="btn btn-primary" style="align-self:center;">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Task
+        </button>
+      </div>
+
+      <div class="toolbar" style="margin-bottom:16px;">
+        <button class="filter-btn filter-active">All Tasks <span class="tab-badge" style="margin-left:4px;background:#DC2626;">23</span></button>
+        <button class="filter-btn">Overdue</button>
+        <button class="filter-btn">Today</button>
+        <button class="filter-btn">This Week</button>
+        <button class="filter-btn">Completed</button>
+        <div style="flex:1;"></div>
+        <button class="filter-btn">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filter by lead
+        </button>
+      </div>
+
+      <div class="card">
+
+        <!-- Overdue group -->
+        <div class="task-group-label" style="color:#DC2626;">🔴 &nbsp;Overdue &mdash; 5 tasks</div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#DC2626;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Update OTP status for Deal #1041</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Themba Mokoena</span> &middot; Buyer &middot; <span class="temp-badge temp-hot" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🔥 Hot</span></div>
+          </div>
+          <div class="task-row-due overdue">2 days ago</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#DC2626;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Send comparative market analysis to Sarah</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Sarah Khumalo</span> &middot; Investor &middot; <span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🌡 Warm</span></div>
+          </div>
+          <div class="task-row-due overdue">Yesterday</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#D97706;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Follow up: valuation report review</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Jayden van der Berg</span> &middot; Seller &middot; <span class="temp-badge temp-cold" style="font-size:9px;padding:2px 6px;vertical-align:middle;">❄ Cold</span></div>
+          </div>
+          <div class="task-row-due overdue">3 days ago</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Today group -->
+        <div class="task-group-label" style="color:#D97706;">📅 &nbsp;Due Today &mdash; 8 tasks</div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#DC2626;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Call re: Sandton viewing — confirm date &amp; time</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Themba Mokoena</span> &middot; Buyer &middot; <span class="temp-badge temp-hot" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🔥 Hot</span></div>
+          </div>
+          <div class="task-row-due today">Today 10:00</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#DC2626;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Send offer documents — OTP &amp; proof of funds</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Sarah Khumalo</span> &middot; Investor &middot; <span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🌡 Warm</span></div>
+          </div>
+          <div class="task-row-due today">Today 14:00</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#6D28D9;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Check in — is she still interested in Cape Town listings?</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Nomsa Petersen</span> &middot; Renter &middot; <span class="temp-badge temp-nurture" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🌿 Nurture</span></div>
+          </div>
+          <div class="task-row-due today">Today 16:00</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+
+        <!-- This week group -->
+        <div class="task-group-label">📆 &nbsp;This Week &mdash; 10 tasks</div>
+        <div class="task-row">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#D97706;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Schedule site visit — shortlisted 3 properties</div>
+            <div class="task-row-lead"><span style="font-weight:600;">Amara Osei</span> &middot; Buyer &middot; <span class="temp-badge temp-warm" style="font-size:9px;padding:2px 6px;vertical-align:middle;">🌡 Warm</span></div>
+          </div>
+          <div class="task-row-due">Mon 7 Apr</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div class="task-row" style="border-bottom:none;">
+          <div class="task-row-chk"></div>
+          <div class="task-row-dot" style="background:#1A3C28;"></div>
+          <div class="task-row-body">
+            <div class="task-row-title">Send weekly pipeline update email</div>
+            <div class="task-row-lead" style="color:var(--text-muted);">General &mdash; no specific lead</div>
+          </div>
+          <div class="task-row-due">Tue 8 Apr</div>
+          <div class="task-row-actions">
+            <button class="task-act-btn" title="Complete"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
+            <button class="task-act-btn" title="Snooze"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+          </div>
+        </div>
+        <div style="padding:10px 20px;font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">+8 more this week &rarr;</div>
+
+      </div><!-- /card -->
+    </div><!-- /tab-tasks -->
+
+  </div><!-- /content-area -->
+</div><!-- /main -->
+
+<script>
+const ALL_TABS = ['dashboard','leads','pipeline','analytics','tasks'];
+
+function showTab(id, el) {
+  ALL_TABS.forEach(t => {
+    document.getElementById('tab-' + t).style.display = 'none';
+  });
+  document.getElementById('tab-' + id).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // persist in URL
+  const url = new URL(window.location);
+  url.searchParams.set('tab', id);
+  history.replaceState(null, '', url);
+}
+
+// On load: restore tab from URL
+document.addEventListener('DOMContentLoaded', () => {
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  if (tab && ALL_TABS.includes(tab)) {
+    const el = document.querySelector(`.tab[onclick*="'${tab}'"]`);
+    if (el) showTab(tab, el);
+  }
+});
+
+function toggleLeadsView(mode) {
+  const listEl = document.getElementById('leads-list-view');
+  const gridEl = document.getElementById('leads-grid-view');
+  listEl.style.display = mode === 'list' ? 'block' : 'none';
+  gridEl.style.display  = mode === 'grid' ? 'grid'  : 'none';
+  document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vtbtn-' + mode).classList.add('active');
+}
+
+function togglePipelineView(mode) {
+  document.getElementById('pipeline-kanban-view').style.display = mode === 'kanban' ? 'block' : 'none';
+  document.getElementById('pipeline-list-view').style.display  = mode === 'list'   ? 'block' : 'none';
+  document.querySelectorAll('.pipe-toggle-btn, [id^="ptbtn-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('ptbtn-' + mode).classList.add('active');
+}
+</script>
+</body>
+</html>

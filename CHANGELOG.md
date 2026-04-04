@@ -14,6 +14,76 @@ Related docs:
 
 ### Changed
 
+- **UI — Lead Management: pixel-faithful rewrite of all 5 views to match brand mockup (2026-04-04)**
+  - **`apps/web/src/views/LeadManagementHub.tsx`** *(new)* — Unified 5-tab hub (Dashboard · All Leads · Pipeline · Analytics · Tasks) with dark forest header, KPI strip, and `?tab=` URL-param routing; `isEmbedded` prop suppresses standalone headers when composed
+  - **`apps/web/src/views/LeadDashboard.tsx`** — Full rewrite matching mockup: recent-leads list (avatar initials, budget, temperature badge), pipeline funnel chart from `byStage` API data; de-hardwired via `getDashboard` extension (`recentLeads[]`, `byStage`)
+  - **`apps/web/src/views/LeadAnalytics.tsx`** — Full rewrite matching mockup: 4 live KPI cards (`avgDealValue`, `avgTimeToClose`, `responseRate`, `conversionRate`), monthly trend % computed from API data, source bars, funnel bars; de-hardwired via `getAnalytics` extension
+  - **`apps/web/src/views/LeadsPage.tsx`** — Full rewrite with table + grid view, add-lead drawer; `formatBudget` fixed to output `R X – Y` / `R X+` format (was emitting `ZAR` ISO code)
+  - **`apps/web/src/views/LeadPipeline.tsx`** — Full rewrite with kanban + list view; kanban columns now have proper bordered containers (`1px solid #E5E7EB`, `rgba(26,60,40,0.04)` tint, `border-radius: 12px`) with per-stage color headers and solid count bubbles matching mockup; `formatBudget` unified to `R X – Y` / `R X+` format
+  - **`apps/web/src/lib/api-client.ts`** — `LeadDashboardResponse` extended with `recentLeads: LeadRow[]` and `byStage: Record<string,number>`; `LeadAnalyticsResponse` extended with `avgDealValue`, `avgTimeToClose`, `responseRate`
+  - **`apps/api/src/leads/leads.service.ts`** — `getDashboard` query extended to return last 4 leads + stage counts; `getAnalytics` query extended to compute `avgDealValue`, `avgTimeToClose`, `responseRate`
+  - **`apps/api/src/leads/leads.service.spec.ts`** — mock queries and assertions updated to cover new response fields; all 16 tests pass
+  - **All 5 lead views** — replaced all hardcoded font strings (`'Fraunces', serif`, `'IBM Plex Mono', monospace`, `'Plus Jakarta Sans', sans-serif`) with CSS variable refs (`var(--font-fraunces)`, `var(--font-mono)`, `var(--font-jakarta)`) so Next.js `next/font` local font loading resolves correctly
+
+### Added
+
+- **UI — Lead Management hub with 5-tab navigation (Approach B)**
+  - **`apps/web/src/views/LeadManagementHub.tsx`** *(new)* — unified hub page that consolidates all lead management into a single tabbed screen:
+    - Dark forest header (`--bt-forest #1A3C28`, Fraunces heading) with 4-cell KPI strip (Total Leads, Hot Leads, Active Deals, Pipeline Value)
+    - Sticky tab bar with 5 tabs: Dashboard · All Leads · Pipeline · Analytics · Tasks; active tab stored in `?tab=` URL param via `router.replace`
+    - Tab bar uses `useSearchParams` inside a `Suspense` boundary (Next.js App Router safe)
+    - Tasks tab renders `LeadTaskRow[]` from the dashboard response with priority badges; shows badge count on tab pill when tasks are pending
+    - Tech-debt comment documents that Approach C (true URL-segment tabs via Next.js parallel routes) should replace this in a future refinement sprint
+
+### Changed
+
+- **UI — Lead Management sidebar item flattened (2025)**
+  - **`apps/web/src/components/AppSidebar.tsx`** — removed `leadManagementNavigation` sub-nav array and `showLeadManagement` collapsible state; replaced the expandable Lead Management section with a single flat `<Link href="/app/leads">` in both desktop and mobile renders; active state uses `pathname.startsWith('/app/leads')`
+  - **`apps/web/src/views/LeadDashboard.tsx`** — added `isEmbedded?: boolean` prop; standalone header (h1 + View All Leads button) is suppressed when `isEmbedded={true}`
+  - **`apps/web/src/views/LeadsPage.tsx`** — added `isEmbedded?: boolean` prop; when embedded, renders a compact toolbar row (lead count + Add Lead button) instead of the full page header
+  - **`apps/web/src/views/LeadPipeline.tsx`** — added `isEmbedded?: boolean` prop; standalone header (h1 + pipeline value badge) suppressed when embedded
+  - **`apps/web/src/views/LeadAnalytics.tsx`** — added `isEmbedded?: boolean` prop; standalone header (h1 + description) suppressed when embedded
+  - **`apps/web/src/app/app/leads/page.tsx`** — now exports `LeadManagementHub` instead of `LeadsPage`
+  - **`apps/web/src/app/app/leads/dashboard/page.tsx`** — server redirect to `/app/leads?tab=dashboard`
+  - **`apps/web/src/app/app/leads/pipeline/page.tsx`** — server redirect to `/app/leads?tab=pipeline`
+  - **`apps/web/src/app/app/leads/analytics/page.tsx`** — server redirect to `/app/leads?tab=analytics`
+
+- **UI — My Listings page full brand redesign (2026-04-02)**
+  - **`apps/web/src/app/app/my-listings/page.tsx`** — complete redesign using PRIBEC brand:
+    - Compact forest-green header bar (Fraunces heading + inline stat pills + electric-green CTA)
+    - Single toolbar row: status tab pills, search input, sort dropdown, grid/list view toggle
+    - Listing-type badge colors: For Sale = forest `#1A3C28`, For Rent = amber `#B89040`, Development = terracotta `#C4562A`
+    - Status badge colors refined: active = emerald, pending = amber, under-contract = sky
+    - Per-card metric strip: views · enquiries · days on market (DOM); DOM turns amber ≥21d, red ≥45d
+    - Health badges (Hot/Warm/Cold) derived from views + enquiries + freshness score
+    - DOM alert rings on cards: `ring-1 ring-amber-300` (21-44d), `ring-2 ring-red-400` (45+d)
+    - Hover quick-action overlay: View / Edit / Share buttons with blurred forest overlay
+    - List/table view mode: thumbnail + address + type pill + status + price + DOM + views + health
+    - Empty state uses brand muted green bg + Fraunces heading; clears both search and status filter
+    - Added `sortBy` state with 5 sort options (newest, price ↑/↓, DOM, views)
+    - Added `enquiriesMap` per-listing enquiry counts from performance API
+    - Removed old stats grid (4-card blue grid) — totals now inline in header
+
+- **UI — Agent Dashboard full brand redesign + functional enhancements (2026-04-01)**
+  - **`AgentDashboardEnhanced.tsx`** — complete Phase 1 brand theme pass:
+    - Page root → `bg-background` (parchment); header → `bg-card border-border`
+    - All tab active states, primary buttons → forest `#1A3C28` / `#F2E8D5`
+    - All major headings (Performance Overview, Commission Pipeline, Mandate Portfolio, Lead Pipeline, etc.) → Fraunces serif
+    - All chart strokes/fills: blue → forest `#1A3C28`, green → electric green `#00E87A`
+    - KPI icon containers, activity icons, alert icons → brand palette
+    - Calendar today dot, selected ring, hover states → brand tokens
+    - All modal confirm buttons (`bg-blue-600`) → forest green
+    - Listing type badges: for_sale → forest, to_rent → amber, development → terracotta
+  - **Phase 2 new sub-components added:**
+    - `SmartAlertBar` — dismissible contextual alerts row (pending viewings, expiring mandates, stale leads) wired above tab content
+    - `PipelineFunnelWidget` — 5-stage horizontal funnel with drop-off % in Overview tab
+    - `TodaySchedulePanel` — today's viewings timeline in Overview tab (alongside performance chart)
+    - `CommissionGoalTracker` — SVG ring progress with inline-editable target (localStorage), 5th KPI card
+    - `healthScore()` + `HealthBadge` — listing health scoring (DOM, views, inquiries) with colour badge in Listings table
+    - `LeadKanban` — HTML5 drag-and-drop kanban view for leads (5 status columns), switchable with table view
+    - `StaleLeadsSection` — collapsible accordion of leads inactive 14+ days with "Log Contact" quick action
+  - New state: `crmView` (table/kanban toggle), `alertsDismissed`
+
 - **UI — Homepage brand theme applied to Property Detail, Listings & Sidebar (2026-04-01)**
   - **`PropertyDetailEnhanced.tsx`** — full brand-theme pass:
     - Page shell: `bg-gray-50` → parchment `#F2E8D5`

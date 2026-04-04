@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken, getIsAdminFromToken, getActiveCompanyContext } from "@/lib/auth-session";
 import { propertiesApi, auditApi, usersApi, sellerApi, viewingsApi, notificationsApi, type PropertyListing, type AuditLogEntry, type AuthUser, type SellerProperty, type SellerPropertyViewing, type ViewingResponse, type CancelViewingPayload, type UserNotification } from "@/lib/api-client";
-import { CreateListing } from "@/components/CreateListing";
 import { EditListing } from "@/components/EditListing";
 
 type DashboardListing = {
@@ -100,7 +99,6 @@ export default function MyDashboard() {
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState("");
   const [listingStatusFilter, setListingStatusFilter] = useState<"all" | "draft" | "active" | "under_offer" | "sold" | "withdrawn">("all");
-  const [showAddListing, setShowAddListing] = useState(false);
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
@@ -822,7 +820,7 @@ export default function MyDashboard() {
               <Button
                 className="bg-blue-500 hover:bg-blue-600 text-white"
                 size="sm"
-                onClick={() => setShowAddListing(true)}
+                onClick={() => router.push('/app/my-listings/new')}
               >
                 <Plus className="w-4 h-4 mr-2" /> New Listing
               </Button>
@@ -906,7 +904,7 @@ export default function MyDashboard() {
                           </p>
                         </div>
                         {listingStatusFilter === "all" && (
-                          <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={() => setShowAddListing(true)}>
+                          <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={() => router.push('/app/my-listings/new')}>
                             <Plus className="w-4 h-4 mr-2" /> Create First Listing
                           </Button>
                         )}
@@ -1102,7 +1100,7 @@ export default function MyDashboard() {
         <div className="p-4 md:p-8 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">My Properties</h2>
-            <Button className="bg-blue-500 hover:bg-blue-600 text-white" size="sm" onClick={() => setShowAddListing(true)}>
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white" size="sm" onClick={() => router.push('/app/my-listings/new')}>
               <Plus className="w-4 h-4 mr-2" /> List a Property
             </Button>
           </div>
@@ -1124,7 +1122,7 @@ export default function MyDashboard() {
               <Building2 className="w-12 h-12 mx-auto mb-3 opacity-25" />
               <p className="font-medium text-gray-500 mb-1">No listed properties yet</p>
               <p className="text-sm mb-4">Properties you list for sale or rent will appear here with full activity tracking</p>
-              <Button variant="outline" onClick={() => setShowAddListing(true)}>
+              <Button variant="outline" onClick={() => router.push('/app/my-listings/new')}>
                 <Plus className="w-4 h-4 mr-2" /> Create Your First Listing
               </Button>
             </div>
@@ -1454,16 +1452,6 @@ export default function MyDashboard() {
             </div>
           </Card>
         </div>
-      )}
-
-      {/* Create Listing Modal */}
-      {showAddListing && (
-        <CreateListing
-          onClose={() => {
-            setShowAddListing(false);
-            void loadMyListings(listingStatusFilter);
-          }}
-        />
       )}
 
       {editingListing && (

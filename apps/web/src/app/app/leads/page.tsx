@@ -1,1 +1,1 @@
-export { default } from '@/views/LeadsPage';
+export { default } from '@/views/LeadManagementHub';

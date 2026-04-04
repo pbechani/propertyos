@@ -65,7 +65,7 @@ export function OverflowTabBar({ tabs, activeTab, onTabChange }: OverflowTabBarP
   const activeIsOverflow = overflowTabs.some((t) => t.value === activeTab);
 
   return (
-    <div ref={containerRef} className="relative flex items-center gap-1 px-4 py-3 border-b border-gray-100 bg-gray-50/60 min-w-0">
+    <div ref={containerRef} className="relative flex items-center gap-1 px-4 py-3 border-b border-[#1A3C28]/[0.08] bg-[#EAD9C4]/50 min-w-0">
       {tabs.map((tab, i) => {
         const Icon = tab.icon;
         const isActive = tab.value === activeTab;
@@ -81,16 +81,16 @@ export function OverflowTabBar({ tabs, activeTab, onTabChange }: OverflowTabBarP
             className={[
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0',
               isHidden ? 'invisible pointer-events-none absolute' : '',
-              !isHidden && isActive ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : '',
-              !isHidden && !isActive ? 'text-gray-600 hover:bg-gray-200/70 hover:text-gray-900' : '',
+              !isHidden && isActive ? 'bg-[#1A3C28] text-white' : '',
+              !isHidden && !isActive ? 'text-[#1A3C28]/60 hover:bg-[#1A3C28]/[0.07] hover:text-[#1A3C28]' : '',
             ].join(' ')}
           >
             {Icon && (
-              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive && !isHidden ? 'text-white' : 'text-gray-400'}`} />
+              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive && !isHidden ? 'text-white' : 'text-[#1A3C28]/40'}`} />
             )}
             {tab.label}
             {!isHidden && tab.badge != null && tab.badge > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full ${isActive ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}`}>
+              <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full ${isActive ? 'bg-white text-[#1A3C28]' : 'bg-[#C4562A] text-white'}`}>
                 {tab.badge > 99 ? '99+' : tab.badge}
               </span>
             )}
@@ -104,9 +104,9 @@ export function OverflowTabBar({ tabs, activeTab, onTabChange }: OverflowTabBarP
             onClick={() => setOverflowOpen((v) => !v)}
             className={[
               'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all',
-              activeIsOverflow
-                ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-                : 'text-gray-500 hover:bg-gray-200/70 hover:text-gray-900 border border-gray-200 bg-white',
+                activeIsOverflow
+                ? 'bg-[#1A3C28] text-white'
+                : 'text-[#1A3C28]/50 hover:bg-[#1A3C28]/[0.07] hover:text-[#1A3C28] border border-[#1A3C28]/15 bg-white',
             ].join(' ')}
             title="More tabs"
           >
@@ -126,7 +126,7 @@ export function OverflowTabBar({ tabs, activeTab, onTabChange }: OverflowTabBarP
           </button>
 
           {overflowOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-xl shadow-lg shadow-gray-200/60 z-50 py-1 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-[#1A3C28]/10 rounded-xl shadow-lg shadow-[#1A3C28]/[0.08] z-50 py-1 overflow-hidden">
               {overflowTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.value === activeTab;
@@ -134,14 +134,14 @@ export function OverflowTabBar({ tabs, activeTab, onTabChange }: OverflowTabBarP
                   <button
                     key={tab.value}
                     onClick={() => { onTabChange(tab.value); setOverflowOpen(false); }}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${isActive ? 'bg-[#1A3C28]/[0.06] text-[#1A3C28] font-medium' : 'text-[#1A3C28]/70 hover:bg-[#1A3C28]/[0.04]'}`}
                   >
                     <div className="flex items-center gap-2.5">
-                      {Icon && <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />}
+                      {Icon && <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1A3C28]' : 'text-[#1A3C28]/40'}`} />}
                       {tab.label}
                     </div>
                     {tab.badge != null && tab.badge > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white">
+                      <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-[#C4562A] text-white">
                         {tab.badge > 99 ? '99+' : tab.badge}
                       </span>
                     )}

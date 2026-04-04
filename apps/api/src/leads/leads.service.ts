@@ -75,8 +75,10 @@ export type LeadDashboardResponse = {
   pipelineValue: number;
   pendingTasks: LeadTaskRow[];
   recentActivities: LeadActivityRow[];
+  recentLeads: LeadRow[];
   byType: Record<string, number>;
   byTemperature: Record<string, number>;
+  byStage: Record<string, number>;
 };
 
 export type PipelineStage = {
@@ -94,6 +96,9 @@ export type LeadAnalyticsResponse = {
   conversionRate: number;
   closedRevenue: number;
   activeLeads: number;
+  avgDealValue: number;
+  avgTimeToClose: number;
+  responseRate: number;
   bySource: { source: string; count: number }[];
   byType: { type: string; count: number }[];
   funnel: { stage: string; count: number }[];
@@ -412,7 +417,7 @@ export class LeadsService {
     _roles: string[],
     companyId: string,
   ): Promise<LeadDashboardResponse> {
-    const [kpiRows, pendingTasks, recentActivities, typeRows, tempRows] = await Promise.all([
+    const [kpiRows, pendingTasks, recentActivities, typeRows, tempRows, recentLeads, stageRows] = await Promise.all([
       this.prisma.$queryRaw<
         {
           total_leads: string;
@@ -460,14 +465,31 @@ export class LeadsService {
         WHERE company_id = ${companyId}::uuid
         GROUP BY temperature
       `,
+      this.prisma.$queryRaw<LeadRow[]>`
+        SELECT l.*,
+          CONCAT(u.first_name, ' ', u.last_name) AS assigned_agent_name
+        FROM sales.leads l
+        LEFT JOIN identity.users u ON u.id = l.assigned_to
+        WHERE l.company_id = ${companyId}::uuid
+        ORDER BY l.created_at DESC
+        LIMIT 4
+      `,
+      this.prisma.$queryRaw<{ stage: string; count: string }[]>`
+        SELECT stage, COUNT(*) AS count
+        FROM sales.leads
+        WHERE company_id = ${companyId}::uuid
+        GROUP BY stage
+      `,
     ]);
 
     const kpi = kpiRows[0];
     const byType: Record<string, number> = {};
     const byTemperature: Record<string, number> = {};
+    const byStage: Record<string, number> = {};
 
     for (const r of typeRows) byType[r.type] = parseInt(r.count, 10);
     for (const r of tempRows) byTemperature[r.temperature] = parseInt(r.count, 10);
+    for (const r of stageRows) byStage[r.stage] = parseInt(r.count, 10);
 
     return {
       totalLeads: parseInt(kpi?.total_leads ?? '0', 10),
@@ -476,8 +498,10 @@ export class LeadsService {
       pipelineValue: parseFloat(kpi?.pipeline_value ?? '0'),
       pendingTasks,
       recentActivities,
+      recentLeads,
       byType,
       byTemperature,
+      byStage,
     };
   }
 
@@ -530,20 +554,24 @@ export class LeadsService {
     _roles: string[],
     companyId: string,
   ): Promise<LeadAnalyticsResponse> {
-    const [summaryRows, bySourceRows, byTypeRows, funnelRows, monthlyRows] = await Promise.all([
+    const [summaryRows, bySourceRows, byTypeRows, funnelRows, monthlyRows, responseRateRows] = await Promise.all([
       this.prisma.$queryRaw<
         {
           total: string;
           closed: string;
           closed_revenue: string;
           active: string;
+          avg_deal_value: string;
+          avg_time_to_close: string;
         }[]
       >`
         SELECT
           COUNT(*) AS total,
           COUNT(*) FILTER (WHERE stage = 'closed') AS closed,
           COALESCE(SUM(deal_value) FILTER (WHERE stage = 'closed'), 0) AS closed_revenue,
-          COUNT(*) FILTER (WHERE stage NOT IN ('closed', 'lost')) AS active
+          COUNT(*) FILTER (WHERE stage NOT IN ('closed', 'lost')) AS active,
+          COALESCE(ROUND(AVG(deal_value) FILTER (WHERE stage = 'closed' AND deal_value IS NOT NULL), 0), 0) AS avg_deal_value,
+          COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - created_at)) / 86400.0) FILTER (WHERE stage = 'closed' AND closed_at IS NOT NULL), 0), 0) AS avg_time_to_close
         FROM sales.leads
         WHERE company_id = ${companyId}::uuid
       `,
@@ -583,6 +611,19 @@ export class LeadsService {
         GROUP BY DATE_TRUNC('month', created_at)
         ORDER BY DATE_TRUNC('month', created_at) ASC
       `,
+      this.prisma.$queryRaw<{ response_rate: string }[]>`
+        SELECT
+          COALESCE(ROUND(
+            100.0 * COUNT(DISTINCT a.lead_id)::numeric / NULLIF(
+              (SELECT COUNT(*) FROM sales.leads WHERE company_id = ${companyId}::uuid),
+              0
+            ),
+            0
+          ), 0) AS response_rate
+        FROM sales.lead_activities a
+        INNER JOIN sales.leads l ON l.id = a.lead_id
+        WHERE l.company_id = ${companyId}::uuid
+      `,
     ]);
 
     const summary = summaryRows[0];
@@ -594,6 +635,9 @@ export class LeadsService {
       conversionRate,
       closedRevenue: parseFloat(summary?.closed_revenue ?? '0'),
       activeLeads: parseInt(summary?.active ?? '0', 10),
+      avgDealValue: parseFloat(summary?.avg_deal_value ?? '0'),
+      avgTimeToClose: parseInt(summary?.avg_time_to_close ?? '0', 10),
+      responseRate: parseInt(responseRateRows[0]?.response_rate ?? '0', 10),
       bySource: bySourceRows.map((r) => ({
         source: r.source,
         count: parseInt(r.count, 10),

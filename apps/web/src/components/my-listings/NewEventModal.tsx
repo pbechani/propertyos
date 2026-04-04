@@ -1,7 +1,37 @@
 'use client';
 
-import { X, Calendar, Clock, MapPin, Users, FileText, Home, Phone } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Users, FileText, Home, Phone, Bell } from 'lucide-react';
 import { useState } from 'react';
+
+// ── Brand tokens (mirrored from calendar page) ────────────────────────────────
+const C = {
+  forest:    '#1A3C28',
+  parchment: '#F2E8D5',
+  terra:     '#C4562A',
+  egreen:    '#00E87A',
+};
+
+const INPUT_STYLE: React.CSSProperties = {
+  width: '100%',
+  padding: '9px 12px',
+  borderRadius: 8,
+  border: '1px solid rgba(26,60,40,0.18)',
+  background: 'rgba(26,60,40,0.04)',
+  color: C.forest,
+  fontSize: '0.84rem',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+  fontSize: '0.6rem',
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase',
+  color: 'rgba(26,60,40,0.45)',
+  marginBottom: 6,
+};
 
 interface NewEventModalProps {
   isOpen: boolean;
@@ -43,151 +73,253 @@ export function NewEventModal({ isOpen, onClose, onSave, selectedDate }: NewEven
   if (!isOpen) return null;
 
   const eventTypes = [
-    { value: 'viewing', label: 'Property Viewing', icon: Home },
-    { value: 'meeting', label: 'Client Meeting', icon: Users },
-    { value: 'call', label: 'Phone Call', icon: Phone },
+    { value: 'viewing',   label: 'Viewing',    icon: Home },
+    { value: 'meeting',   label: 'Meeting',    icon: Users },
+    { value: 'call',      label: 'Call',       icon: Phone },
     { value: 'openhouse', label: 'Open House', icon: Calendar },
-    { value: 'other', label: 'Other', icon: FileText },
+    { value: 'other',     label: 'Other',      icon: FileText },
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">New Event</h2>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(12,13,16,0.45)',
+        backdropFilter: 'blur(3px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: C.parchment,
+          borderRadius: 14,
+          width: '100%',
+          maxWidth: 560,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 24px 48px rgba(12,13,16,0.22)',
+          overflow: 'hidden',
+          margin: '0 1rem',
+        }}
+      >
+        {/* ── Header ────────────────────────────────────────────────────────── */}
+        <div
+          style={{
+            background: C.forest,
+            padding: '18px 20px 16px',
+            position: 'relative',
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+              fontSize: '0.63rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: C.egreen,
+              marginBottom: 4,
+            }}
+          >
+            Agent Cockpit
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
+              fontSize: '1.4rem',
+              color: '#fff',
+              fontWeight: 300,
+              lineHeight: 1.2,
+              paddingRight: 36,
+            }}
+          >
+            New Event
+          </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              border: 'none',
+              background: 'rgba(255,255,255,0.15)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X size={14} color="#fff" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Event Title *
-              </label>
+        {/* ── Form ──────────────────────────────────────────────────────────── */}
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            padding: '20px 22px',
+            overflowY: 'auto',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 18,
+          }}
+        >
+          {/* Title */}
+          <div>
+            <label style={LABEL_STYLE}>Event Title *</label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., Property viewing with John Smith"
+              style={INPUT_STYLE}
+            />
+          </div>
+
+          {/* Event type */}
+          <div>
+            <label style={LABEL_STYLE}>Event Type *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+              {eventTypes.map((type) => {
+                const Icon = type.icon;
+                const active = formData.type === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: type.value })}
+                    style={{
+                      padding: '10px 4px 8px',
+                      borderRadius: 9,
+                      border: active ? `1.5px solid ${C.forest}` : '1.5px solid rgba(26,60,40,0.14)',
+                      background: active ? C.forest : 'rgba(26,60,40,0.03)',
+                      color: active ? C.egreen : 'rgba(26,60,40,0.55)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 5,
+                      cursor: 'pointer',
+                      transition: 'background 0.12s, border-color 0.12s',
+                    }}
+                  >
+                    <Icon size={15} />
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+                        fontSize: '0.58rem',
+                        letterSpacing: '0.04em',
+                        textAlign: 'center',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {type.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date & time */}
+          <div>
+            <label style={LABEL_STYLE}>Date &amp; Time *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div style={{ position: 'relative' }}>
+                <Calendar size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <input
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  style={{ ...INPUT_STYLE, paddingLeft: 30 }}
+                />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <Clock size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <input
+                  type="time"
+                  required
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  style={{ ...INPUT_STYLE, paddingLeft: 30 }}
+                />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <Clock size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <input
+                  type="time"
+                  required
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  style={{ ...INPUT_STYLE, paddingLeft: 30 }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label style={LABEL_STYLE}>Location</label>
+            <div style={{ position: 'relative' }}>
+              <MapPin size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               <input
                 type="text"
-                required
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Property viewing with John Smith"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="123 Main St, Johannesburg"
+                style={{ ...INPUT_STYLE, paddingLeft: 30 }}
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Event Type *
-              </label>
-              <div className="grid grid-cols-5 gap-2">
-                {eventTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <button
-                      key={type.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, type: type.value })}
-                      className={`p-3 border rounded-lg flex flex-col items-center gap-2 transition-all ${
-                        formData.type === type.value
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-xs font-medium">{type.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date & Time *
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="time"
-                    required
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="time"
-                    required
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="123 Main St, San Francisco, CA"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Attendees</label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.attendees}
-                  onChange={(e) => setFormData({ ...formData, attendees: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add attendees (comma separated)"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                placeholder="Add event details..."
+          {/* Attendees */}
+          <div>
+            <label style={LABEL_STYLE}>Attendees</label>
+            <div style={{ position: 'relative' }}>
+              <Users size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                value={formData.attendees}
+                onChange={(e) => setFormData({ ...formData, attendees: e.target.value })}
+                placeholder="Add attendees (comma separated)"
+                style={{ ...INPUT_STYLE, paddingLeft: 30 }}
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reminder</label>
+          {/* Description */}
+          <div>
+            <label style={LABEL_STYLE}>Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              placeholder="Add event details..."
+              style={{ ...INPUT_STYLE, resize: 'none', lineHeight: 1.55 }}
+            />
+          </div>
+
+          {/* Reminder */}
+          <div>
+            <label style={LABEL_STYLE}>Reminder</label>
+            <div style={{ position: 'relative' }}>
+              <Bell size={13} color="rgba(26,60,40,0.38)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               <select
                 value={formData.reminder}
                 onChange={(e) => setFormData({ ...formData, reminder: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ ...INPUT_STYLE, paddingLeft: 30, appearance: 'none' }}
               >
                 <option value="0">No reminder</option>
                 <option value="15">15 minutes before</option>
@@ -199,17 +331,44 @@ export function NewEventModal({ isOpen, onClose, onSave, selectedDate }: NewEven
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+        {/* ── Footer ────────────────────────────────────────────────────────── */}
+        <div
+          style={{
+            padding: '14px 22px 18px',
+            borderTop: '1px solid rgba(26,60,40,0.1)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 10,
+            flexShrink: 0,
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            style={{
+              padding: '8px 18px',
+              borderRadius: 8,
+              border: '1px solid rgba(26,60,40,0.2)',
+              background: 'transparent',
+              color: 'rgba(26,60,40,0.6)',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+            }}
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            style={{
+              padding: '8px 22px',
+              borderRadius: 8,
+              background: C.forest,
+              color: C.egreen,
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             Create Event
           </button>

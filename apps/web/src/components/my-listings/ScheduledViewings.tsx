@@ -21,22 +21,22 @@ const MONTHS = [
 
 
 function ViewingTypeIcon({ type }: { type: string }) {
-  if (type === 'virtual') return <Video className="w-4 h-4 text-purple-600" />;
-  if (type === 'phone') return <Phone className="w-4 h-4 text-blue-600" />;
-  return <Home className="w-4 h-4 text-green-600" />;
+  if (type === 'virtual') return <Video className="w-4 h-4 text-[#C4562A]" />;
+  if (type === 'phone') return <Phone className="w-4 h-4 text-[#1A3C28]" />;
+  return <Home className="w-4 h-4 text-[#1A3C28]" />;
 }
 
 function statusBadgeClass(status: string) {
   switch (status) {
-    case 'in-progress': return 'bg-amber-100 text-amber-700';
-    case 'upcoming':    return 'bg-blue-100 text-blue-700';
+    case 'in-progress': return 'bg-[#B89040]/15 text-[#B89040]';
+    case 'upcoming':    return 'bg-[#1A3C28]/10 text-[#1A3C28]';
     case 'requested':   return 'bg-yellow-100 text-yellow-700';
     case 'confirmed':   return 'bg-green-100 text-green-700';
-    case 'completed':   return 'bg-gray-100 text-gray-600';
-    case 'ended':       return 'bg-gray-100 text-gray-600';
+    case 'completed':   return 'bg-[#1A3C28]/[0.07] text-[#1A3C28]/60';
+    case 'ended':       return 'bg-[#1A3C28]/[0.07] text-[#1A3C28]/60';
     case 'declined':    return 'bg-red-100 text-red-700';
     case 'cancelled':   return 'bg-red-100 text-red-700';
-    default: return 'bg-gray-100 text-gray-600';
+    default: return 'bg-[#1A3C28]/[0.07] text-[#1A3C28]/60';
   }
 }
 
@@ -44,10 +44,10 @@ function chipClass(status: string) {
   switch (status) {
     case 'confirmed': return 'bg-green-100 border-green-500 text-green-800';
     case 'requested': return 'bg-yellow-100 border-yellow-500 text-yellow-800';
-    case 'completed': return 'bg-gray-100 border-gray-400 text-gray-700';
+    case 'completed': return 'bg-[#1A3C28]/[0.07] border-[#1A3C28]/30 text-[#1A3C28]/70';
     case 'declined':  return 'bg-red-100 border-red-500 text-red-800';
     case 'cancelled': return 'bg-red-100 border-red-500 text-red-800';
-    default: return 'bg-gray-100 border-gray-400 text-gray-700';
+    default: return 'bg-[#1A3C28]/[0.07] border-[#1A3C28]/30 text-[#1A3C28]/70';
   }
 }
 
@@ -159,7 +159,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-blue-600 animate-spin" /></div>;
+    return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-[#1A3C28] animate-spin" /></div>;
   }
 
   if (error) {
@@ -212,10 +212,10 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
     switch (status) {
       case 'confirmed': return 'bg-green-500';
       case 'requested': return 'bg-yellow-400';
-      case 'completed': return 'bg-gray-400';
+      case 'completed': return 'bg-[#1A3C28]/30';
       case 'declined':
       case 'cancelled': return 'bg-red-400';
-      default: return 'bg-gray-300';
+      default: return 'bg-[#1A3C28]/30';
     }
   };
 
@@ -225,11 +225,11 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">Scheduled Viewings ({viewings.length})</h3>
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center bg-[#1A3C28]/[0.07] rounded-lg p-1">
             <button
               onClick={() => setView('list')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-sm ${
-                view === 'list' ? 'bg-white shadow-sm font-medium' : 'text-gray-600 hover:text-gray-900'
+                view === 'list' ? 'bg-white shadow-sm font-medium' : 'text-[#1A3C28]/60 hover:text-[#1A3C28]'
               }`}
             >
               <List className="w-4 h-4" />
@@ -238,7 +238,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
             <button
               onClick={() => setView('calendar')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-sm ${
-                view === 'calendar' ? 'bg-white shadow-sm font-medium' : 'text-gray-600 hover:text-gray-900'
+                view === 'calendar' ? 'bg-white shadow-sm font-medium' : 'text-[#1A3C28]/60 hover:text-[#1A3C28]'
               }`}
             >
               <CalendarDays className="w-4 h-4" />
@@ -247,7 +247,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-3 py-1.5 bg-[#1A3C28] text-white text-sm rounded-lg hover:bg-[#2D5A40] transition-colors"
           >
             + Schedule
           </button>
@@ -257,7 +257,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
       {/* Stat strip — 5 clickable filter tiles */}
       <div className="grid grid-cols-5 gap-3">
         {([
-          { label: 'Total',     count: viewings.length, key: null,        color: 'text-gray-900',  ring: 'ring-blue-500'  },
+          { label: 'Total',     count: viewings.length, key: null,        color: 'text-[#1A3C28]',  ring: 'ring-[#1A3C28]'  },
           { label: 'Confirmed', count: confirmedCount,  key: 'confirmed', color: 'text-green-700', ring: 'ring-green-500' },
           { label: 'Pending',   count: pendingCount,    key: 'requested', color: 'text-yellow-700',ring: 'ring-yellow-500'},
           { label: 'Completed', count: completedCount,  key: 'completed', color: 'text-gray-600',  ring: 'ring-gray-400'  },
@@ -267,23 +267,23 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
             key={label}
             onClick={() => setStatusFilter(statusFilter === key ? null : key)}
             className={`bg-white border rounded-xl p-3 text-center hover:shadow-sm transition-all ${
-              statusFilter === key ? `ring-2 ${ring} border-transparent` : 'border-gray-200'
+              statusFilter === key ? `ring-2 ${ring} border-transparent` : 'border-[#1A3C28]/10'
             }`}
           >
             <div className={`text-2xl font-bold ${color}`}>{count}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+            <div className="text-xs text-[#1A3C28]/50 mt-0.5">{label}</div>
           </button>
         ))}
       </div>
 
       {/* Today spotlight strip */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+      <div className="bg-[#1A3C28]/[0.06] border border-[#1A3C28]/15 rounded-xl px-4 py-3">
         <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-semibold text-blue-800">Today&apos;s Viewings</span>
+          <Calendar className="w-4 h-4 text-[#1A3C28]" />
+          <span className="text-sm font-semibold text-[#1A3C28]">Today&apos;s Viewings</span>
         </div>
         {todayViewings.length === 0 ? (
-          <p className="text-sm text-blue-400 italic">No viewings scheduled for today.</p>
+          <p className="text-sm text-[#1A3C28]/40 italic">No viewings scheduled for today.</p>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-1">
             {todayViewings.map((v) => {
@@ -295,9 +295,9 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                 <div
                   key={v.id}
                   onClick={() => router.push(`/app/my-listings/${propertyId}/viewings/${v.id}`)}
-                  className="flex-shrink-0 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm cursor-pointer hover:shadow-sm transition-shadow"
+                  className="flex-shrink-0 bg-white border border-[#1A3C28]/15 rounded-lg px-3 py-2 text-sm cursor-pointer hover:shadow-sm transition-shadow"
                 >
-                  <div className="font-semibold text-blue-800">{time}</div>
+                  <div className="font-semibold text-[#1A3C28]">{time}</div>
                   <div className="text-gray-600">{buyerName}</div>
                   <div className="text-xs text-gray-400 capitalize">{v.viewing_type.replace('_', ' ')}</div>
                 </div>
@@ -309,7 +309,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
 
       {viewings.length === 0 && view === 'list' && (
         <div className="text-center py-12 text-gray-500">
-          <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <Calendar className="w-10 h-10 mx-auto mb-3 text-[#1A3C28]/20" />
           <p className="text-sm">No viewings scheduled for this listing.</p>
         </div>
       )}
@@ -318,9 +318,9 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
       {view === 'list' && viewings.length > 0 && (
         <div className="space-y-6">
           {([
-            { label: 'In Progress', color: 'text-amber-700', items: inProgress },
-            { label: 'Upcoming',    color: 'text-blue-700',  items: upcoming   },
-            { label: 'Past',        color: 'text-gray-500',  items: past       },
+            { label: 'In Progress', color: 'text-[#B89040]',    items: inProgress },
+            { label: 'Upcoming',    color: 'text-[#1A3C28]',     items: upcoming   },
+            { label: 'Past',        color: 'text-[#1A3C28]/50',  items: past       },
           ] as const).map(({ label, color, items }) =>
             items.length === 0 ? null : (
               <div key={label}>
@@ -337,24 +337,24 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                         {/* Accent-bar card */}
                         <div
                           onClick={() => router.push(`/app/my-listings/${propertyId}/viewings/${v.id}`)}
-                          className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer flex"
+                          className="bg-white border border-[#1A3C28]/10 rounded-lg overflow-hidden hover:border-[#1A3C28]/30 hover:shadow-sm transition-all cursor-pointer flex"
                         >
                           <div className={`w-1 flex-shrink-0 ${accentBarClass(v.status)}`} />
                           <div className="flex-1 p-4">
                             <div className="flex items-start justify-between gap-3">
                               {/* Large day/month */}
                               <div className="flex-shrink-0 text-center min-w-[40px]">
-                                <div className="text-xs font-medium text-gray-400 uppercase">
+                                <div className="text-xs font-medium text-[#1A3C28]/40 uppercase">
                                   {MONTHS[dt.getMonth()].slice(0, 3)}
                                 </div>
-                                <div className="text-2xl font-bold text-gray-800 leading-tight">
+                                <div className="text-2xl font-bold text-[#1A3C28] leading-tight">
                                   {dt.getDate()}
                                 </div>
                               </div>
                               {/* Detail */}
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-gray-900 truncate">{buyerName}</div>
-                                <div className="flex items-center gap-1.5 mt-0.5 text-sm text-gray-500 flex-wrap">
+                                <div className="font-semibold text-[#1A3C28] truncate">{buyerName}</div>
+                                <div className="flex items-center gap-1.5 mt-0.5 text-sm text-[#1A3C28]/50 flex-wrap">
                                   <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                                   <span>{time}</span>
                                   {v.duration_minutes && (
@@ -402,9 +402,9 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                         </div>
                         {/* Feedback callout card */}
                         {v.status === 'completed' && v.buyer_feedback && (
-                          <div className="bg-amber-50 border-l-4 border-amber-400 rounded-r-xl px-4 py-3 mt-0.5 flex items-start gap-2">
-                            <Quote className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                            <p className="text-sm text-amber-800 italic">{v.buyer_feedback}</p>
+                          <div className="bg-[#B89040]/[0.07] border-l-4 border-[#B89040] rounded-r-xl px-4 py-3 mt-0.5 flex items-start gap-2">
+                            <Quote className="w-4 h-4 text-[#B89040] flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-[#1A3C28]/75 italic">{v.buyer_feedback}</p>
                           </div>
                         )}
                       </div>
@@ -419,7 +419,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
 
       {/* Calendar view */}
       {view === 'calendar' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="bg-white border border-[#1A3C28]/10 rounded-lg p-6">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div className="flex items-center gap-4">
@@ -427,7 +427,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                 onClick={() =>
                   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
                 }
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-[#1A3C28]/[0.07] rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -438,7 +438,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                 onClick={() =>
                   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
                 }
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-[#1A3C28]/[0.07] rounded-lg transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -449,7 +449,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
               {([
                 { label: 'Confirmed', count: calConfirmedCount, key: 'confirmed', dot: 'bg-green-500', active: 'bg-green-100 border-green-500 text-green-700' },
                 { label: 'Pending',   count: calPendingCount,   key: 'requested', dot: 'bg-yellow-400', active: 'bg-yellow-100 border-yellow-500 text-yellow-700'},
-                { label: 'Past',      count: calPastCount,      key: 'past',      dot: 'bg-gray-400',   active: 'bg-gray-100 border-gray-400 text-gray-700'     },
+                { label: 'Past',      count: calPastCount,      key: 'past',      dot: 'bg-[#1A3C28]/40',   active: 'bg-[#1A3C28]/[0.07] border-[#1A3C28]/30 text-[#1A3C28]/70'     },
               ] as const).map(({ label, count, key, dot, active }) => (
                 <button
                   key={key}
@@ -457,7 +457,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                     calendarFilter === key
                       ? active
-                      : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
+                      : 'bg-white border-[#1A3C28]/15 text-[#1A3C28]/60 hover:border-[#1A3C28]/40'
                   }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${dot}`} />
@@ -473,7 +473,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div
                 key={day}
-                className="text-center text-xs font-semibold text-gray-500 py-2 border-b border-gray-200"
+                className="text-center text-xs font-semibold text-[#1A3C28]/50 py-2 border-b border-[#1A3C28]/10"
               >
                 {day}
               </div>
@@ -481,7 +481,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
 
             {/* Empty cells */}
             {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={`blank-${i}`} className="min-h-[72px] bg-gray-50 border border-gray-100 rounded-lg" />
+              <div key={`blank-${i}`} className="min-h-[72px] bg-[#1A3C28]/[0.02] border border-[#1A3C28]/[0.06] rounded-lg" />
             ))}
 
             {/* Day cells */}
@@ -507,16 +507,16 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                 <div
                   key={day}
                   className={`min-h-[72px] p-1.5 border rounded-lg transition-colors ${
-                    today ? 'border-2 border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                    today ? 'border-2 border-[#1A3C28] bg-[#1A3C28]/[0.05]' : 'border-[#1A3C28]/10 hover:bg-[#1A3C28]/[0.03]'
                   }`}
                 >
                   <div className="flex justify-end mb-1">
                     {today ? (
-                      <span className="w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      <span className="w-6 h-6 bg-[#1A3C28] text-white text-xs font-bold rounded-full flex items-center justify-center">
                         {day}
                       </span>
                     ) : (
-                      <span className="text-xs font-medium text-gray-600">{day}</span>
+                      <span className="text-xs font-medium text-[#1A3C28]/60">{day}</span>
                     )}
                   </div>
                   <div className="space-y-0.5">
@@ -535,7 +535,7 @@ export function ScheduledViewings({ propertyId, authToken }: Props) {
                       );
                     })}
                     {overflowCount > 0 && (
-                      <div className="text-xs text-center text-gray-500 bg-gray-100 rounded px-1 py-0.5">
+                      <div className="text-xs text-center text-[#1A3C28]/50 bg-[#1A3C28]/[0.05] rounded px-1 py-0.5">
                         +{overflowCount} more
                       </div>
                     )}

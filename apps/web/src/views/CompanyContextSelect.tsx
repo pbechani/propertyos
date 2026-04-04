@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "@/lib/router-compat";
 import { useSearchParams } from "next/navigation";
-import { ChevronRight, Home, LogOut, AlertCircle } from "lucide-react";
+import { ChevronRight, LogOut, AlertCircle } from "lucide-react";
 
 /** Deterministic pastel-ish bg colour from a string (stays consistent across renders) */
 function nameToColor(name: string): string {
@@ -15,7 +15,6 @@ function nameToColor(name: string): string {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return COLORS[Math.abs(hash) % COLORS.length];
 }
-import Link from "next/link";
 import { getAccessToken, getPendingCompanies, getUserCompanies, saveSelectedContextTokens, saveActiveCompanyContext, saveUserCompanies, savePendingCompanies, clearAuthSession } from "@/lib/auth-session";
 import { authApi, type CompanyContext, ApiError } from "@/lib/api-client";
 
@@ -27,6 +26,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   inspector: "Inspector",
   logistics: "Logistics",
   developing: "Developer",
+};
+
+const C = {
+  forest: '#1A3C28',
+  forestLight: '#4A7C5A',
+  parchment: '#F2E8D5',
+  amber: '#B89040',
+  terracotta: '#C4562A',
+  egreen: '#00E87A',
+  muted: '#E8F0EC',
 };
 
 export default function CompanyContextSelect() {
@@ -119,28 +128,30 @@ export default function CompanyContextSelect() {
 
   const handleSignOut = () => {
     clearAuthSession();
-    navigate("/login");
+    window.location.href = '/';
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: C.parchment }}>
       <div className="w-full max-w-2xl">
-        {/* Logo — matches login page */}
-        <Link href="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-            <Home className="w-7 h-7 text-white dark:text-black" />
+        <div className="rounded-2xl shadow-xl overflow-hidden">
+          {/* Forest header strip */}
+          <div style={{ background: C.forest, padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, background: C.forestLight, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 16, fontWeight: 700, color: C.egreen }}>B</span>
+            </div>
+            <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: C.parchment, letterSpacing: '-0.3px' }}>BuildTrust</span>
           </div>
-          <span className="font-bold text-2xl">PropertyOS</span>
-        </Link>
 
-        <div className="bg-card border border-border rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Select Company & Role</h1>
-            <p className="text-muted-foreground">
-              You belong to multiple companies. Choose which context to work in.
-            </p>
-          </div>
+          {/* Card body */}
+          <div className="p-8" style={{ background: '#fff' }}>
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'var(--font-fraunces)', color: C.forest }}>Select Company &amp; Role</h1>
+              <p className="text-muted-foreground">
+                You belong to multiple companies. Choose which context to work in.
+              </p>
+            </div>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
@@ -158,10 +169,9 @@ export default function CompanyContextSelect() {
                   key={co.id}
                   onClick={() => setSelected(co.id)}
                   className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
-                    isSelected
-                      ? "border-indigo-600 bg-indigo-50 shadow-md"
-                      : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                    isSelected ? "shadow-md" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                   }`}
+                  style={isSelected ? { borderColor: C.forest, borderLeftWidth: 4, background: C.muted } : {}}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -189,24 +199,34 @@ export default function CompanyContextSelect() {
 
                       <div>
                         <h3
-                          className={`text-lg mb-1 ${
-                            isSelected ? "text-indigo-900" : "text-gray-900"
-                          }`}
+                          className="text-lg mb-1"
+                          style={{ fontFamily: 'var(--font-fraunces)', color: isSelected ? C.forest : '#111827' }}
                         >
                           {co.name}
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* Category badge */}
-                          <span className="inline-block px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-xs"
+                            style={
+                              co.category === 'agent' || co.category === 'conveyancer'
+                                ? { background: C.muted, color: C.forest }
+                                : co.category === 'supplier'
+                                ? { background: '#FEF3C7', color: '#B45309' }
+                                : co.category === 'contractor'
+                                ? { background: '#FEE2E2', color: C.terracotta }
+                                : { background: '#F3F4F6', color: '#6B7280' }
+                            }
+                          >
                             {CATEGORY_LABELS[co.category] ?? co.category}
                           </span>
                           {/* Role badge */}
                           <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${
-                              isSelected
-                                ? "bg-indigo-600 text-white"
-                                : "bg-gray-200 text-gray-700"
-                            }`}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs"
+                            style={isSelected
+                              ? { background: C.forest, color: C.parchment }
+                              : { background: '#E5E7EB', color: '#6B7280' }
+                            }
                           >
                             {co.role.toUpperCase()}
                           </span>
@@ -220,7 +240,8 @@ export default function CompanyContextSelect() {
                       </div>
                     </div>
                     <ChevronRight
-                      className={`w-6 h-6 ${isSelected ? "text-indigo-600" : "text-gray-400"}`}
+                      className="w-6 h-6"
+                      style={{ color: isSelected ? C.forest : '#9CA3AF' }}
                     />
                   </div>
                 </button>
@@ -232,11 +253,11 @@ export default function CompanyContextSelect() {
           <button
             onClick={handleContinue}
             disabled={!selected || isLoading}
-            className={`w-full py-4 rounded-lg transition flex items-center justify-center gap-2 ${
-              selected && !isLoading
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+            className="w-full py-4 rounded-lg transition flex items-center justify-center gap-2"
+            style={selected && !isLoading
+              ? { background: C.forest, color: C.parchment }
+              : { background: '#E5E7EB', color: '#9CA3AF' }
+            }
           >
             {isLoading ? "Signing In…" : "Continue to Dashboard"}
             {!isLoading && <ChevronRight className="w-5 h-5" />}
@@ -246,11 +267,13 @@ export default function CompanyContextSelect() {
           <div className="flex justify-center mt-6">
             <button
               onClick={handleSignOut}
-              className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1 transition"
+              className="text-sm flex items-center gap-1 transition"
+              style={{ color: C.forest, opacity: 0.55 }}
             >
               <LogOut className="w-4 h-4" />
               Sign out and go back
             </button>
+          </div>
           </div>
         </div>
       </div>

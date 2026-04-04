@@ -2,50 +2,31 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Plus, Phone, Mail, Flame, Thermometer, Snowflake, Leaf, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, Plus, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { leadsApi, type LeadRow, type CreateLeadPayload, LEAD_SOURCES } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-session';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
-const temperatureConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  hot: { label: 'Hot', color: 'bg-red-100 text-red-700 border-red-200', icon: <Flame className="h-3 w-3" /> },
-  warm: { label: 'Warm', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: <Thermometer className="h-3 w-3" /> },
-  cold: { label: 'Cold', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: <Snowflake className="h-3 w-3" /> },
-  nurture: { label: 'Nurture', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: <Leaf className="h-3 w-3" /> },
-};
-
-const stageConfig: Record<string, { label: string; color: string }> = {
-  new: { label: 'New', color: 'bg-gray-100 text-gray-700 border-gray-200' },
-  contacted: { label: 'Contacted', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  qualified: { label: 'Qualified', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-  active: { label: 'Active', color: 'bg-green-100 text-green-700 border-green-200' },
-  under_contract: { label: 'Under Contract', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  closed: { label: 'Closed', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  lost: { label: 'Lost', color: 'bg-red-100 text-red-700 border-red-200' },
-};
 
 const typeLabels: Record<string, string> = {
   buyer: 'Buyer', seller: 'Seller', renter: 'Renter', investor: 'Investor',
 };
 
-const ALL_STAGES = ['new', 'contacted', 'qualified', 'active', 'under_contract', 'closed', 'lost'];
 const PAGE_SIZE = 20;
 
 function formatBudget(min?: string | null, max?: string | null, currency?: string | null) {
-  const sym = currency ?? 'ZAR';
-  const fmt = (n: number) => n >= 1_000_000 ? `${sym} ${(n / 1_000_000).toFixed(1)}M` : `${sym} ${(n / 1_000).toFixed(0)}K`;
+  const sym = (!currency || currency === 'ZAR') ? 'R' : currency;
+  const compact = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : `${(n / 1_000).toFixed(0)}K`;
   const minN = min ? parseFloat(min) : null;
   const maxN = max ? parseFloat(max) : null;
-  if (minN && maxN) return `${fmt(minN)} – ${fmt(maxN)}`;
-  if (maxN) return `Up to ${fmt(maxN)}`;
-  if (minN) return `From ${fmt(minN)}`;
+  if (minN && maxN) return `${sym} ${compact(minN)} – ${compact(maxN)}`;
+  if (maxN) return `Up to ${sym} ${compact(maxN)}`;
+  if (minN) return `${sym} ${compact(minN)}+`;
   return '—';
 }
 
 const EMPTY_FORM: CreateLeadPayload = { name: '', type: 'buyer', email: '', phone: '', source: '', temperature: 'warm', notes: '' };
 
-export default function LeadsPage() {
+export default function LeadsPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -61,6 +42,7 @@ export default function LeadsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [tempFilter, setTempFilter] = useState('all');
   const [stageFilter, setStageFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // debounced search value
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -110,123 +92,149 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Leads</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {loading ? 'Loading…' : `${total} lead${total !== 1 ? 's' : ''}`}
-          </p>
+    <div className="space-y-4">
+      {/* Header — hidden when rendered inside LeadManagementHub */}
+      {!isEmbedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Leads</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {loading ? 'Loading…' : `${total} lead${total !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+          <Button onClick={() => { setForm(EMPTY_FORM); setCreateError(''); setShowCreate(true); }} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Plus className="h-4 w-4" />
+            Add Lead
+          </Button>
         </div>
-        <Button onClick={() => { setForm(EMPTY_FORM); setCreateError(''); setShowCreate(true); }} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="h-4 w-4" />
-          Add Lead
-        </Button>
+      )}
+
+      {/* ── Toolbar (mockup-style) ── */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' as const }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+          <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9CA3AF', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search leads by name, email, phone…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: '100%', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px 8px 32px', fontSize: 12, color: '#1F2937', outline: 'none' }}
+          />
+        </div>
+        {/* Stage filter */}
+        <button
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+          onClick={() => setStageFilter(stageFilter === 'all' ? 'new' : 'all')}
+        >
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+          Stage
+        </button>
+        {/* Temperature filter */}
+        <button
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+          onClick={() => setTempFilter(tempFilter === 'all' ? 'hot' : 'all')}
+        >
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>
+          Temperature
+        </button>
+        {/* Type filter */}
+        <button
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+          onClick={() => setTypeFilter(typeFilter === 'all' ? 'buyer' : 'all')}
+        >
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+          Date Range
+        </button>
       </div>
 
-      {/* Filters */}
-      <Card className="rounded-2xl border-border">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search leads by name, email, phone…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="pl-9 pr-8 py-2 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                <option value="all">All Types</option>
-                <option value="buyer">Buyer</option>
-                <option value="seller">Seller</option>
-                <option value="renter">Renter</option>
-                <option value="investor">Investor</option>
-              </select>
-            </div>
-            <div className="relative">
-              <select value={tempFilter} onChange={(e) => setTempFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                <option value="all">All Temperatures</option>
-                <option value="hot">Hot</option>
-                <option value="warm">Warm</option>
-                <option value="cold">Cold</option>
-                <option value="nurture">Nurture</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Stage pills */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            <button onClick={() => setStageFilter('all')} className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${stageFilter === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'border-border text-muted-foreground hover:bg-accent'}`}>
-              All Stages
+      {/* ── Card with header + view toggle ── */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+        {/* Card header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#1F2937' }}>
+            All Leads{' '}
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280', fontFamily: "var(--font-mono)" }}>({loading ? '…' : total})</span>
+          </span>
+          {/* View toggle */}
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, overflow: 'hidden', display: 'flex' }}>
+            <button
+              onClick={() => setViewMode('list')}
+              title="List view"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none', background: viewMode === 'list' ? '#1A3C28' : '#fff', color: viewMode === 'list' ? '#F2E8D5' : '#374151', transition: 'all 0.15s' }}
+            >
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+              List
             </button>
-            {ALL_STAGES.map((s) => (
-              <button key={s} onClick={() => setStageFilter(s)} className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${stageFilter === s ? 'bg-blue-600 text-white border-blue-600' : 'border-border text-muted-foreground hover:bg-accent'}`}>
-                {stageConfig[s].label}
-              </button>
-            ))}
+            <button
+              onClick={() => setViewMode('grid')}
+              title="Grid view"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none', borderLeft: '1px solid #E5E7EB', background: viewMode === 'grid' ? '#1A3C28' : '#fff', color: viewMode === 'grid' ? '#F2E8D5' : '#374151', transition: 'all 0.15s' }}
+            >
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+              Grid
+            </button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <Card className="rounded-2xl border-border overflow-hidden">
-        {error && <p className="px-4 py-3 text-sm text-red-600 border-b border-border">{error}</p>}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Contact</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Type</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Source</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Temperature</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Stage</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Budget</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mx-auto" />
-                  </td>
-                </tr>
-              ) : leads.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                    No leads match your filters.
-                  </td>
-                </tr>
-              ) : (
-                leads.map((lead) => <LeadRow key={lead.id} lead={lead} />)
-              )}
-            </tbody>
-          </table>
         </div>
+
+        {error && <p style={{ padding: '10px 16px', fontSize: 12, color: '#DC2626', borderBottom: '1px solid #FEE2E2' }}>{error}</p>}
+
+        {/* ── List view ── */}
+        {viewMode === 'list' && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#FAFAF8' }}>
+                  {['Name', 'Type', 'Temp', 'Stage', 'Budget', 'Last Contact'].map((h) => (
+                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, color: '#9CA3AF', fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.07em', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' as const }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center' }}>
+                    <Loader2 className="h-5 w-5 animate-spin" style={{ margin: '0 auto', color: '#9CA3AF' }} />
+                  </td></tr>
+                ) : leads.length === 0 ? (
+                  <tr><td colSpan={6} style={{ padding: '48px 16px', textAlign: 'center', color: '#6B7280', fontSize: 13 }}>No leads match your filters.</td></tr>
+                ) : (
+                  leads.map((lead) => <LeadTableRow key={lead.id} lead={lead} />)
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── Grid view ── */}
+        {viewMode === 'grid' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, padding: 20 }}>
+            {loading ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '48px 0' }}>
+                <Loader2 className="h-5 w-5 animate-spin" style={{ margin: '0 auto', color: '#9CA3AF' }} />
+              </div>
+            ) : leads.length === 0 ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '48px 0', color: '#6B7280', fontSize: 13 }}>No leads match your filters.</div>
+            ) : (
+              leads.map((lead) => <LeadGridCard key={lead.id} lead={lead} />)
+            )}
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-            <p className="text-xs text-muted-foreground">
-              Page {page} of {totalPages} &middot; {total} leads
-            </p>
-            <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg p-1.5 border border-border text-muted-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #E5E7EB' }}>
+            <p style={{ fontSize: 11, color: '#6B7280' }}>Page {page} of {totalPages} &middot; {total} leads</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={{ borderRadius: 8, padding: '5px 8px', border: '1px solid #E5E7EB', color: '#6B7280', background: '#fff', cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.4 : 1 }}>
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg p-1.5 border border-border text-muted-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} style={{ borderRadius: 8, padding: '5px 8px', border: '1px solid #E5E7EB', color: '#6B7280', background: '#fff', cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.4 : 1 }}>
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Create Lead Modal */}
       {showCreate && (
@@ -323,67 +331,122 @@ export default function LeadsPage() {
   );
 }
 
-function LeadRow({ lead }: { lead: LeadRow }) {
-  const temp = temperatureConfig[lead.temperature] ?? temperatureConfig.warm;
-  const stage = stageConfig[lead.stage] ?? { label: lead.stage, color: 'bg-gray-100 text-gray-700 border-gray-200' };
+// ─────────────────────────────────────────────────────────────────
+// Helper sub-components (mockup-faithful)
+// ─────────────────────────────────────────────────────────────────
+
+const typeBadgeStyle: Record<string, { bg: string; color: string }> = {
+  buyer:    { bg: '#EFF6FF', color: '#1D4ED8' },
+  investor: { bg: '#F5F3FF', color: '#6D28D9' },
+  seller:   { bg: '#F0FDF4', color: '#15803D' },
+  renter:   { bg: '#FFFBEB', color: '#B45309' },
+};
+
+const tempBadge: Record<string, { label: string; emoji: string; bg: string; color: string }> = {
+  hot:     { label: 'Hot',     emoji: '🔥', bg: '#FFF1EE', color: '#C4562A' },
+  warm:    { label: 'Warm',    emoji: '☀️', bg: '#FFFBEB', color: '#B45309' },
+  cold:    { label: 'Cold',    emoji: '❄️', bg: '#EFF6FF', color: '#1D4ED8' },
+  nurture: { label: 'Nurture', emoji: '🌱', bg: '#F0FDF4', color: '#15803D' },
+};
+
+const stageBadge: Record<string, { label: string; bg: string; color: string }> = {
+  new:            { label: 'New',            bg: '#F3F4F6', color: '#6B7280' },
+  contacted:      { label: 'Contacted',      bg: '#EFF6FF', color: '#1D4ED8' },
+  qualified:      { label: 'Qualified',      bg: '#EEF2FF', color: '#4338CA' },
+  active:         { label: 'Active',         bg: '#F0FDF4', color: '#15803D' },
+  under_contract: { label: 'Under Contract', bg: '#FFF7ED', color: '#C2410C' },
+  closed:         { label: 'Closed',         bg: '#ECFDF5', color: '#065F46' },
+  lost:           { label: 'Lost',           bg: '#FEF2F2', color: '#B91C1C' },
+};
+
+function TempBadge({ temperature }: { temperature: string }) {
+  const cfg = tempBadge[temperature] ?? tempBadge.warm;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: cfg.bg, color: cfg.color, borderRadius: 20, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", whiteSpace: 'nowrap' }}>
+      {cfg.emoji} {cfg.label.toUpperCase()}
+    </span>
+  );
+}
+
+function TypeBadge({ type }: { type: string }) {
+  const cfg = typeBadgeStyle[type] ?? { bg: '#F3F4F6', color: '#374151' };
+  return (
+    <span style={{ display: 'inline-block', background: cfg.bg, color: cfg.color, borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+      {typeLabels[type] ?? type}
+    </span>
+  );
+}
+
+function StageBadge({ stage }: { stage: string }) {
+  const cfg = stageBadge[stage] ?? stageBadge.new;
+  return (
+    <span style={{ display: 'inline-block', background: cfg.bg, color: cfg.color, borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function LeadTableRow({ lead }: { lead: LeadRow }) {
+  const budget = formatBudget(lead.budget_min, lead.budget_max, lead.budget_currency);
+  const lastContact = lead.last_contact_at
+    ? new Date(lead.last_contact_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })
+    : '—';
 
   return (
-    <tr className="hover:bg-accent/50 transition-colors">
-      <td className="px-4 py-3">
-        <div>
-          <Link href={`/app/leads/${lead.id}`} className="font-medium text-foreground hover:text-blue-600 transition-colors">
+    <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
+      <td style={{ padding: '12px 16px' }}>
+        <Link href={`/app/leads/${lead.id}`} style={{ fontWeight: 600, fontSize: 13, color: '#1F2937', textDecoration: 'none' }}>
+          {lead.name}
+        </Link>
+        {lead.email && (
+          <div style={{ fontSize: 10, color: '#9CA3AF', fontFamily: "var(--font-mono)", marginTop: 2 }}>{lead.email}</div>
+        )}
+      </td>
+      <td style={{ padding: '12px 16px' }}><TypeBadge type={lead.type} /></td>
+      <td style={{ padding: '12px 16px' }}><TempBadge temperature={lead.temperature} /></td>
+      <td style={{ padding: '12px 16px' }}><StageBadge stage={lead.stage} /></td>
+      <td style={{ padding: '12px 16px', fontFamily: "var(--font-fraunces)", fontWeight: 700, fontSize: 13, color: '#C4562A', whiteSpace: 'nowrap' }}>{budget}</td>
+      <td style={{ padding: '12px 16px', fontFamily: "var(--font-mono)", fontSize: 10, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{lastContact}</td>
+    </tr>
+  );
+}
+
+function LeadGridCard({ lead }: { lead: LeadRow }) {
+  const budget = formatBudget(lead.budget_min, lead.budget_max, lead.budget_currency);
+  const lastContact = lead.last_contact_at
+    ? new Date(lead.last_contact_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '—';
+  const initials = lead.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const typeColors = typeBadgeStyle[lead.type] ?? { bg: '#F3F4F6', color: '#374151' };
+
+  return (
+    <div style={{ border: '1px solid #E5E7EB', borderRadius: 12, padding: 16, background: '#fff', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Top: avatar + name + temp badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: typeColors.bg, color: typeColors.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+          {initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Link href={`/app/leads/${lead.id}`} style={{ fontWeight: 700, fontSize: 13, color: '#1F2937', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {lead.name}
           </Link>
-          <div className="flex items-center gap-3 mt-0.5">
-            {lead.email && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Mail className="h-3 w-3" />{lead.email}
-              </span>
-            )}
-            {lead.phone && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Phone className="h-3 w-3" />{lead.phone}
-              </span>
-            )}
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <span className="capitalize text-sm text-muted-foreground">{typeLabels[lead.type] ?? lead.type}</span>
-      </td>
-      <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground capitalize">{lead.source?.replace(/_/g, ' ') ?? '—'}</span>
-      </td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${temp.color}`}>
-          {temp.icon}{temp.label}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${stage.color}`}>
-          {stage.label}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground">{formatBudget(lead.budget_min, lead.budget_max, lead.budget_currency)}</span>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {lead.phone && (
-            <a href={`tel:${lead.phone}`} className="rounded-lg p-1.5 text-muted-foreground hover:text-green-600 hover:bg-green-50 transition-colors" title="Call">
-              <Phone className="h-4 w-4" />
-            </a>
-          )}
           {lead.email && (
-            <a href={`mailto:${lead.email}`} className="rounded-lg p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Email">
-              <Mail className="h-4 w-4" />
-            </a>
+            <div style={{ fontSize: 10, color: '#9CA3AF', fontFamily: "var(--font-mono)", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.email}</div>
           )}
-          <Link href={`/app/leads/${lead.id}`} className="rounded-lg px-2.5 py-1 text-xs font-medium border border-border text-foreground hover:bg-accent transition-colors">
-            View
-          </Link>
         </div>
-      </td>
-    </tr>
+        <TempBadge temperature={lead.temperature} />
+      </div>
+      {/* Badges row */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <TypeBadge type={lead.type} />
+        <StageBadge stage={lead.stage} />
+      </div>
+      <hr style={{ border: 'none', borderTop: '1px solid #E5E7EB', margin: 0 }} />
+      {/* Footer */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: "var(--font-fraunces)", fontWeight: 700, fontSize: 14, color: '#C4562A' }}>{budget}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: '#9CA3AF' }}>last contact {lastContact}</span>
+      </div>
+    </div>
   );
 }

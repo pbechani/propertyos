@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Link } from "@/lib/router-compat";
 import {
   TrendingUp, Eye,
@@ -16,7 +17,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreateListing } from "@/components/CreateListing";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
 import { propertiesApi, agentApi, viewingActionsApi, leadsApi, viewingsApi, syndicationApi, notificationsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord, type LeadRow, type LeadActivityRow, type LeadDashboardResponse, type CreateLeadPayload, type SyndicationRecord, type AgentBookViewingPayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type UserNotification, LEAD_STATUSES, ACTIVITY_TYPES, LEAD_SOURCES } from "@/lib/api-client";
 import { EditListing } from "@/components/EditListing";
@@ -69,8 +69,285 @@ function mapPropertyToDashboardListing(property: PropertyListing): DashboardList
   };
 }
 
+// ── Smart Alert Bar ──────────────────────────────────────────────────────────
+function SmartAlertBar({ pendingViewings, expiringMandates, staleLeadsCount, onNavigate, dismissed, setDismissed }: {
+  pendingViewings: number;
+  expiringMandates: number;
+  staleLeadsCount: number;
+  onNavigate: (tab: "overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm" | "ai") => void;
+  dismissed: boolean;
+  setDismissed: (v: boolean) => void;
+}) {
+  const alerts: { label: string; color: string; tab: "viewings" | "mandates" | "crm" }[] = [];
+  if (pendingViewings > 0) alerts.push({ label: `${pendingViewings} pending viewing${pendingViewings > 1 ? "s" : ""}`, color: "bg-amber-100 text-amber-800 border-amber-200", tab: "viewings" });
+  if (expiringMandates > 0) alerts.push({ label: `${expiringMandates} mandate${expiringMandates > 1 ? "s" : ""} expiring soon`, color: "bg-[#C4562A]/10 text-[#C4562A] border-[#C4562A]/20", tab: "mandates" });
+  if (staleLeadsCount > 0) alerts.push({ label: `${staleLeadsCount} stale lead${staleLeadsCount > 1 ? "s" : ""} need follow-up`, color: "bg-[#B89040]/10 text-[#B89040] border-[#B89040]/20", tab: "crm" });
+  if (alerts.length === 0 || dismissed) return null;
+  return (
+    <div className="flex items-center gap-2 px-4 md:px-8 pt-4 flex-wrap">
+      {alerts.map((a) => (
+        <button key={a.tab} onClick={() => onNavigate(a.tab)} className={`text-xs font-medium px-3 py-1 rounded-full border ${a.color} hover:opacity-80 transition-opacity`}>
+          {a.label}
+        </button>
+      ))}
+      <button onClick={() => setDismissed(true)} className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+        <X className="w-3 h-3" /> Dismiss
+      </button>
+    </div>
+  );
+}
+
+// ── Pipeline Funnel Widget ────────────────────────────────────────────────────
+function PipelineFunnelWidget({ views, enquiries, viewingsCount, activeListings, mandatesCount, commissionTotal, compact = false }: {
+  views: number; enquiries: number; viewingsCount: number;
+  activeListings: number; mandatesCount: number; commissionTotal: number; compact?: boolean;
+}) {
+  const stages = [
+    { label: "Views", value: views, color: "#1A3C28" },
+    { label: "Enquiries", value: enquiries, color: "#2D5A40" },
+    { label: "Viewings", value: viewingsCount, color: "#4A7C5A" },
+    { label: "Listings", value: activeListings, color: "#6B9E7A" },
+    { label: "Mandates", value: mandatesCount, color: "#00E87A" },
+  ];
+  const max = Math.max(...stages.map((s) => s.value), 1);
+  return (
+    <Card className={compact ? "p-4 h-full flex flex-col" : "p-6 mb-6"}>
+      <div className={compact ? "flex items-center justify-between mb-3" : "flex items-center justify-between mb-4"}>
+        <h3 className={compact ? "font-semibold text-sm" : "font-semibold text-lg"} style={{ fontFamily: "var(--font-fraunces)" }}>Pipeline Funnel</h3>
+        <span className="text-[10px] text-muted-foreground">{commissionTotal > 0 ? `R${(commissionTotal / 1000).toFixed(0)}k` : "—"}</span>
+      </div>
+      <div className={compact ? "space-y-1.5 flex-1" : "space-y-2"}>
+        {stages.map((s, i) => {
+          const pct = Math.round((s.value / max) * 100);
+          const dropOff = i > 0 && stages[i - 1].value > 0 ? Math.round(((stages[i - 1].value - s.value) / stages[i - 1].value) * 100) : null;
+          return (
+            <div key={s.label} className="flex items-center gap-2">
+              <span className={compact ? "text-[10px] text-muted-foreground w-14 shrink-0" : "text-xs text-muted-foreground w-16 shrink-0"}>{s.label}</span>
+              <div className={`flex-1 bg-gray-100 rounded-full relative overflow-hidden ${compact ? "h-2" : "h-3"}`}>
+                <div className={`rounded-full transition-all duration-500 ${compact ? "h-2" : "h-3"}`} style={{ width: `${pct}%`, backgroundColor: s.color }} />
+              </div>
+              <span className={compact ? "text-[10px] font-semibold w-6 text-right" : "text-xs font-semibold w-8 text-right"} style={{ color: s.color }}>{s.value}</span>
+              {!compact && dropOff !== null && dropOff > 0 && (
+                <span className="text-[10px] text-[#C4562A] w-10 text-right shrink-0">-{dropOff}%</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+// ── Today Schedule Panel ──────────────────────────────────────────────────────
+function TodaySchedulePanel({ viewings, onAddViewing }: { viewings: ViewingResponse[]; onAddViewing: () => void }) {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayViewings = viewings.filter((v) => v.scheduled_at.startsWith(todayStr));
+  return (
+    <Card className="p-5 flex flex-col">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold" style={{ fontFamily: "var(--font-fraunces)" }}>Today&apos;s Schedule</h3>
+        <button onClick={onAddViewing} className="text-xs text-[#1A3C28] hover:underline font-medium">+ Add</button>
+      </div>
+      {todayViewings.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center py-6 text-center gap-2">
+          <Calendar className="w-8 h-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No viewings today</p>
+          <button onClick={onAddViewing} className="text-xs font-medium text-[#1A3C28] hover:underline">Schedule one</button>
+        </div>
+      ) : (
+        <div className="space-y-2 overflow-y-auto max-h-48">
+          {todayViewings
+            .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+            .map((v) => (
+              <div key={v.id} className="flex items-start gap-2 p-2 rounded-lg bg-[#E8F0EC]/60">
+                <Clock className="w-3.5 h-3.5 text-[#1A3C28] mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate">{v.property_title ?? "Property"}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(v.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                    {" · "}{v.status}
+                  </p>
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Listing Health Score ──────────────────────────────────────────────────────
+function healthScore(l: DashboardListing): number {
+  let score = 100;
+  if (l.daysOnMarket > 45) score -= 20;
+  else if (l.daysOnMarket > 21) score -= 10;
+  if (l.views === 0) score -= 15;
+  if (l.inquiries === 0) score -= 10;
+  return Math.max(0, score);
+}
+
+function HealthBadge({ score }: { score: number }) {
+  const color = score >= 80 ? "bg-green-100 text-green-700" : score >= 60 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600";
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{score}</span>;
+}
+
+// ── Commission Goal Tracker ───────────────────────────────────────────────────
+function CommissionGoalTracker({ earned, currency, compact = false }: { earned: number; currency: string; compact?: boolean }) {
+  const STORAGE_KEY = "commissionGoalTarget";
+  const [target, setTarget] = useState<number>(() => {
+    if (typeof window === "undefined") return 400000;
+    return Number(localStorage.getItem(STORAGE_KEY) || "400000");
+  });
+  const [editing, setEditing] = useState(false);
+  const [inputVal, setInputVal] = useState(String(target));
+
+  const pct = Math.min(100, target > 0 ? Math.round((earned / target) * 100) : 0);
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDash = (pct / 100) * circumference;
+
+  const compactRadius = 14;
+  const compactCircumference = 2 * Math.PI * compactRadius;
+  const compactStrokeDash = (pct / 100) * compactCircumference;
+
+  const saveTarget = () => {
+    const v = Number(inputVal.replace(/[^0-9]/g, ""));
+    if (v > 0) {
+      setTarget(v);
+      localStorage.setItem(STORAGE_KEY, String(v));
+    }
+    setEditing(false);
+  };
+
+  if (compact) {
+    return (
+      <Card className="flex items-center gap-3 px-4 py-3 h-full">
+        <svg width="40" height="40" viewBox="0 0 40 40" className="shrink-0">
+          <circle cx="20" cy="20" r={compactRadius} fill="none" stroke="#E8F0EC" strokeWidth="4" />
+          <circle
+            cx="20" cy="20" r={compactRadius} fill="none"
+            stroke="#1A3C28" strokeWidth="4"
+            strokeDasharray={`${compactStrokeDash} ${compactCircumference}`}
+            strokeLinecap="round"
+            transform="rotate(-90 20 20)"
+            className="transition-all duration-700"
+          />
+          <text x="20" y="24" textAnchor="middle" fontSize="9" fontWeight="700" fill="#1A3C28">{pct}%</text>
+        </svg>
+        <div className="min-w-0">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Commission Goal</div>
+          <div className="text-sm font-bold leading-tight" style={{ fontFamily: "var(--font-fraunces)", color: "#1A3C28" }}>{formatMoney(String(earned), currency)}</div>
+          <button onClick={() => { setInputVal(String(target)); setEditing(true); }} className="text-[10px] text-muted-foreground hover:text-[#1A3C28]">
+            Goal: {formatMoney(String(target), currency)}
+          </button>
+          {editing && (
+            <input
+              autoFocus
+              className="border border-gray-300 rounded px-1.5 py-0.5 text-[10px] w-20 block mt-0.5"
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              onBlur={saveTarget}
+              onKeyDown={(e) => { if (e.key === "Enter") saveTarget(); if (e.key === "Escape") setEditing(false); }}
+            />
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5 flex flex-col items-center gap-3">
+      <h3 className="font-semibold text-sm w-full" style={{ fontFamily: "var(--font-fraunces)" }}>Commission Goal</h3>
+      <div className="relative w-24 h-24">
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <circle cx="48" cy="48" r={radius} fill="none" stroke="#E8F0EC" strokeWidth="8" />
+          <circle
+            cx="48" cy="48" r={radius} fill="none"
+            stroke="#1A3C28" strokeWidth="8"
+            strokeDasharray={`${strokeDash} ${circumference}`}
+            strokeLinecap="round"
+            transform="rotate(-90 48 48)"
+            className="transition-all duration-700"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-bold" style={{ fontFamily: "var(--font-fraunces)", color: "#1A3C28" }}>{pct}%</span>
+        </div>
+      </div>
+      <div className="text-center w-full">
+        <p className="text-xs text-muted-foreground">Earned</p>
+        <p className="font-semibold text-sm">{formatMoney(String(earned), currency)}</p>
+        {editing ? (
+          <div className="flex items-center gap-1 mt-1 justify-center">
+            <input
+              autoFocus
+              className="border border-gray-300 rounded px-2 py-0.5 text-xs w-24 text-center"
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              onBlur={saveTarget}
+              onKeyDown={(e) => { if (e.key === "Enter") saveTarget(); if (e.key === "Escape") setEditing(false); }}
+            />
+          </div>
+        ) : (
+          <button onClick={() => { setInputVal(String(target)); setEditing(true); }} className="text-xs text-muted-foreground hover:text-[#1A3C28] mt-0.5">
+            Goal: {formatMoney(String(target), currency)}
+          </button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ── Lead Kanban ───────────────────────────────────────────────────────────────
+function LeadKanban({ leads, onStatusChange }: { leads: LeadRow[]; onStatusChange: (id: string, status: string) => void }) {
+  const [dragLeadId, setDragLeadId] = useState<string | null>(null);
+
+  const columns = LEAD_STATUSES.map((status) => ({
+    status,
+    leads: leads.filter((l) => l.stage === status),
+  }));
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {columns.map((col) => (
+        <div
+          key={col.status}
+          className="min-w-44 flex-1 rounded-xl border border-border bg-background/60 flex flex-col"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (dragLeadId && dragLeadId !== col.leads.find((l) => l.id === dragLeadId)?.id) {
+              onStatusChange(dragLeadId, col.status);
+            }
+            setDragLeadId(null);
+          }}
+        >
+          <div className="px-3 py-2 rounded-t-xl text-xs font-semibold uppercase tracking-wide bg-[#1A3C28] text-[#F2E8D5]">
+            {col.status.replace(/_/g, " ")} <span className="opacity-70">({col.leads.length})</span>
+          </div>
+          <div className="flex-1 space-y-2 p-2 min-h-20">
+            {col.leads.map((lead) => (
+              <div
+                key={lead.id}
+                draggable
+                onDragStart={() => setDragLeadId(lead.id)}
+                onDragEnd={() => setDragLeadId(null)}
+                className={`bg-card border border-border rounded-lg p-2.5 cursor-grab active:cursor-grabbing shadow-sm transition-opacity ${dragLeadId === lead.id ? "opacity-50" : ""}`}
+              >
+                <p className="text-xs font-medium truncate">{lead.name}</p>
+                {lead.phone && <p className="text-[10px] text-muted-foreground">{lead.phone}</p>}
+                {lead.type && <span className="text-[10px] bg-[#E8F0EC] text-[#1A3C28] px-1.5 py-0.5 rounded capitalize">{lead.type}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AgentDashboardEnhanced() {
-  const [showAddListing, setShowAddListing] = useState(false);
+  const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm" | "ai">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
@@ -117,7 +394,7 @@ export default function AgentDashboardEnhanced() {
   const [isSchedulingViewing, setIsSchedulingViewing] = useState(false);
   const [scheduleViewingError, setScheduleViewingError] = useState("");
   // CRM state
-  const [crmDashboard, setCrmDashboard] = useState<LeadDashboardResponse>({ totalLeads: 0, hotLeads: 0, activeDeals: 0, pipelineValue: 0, pendingTasks: [], recentActivities: [], byType: {}, byTemperature: {} });
+  const [crmDashboard, setCrmDashboard] = useState<LeadDashboardResponse>({ totalLeads: 0, hotLeads: 0, activeDeals: 0, pipelineValue: 0, pendingTasks: [], recentActivities: [], recentLeads: [], byType: {}, byTemperature: {}, byStage: {} });
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [leadTotal, setLeadTotal] = useState(0);
   const [leadPage, setLeadPage] = useState(1);
@@ -168,6 +445,8 @@ export default function AgentDashboardEnhanced() {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [viewingsView, setViewingsView] = useState<"list" | "calendar">("list");
+  const [crmView, setCrmView] = useState<"table" | "kanban">("table");
+  const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -633,13 +912,13 @@ export default function AgentDashboardEnhanced() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-6">
+      <div className="bg-card border-b border-border px-4 md:px-8 py-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">Agent Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {agentName}</p>
+            <p className="text-muted-foreground">Welcome back, {agentName}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Notification Bell */}
@@ -673,7 +952,7 @@ export default function AgentDashboardEnhanced() {
                       <p className="text-sm text-gray-400 text-center py-8">No notifications</p>
                     ) : (
                       notifications.slice(0, 20).map((n) => (
-                        <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800 bg-blue-50/40"}`}>
+                        <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800 bg-[#E8F0EC]/40"}`}>
                           <p className="font-medium">{n.title}</p>
                           <p className="text-xs mt-0.5 text-gray-500">{n.body}</p>
                           <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-ZA", { dateStyle: "short", timeStyle: "short" })}</p>
@@ -685,8 +964,8 @@ export default function AgentDashboardEnhanced() {
               )}
             </div>
             <Button 
-              onClick={() => setShowAddListing(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
+              onClick={() => router.push('/app/my-listings/new')}
+              className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add New Listing
@@ -700,8 +979,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("overview")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "overview"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             Overview
@@ -710,8 +989,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("analytics")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "analytics"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             Analytics
@@ -720,8 +999,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("listings")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "listings"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             My Listings
@@ -730,8 +1009,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("viewings")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "viewings"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             Viewings
@@ -740,8 +1019,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("mandates")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "mandates"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             Mandates
@@ -750,8 +1029,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("crm")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               selectedTab === "crm"
-                ? "bg-blue-100 text-blue-600"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             CRM
@@ -760,8 +1039,8 @@ export default function AgentDashboardEnhanced() {
             onClick={() => setSelectedTab("ai")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
               selectedTab === "ai"
-                ? "bg-purple-100 text-purple-700"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-[#1A3C28] text-[#F2E8D5]"
+                : "text-muted-foreground hover:bg-accent"
             }`}
           >
             <span>🧠</span> AI Intelligence
@@ -769,205 +1048,247 @@ export default function AgentDashboardEnhanced() {
         </div>
       </div>
 
+      <SmartAlertBar
+        pendingViewings={agentViewings.filter((v) => v.status === "requested").length}
+        expiringMandates={agentMandates.filter((m) => {
+          if (!m.end_date) return false;
+          const daysLeft = Math.floor((new Date(m.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return daysLeft >= 0 && daysLeft <= 30;
+        }).length}
+        staleLeadsCount={leads.filter((l) => {
+          const days = Math.floor((Date.now() - new Date(l.updated_at ?? l.created_at).getTime()) / (1000 * 60 * 60 * 24));
+          return days > 14;
+        }).length}
+        onNavigate={(tab) => setSelectedTab(tab)}
+        dismissed={alertsDismissed}
+        setDismissed={setAlertsDismissed}
+      />
+
       <div className="p-4 md:p-8">
         {/* Overview Tab */}
         {selectedTab === "overview" && (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-              <Card className="p-6">
+            {/* ── Row 1: Compact KPI strip ─────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+              <Card className="p-3 px-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Total Listings</div>
-                    <div className="text-3xl font-bold">{activeListings.length}</div>
-                    <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                      <TrendingUp className="w-3 h-3" />
-                      Live from database
+                    <div className="text-xs text-muted-foreground mb-0.5">Total Listings</div>
+                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{activeListings.length}</div>
+                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      Live
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Home className="w-6 h-6 text-blue-600" />
+                  <div className="w-9 h-9 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
+                    <Home className="w-4 h-4 text-[#1A3C28]" />
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
+              <Card className="p-3 px-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Total Views</div>
-                    <div className="text-3xl font-bold">{dashboardMetrics.listingViewsLast7d}</div>
-                    <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                      <TrendingUp className="w-3 h-3" />
-                      {dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}% vs previous 7 days
+                    <div className="text-xs text-muted-foreground mb-0.5">Views (7d)</div>
+                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.listingViewsLast7d}</div>
+                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      {dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <Eye className="w-6 h-6 text-purple-600" />
+                  <div className="w-9 h-9 bg-[#F2E8D5] rounded-lg flex items-center justify-center shrink-0">
+                    <Eye className="w-4 h-4 text-[#B89040]" />
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
+              <Card className="p-3 px-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Inquiries</div>
-                    <div className="text-3xl font-bold">{dashboardMetrics.newInquiries7d}</div>
-                    <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                      <TrendingUp className="w-3 h-3" />
-                      {dashboardMetrics.inquiryResponseRatePct}% response rate
+                    <div className="text-xs text-muted-foreground mb-0.5">Inquiries</div>
+                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.newInquiries7d}</div>
+                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      {dashboardMetrics.inquiryResponseRatePct}% resp.
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <MessageSquare className="w-6 h-6 text-green-600" />
+                  <div className="w-9 h-9 bg-[#D4F7E5] rounded-lg flex items-center justify-center shrink-0">
+                    <MessageSquare className="w-4 h-4 text-[#1A3C28]" />
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
+              <Card className="p-3 px-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Total Value</div>
-                    <div className="text-3xl font-bold">{formatMoney(String(totalPortfolioValue), 'ZAR')}</div>
-                    <div className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                      <TrendingUp className="w-3 h-3" />
-                      Portfolio from database
+                    <div className="text-xs text-muted-foreground mb-0.5">Portfolio Value</div>
+                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{formatMoney(String(totalPortfolioValue), 'ZAR')}</div>
+                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      From database
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-orange-600" />
+                  <div className="w-9 h-9 bg-[#FAE8DF] rounded-lg flex items-center justify-center shrink-0">
+                    <DollarSign className="w-4 h-4 text-[#C4562A]" />
                   </div>
+                </div>
+              </Card>
+
+              <Card className="p-3 px-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-0.5">Active Mandates</div>
+                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{agentMandates.length}</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">Exclus. + open</div>
+                  </div>
+                  <div className="w-9 h-9 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-[#1A3C28]" />
+                  </div>
+                </div>
+              </Card>
+
+              <CommissionGoalTracker earned={commissionTotal} currency="ZAR" compact />
+            </div>
+
+            {/* ── Row 2: Bento — funnel · chart · schedule ─────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+              <PipelineFunnelWidget
+                compact
+                views={dashboardMetrics.listingViewsLast7d ?? 0}
+                enquiries={dashboardMetrics.newInquiries7d ?? 0}
+                viewingsCount={agentViewings.length}
+                activeListings={activeListings.filter((l) => l.status === "active").length}
+                mandatesCount={agentMandates.length}
+                commissionTotal={commissionTotal}
+              />
+              <div className="lg:col-span-2">
+                <Card className="p-4 h-full">
+                  <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)' }}>Performance Overview</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={viewsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Area type="monotone" dataKey="views" stroke="#1A3C28" fill="#B8D4C0" name="Views" />
+                      <Area type="monotone" dataKey="inquiries" stroke="#00E87A" fill="#B3F0D1" name="Inquiries" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+              </div>
+              <TodaySchedulePanel viewings={agentViewings} onAddViewing={() => setShowScheduleViewing(true)} />
+            </div>
+
+            {/* ── Row 3: Status + Verification merged pill card ────────────────────── */}
+            {(Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 || Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0) && (
+              <Card className="p-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <BarChart3 className="w-3.5 h-3.5 text-[#1A3C28]" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listings by Status</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
+                          const pillColours: Record<string, string> = {
+                            active: 'bg-green-100 text-green-700 border-green-200',
+                            draft: 'bg-gray-100 text-gray-600 border-gray-200',
+                            under_offer: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                            sold: 'bg-blue-100 text-blue-700 border-blue-200',
+                            withdrawn: 'bg-red-100 text-red-600 border-red-200',
+                            back_to_market: 'bg-purple-100 text-purple-700 border-purple-200',
+                          };
+                          const cls = pillColours[status] ?? 'bg-gray-100 text-gray-600 border-gray-200';
+                          return (
+                            <span key={status} className={`inline-flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+                              {count} <span className="capitalize">{status.replace(/_/g, ' ')}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1A3C28]" />
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Verification</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
+                          const pillColours: Record<string, string> = {
+                            verified: 'bg-green-100 text-green-700 border-green-200',
+                            partial: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                            unverified: 'bg-red-100 text-red-600 border-red-200',
+                            pending: 'bg-blue-100 text-blue-700 border-blue-200',
+                          };
+                          const cls = pillColours[level] ?? 'bg-gray-100 text-gray-600 border-gray-200';
+                          return (
+                            <span key={level} className={`inline-flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+                              {count} <span className="capitalize">{level}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* ── Row 4: Commission Pipeline + Recent Activity side-by-side ─────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {commissionPipeline.length > 0 && (
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)' }}>Commission Pipeline</h3>
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wide">Total Est.</div>
+                      <div className="text-sm font-bold text-green-700">{formatMoney(String(commissionTotal), 'ZAR')}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {commissionPipeline.slice(0, 5).map((item) => (
+                      <div key={item.mandate_id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate">{item.property_title}</p>
+                          <p className="text-[10px] text-gray-500 capitalize">{item.mandate_type?.replace('_', ' ')} · {item.listing_status}</p>
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <p className="text-xs font-semibold text-green-700">{formatMoney(String(item.estimated_commission ?? 0), 'ZAR')}</p>
+                          <p className="text-[10px] text-gray-400">{item.commission_rate}%</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              <Card className={commissionPipeline.length === 0 ? "p-4 lg:col-span-2" : "p-4"}>
+                <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)' }}>Recent Activity</h3>
+                <div className="space-y-2">
+                  {activityFeed.length === 0 ? (
+                    <p className="text-sm text-gray-500">No recent activity. Add your first listing to get started.</p>
+                  ) : (
+                    activityFeed.slice(0, 5).map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 py-1.5 border-b border-gray-100 last:border-0">
+                        <div className="w-7 h-7 bg-[#E8F0EC] rounded-full flex items-center justify-center shrink-0">
+                          <Activity className="w-3.5 h-3.5 text-[#1A3C28]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate">{item.property_title ?? item.entity_type}</div>
+                          <div className="text-[10px] text-gray-500">
+                            {item.action.replace(/_/g, ' ')} · {new Date(item.created_at).toLocaleDateString('en-ZA', { dateStyle: 'medium' })}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
-
-            {/* Quick Chart Preview */}
-            <Card className="p-6 mb-8">
-              <h3 className="font-semibold text-lg mb-4">Performance Overview</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={viewsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="views" stroke="#3b82f6" fill="#93c5fd" name="Views" />
-                  <Area type="monotone" dataKey="inquiries" stroke="#10b981" fill="#6ee7b7" name="Inquiries" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Card>
-
-            {/* Listing Status Breakdown */}
-            {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
-              <Card className="p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-lg">Listings by Status</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
-                    const colours: Record<string, string> = {
-                      active: 'bg-green-50 border-green-200 text-green-700',
-                      draft: 'bg-gray-50 border-gray-200 text-gray-600',
-                      under_offer: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-                      sold: 'bg-blue-50 border-blue-200 text-blue-700',
-                      withdrawn: 'bg-red-50 border-red-200 text-red-600',
-                      back_to_market: 'bg-purple-50 border-purple-200 text-purple-700',
-                    };
-                    const colourClass = colours[status] ?? 'bg-gray-50 border-gray-200 text-gray-600';
-                    return (
-                      <div key={status} className={`border rounded-xl p-4 text-center ${colourClass}`}>
-                        <div className="text-2xl font-bold">{count}</div>
-                        <div className="text-xs mt-1 capitalize">{status.replace(/_/g, ' ')}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Verification Summary */}
-            {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
-              <Card className="p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-lg">Verification Summary</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
-                    const colours: Record<string, string> = {
-                      verified: 'bg-green-50 border-green-200 text-green-700',
-                      partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-                      unverified: 'bg-red-50 border-red-200 text-red-600',
-                      pending: 'bg-blue-50 border-blue-200 text-blue-700',
-                    };
-                    const colourClass = colours[level] ?? 'bg-gray-50 border-gray-200 text-gray-600';
-                    return (
-                      <div key={level} className={`border rounded-xl p-4 text-center ${colourClass}`}>
-                        <div className="text-2xl font-bold">{count}</div>
-                        <div className="text-xs mt-1 capitalize">{level}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Commission Pipeline */}
-            {commissionPipeline.length > 0 && (
-              <Card className="p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-lg">Commission Pipeline</h3>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Total Estimated</div>
-                    <div className="text-lg font-bold text-green-700">{formatMoney(String(commissionTotal), 'ZAR')}</div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {commissionPipeline.slice(0, 5).map((item) => (
-                    <div key={item.mandate_id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{item.property_title}</p>
-                        <p className="text-xs text-gray-500 capitalize">{item.mandate_type?.replace('_', ' ')} · {item.listing_status}</p>
-                      </div>
-                      <div className="text-right shrink-0 ml-4">
-                        <p className="text-sm font-semibold text-green-700">
-                          {formatMoney(String(item.estimated_commission ?? 0), 'ZAR')}
-                        </p>
-                        <p className="text-xs text-gray-400">{item.commission_rate}%</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Recent Activity */}
-            <Card className="p-6">
-              <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
-              <div className="space-y-4">
-                {activityFeed.length === 0 ? (
-                  <p className="text-sm text-gray-500">No recent activity. Add your first listing to get started.</p>
-                ) : (
-                  activityFeed.slice(0, 8).map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 pb-4 border-b border-gray-100 last:border-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                        <Activity className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
-                          {item.property_title ?? item.entity_type}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {item.action.replace(/_/g, ' ')}
-                          {' · '}
-                          {new Date(item.created_at).toLocaleDateString('en-ZA', { dateStyle: 'medium' })}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
           </>
         )}
 
@@ -977,7 +1298,7 @@ export default function AgentDashboardEnhanced() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Views & Inquiries Over Time */}
               <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4">Views & Inquiries Trend</h3>
+                <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Views & Inquiries Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={viewsData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -985,15 +1306,15 @@ export default function AgentDashboardEnhanced() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="views" stroke="#3b82f6" strokeWidth={2} name="Page Views" />
-                    <Line type="monotone" dataKey="inquiries" stroke="#10b981" strokeWidth={2} name="Inquiries" />
+                    <Line type="monotone" dataKey="views" stroke="#1A3C28" strokeWidth={2} name="Page Views" />
+                    <Line type="monotone" dataKey="inquiries" stroke="#00E87A" strokeWidth={2} name="Inquiries" />
                   </LineChart>
                 </ResponsiveContainer>
               </Card>
 
               {/* Listing Performance */}
               <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4">Top Performing Listings</h3>
+                <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Top Performing Listings</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={listingPerformance}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1001,8 +1322,8 @@ export default function AgentDashboardEnhanced() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="views" fill="#3b82f6" name="Views" />
-                    <Bar dataKey="inquiries" fill="#10b981" name="Inquiries" />
+                    <Bar dataKey="views" fill="#1A3C28" name="Views" />
+                    <Bar dataKey="inquiries" fill="#00E87A" name="Inquiries" />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -1010,22 +1331,22 @@ export default function AgentDashboardEnhanced() {
 
             {/* Conversion Metrics */}
             <Card className="p-6 mb-6">
-              <h3 className="font-semibold text-lg mb-4">Conversion Metrics</h3>
+              <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Conversion Metrics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">{dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%</div>
+                <div className="text-center p-4 bg-[#E8F0EC] rounded-lg">
+                  <div className="text-3xl font-bold text-[#1A3C28] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%</div>
                   <div className="text-sm text-gray-600">Views Trend (7d)</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600 mb-1">{dashboardMetrics.inquiryResponseRatePct}%</div>
+                <div className="text-center p-4 bg-[#D4F7E5] rounded-lg">
+                  <div className="text-3xl font-bold text-[#1A3C28] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.inquiryResponseRatePct}%</div>
                   <div className="text-sm text-gray-600">Inquiry Response Rate</div>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-3xl font-bold text-yellow-600 mb-1">{dashboardMetrics.byStatus['under_offer'] ?? 0}</div>
+                <div className="text-center p-4 bg-[#FEF3C7] rounded-lg">
+                  <div className="text-3xl font-bold text-[#B89040] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.byStatus['under_offer'] ?? 0}</div>
                   <div className="text-sm text-gray-600">Under Offer</div>
                 </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-3xl font-bold text-orange-600 mb-1">{dashboardMetrics.byStatus['sold'] ?? 0}</div>
+                <div className="text-center p-4 bg-[#FAE8DF] rounded-lg">
+                  <div className="text-3xl font-bold text-[#C4562A] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.byStatus['sold'] ?? 0}</div>
                   <div className="text-sm text-gray-600">Sold</div>
                 </div>
               </div>
@@ -1035,8 +1356,8 @@ export default function AgentDashboardEnhanced() {
             {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
               <Card className="p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-lg">Portfolio by Status</h3>
+                  <BarChart3 className="w-5 h-5 text-[#1A3C28]" />
+                  <h3 className="font-semibold text-lg" style={{ fontFamily: 'var(--font-fraunces)' }}>Portfolio by Status</h3>
                 </div>
                 <div className="space-y-3">
                   {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
@@ -1071,8 +1392,8 @@ export default function AgentDashboardEnhanced() {
             {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <h3 className="font-semibold text-lg">Verification Breakdown</h3>
+                  <CheckCircle2 className="w-5 h-5 text-[#1A3C28]" />
+                  <h3 className="font-semibold text-lg" style={{ fontFamily: 'var(--font-fraunces)' }}>Verification Breakdown</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
@@ -1125,6 +1446,7 @@ export default function AgentDashboardEnhanced() {
                     <th className="px-6 py-4 text-left text-sm font-semibold">Price</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Details</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Performance</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Health</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Actions</th>
                   </tr>
@@ -1132,7 +1454,7 @@ export default function AgentDashboardEnhanced() {
                 <tbody className="divide-y divide-gray-200">
                   {!isLoadingListings && activeListings.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
                         No listings found for this agent in the database.
                       </td>
                     </tr>
@@ -1149,9 +1471,9 @@ export default function AgentDashboardEnhanced() {
                             />
                             {listing.listingType && (
                               <span className={`absolute bottom-0 left-0 right-0 text-center text-[9px] font-semibold px-1 py-0.5 rounded-b leading-tight ${
-                                listing.listingType === 'for_sale' ? 'bg-blue-600 text-white' :
-                                listing.listingType === 'to_rent' ? 'bg-purple-600 text-white' :
-                                'bg-amber-500 text-white'
+                                listing.listingType === 'for_sale' ? 'bg-[#1A3C28] text-white' :
+                                listing.listingType === 'to_rent' ? 'bg-amber-600 text-white' :
+                                'bg-[#C4562A] text-white'
                               }`}>
                                 {listing.listingType === 'for_sale' ? 'For Sale' :
                                  listing.listingType === 'to_rent' ? 'To Rent' : 'Development'}
@@ -1166,7 +1488,7 @@ export default function AgentDashboardEnhanced() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-bold text-blue-600">{listing.price}</div>
+                        <div className="font-bold text-[#1A3C28]">{listing.price}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600">
@@ -1188,6 +1510,9 @@ export default function AgentDashboardEnhanced() {
                             <span>{listing.offers} offers</span>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <HealthBadge score={healthScore(listing)} />
                       </td>
                       <td className="px-6 py-4">
                         <Badge className="bg-green-100 text-green-700">{listing.status}</Badge>
@@ -1234,7 +1559,7 @@ export default function AgentDashboardEnhanced() {
         {selectedTab === "mandates" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Mandate Portfolio</h2>
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>Mandate Portfolio</h2>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <FileText className="w-4 h-4" />
                 {agentMandates.length} mandate{agentMandates.length !== 1 ? 's' : ''}
@@ -1249,7 +1574,7 @@ export default function AgentDashboardEnhanced() {
 
             {isLoadingMandates ? (
               <Card className="py-12 text-center text-gray-400">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#1A3C28]" />
                 <p className="text-sm">Loading mandates…</p>
               </Card>
             ) : agentMandates.length === 0 ? (
@@ -1295,7 +1620,7 @@ export default function AgentDashboardEnhanced() {
                       {agentMandates.map((m) => (
                         <tr key={m.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
-                            <Link to={`/app/property/${m.property_id}`} className="text-sm font-medium text-blue-600 hover:underline">
+                            <Link to={`/app/property/${m.property_id}`} className="text-sm font-medium text-[#1A3C28] hover:underline">
                               {m.property_id.slice(0, 8)}…
                             </Link>
                           </td>
@@ -1346,31 +1671,37 @@ export default function AgentDashboardEnhanced() {
         {selectedTab === "crm" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <h2 className="text-xl font-bold">Lead Pipeline</h2>
-              <Button
-                onClick={() => setShowCreateLead(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> New Lead
-              </Button>
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>Lead Pipeline</h2>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-border overflow-hidden text-sm">
+                  <button onClick={() => setCrmView("table")} className={`px-3 py-1.5 font-medium transition-colors ${crmView === "table" ? "bg-[#1A3C28] text-[#F2E8D5]" : "bg-background text-muted-foreground hover:bg-accent"}`}>Table</button>
+                  <button onClick={() => setCrmView("kanban")} className={`px-3 py-1.5 font-medium transition-colors ${crmView === "kanban" ? "bg-[#1A3C28] text-[#F2E8D5]" : "bg-background text-muted-foreground hover:bg-accent"}`}>Kanban</button>
+                </div>
+                <Button
+                  onClick={() => setShowCreateLead(true)}
+                  className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5] flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> New Lead
+                </Button>
+              </div>
             </div>
 
             {/* CRM Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-blue-600">{crmDashboard.totalLeads}</div>
+                <div className="text-3xl font-bold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.totalLeads}</div>
                 <div className="text-xs text-gray-500 mt-1">Total Leads</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-green-600">{crmDashboard.hotLeads}</div>
+                <div className="text-3xl font-bold text-[#C4562A]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.hotLeads}</div>
                 <div className="text-xs text-gray-500 mt-1">Hot Leads</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-yellow-600">{crmDashboard.activeDeals}</div>
+                <div className="text-3xl font-bold text-[#B89040]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.activeDeals}</div>
                 <div className="text-xs text-gray-500 mt-1">Active Deals</div>
               </Card>
               <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600">{crmDashboard.recentActivities?.length ?? 0}</div>
+                <div className="text-3xl font-bold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.recentActivities?.length ?? 0}</div>
                 <div className="text-xs text-gray-500 mt-1">Recent Activities</div>
               </Card>
             </div>
@@ -1394,7 +1725,7 @@ export default function AgentDashboardEnhanced() {
                   key={s}
                   onClick={() => { setLeadStatusFilter(s); setLeadPage(1); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                    leadStatusFilter === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    leadStatusFilter === s ? "bg-[#1A3C28] text-[#F2E8D5]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {s === "all" ? "All" : s.replace(/_/g, " ")}
@@ -1402,7 +1733,38 @@ export default function AgentDashboardEnhanced() {
               ))}
             </div>
 
-            {/* Leads table */}
+            {/* Stale leads section */}
+            {leads.filter((l) => Math.floor((Date.now() - new Date(l.updated_at ?? l.created_at).getTime()) / (1000 * 60 * 60 * 24)) > 14).length > 0 && (() => {
+              const staleLeads = leads.filter((l) => Math.floor((Date.now() - new Date(l.updated_at ?? l.created_at).getTime()) / (1000 * 60 * 60 * 24)) > 14);
+              return (
+                <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-[#B89040] select-none list-none py-2">
+                    <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                    {staleLeads.length} stale lead{staleLeads.length > 1 ? "s" : ""} (no activity in 14+ days)
+                  </summary>
+                  <Card className="mt-2 overflow-hidden">
+                    <div className="divide-y divide-gray-100">
+                      {staleLeads.map((lead) => (
+                        <div key={lead.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#E8F0EC]/30">
+                          <div>
+                            <p className="text-sm font-medium">{lead.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{lead.type} · {lead.stage?.replace(/_/g, " ")}</p>
+                          </div>
+                          <button
+                            onClick={() => setSelectedLead(lead)}
+                            className="text-xs text-[#1A3C28] font-medium hover:underline"
+                          >
+                            Log Contact
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </details>
+              );
+            })()}
+
+            {/* Leads table / kanban */}
             {isLoadingCrm ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
             ) : crmError ? (
@@ -1410,6 +1772,17 @@ export default function AgentDashboardEnhanced() {
                 <AlertCircle className="w-6 h-6 mx-auto mb-2" />
                 <p>{crmError}</p>
               </Card>
+            ) : crmView === "kanban" ? (
+              <LeadKanban
+                leads={leads}
+                onStatusChange={(id, status) => {
+                  const token = getAccessToken();
+                  if (!token) return;
+                  leadsApi.update(token, id, { stage: status })
+                    .then((updated: LeadRow) => setLeads((prev) => prev.map((l) => l.id === updated.id ? updated : l)))
+                    .catch(() => {});
+                }}
+              />
             ) : leads.length === 0 ? (
               <Card className="py-16 text-center text-gray-400">
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -1522,20 +1895,20 @@ export default function AgentDashboardEnhanced() {
         {selectedTab === "viewings" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Viewings & Open Houses</h2>
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>Viewings & Open Houses</h2>
               <div className="flex items-center gap-2">
                 {/* List / Calendar toggle */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-1">
                   <button
                     onClick={() => setViewingsView("list")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "list" ? "bg-white text-[#1A3C28] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                   >
                     <ListIcon className="w-4 h-4" />
                     List
                   </button>
                   <button
                     onClick={() => setViewingsView("calendar")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "calendar" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewingsView === "calendar" ? "bg-white text-[#1A3C28] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                   >
                     <Calendar className="w-4 h-4" />
                     Calendar
@@ -1556,7 +1929,7 @@ export default function AgentDashboardEnhanced() {
                 </Button>
                 <Button
                   onClick={() => setShowOpenHouseModal(true)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                   disabled={activeListings.length === 0}
                   title={activeListings.length === 0 ? "You need at least one active property listing to schedule an open house" : undefined}
                 >
@@ -1576,7 +1949,7 @@ export default function AgentDashboardEnhanced() {
 
             {isLoadingViewings ? (
               <Card className="py-12 text-center text-gray-400">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-blue-500" />
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#1A3C28]" />
                 <p className="text-sm">Loading viewings…</p>
               </Card>
             ) : viewingsView === "calendar" ? (
@@ -1631,11 +2004,11 @@ export default function AgentDashboardEnhanced() {
                         key={dateStr}
                         onClick={() => setSelectedCalDay((prev) => (prev === dateStr ? null : dateStr))}
                         className={`border-r border-b border-gray-200 min-h-18 p-1.5 text-left transition-colors ${
-                          !inMonth ? "bg-gray-50" : "bg-white hover:bg-blue-50"
-                        } ${isSelected ? "ring-2 ring-inset ring-blue-500" : ""}`}
+                          !inMonth ? "bg-gray-50" : "bg-white hover:bg-[#E8F0EC]"
+                        } ${isSelected ? "ring-2 ring-inset ring-[#1A3C28]" : ""}`}
                       >
                         <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
-                          isToday ? "bg-blue-600 text-white" : inMonth ? "text-gray-700" : "text-gray-300"
+                          isToday ? "bg-[#1A3C28] text-white" : inMonth ? "text-gray-700" : "text-gray-300"
                         }`}>
                           {date.getDate()}
                         </span>
@@ -1742,7 +2115,7 @@ export default function AgentDashboardEnhanced() {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="text-xs h-7 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                      className="text-xs h-7 px-2 text-[#1A3C28] border-[#1A3C28]/30 hover:bg-[#E8F0EC]"
                                       onClick={() => { setReschedulingViewingId(v.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
                                     >
                                       Reschedule
@@ -1824,8 +2197,8 @@ export default function AgentDashboardEnhanced() {
                       {upcomingViewings.map((v) => (
                         <Card key={v.id} className="p-4">
                           <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                              <Calendar className="w-5 h-5 text-blue-600" />
+                            <div className="w-10 h-10 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
+                              <Calendar className="w-5 h-5 text-[#1A3C28]" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
@@ -1894,7 +2267,7 @@ export default function AgentDashboardEnhanced() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="text-xs h-7 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    className="text-xs h-7 px-2 text-[#1A3C28] border-[#1A3C28]/30 hover:bg-[#E8F0EC]"
                                     onClick={() => { setReschedulingViewingId(v.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
                                   >
                                     <Calendar className="w-3 h-3 mr-1" />
@@ -2133,7 +2506,7 @@ export default function AgentDashboardEnhanced() {
             <div className="flex gap-3 pt-1">
               <Button variant="outline" className="flex-1" onClick={() => setShowScheduleViewing(false)}>Cancel</Button>
               <Button
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                 disabled={
                   isSchedulingViewing ||
                   !scheduleViewingForm.propertyId ||
@@ -2238,23 +2611,13 @@ export default function AgentDashboardEnhanced() {
               <Button
                 onClick={() => { void handleScheduleOpenHouse(); }}
                 disabled={isSchedulingOpenHouse || !openHousePropertyId || !openHouseForm.scheduledAt || !openHouseForm.endAt}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                className="flex-1 bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
               >
                 {isSchedulingOpenHouse ? <Loader2 className="w-4 h-4 animate-spin" /> : "Schedule"}
               </Button>
             </div>
           </Card>
         </div>
-      )}
-
-      {showAddListing && (
-        <CreateListing
-          onClose={() => setShowAddListing(false)}
-          onSuccess={() => {
-            setShowAddListing(false);
-            void loadAgentListings();
-          }}
-        />
       )}
 
       {editingListing && (
@@ -2337,7 +2700,7 @@ export default function AgentDashboardEnhanced() {
               <Button variant="outline" onClick={() => setShowCreateLead(false)} className="flex-1">Cancel</Button>
               <Button
                 disabled={isCreatingLead || !createLeadForm.name.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                 onClick={() => {
                   const token = getAccessToken();
                   if (!token) return;
@@ -2369,7 +2732,7 @@ export default function AgentDashboardEnhanced() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-blue-600" />
+                <Share2 className="w-5 h-5 text-[#1A3C28]" />
                 <div>
                   <h3 className="text-lg font-bold">Portal Syndication</h3>
                   <p className="text-xs text-gray-500 truncate max-w-xs">{syndicationTitle}</p>
@@ -2399,7 +2762,7 @@ export default function AgentDashboardEnhanced() {
               </p>
               <Button
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                 disabled={isSyndicating}
                 onClick={() => { void handleSyndicate(); }}
               >
@@ -2538,7 +2901,7 @@ export default function AgentDashboardEnhanced() {
                           .catch(() => {})
                           .finally(() => setLeadStatusUpdating(null));
                       }}
-                      className="px-3 py-1 rounded-full text-xs font-medium border border-gray-300 hover:bg-gray-100 disabled:opacity-50 capitalize"
+                      className="px-3 py-1 rounded-full text-xs font-medium border border-[#D9C4A6] hover:bg-[#E8F0EC] disabled:opacity-50 capitalize"
                     >
                       {leadStatusUpdating === s ? <Loader2 className="w-3 h-3 animate-spin inline" /> : s.replace(/_/g, " ")}
                     </button>
@@ -2563,7 +2926,7 @@ export default function AgentDashboardEnhanced() {
                   <Button
                     disabled={isLoggingActivity}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                     onClick={() => {
                       const token = getAccessToken();
                       if (!token) return;
@@ -2606,8 +2969,8 @@ export default function AgentDashboardEnhanced() {
                   <div className="space-y-3">
                     {leadActivities.map((act) => (
                       <div key={act.id} className="flex gap-3">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Activity className="w-3.5 h-3.5 text-blue-600" />
+                        <div className="w-7 h-7 rounded-full bg-[#E8F0EC] flex items-center justify-center shrink-0 mt-0.5">
+                          <Activity className="w-3.5 h-3.5 text-[#1A3C28]" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium capitalize">{(act.type ?? "note").replace(/_/g, " ")}</p>
@@ -2785,7 +3148,7 @@ export default function AgentDashboardEnhanced() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowRescheduleModal(false)}>Cancel</Button>
               <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
                 disabled={isRescheduling || !rescheduleForm.scheduledAt}
                 onClick={() => void handleRescheduleViewing()}
               >

@@ -1,1 +1,5 @@
-export { default } from '@/views/LeadAnalytics';
+import { redirect } from 'next/navigation';
+
+export default function LeadAnalyticsRedirect() {
+  redirect('/app/leads?tab=analytics');
+}

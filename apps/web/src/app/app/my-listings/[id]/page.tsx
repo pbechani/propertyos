@@ -97,6 +97,22 @@ export default function ListingDetailPage() {
     ? Math.max(0, Math.floor((Date.now() - new Date(property.created_at).getTime()) / 86_400_000))
     : 0;
 
+  const listingContext = property ? {
+    address,
+    agentFirstName: user?.firstName ?? 'Agent',
+    agentFullName: agentName,
+    price: property.price ? parseFloat(property.price) : undefined,
+    currency: property.currency ?? undefined,
+    beds: property.bedrooms ?? undefined,
+    baths: property.bathrooms ?? undefined,
+    areaSqm: property.area_sqm ? Number(property.area_sqm) : undefined,
+    status: property.status,
+    daysOnMarket,
+    viewings: stats?.viewings_requested,
+    leads: stats?.leads_count,
+    enquiries: stats?.inquiries,
+  } : undefined;
+
   const tabBadges: Record<string, number> = stats
     ? {
         viewings: stats.viewings_requested,
@@ -113,26 +129,30 @@ export default function ListingDetailPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F2E8D5]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-[#F2E8D5]/95 backdrop-blur-sm border-b border-[#1A3C28]/[0.12] sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => router.push('/app/my-listings')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <button onClick={() => router.push('/app/my-listings')} className="p-2 hover:bg-[#1A3C28]/[0.08] rounded-lg transition-colors">
+                <ArrowLeft className="w-5 h-5 text-[#1A3C28]" />
               </button>
               <div>
-                <h1 className="text-xl font-semibold">Listing Details</h1>
-                <p className="text-sm text-gray-600">Manage your property listing</p>
+                <h1 className="text-xl font-semibold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>
+                  {property?.title ?? 'Listing Details'}
+                </h1>
+                <p className="text-sm text-[#1A3C28]/55">
+                  {property ? `Ref: ${property.listing_reference ?? listingId}` : 'Manage your property listing'}
+                </p>
               </div>
             </div>
             <button
               onClick={() => setIsAIOpen(!isAIOpen)}
-              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-sm ${
+              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${
                 isAIOpen
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-200'
-                  : 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 hover:shadow-md hover:shadow-blue-100'
+                  ? 'bg-[#1A3C28] text-[#00E87A]'
+                  : 'bg-[#1A3C28]/[0.08] text-[#1A3C28] border border-[#1A3C28]/20 hover:bg-[#1A3C28]/[0.12]'
               }`}
             >
               <Bot className="w-5 h-5" />
@@ -147,7 +167,7 @@ export default function ListingDetailPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         {isLoading && (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#1A3C28] animate-spin" />
           </div>
         )}
 
@@ -162,18 +182,18 @@ export default function ListingDetailPage() {
             <ActivitySummary propertyId={listingId} authToken={authToken} onTabChange={(tab) => setActiveTab(tab)} />
 
             {/* Property Header */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-[#1A3C28]/10 overflow-hidden mb-6">
               <div className="grid md:grid-cols-2 gap-0">
                 {/* Property Image */}
                 <div className="relative h-80 md:h-auto">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={primaryImage} alt={property.title} className="w-full h-full object-cover" />
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-medium capitalize">
+                    <span className="px-3 py-1 bg-[#00E87A] text-[#0C0D10] rounded-full text-sm font-medium capitalize">
                       {property.status.replace('_', ' ')}
                     </span>
                     {property.listing_type && (
-                      <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-medium capitalize">
+                      <span className="px-3 py-1 bg-[#C4562A] text-white rounded-full text-sm font-medium capitalize">
                         {property.listing_type.replace(/_/g, ' ')}
                       </span>
                     )}
@@ -196,38 +216,38 @@ export default function ListingDetailPage() {
                 {/* Property Info */}
                 <div className="p-6">
                   <div className="mb-4">
-                    <div className="text-3xl font-semibold text-gray-900 mb-2">
+                    <div className="text-3xl font-light text-[#1A3C28] mb-2" style={{ fontFamily: 'var(--font-fraunces)' }}>
                       {formatMoney(property.price, property.currency)}
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 mb-1">
-                      <MapPin className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-[#1A3C28]/60 mb-1">
+                      <MapPin className="w-4 h-4 text-[#C4562A]" />
                       <span>{address}</span>
                     </div>
-                    {cityRegion && <div className="text-sm text-gray-500">{cityRegion}</div>}
+                    {cityRegion && <div className="text-sm text-[#1A3C28]/45">{cityRegion}</div>}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-gray-200 my-4">
+                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-[#1A3C28]/10 my-4">
                     <div className="flex items-center gap-2">
-                      <Bed className="w-5 h-5 text-gray-500" />
+                      <Bed className="w-5 h-5 text-[#1A3C28]/50" />
                       <div>
-                        <div className="font-semibold">{property.bedrooms ?? '—'}</div>
-                        <div className="text-xs text-gray-500">Bedrooms</div>
+                        <div className="font-semibold text-[#1A3C28]">{property.bedrooms ?? '—'}</div>
+                        <div className="text-xs text-[#1A3C28]/45">Bedrooms</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Bath className="w-5 h-5 text-gray-500" />
+                      <Bath className="w-5 h-5 text-[#1A3C28]/50" />
                       <div>
-                        <div className="font-semibold">{property.bathrooms ?? '—'}</div>
-                        <div className="text-xs text-gray-500">Bathrooms</div>
+                        <div className="font-semibold text-[#1A3C28]">{property.bathrooms ?? '—'}</div>
+                        <div className="text-xs text-[#1A3C28]/45">Bathrooms</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Maximize className="w-5 h-5 text-gray-500" />
+                      <Maximize className="w-5 h-5 text-[#1A3C28]/50" />
                       <div>
-                        <div className="font-semibold">
+                        <div className="font-semibold text-[#1A3C28]">
                           {property.area_sqm ? Number(property.area_sqm).toLocaleString() : '—'}
                         </div>
-                        <div className="text-xs text-gray-500">m²</div>
+                        <div className="text-xs text-[#1A3C28]/45">m²</div>
                       </div>
                     </div>
                   </div>
@@ -235,13 +255,13 @@ export default function ListingDetailPage() {
                   <div className="space-y-3">
                     {property.listing_reference && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Ref #:</span>
-                        <span className="font-medium">{property.listing_reference}</span>
+                        <span className="text-[#1A3C28]/55">Ref #:</span>
+                        <span className="font-medium text-[#1A3C28]">{property.listing_reference}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Listed:</span>
-                      <span className="font-medium">
+                      <span className="text-[#1A3C28]/55">Listed:</span>
+                      <span className="font-medium text-[#1A3C28]">
                         {new Date(property.created_at).toLocaleDateString('en-ZA', {
                           day: 'numeric',
                           month: 'long',
@@ -250,39 +270,39 @@ export default function ListingDetailPage() {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Days on Market:</span>
-                      <span className="font-medium">{daysOnMarket} days</span>
+                      <span className="text-[#1A3C28]/55">Days on Market:</span>
+                      <span className="font-medium text-[#1A3C28]">{daysOnMarket} days</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Property Type:</span>
-                      <span className="font-medium capitalize">{property.property_type.replace(/_/g, ' ')}</span>
+                      <span className="text-[#1A3C28]/55">Property Type:</span>
+                      <span className="font-medium text-[#1A3C28] capitalize">{property.property_type.replace(/_/g, ' ')}</span>
                     </div>
                     {property.view_count !== undefined && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Views:</span>
-                        <span className="font-medium">{property.view_count}</span>
+                        <span className="text-[#1A3C28]/55">Total Views:</span>
+                        <span className="font-medium text-[#1A3C28]">{property.view_count}</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="mt-6 pt-6 border-t border-[#1A3C28]/10">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-gray-600 mb-2">Listed By</div>
+                        <div className="text-sm text-[#1A3C28]/55 mb-2">Listed By</div>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-medium">
+                          <div className="w-10 h-10 bg-[#B89040] text-white rounded-full flex items-center justify-center font-medium">
                             {agentInitials}
                           </div>
                           <div>
-                            <div className="font-medium">{agentName}</div>
-                            {agentCompany && <div className="text-sm text-gray-500">{agentCompany}</div>}
+                            <div className="font-medium text-[#1A3C28]">{agentName}</div>
+                            {agentCompany && <div className="text-sm text-[#1A3C28]/45">{agentCompany}</div>}
                           </div>
                         </div>
                       </div>
                       {property.view_count !== undefined && (
                         <div className="text-center">
-                          <div className="text-lg font-semibold text-blue-600">{property.view_count}</div>
-                          <div className="text-[10px] text-gray-500">Views</div>
+                          <div className="text-lg font-semibold text-[#1A3C28]">{property.view_count}</div>
+                          <div className="text-[10px] text-[#1A3C28]/45">Views</div>
                         </div>
                       )}
                     </div>
@@ -292,7 +312,7 @@ export default function ListingDetailPage() {
             </div>
 
             {/* Tabs Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-[#1A3C28]/10">
               <OverflowTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
               <div className="p-6">
@@ -317,13 +337,13 @@ export default function ListingDetailPage() {
       </div>
 
       {/* AI Assistant */}
-      <AIAssistant isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} />
+      <AIAssistant isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} listing={listingContext} />
 
       {/* Floating AI button for mobile */}
       {!isAIOpen && (
         <button
           onClick={() => setIsAIOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-300/50 hover:shadow-xl hover:shadow-blue-300/60 transition-all flex items-center justify-center z-40 md:hidden"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-[#1A3C28] text-[#00E87A] rounded-2xl shadow-lg shadow-[#1A3C28]/30 hover:shadow-xl hover:shadow-[#1A3C28]/40 transition-all flex items-center justify-center z-40 md:hidden"
         >
           <Bot className="w-6 h-6" />
         </button>

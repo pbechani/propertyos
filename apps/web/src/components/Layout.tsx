@@ -98,7 +98,7 @@ export function Layout({ children }: LayoutProps) {
     clearAuthSession();
     setIsAuthenticated(false);
     setCurrentUser(null);
-    router.push('/');
+    window.location.href = '/';
   };
 
   const isPropertyDetailRoute = pathname.startsWith('/app/property/');

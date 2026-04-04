@@ -1,1 +1,5 @@
-export { default } from '@/views/LeadPipeline';
+import { redirect } from 'next/navigation';
+
+export default function LeadPipelineRedirect() {
+  redirect('/app/leads?tab=pipeline');
+}

@@ -23,43 +23,43 @@
   --bt-egreen: #00E87A;
   --bt-amber: #B89040;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.091 0.036 264);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: oklch(0.091 0.036 264);
-  --muted: oklch(0.941 0.003 280);
-  --muted-foreground: oklch(0.511 0.009 270);
-  --accent: oklch(0.931 0.006 258);
-  --accent-foreground: oklch(0.091 0.036 264);
+  --background: #F2E8D5;
+  --foreground: #1A3C28;
+  --card: #FFFFFF;
+  --card-foreground: #1A3C28;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A3C28;
+  --primary: #1A3C28;
+  --primary-foreground: #F2E8D5;
+  --secondary: #EAD9C4;
+  --secondary-foreground: #1A3C28;
+  --muted: #EAD9C4;
+  --muted-foreground: #5A7A68;
+  --accent: #D9C4A6;
+  --accent-foreground: #1A3C28;
   --destructive: oklch(0.477 0.188 14.5);
   --destructive-foreground: oklch(1 0 0);
-  --border: rgba(15, 23, 42, 0.14);
+  --border: #D9C4A6;
   --input: transparent;
-  --input-background: oklch(0.961 0.002 280);
-  --switch-background: oklch(0.829 0.007 268);
+  --input-background: #FFFFFF;
+  --switch-background: #D9C4A6;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: rgba(59, 130, 246, 0.45);
+  --ring: rgba(26, 60, 40, 0.4);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.091 0.036 264);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #1A3C28;
+  --sidebar-foreground: #F2E8D5;
+  --sidebar-primary: #00E87A;
+  --sidebar-primary-foreground: #0C0D10;
+  --sidebar-accent: #2D5A40;
+  --sidebar-accent-foreground: #F2E8D5;
+  --sidebar-border: rgba(242, 232, 213, 0.12);
+  --sidebar-ring: rgba(0, 232, 122, 0.3);
 }
 
 .dark {
@@ -159,24 +159,28 @@
   }
 
   h1 {
+    font-family: var(--font-fraunces);
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h2 {
+    font-family: var(--font-fraunces);
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h3 {
+    font-family: var(--font-fraunces);
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   h4 {
+    font-family: var(--font-fraunces);
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
@@ -215,10 +219,31 @@
   }
 }
 
+/* ── Forest sidebar scope — override CSS variables + Tailwind hardcoded colors ── */
+.sidebar-forest-scope {
+  --foreground: #F2E8D5;
+  --muted-foreground: rgba(242, 232, 213, 0.65);
+  --accent: rgba(242, 232, 213, 0.08);
+  --accent-foreground: #F2E8D5;
+  --muted: rgba(242, 232, 213, 0.08);
+  --border: rgba(242, 232, 213, 0.12);
+  color: #F2E8D5;
+}
+/* Tailwind hardcoded color class overrides inside forested sidebar */
+.sidebar-forest-scope .bg-blue-50 { background-color: rgba(0, 232, 122, 0.12) !important; }
+.sidebar-forest-scope .text-blue-600 { color: #00E87A !important; }
+.sidebar-forest-scope .bg-amber-50 { background-color: rgba(184, 144, 64, 0.15) !important; }
+.sidebar-forest-scope .text-amber-700 { color: #B89040 !important; }
+.sidebar-forest-scope .text-amber-600 { color: #B89040 !important; }
+.sidebar-forest-scope .hover\:bg-amber-50:hover { background-color: rgba(184, 144, 64, 0.12) !important; }
+.sidebar-forest-scope .border-amber-200 { border-color: rgba(242, 232, 213, 0.2) !important; }
+.sidebar-forest-scope .bg-amber-500\/15 { background-color: rgba(184, 144, 64, 0.15) !important; }
+.sidebar-forest-scope .text-amber-500 { color: #B89040 !important; }
+
 /* ── AppSidebar — brand-themed nav items ────────────────────────────────── */
-aside nav a[aria-current="page"] {
-  background-color: rgba(26, 60, 40, 0.08) !important;
-  color: var(--bt-forest) !important;
+.sidebar-forest-scope nav a[aria-current="page"] {
+  background-color: rgba(242, 232, 213, 0.12) !important;
+  color: #F2E8D5 !important;
 }
 
 /* All nav item labels use Plus Jakarta Sans */

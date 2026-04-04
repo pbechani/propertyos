@@ -74,35 +74,35 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden z-50">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-[#1A3C28]/10">
             <div>
-              <Dialog.Title className="text-xl font-semibold">Schedule Viewing</Dialog.Title>
-              <Dialog.Description className="text-sm text-gray-600 mt-1">
+              <Dialog.Title className="text-xl font-semibold text-[#1A3C28]">Schedule Viewing</Dialog.Title>
+              <Dialog.Description className="text-sm text-[#1A3C28]/55 mt-1">
                 2847 Westwood Boulevard, Los Angeles
               </Dialog.Description>
             </div>
-            <Dialog.Close className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
+            <Dialog.Close className="p-2 hover:bg-[#1A3C28]/[0.07] rounded-lg transition-colors">
+              <X className="w-5 h-5 text-[#1A3C28]/50" />
             </Dialog.Close>
           </div>
 
           {/* Progress Indicator */}
           <div className="px-6 pt-6">
             <div className="flex items-center justify-between mb-2">
-              <span className={`text-sm font-medium ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-sm font-medium ${step >= 1 ? 'text-[#1A3C28]' : 'text-[#1A3C28]/35'}`}>
                 Client Info
               </span>
-              <span className={`text-sm font-medium ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-sm font-medium ${step >= 2 ? 'text-[#1A3C28]' : 'text-[#1A3C28]/35'}`}>
                 Date & Time
               </span>
-              <span className={`text-sm font-medium ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <span className={`text-sm font-medium ${step >= 3 ? 'text-[#1A3C28]' : 'text-[#1A3C28]/35'}`}>
                 Preferences
               </span>
             </div>
             <div className="flex gap-2">
-              <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-              <div className={`h-2 flex-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-              <div className={`h-2 flex-1 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+              <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-[#1A3C28]' : 'bg-[#1A3C28]/15'}`} />
+              <div className={`h-2 flex-1 rounded-full ${step >= 2 ? 'bg-[#1A3C28]' : 'bg-[#1A3C28]/15'}`} />
+              <div className={`h-2 flex-1 rounded-full ${step >= 3 ? 'bg-[#1A3C28]' : 'bg-[#1A3C28]/15'}`} />
             </div>
           </div>
 
@@ -112,7 +112,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
             {step === 1 && (
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       Client Name *
@@ -123,13 +123,13 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                     value={formData.clientName}
                     onChange={(e) => handleInputChange('clientName', e.target.value)}
                     placeholder="Enter full name"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4" />
                         Email Address *
@@ -140,12 +140,12 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       value={formData.clientEmail}
                       onChange={(e) => handleInputChange('clientEmail', e.target.value)}
                       placeholder="email@example.com"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                       <div className="flex items-center gap-2">
                         <Phone className="w-4 h-4" />
                         Phone Number *
@@ -156,13 +156,13 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       value={formData.clientPhone}
                       onChange={(e) => handleInputChange('clientPhone', e.target.value)}
                       placeholder="(555) 000-0000"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4" />
                       Number of Attendees
@@ -171,7 +171,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                   <select
                     value={formData.numberOfAttendees}
                     onChange={(e) => handleInputChange('numberOfAttendees', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                   >
                     <option value="1">1 person</option>
                     <option value="2">2 people</option>
@@ -181,8 +181,8 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                   </select>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-[#1A3C28]/[0.05] border border-[#1A3C28]/15 rounded-lg p-4">
+                  <p className="text-sm text-[#1A3C28]">
                     💡 <strong>Tip:</strong> Make sure to verify contact information. Automated reminders will be sent to this email and phone number.
                   </p>
                 </div>
@@ -193,7 +193,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
             {step === 2 && (
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-3">
                     Viewing Type
                   </label>
                   <div className="grid grid-cols-3 gap-3">
@@ -202,15 +202,15 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       onClick={() => handleInputChange('viewingType', 'in-person')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         formData.viewingType === 'in-person'
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#1A3C28] bg-[#1A3C28]/[0.05]'
+                          : 'border-[#1A3C28]/15 hover:border-[#1A3C28]/30'
                       }`}
                     >
                       <Home className={`w-6 h-6 mx-auto mb-2 ${
-                        formData.viewingType === 'in-person' ? 'text-blue-600' : 'text-gray-500'
+                        formData.viewingType === 'in-person' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/50'
                       }`} />
                       <div className={`text-sm font-medium ${
-                        formData.viewingType === 'in-person' ? 'text-blue-600' : 'text-gray-700'
+                        formData.viewingType === 'in-person' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/65'
                       }`}>
                         In-Person
                       </div>
@@ -221,15 +221,15 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       onClick={() => handleInputChange('viewingType', 'virtual')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         formData.viewingType === 'virtual'
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#1A3C28] bg-[#1A3C28]/[0.05]'
+                          : 'border-[#1A3C28]/15 hover:border-[#1A3C28]/30'
                       }`}
                     >
                       <Video className={`w-6 h-6 mx-auto mb-2 ${
-                        formData.viewingType === 'virtual' ? 'text-blue-600' : 'text-gray-500'
+                        formData.viewingType === 'virtual' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/50'
                       }`} />
                       <div className={`text-sm font-medium ${
-                        formData.viewingType === 'virtual' ? 'text-blue-600' : 'text-gray-700'
+                        formData.viewingType === 'virtual' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/65'
                       }`}>
                         Virtual Tour
                       </div>
@@ -240,15 +240,15 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       onClick={() => handleInputChange('viewingType', 'open-house')}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         formData.viewingType === 'open-house'
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#1A3C28] bg-[#1A3C28]/[0.05]'
+                          : 'border-[#1A3C28]/15 hover:border-[#1A3C28]/30'
                       }`}
                     >
                       <Users className={`w-6 h-6 mx-auto mb-2 ${
-                        formData.viewingType === 'open-house' ? 'text-blue-600' : 'text-gray-500'
+                        formData.viewingType === 'open-house' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/50'
                       }`} />
                       <div className={`text-sm font-medium ${
-                        formData.viewingType === 'open-house' ? 'text-blue-600' : 'text-gray-700'
+                        formData.viewingType === 'open-house' ? 'text-[#1A3C28]' : 'text-[#1A3C28]/65'
                       }`}>
                         Open House
                       </div>
@@ -258,7 +258,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
                         Date *
@@ -269,12 +269,12 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       value={formData.date}
                       onChange={(e) => handleInputChange('date', e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
                         Time *
@@ -284,13 +284,13 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       type="time"
                       value={formData.time}
                       onChange={(e) => handleInputChange('time', e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     Duration
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -301,8 +301,8 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                         onClick={() => handleInputChange('duration', duration)}
                         className={`px-4 py-2.5 border-2 rounded-lg transition-all ${
                           formData.duration === duration
-                            ? 'border-blue-600 bg-blue-50 text-blue-600 font-medium'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-[#1A3C28] bg-[#1A3C28]/[0.05] text-[#1A3C28] font-medium'
+                            : 'border-[#1A3C28]/15 hover:border-[#1A3C28]/30'
                         }`}
                       >
                         {duration} min
@@ -313,7 +313,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
 
                 {/* Quick Time Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     Quick Select
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -322,7 +322,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                         key={time}
                         type="button"
                         onClick={() => handleInputChange('time', time)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                        className="px-4 py-2 border border-[#1A3C28]/20 rounded-lg hover:bg-[#1A3C28]/[0.04] transition-colors text-sm"
                       >
                         {time}
                       </button>
@@ -330,9 +330,9 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                   </div>
                 </div>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm text-yellow-800">
-                    ⏰ Please ensure the selected time doesn't conflict with existing appointments. Check the calendar before confirming.
+                <div className="bg-[#B89040]/[0.06] border border-[#B89040]/25 rounded-lg p-4">
+                  <p className="text-sm text-[#1A3C28]">
+                    ⏰ Please ensure the selected time doesn&apos;t conflict with existing appointments. Check the calendar before confirming.
                   </p>
                 </div>
               </div>
@@ -342,13 +342,13 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
             {step === 3 && (
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     Assigned Agent
                   </label>
                   <select
                     value={formData.agent}
                     onChange={(e) => handleInputChange('agent', e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                   >
                     <option value="you">You (John Doe)</option>
                     <option value="sarah">Sarah Kim</option>
@@ -358,7 +358,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
                       Special Requests or Notes
@@ -369,16 +369,16 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                     onChange={(e) => handleInputChange('specialRequests', e.target.value)}
                     placeholder="Any special requirements, accessibility needs, or additional information..."
                     rows={4}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none"
+                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors resize-none"
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-[#1A3C28]/65">
                     Notifications
                   </label>
                   
-                  <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <label className="flex items-start gap-3 p-4 border border-[#1A3C28]/[0.12] rounded-lg hover:bg-[#1A3C28]/[0.04] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.sendConfirmation}
@@ -393,7 +393,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <label className="flex items-start gap-3 p-4 border border-[#1A3C28]/[0.12] rounded-lg hover:bg-[#1A3C28]/[0.04] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.sendReminder}
@@ -410,19 +410,19 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                 </div>
 
                 {/* Summary */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-[#1A3C28]/[0.04] border border-[#1A3C28]/10 rounded-lg p-4">
                   <div className="font-medium text-sm mb-3">Viewing Summary</div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Client:</span>
+                      <span className="text-[#1A3C28]/55">Client:</span>
                       <span className="font-medium">{formData.clientName || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Type:</span>
+                      <span className="text-[#1A3C28]/55">Type:</span>
                       <span className="font-medium capitalize">{formData.viewingType.replace('-', ' ')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Date & Time:</span>
+                      <span className="text-[#1A3C28]/55">Date & Time:</span>
                       <span className="font-medium">
                         {formData.date && formData.time 
                           ? `${new Date(formData.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${formData.time}`
@@ -431,11 +431,11 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Duration:</span>
+                      <span className="text-[#1A3C28]/55">Duration:</span>
                       <span className="font-medium">{formData.duration} minutes</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Attendees:</span>
+                      <span className="text-[#1A3C28]/55">Attendees:</span>
                       <span className="font-medium">{formData.numberOfAttendees} {parseInt(formData.numberOfAttendees) === 1 ? 'person' : 'people'}</span>
                     </div>
                   </div>
@@ -445,8 +445,8 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-500">
+          <div className="flex items-center justify-between p-6 border-t border-[#1A3C28]/10 bg-[#1A3C28]/[0.03]">
+            <div className="text-sm text-[#1A3C28]/50">
               Step {step} of 3
             </div>
             <div className="flex gap-3">
@@ -454,7 +454,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-white transition-colors font-medium"
+                  className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-white transition-colors font-medium"
                 >
                   Back
                 </button>
@@ -464,7 +464,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                   type="button"
                   onClick={handleNext}
                   disabled={step === 1 ? !isStep1Valid : !isStep2Valid}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2.5 bg-[#1A3C28] text-white rounded-lg hover:bg-[#2D5A40] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -472,7 +472,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  className="px-6 py-2.5 bg-[#1A3C28] text-[#00E87A] rounded-lg hover:bg-[#2D5A40] transition-colors font-medium"
                 >
                   Schedule Viewing
                 </button>

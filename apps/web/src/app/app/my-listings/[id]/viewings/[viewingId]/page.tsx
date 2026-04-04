@@ -38,7 +38,7 @@ function getStatusBadgeClass(status: string) {
   const map: Record<string, string> = {
     requested: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     confirmed: 'bg-green-100 text-green-800 border-green-200',
-    completed: 'bg-gray-100 text-gray-800 border-gray-200',
+    completed: 'bg-[#1A3C28]/[0.07] text-[#1A3C28] border-[#1A3C28]/15',
     declined:  'bg-red-100 text-red-800 border-red-200',
     cancelled: 'bg-red-100 text-red-800 border-red-200',
   };
@@ -177,7 +177,7 @@ export default function ViewingDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#1A3C28] animate-spin" />
       </div>
     );
   }
@@ -186,7 +186,7 @@ export default function ViewingDetailPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
         <button onClick={() => router.push(`/app/my-listings/${listingId}`)}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          className="flex items-center gap-2 text-sm text-[#1A3C28]/50 hover:text-[#1A3C28] mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to listing
         </button>
         <div className="text-center py-12 text-gray-500">
@@ -202,7 +202,7 @@ export default function ViewingDetailPage() {
   const displayStatus = viewing.status === 'requested' ? 'pending' : viewing.status;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F2E8D5]">
       <ListingBreadcrumbHeader
         backHref={`/app/my-listings/${listingId}`}
         listingId={listingId}
@@ -217,17 +217,17 @@ export default function ViewingDetailPage() {
       <div className="max-w-4xl mx-auto px-4 py-6">
 
       {/* Card */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden relative">
+      <div className="bg-white border border-[#1A3C28]/10 rounded-xl shadow-sm overflow-hidden relative">
 
         {/* Success overlays */}
         {showConfirmSuccess && (
           <div className="absolute inset-0 bg-white z-10 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-12 h-12 text-green-600" />
+              <div className="w-20 h-20 bg-[#00E87A]/15 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-12 h-12 text-[#1A3C28]" />
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Viewing Confirmed!</h3>
-              <p className="text-gray-600">Confirmation email has been sent to the client.</p>
+              <h3 className="text-2xl font-semibold text-[#1A3C28] mb-2">Viewing Confirmed!</h3>
+              <p className="text-[#1A3C28]/55">Confirmation email has been sent to the client.</p>
             </div>
           </div>
         )}
@@ -235,11 +235,11 @@ export default function ViewingDetailPage() {
         {showDeclineSuccess && (
           <div className="absolute inset-0 bg-white z-10 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Send className="w-12 h-12 text-blue-600" />
+              <div className="w-20 h-20 bg-[#1A3C28]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send className="w-12 h-12 text-[#1A3C28]" />
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">Viewing Declined</h3>
-              <p className="text-gray-600">The client has been notified.</p>
+              <h3 className="text-2xl font-semibold text-[#1A3C28] mb-2">Viewing Declined</h3>
+              <p className="text-[#1A3C28]/55">The client has been notified.</p>
             </div>
           </div>
         )}
@@ -257,18 +257,18 @@ export default function ViewingDetailPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+        <div className="flex items-center justify-between p-6 border-b border-[#1A3C28]/10 bg-[#1A3C28]/[0.03]">
           <div>
-            <h1 className="text-xl font-semibold">Viewing Request Details</h1>
-            <p className="text-sm text-gray-600 mt-1">Review and manage this viewing request</p>
+            <h1 className="text-xl font-semibold text-[#1A3C28]">Viewing Request Details</h1>
+            <p className="text-sm text-[#1A3C28]/55 mt-1">Review and manage this viewing request</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-3 py-1 rounded-full text-sm font-medium border capitalize ${getStatusBadgeClass(viewing.status)}`}>
               {displayStatus}
             </span>
             <button onClick={() => router.push(`/app/my-listings/${listingId}`)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
+              className="p-2 hover:bg-[#1A3C28]/[0.07] rounded-lg transition-colors">
+              <X className="w-5 h-5 text-[#1A3C28]/50" />
             </button>
           </div>
         </div>
@@ -282,22 +282,22 @@ export default function ViewingDetailPage() {
 
               {/* Property Info */}
               {property && (
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                    <MapPin className="w-4 h-4" />
+                <div className="bg-[#1A3C28]/[0.04] rounded-lg p-4 border border-[#1A3C28]/10">
+                  <div className="flex items-center gap-2 text-sm text-[#1A3C28]/60 mb-3">
+                    <MapPin className="w-4 h-4 text-[#C4562A]" />
                     <span className="font-medium">Property</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="font-semibold text-gray-900">{property.title}</div>
+                    <div className="font-semibold text-[#1A3C28]">{property.title}</div>
                     {property.location?.address_line1 && (
-                      <div className="text-sm text-gray-600">{property.location.address_line1}</div>
+                      <div className="text-sm text-[#1A3C28]/60">{property.location.address_line1}</div>
                     )}
                     {property.location?.city && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-[#1A3C28]/60">
                         {property.location.city}{property.location.region ? `, ${property.location.region}` : ''}
                       </div>
                     )}
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-[#1A3C28]/60">
                       {formatMoney(property.price, property.currency)}
                       {property.bedrooms != null && ` • ${property.bedrooms} bed`}
                       {property.bathrooms != null && ` • ${property.bathrooms} bath`}
@@ -309,14 +309,14 @@ export default function ViewingDetailPage() {
 
               {/* Viewing Details */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Viewing Details</h3>
+                <h3 className="font-semibold text-[#1A3C28]">Viewing Details</h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 bg-[#1A3C28]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-[#1A3C28]" />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Date</div>
+                      <div className="text-sm text-[#1A3C28]/55">Date</div>
                       <div className="font-medium">
                         {dt.toLocaleDateString('en-ZA', {
                           weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -326,26 +326,26 @@ export default function ViewingDetailPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-5 h-5 text-purple-600" />
+                    <div className="w-10 h-10 bg-[#C4562A]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-[#C4562A]" />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Time &amp; Duration</div>
+                      <div className="text-sm text-[#1A3C28]/55">Time &amp; Duration</div>
                       <div className="font-medium">
                         {dt.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                       {viewing.duration_minutes && (
-                        <div className="text-sm text-gray-500">{viewing.duration_minutes} minutes</div>
+                        <div className="text-sm text-[#1A3C28]/45">{viewing.duration_minutes} minutes</div>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 text-green-600">
+                    <div className="w-10 h-10 bg-[#1A3C28]/10 rounded-lg flex items-center justify-center flex-shrink-0 text-[#1A3C28]">
                       <ViewingTypeIcon type={viewing.viewing_type} />
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Viewing Type</div>
+                      <div className="text-sm text-[#1A3C28]/55">Viewing Type</div>
                       <div className="font-medium capitalize">
                         {viewing.viewing_type.replace('_', ' ')}
                       </div>
@@ -355,8 +355,8 @@ export default function ViewingDetailPage() {
               </div>
 
               {/* Requested timestamp */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="text-sm text-blue-800">
+              <div className="bg-[#1A3C28]/[0.05] border border-[#1A3C28]/15 rounded-lg p-4">
+                <div className="text-sm text-[#1A3C28]/70">
                   <strong>Requested:</strong>{' '}
                   {new Date(viewing.created_at).toLocaleString('en-ZA', {
                     month: 'short', day: 'numeric', year: 'numeric',
@@ -371,36 +371,36 @@ export default function ViewingDetailPage() {
 
               {/* Client Info */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Client Information</h3>
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-[#1A3C28]">Client Information</h3>
+                <div className="bg-white border border-[#1A3C28]/10 rounded-lg p-4">
                   <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-[#B89040] rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-semibold text-sm">{initials(buyerName)}</span>
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{buyerName}</div>
-                      <div className="text-sm text-gray-500">Potential Buyer</div>
+                      <div className="font-semibold text-[#1A3C28]">{buyerName}</div>
+                      <div className="text-sm text-[#1A3C28]/50">Potential Buyer</div>
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     {viewing.buyer_email && (
                       <a href={`mailto:${viewing.buyer_email}`}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group">
-                        <Mail className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+                        className="flex items-center gap-3 p-3 hover:bg-[#1A3C28]/[0.04] rounded-lg transition-colors group">
+                        <Mail className="w-5 h-5 text-[#1A3C28]/45 group-hover:text-[#1A3C28]" />
                         <div>
-                          <div className="text-xs text-gray-500">Email</div>
-                          <div className="text-sm text-gray-900 group-hover:text-blue-600">{viewing.buyer_email}</div>
+                          <div className="text-xs text-[#1A3C28]/45">Email</div>
+                          <div className="text-sm text-[#1A3C28] group-hover:text-[#1A3C28]">{viewing.buyer_email}</div>
                         </div>
                       </a>
                     )}
                     {viewing.buyer_phone && (
                       <a href={`tel:${viewing.buyer_phone}`}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors group">
-                        <Phone className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+                        className="flex items-center gap-3 p-3 hover:bg-[#1A3C28]/[0.04] rounded-lg transition-colors group">
+                        <Phone className="w-5 h-5 text-[#1A3C28]/45 group-hover:text-[#1A3C28]" />
                         <div>
-                          <div className="text-xs text-gray-500">Phone</div>
-                          <div className="text-sm text-gray-900 group-hover:text-blue-600">{viewing.buyer_phone}</div>
+                          <div className="text-xs text-[#1A3C28]/45">Phone</div>
+                          <div className="text-sm text-[#1A3C28] group-hover:text-[#1A3C28]">{viewing.buyer_phone}</div>
                         </div>
                       </a>
                     )}
@@ -416,11 +416,11 @@ export default function ViewingDetailPage() {
               {/* Buyer feedback */}
               {viewing.buyer_feedback && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900">Buyer Feedback</h3>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-[#1A3C28]">Buyer Feedback</h3>
+                  <div className="bg-[#B89040]/[0.07] border border-[#B89040]/25 rounded-lg p-4">
                     <div className="flex items-start gap-2">
-                      <MessageSquare className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-yellow-900">{String(viewing.buyer_feedback)}</p>
+                      <MessageSquare className="w-5 h-5 text-[#B89040] flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-[#1A3C28]/75">{String(viewing.buyer_feedback)}</p>
                     </div>
                   </div>
                 </div>
@@ -429,7 +429,7 @@ export default function ViewingDetailPage() {
               {/* Cancel/decline reason */}
               {viewing.cancel_reason && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-[#1A3C28]">
                     {viewing.status === 'declined' ? 'Decline Reason' : 'Cancellation Reason'}
                   </h3>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -440,16 +440,16 @@ export default function ViewingDetailPage() {
 
               {/* Assigned Agent */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Assigned Agent</h3>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-[#1A3C28]">Assigned Agent</h3>
+                <div className="bg-[#1A3C28]/[0.04] border border-[#1A3C28]/10 rounded-lg p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-medium text-sm">
+                    <div className="w-10 h-10 bg-[#B89040] text-white rounded-full flex items-center justify-center font-medium text-sm">
                       {initials(agentName)}
                     </div>
                     <div>
-                      <div className="font-medium">{agentName} (You)</div>
+                      <div className="font-medium text-[#1A3C28]">{agentName} (You)</div>
                       {user?.companyName && (
-                        <div className="text-sm text-gray-500">{user.companyName}</div>
+                        <div className="text-sm text-[#1A3C28]/50">{user.companyName}</div>
                       )}
                     </div>
                   </div>
@@ -458,13 +458,13 @@ export default function ViewingDetailPage() {
 
               {/* Agent Notes */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Agent Notes</h3>
+                <h3 className="font-semibold text-[#1A3C28]">Agent Notes</h3>
                 <textarea
                   value={agentNotes}
                   onChange={(e) => setAgentNotes(e.target.value)}
                   placeholder="Add internal notes about this viewing request..."
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-sm"
+                  className="w-full px-4 py-3 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none resize-none text-sm"
                 />
               </div>
             </div>
@@ -534,7 +534,7 @@ export default function ViewingDetailPage() {
                   </button>
                   <button
                     onClick={() => { setShowDeclineForm(false); setSelectedDeclineReason(''); setDeclineReasonText(''); }}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-[#1A3C28]/[0.04] transition-colors font-medium"
                   >
                     Cancel
                   </button>
@@ -544,12 +544,12 @@ export default function ViewingDetailPage() {
           )}
           {/* Reschedule Form */}
           {showRescheduleForm && (
-            <div className="mt-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <div className="mt-6 p-6 bg-[#1A3C28]/[0.05] border-2 border-[#1A3C28]/20 rounded-lg">
               <div className="flex items-start gap-3 mb-4">
-                <Edit2 className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Edit2 className="w-6 h-6 text-[#1A3C28] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-blue-900 mb-1">Reschedule Viewing</h3>
-                  <p className="text-sm text-blue-800">
+                  <h3 className="font-semibold text-[#1A3C28] mb-1">Reschedule Viewing</h3>
+                  <p className="text-sm text-[#1A3C28]/70">
                     Select a new date and time. The client will be notified of the change.
                   </p>
                 </div>
@@ -564,7 +564,7 @@ export default function ViewingDetailPage() {
                     type="datetime-local"
                     value={rescheduleDate}
                     onChange={(e) => setRescheduleDate(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none"
                   />
                 </div>
 
@@ -577,7 +577,7 @@ export default function ViewingDetailPage() {
                     onChange={(e) => setRescheduleReason(e.target.value)}
                     placeholder="e.g. Seller requested a different time"
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                    className="w-full px-4 py-3 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none resize-none"
                   />
                 </div>
 
@@ -587,14 +587,14 @@ export default function ViewingDetailPage() {
                   <button
                     onClick={handleReschedule}
                     disabled={actionPending || !rescheduleDate}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-6 py-2.5 bg-[#1A3C28] text-white rounded-lg hover:bg-[#2D5A40] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {actionPending && <Loader2 className="w-4 h-4 animate-spin" />}
                     Confirm Reschedule
                   </button>
                   <button
                     onClick={() => { setShowRescheduleForm(false); setRescheduleDate(''); setRescheduleReason(''); }}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-[#1A3C28]/[0.04] transition-colors font-medium"
                   >
                     Cancel
                   </button>
@@ -653,7 +653,7 @@ export default function ViewingDetailPage() {
                   </button>
                   <button
                     onClick={() => { setShowCancelForm(false); setSelectedCancelReason(''); setCancelReasonText(''); }}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-[#1A3C28]/[0.04] transition-colors font-medium"
                   >
                     Keep Viewing
                   </button>
@@ -665,8 +665,8 @@ export default function ViewingDetailPage() {
 
         {/* Footer Actions */}
         {!showDeclineForm && !showRescheduleForm && viewing.status === 'requested' && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[#1A3C28]/10 bg-[#1A3C28]/[0.03]">
+            <div className="flex items-center gap-2 text-sm text-[#1A3C28]/60">
               <AlertCircle className="w-4 h-4" />
               Awaiting confirmation
             </div>
@@ -681,7 +681,7 @@ export default function ViewingDetailPage() {
               </button>
               <button
                 onClick={() => { setShowRescheduleForm(true); setShowDeclineForm(false); }}
-                className="px-6 py-2.5 border-2 border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
+                className="px-6 py-2.5 border-2 border-[#1A3C28]/30 text-[#1A3C28] rounded-lg hover:bg-[#1A3C28]/[0.05] transition-colors font-medium flex items-center gap-2"
               >
                 <Edit2 className="w-5 h-5" />
                 Reschedule
@@ -689,7 +689,7 @@ export default function ViewingDetailPage() {
               <button
                 onClick={handleConfirm}
                 disabled={actionPending}
-                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-[#00E87A] text-[#0C0D10] rounded-lg hover:opacity-90 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
               >
                 {actionPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
                 Confirm Viewing
@@ -699,8 +699,8 @@ export default function ViewingDetailPage() {
         )}
 
         {viewing.status === 'confirmed' && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-green-50">
-            <div className="flex items-center gap-2 text-green-800">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[#1A3C28]/10 bg-[#00E87A]/[0.08]">
+            <div className="flex items-center gap-2 text-[#1A3C28]">
               <CheckCircle2 className="w-5 h-5" />
               <span className="font-medium">This viewing has been confirmed</span>
             </div>
@@ -708,7 +708,7 @@ export default function ViewingDetailPage() {
               {!showRescheduleForm && !showCancelForm && (
                 <button
                   onClick={() => setShowRescheduleForm(true)}
-                  className="px-6 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium flex items-center gap-2"
+                  className="px-6 py-2.5 border-2 border-[#1A3C28]/30 text-[#1A3C28] rounded-lg hover:bg-[#1A3C28]/[0.05] transition-colors font-medium flex items-center gap-2"
                 >
                   <Edit2 className="w-4 h-4" />
                   Reschedule
@@ -725,7 +725,7 @@ export default function ViewingDetailPage() {
               )}
               <button
                 onClick={() => router.push(`/app/my-listings/${listingId}`)}
-                className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="px-6 py-2.5 border border-[#1A3C28]/20 text-[#1A3C28]/60 rounded-lg hover:bg-[#1A3C28]/[0.04] transition-colors font-medium"
               >
                 Back to Listing
               </button>
@@ -741,8 +741,8 @@ export default function ViewingDetailPage() {
         )}
 
         {viewing.status === 'completed' && (
-          <div className="flex items-center gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50 text-gray-600">
-            <CheckCircle2 className="w-5 h-5 text-gray-400" />
+          <div className="flex items-center gap-2 px-6 py-4 border-t border-[#1A3C28]/10 bg-[#1A3C28]/[0.03] text-[#1A3C28]/60">
+            <CheckCircle2 className="w-5 h-5 text-[#1A3C28]/30" />
             <span className="text-sm">This viewing has been completed.</span>
           </div>
         )}

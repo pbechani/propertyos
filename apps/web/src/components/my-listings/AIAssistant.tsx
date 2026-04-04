@@ -371,15 +371,17 @@ function buildListingResponse(actionId: string, l: ListingContext): string | nul
 interface AIAssistantProps {
   isOpen: boolean;
   onClose: () => void;
-  listing: ListingContext;
+  listing?: ListingContext;
 }
 
 export function AIAssistant({ isOpen, onClose, listing }: AIAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: '0',
       role: 'assistant',
-      content: `Hi ${listing.agentFirstName}! I'm your AI listing assistant for **${listing.address}**. I can help you draft communications, analyse market data, summarise feedback, and recommend next steps. What would you like help with?`,
+      content: listing
+        ? `Hi ${listing.agentFirstName}! I'm your AI listing assistant for **${listing.address}**. I can help you draft communications, analyse market data, summarise feedback, and recommend next steps. What would you like help with?`
+        : `Hi! I'm your AI listing assistant. I can help you draft communications, analyse market data, summarise feedback, and recommend next steps. What would you like help with?`,
       timestamp: new Date()
     }
   ]);
@@ -405,6 +407,17 @@ export function AIAssistant({ isOpen, onClose, listing }: AIAssistantProps) {
     const delay = 1200 + Math.random() * 800;
 
     setTimeout(() => {
+      if (!listing) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: 'I\'m ready to help once the listing details have loaded. Please try again shortly.',
+          timestamp: new Date()
+        }]);
+        setIsTyping(false);
+        return;
+      }
+
       const dom        = listing.daysOnMarket ?? 0;
       const views      = listing.viewings    ?? 0;
       const leads      = listing.leads       ?? 0;
@@ -515,7 +528,7 @@ export function AIAssistant({ isOpen, onClose, listing }: AIAssistantProps) {
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">AI Listing Assistant</h3>
-            <p className="text-blue-100 text-xs">{listing.address}</p>
+            <p className="text-blue-100 text-xs">{listing?.address ?? 'Listing Assistant'}</p>
           </div>
         </div>
         <button

@@ -70,14 +70,6 @@ const agentNavigation = [
   { name: 'AI Intelligence', href: '/app/ai-intelligence', icon: Brain },
 ];
 
-/** Sub-navigation nested under Lead Management inside Agent Cockpit. */
-const leadManagementNavigation = [
-  { name: 'Lead Dashboard', href: '/app/leads/dashboard', icon: LayoutDashboard },
-  { name: 'Leads', href: '/app/leads', icon: Users },
-  { name: 'Pipeline', href: '/app/leads/pipeline', icon: Kanban },
-  { name: 'Analytics', href: '/app/leads/analytics', icon: BarChart3 },
-];
-
 /** Sub-navigation nested under My Listings. */
 const myListingsNavigation = [
   { name: 'Dashboard', href: '/app/my-listings', icon: LayoutDashboard },
@@ -144,7 +136,6 @@ export function AppSidebar({
   const [showAdminGroup, setShowAdminGroup] = useState(true);
   const [showPlatformAdminCockpit, setShowPlatformAdminCockpit] = useState(true);
   const [showAgentCockpit, setShowAgentCockpit] = useState(true);
-  const [showLeadManagement, setShowLeadManagement] = useState(true);
   const [showConveyancerCockpit, setShowConveyancerCockpit] = useState(true);
   const [showMyListings, setShowMyListings] = useState(true);
   const [showOpenHouses, setShowOpenHouses] = useState(true);
@@ -186,7 +177,7 @@ export function AppSidebar({
   return (
     <>
       {/* ── Desktop sidebar ─────────────────────────────────────── */}
-      <aside className={`hidden lg:flex bg-card border-r border-border flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`hidden lg:flex bg-sidebar border-r border-sidebar-border sidebar-forest-scope flex-col transition-all ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
 
         {/* Logo row */}
         <div className={`p-2 border-b border-border flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
@@ -196,10 +187,10 @@ export function AppSidebar({
             aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
             title="PropertyOS"
           >
-            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: '#1A3C28' }}>
+            <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: 'var(--bt-terracotta)' }}>
               <Home className="w-4 h-4 text-white" />
             </div>
-            {!isSidebarCollapsed && <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>PropertyOS</span>}
+            {!isSidebarCollapsed && <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--sidebar-foreground)' }}>PropertyOS</span>}
           </Link>
           <button
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -242,7 +233,7 @@ export function AppSidebar({
                     <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {showRoleBadge && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(26,60,40,0.1)', color: '#1A3C28', fontFamily: 'var(--font-mono)' }}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(242,232,213,0.15)', color: 'var(--bt-parchment)', fontFamily: 'var(--font-mono)' }}>
                           {companyRole}
                         </span>
                       )}
@@ -414,47 +405,34 @@ export function AppSidebar({
                     <User className="w-4 h-4" />
                     {!isSidebarCollapsed && <span className="text-sm font-medium">Agent Dashboard</span>}
                   </Link>
-                  {/* My Listings (collapsible) */}
-                  <div>
-                    <button
-                      onClick={() => setShowMyListings((v) => !v)}
-                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
-                        pathname.startsWith('/app/my-listings')
-                          ? 'text-[#1A3C28]'
-                          : 'text-muted-foreground hover:bg-accent'
-                      }`}
-                      style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
-                      title="My Listings"
-                    >
-                      <ClipboardList className="w-4 h-4 shrink-0" />
-                      {!isSidebarCollapsed && (
-                        <>
-                          <span className="text-sm font-medium flex-1 text-left">My Listings</span>
-                          <ChevronDown className={`w-3 h-3 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
-                        </>
-                      )}
-                    </button>
-                    {showMyListings && (
-                      <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
-                        {myListingsNavigation.map((item) => (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                            className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
-                              isActive(pathname, item.href)
-                                ? 'bg-blue-50 text-blue-600'
-                                : 'text-muted-foreground hover:bg-accent'
-                            }`}
-                            title={item.name}
-                          >
-                            <item.icon className="w-3.5 h-3.5" />
-                            {!isSidebarCollapsed && <span className="text-xs font-medium">{item.name}</span>}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* My Listings */}
+                  <Link
+                    href="/app/my-listings"
+                    aria-current={isActive(pathname, '/app/my-listings') ? 'page' : undefined}
+                    className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                      isActive(pathname, '/app/my-listings')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="My Listings"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    {!isSidebarCollapsed && <span className="text-sm font-medium">My Listings</span>}
+                  </Link>
+                  {/* My Calendar */}
+                  <Link
+                    href="/app/calendar"
+                    aria-current={isActive(pathname, '/app/calendar') ? 'page' : undefined}
+                    className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                      isActive(pathname, '/app/calendar')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="My Calendar"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {!isSidebarCollapsed && <span className="text-sm font-medium">My Calendar</span>}
+                  </Link>
                   {/* Listings */}
                   <Link
                     href="/app/listings"
@@ -469,41 +447,19 @@ export function AppSidebar({
                     <Building2 className="w-4 h-4" />
                     {!isSidebarCollapsed && <span className="text-sm font-medium">Listings</span>}
                   </Link>
-                  <div>
-                    <button
-                      onClick={() => setShowLeadManagement((v) => !v)}
-                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors text-muted-foreground hover:bg-accent`}
-                      title="Lead Management"
-                    >
-                      <Target className="w-4 h-4 shrink-0" />
-                      {!isSidebarCollapsed && (
-                        <>
-                          <span className="text-sm font-medium flex-1 text-left">Lead Management</span>
-                          <ChevronDown className={`w-3 h-3 transition-transform ${showLeadManagement ? 'rotate-180' : ''}`} />
-                        </>
-                      )}
-                    </button>
-                    {showLeadManagement && (
-                      <div className={`${isSidebarCollapsed ? 'mt-1 space-y-1' : 'ml-3 border-l border-border pl-2 mt-1 space-y-1'}`}>
-                        {leadManagementNavigation.map((item) => (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                            className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
-                              isActive(pathname, item.href)
-                                ? 'bg-blue-50 text-blue-600'
-                                : 'text-muted-foreground hover:bg-accent'
-                            }`}
-                            title={item.name}
-                          >
-                            <item.icon className="w-3.5 h-3.5" />
-                            {!isSidebarCollapsed && <span className="text-xs font-medium">{item.name}</span>}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <Link
+                    href="/app/leads"
+                    aria-current={pathname.startsWith('/app/leads') ? 'page' : undefined}
+                    className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
+                      pathname.startsWith('/app/leads')
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-muted-foreground hover:bg-accent'
+                    }`}
+                    title="Lead Management"
+                  >
+                    <Target className="w-4 h-4" />
+                    {!isSidebarCollapsed && <span className="text-sm font-medium">Lead Management</span>}
+                  </Link>
                   {agentNavigation.slice(3).map((item) => (
                     <Link
                       key={item.name}
@@ -526,10 +482,10 @@ export function AppSidebar({
                       onClick={() => setShowOpenHouses((v) => !v)}
                       className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2.5 rounded-lg transition-colors ${
                         pathname.startsWith('/app/open-houses')
-                          ? 'text-[#1A3C28]'
+                          ? 'text-sidebar-foreground'
                           : 'text-muted-foreground hover:bg-accent'
                       }`}
-                      style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                      style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                       title="Open Houses"
                     >
                       <DoorOpen className="w-4 h-4 shrink-0" />
@@ -572,10 +528,10 @@ export function AppSidebar({
                     onClick={() => setShowMyListings((v) => !v)}
                     className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
                       pathname.startsWith('/app/my-listings')
-                        ? 'text-[#1A3C28]'
+                        ? 'text-sidebar-foreground'
                         : 'text-muted-foreground hover:bg-accent'
                     }`}
-                    style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                    style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                     title="My Listings"
                   >
                     <item.icon className="w-5 h-5 shrink-0" />
@@ -595,10 +551,10 @@ export function AppSidebar({
                           aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
                           className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg transition-colors ${
                             isActive(pathname, subItem.href)
-                              ? 'text-[#1A3C28]'
+                              ? 'text-sidebar-foreground'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
-                          style={isActive(pathname, subItem.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                          style={isActive(pathname, subItem.href) ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                           title={subItem.name}
                         >
                           <subItem.icon className="w-4 h-4" />
@@ -615,10 +571,10 @@ export function AppSidebar({
                 aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                 className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-colors ${
                   isActive(pathname, item.href)
-                    ? 'text-[#1A3C28]'
+                    ? 'text-sidebar-foreground'
                     : 'text-muted-foreground hover:bg-accent'
                 }`}
-                style={isActive(pathname, item.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                style={isActive(pathname, item.href) ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                 title={item.name}
               >
                 <item.icon className="w-5 h-5" />
@@ -636,7 +592,7 @@ export function AppSidebar({
       {showMobileMenu && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileMenu(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card flex flex-col">
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar sidebar-forest-scope flex-col flex">
 
             {/* Logo row */}
             <div className="p-6 border-b border-border flex items-center justify-between gap-2">
@@ -646,10 +602,10 @@ export function AppSidebar({
                 className="flex items-center gap-2 text-foreground"
                 aria-label={isPlatformAdmin ? 'Go to Admin Overview' : isAdmin && !isSelfCompany ? 'Go to Company Dashboard' : 'Go to My Dashboard'}
               >
-                <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: '#1A3C28' }}>
+                <div className="w-8 h-8 rounded-md flex items-center justify-center shrink-0" style={{ background: 'var(--bt-terracotta)' }}>
                   <Home className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: '#1A3C28' }}>PropertyOS</span>
+                <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--sidebar-foreground)' }}>PropertyOS</span>
               </Link>
               <button
                 onClick={() => setShowMobileMenu(false)}
@@ -682,7 +638,7 @@ export function AppSidebar({
                       <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         {showRoleBadge && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(26,60,40,0.1)', color: '#1A3C28', fontFamily: 'var(--font-mono)' }}>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide" style={{ background: 'rgba(242,232,213,0.15)', color: 'var(--bt-parchment)', fontFamily: 'var(--font-mono)' }}>
                             {companyRole}
                           </span>
                         )}
@@ -831,42 +787,34 @@ export function AppSidebar({
                         <User className="w-4 h-4" />
                         <span className="text-sm font-medium">Agent Dashboard</span>
                       </Link>
-                      {/* My Listings (collapsible) */}
-                      <div>
-                        <button
-                          onClick={() => setShowMyListings((v) => !v)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                            pathname.startsWith('/app/my-listings')
-                              ? 'text-[#1A3C28]'
-                              : 'text-muted-foreground hover:bg-accent'
-                          }`}
-                          style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
-                        >
-                          <ClipboardList className="w-4 h-4 shrink-0" />
-                          <span className="text-sm font-medium flex-1 text-left">My Listings</span>
-                          <ChevronDown className={`w-3 h-3 transition-transform ${showMyListings ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showMyListings && (
-                          <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
-                            {myListingsNavigation.map((item) => (
-                              <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setShowMobileMenu(false)}
-                                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                  isActive(pathname, item.href)
-                                    ? 'bg-blue-50 text-blue-600'
-                                    : 'text-muted-foreground hover:bg-accent'
-                                }`}
-                              >
-                                <item.icon className="w-3.5 h-3.5" />
-                                <span className="text-xs font-medium">{item.name}</span>
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      {/* My Listings */}
+                      <Link
+                        href="/app/my-listings"
+                        onClick={() => setShowMobileMenu(false)}
+                        aria-current={isActive(pathname, '/app/my-listings') ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive(pathname, '/app/my-listings')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <ClipboardList className="w-4 h-4" />
+                        <span className="text-sm font-medium">My Listings</span>
+                      </Link>
+                      {/* My Calendar */}
+                      <Link
+                        href="/app/calendar"
+                        onClick={() => setShowMobileMenu(false)}
+                        aria-current={isActive(pathname, '/app/calendar') ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive(pathname, '/app/calendar')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm font-medium">My Calendar</span>
+                      </Link>
                       {/* Listings */}
                       <Link
                         href="/app/listings"
@@ -881,36 +829,19 @@ export function AppSidebar({
                         <Building2 className="w-4 h-4" />
                         <span className="text-sm font-medium">Listings</span>
                       </Link>
-                      <div>
-                        <button
-                          onClick={() => setShowLeadManagement((v) => !v)}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-muted-foreground hover:bg-accent"
-                        >
-                          <Target className="w-4 h-4 shrink-0" />
-                          <span className="text-sm font-medium flex-1 text-left">Lead Management</span>
-                          <ChevronDown className={`w-3 h-3 transition-transform ${showLeadManagement ? 'rotate-180' : ''}`} />
-                        </button>
-                        {showLeadManagement && (
-                          <div className="ml-3 border-l border-border pl-2 mt-1 space-y-1">
-                            {leadManagementNavigation.map((item) => (
-                              <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setShowMobileMenu(false)}
-                                aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                  isActive(pathname, item.href)
-                                    ? 'bg-blue-50 text-blue-600'
-                                    : 'text-muted-foreground hover:bg-accent'
-                                }`}
-                              >
-                                <item.icon className="w-3.5 h-3.5" />
-                                <span className="text-xs font-medium">{item.name}</span>
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <Link
+                        href="/app/leads"
+                        onClick={() => setShowMobileMenu(false)}
+                        aria-current={pathname.startsWith('/app/leads') ? 'page' : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          pathname.startsWith('/app/leads')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-muted-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <Target className="w-4 h-4" />
+                        <span className="text-sm font-medium">Lead Management</span>
+                      </Link>
                       {agentNavigation.slice(3).map((item) => (
                         <Link
                           key={item.name}
@@ -933,10 +864,10 @@ export function AppSidebar({
                           onClick={() => setShowOpenHouses((v) => !v)}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                             pathname.startsWith('/app/open-houses')
-                              ? 'text-[#1A3C28]'
+                              ? 'text-sidebar-foreground'
                               : 'text-muted-foreground hover:bg-accent'
                           }`}
-                          style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                          style={pathname.startsWith('/app/open-houses') ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                         >
                           <DoorOpen className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium flex-1 text-left">Open Houses</span>
@@ -974,10 +905,10 @@ export function AppSidebar({
                         onClick={() => setShowMyListings((v) => !v)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                           pathname.startsWith('/app/my-listings')
-                            ? 'text-[#1A3C28]'
+                            ? 'text-sidebar-foreground'
                             : 'text-muted-foreground hover:bg-accent'
                         }`}
-                        style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                        style={pathname.startsWith('/app/my-listings') ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                       >
                         <item.icon className="w-5 h-5 shrink-0" />
                         <span className="font-medium flex-1 text-left">My Listings</span>
@@ -993,10 +924,10 @@ export function AppSidebar({
                               aria-current={isActive(pathname, subItem.href) ? 'page' : undefined}
                               className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                 isActive(pathname, subItem.href)
-                                  ? 'text-[#1A3C28]'
+                                  ? 'text-sidebar-foreground'
                                   : 'text-muted-foreground hover:bg-accent'
                               }`}
-                              style={isActive(pathname, subItem.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                              style={isActive(pathname, subItem.href) ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                             >
                               <subItem.icon className="w-4 h-4" />
                               <span className="text-sm font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{subItem.name}</span>
@@ -1013,10 +944,10 @@ export function AppSidebar({
                     aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive(pathname, item.href)
-                        ? 'text-[#1A3C28]'
+                        ? 'text-sidebar-foreground'
                         : 'text-muted-foreground hover:bg-accent'
                     }`}
-                    style={isActive(pathname, item.href) ? { background: 'rgba(26,60,40,0.08)' } : undefined}
+                    style={isActive(pathname, item.href) ? { background: 'rgba(242,232,213,0.10)' } : undefined}
                   >
                     <item.icon className="w-5 h-5" />
                     <span className="font-medium" style={{ fontFamily: 'var(--font-jakarta)' }}>{item.name}</span>

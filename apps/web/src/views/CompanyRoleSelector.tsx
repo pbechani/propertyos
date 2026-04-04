@@ -84,6 +84,16 @@ const ROLE_DASHBOARD: Record<string, string> = {
 
 export const ACTIVE_ROLE_KEY = "pribec.active_role";
 
+const C = {
+  forest: '#1A3C28',
+  forestLight: '#4A7C5A',
+  parchment: '#F2E8D5',
+  amber: '#B89040',
+  terracotta: '#C4562A',
+  egreen: '#00E87A',
+  muted: '#E8F0EC',
+};
+
 export default function CompanyRoleSelector() {
   const navigate = useNavigate();
   const searchParams = useSearchParams();
@@ -122,23 +132,33 @@ export default function CompanyRoleSelector() {
 
   const handleSignOut = () => {
     clearAuthSession();
-    navigate("/login");
+    window.location.href = '/';
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: C.parchment }}>
       <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
-              <Shield className="w-8 h-8 text-white" />
+        <div className="rounded-2xl shadow-xl overflow-hidden">
+          {/* Forest header strip */}
+          <div style={{ background: C.forest, padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, background: C.forestLight, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 16, fontWeight: 700, color: C.egreen }}>B</span>
             </div>
-            <h1 className="text-3xl font-bold mb-2">Select Your Role</h1>
-            <p className="text-gray-600">
-              Your account has multiple roles. Choose which one you want to access now.
-            </p>
+            <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: C.parchment, letterSpacing: '-0.3px' }}>BuildTrust</span>
           </div>
+
+          {/* Card body */}
+          <div className="p-8" style={{ background: '#fff' }}>
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: C.forest }}>
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-fraunces)', color: C.forest }}>Select Your Role</h1>
+              <p className="text-gray-600">
+                Your account has multiple roles. Choose which one you want to access now.
+              </p>
+            </div>
 
           {/* Role cards */}
           <div className="space-y-3 mb-8">
@@ -156,27 +176,24 @@ export default function CompanyRoleSelector() {
                   key={role}
                   onClick={() => setSelectedRole(role)}
                   className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
-                    isSelected
-                      ? "border-indigo-600 bg-indigo-50 shadow-md"
-                      : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                    isSelected ? "shadow-md" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                   }`}
+                  style={isSelected ? { borderColor: C.forest, borderLeftWidth: 4, background: C.muted } : {}}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div
-                        className={`flex items-center justify-center w-12 h-12 rounded-lg shrink-0 ${
-                          isSelected ? "bg-indigo-600" : "bg-gray-100"
-                        }`}
+                        className="flex items-center justify-center w-12 h-12 rounded-lg shrink-0"
+                        style={{ background: isSelected ? C.forest : C.muted }}
                       >
                         <Icon
-                          className={`w-6 h-6 ${isSelected ? "text-white" : "text-gray-600"}`}
+                          className={`w-6 h-6 ${isSelected ? "text-[#00E87A]" : "text-[#1A3C28]"}`}
                         />
                       </div>
                       <div>
                         <h3
-                          className={`text-lg font-semibold mb-0.5 ${
-                            isSelected ? "text-indigo-900" : "text-gray-900"
-                          }`}
+                          className="text-lg font-semibold mb-0.5"
+                          style={{ fontFamily: 'var(--font-fraunces)', color: isSelected ? C.forest : '#111827' }}
                         >
                           {label}
                         </h3>
@@ -184,20 +201,19 @@ export default function CompanyRoleSelector() {
                           <p className="text-sm text-gray-500">{description}</p>
                         )}
                         <span
-                          className={`mt-1 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${
-                            isSelected
-                              ? "bg-indigo-600 text-white"
-                              : "bg-gray-200 text-gray-700"
-                          }`}
+                          className="mt-1 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium"
+                          style={isSelected
+                            ? { background: C.forest, color: C.parchment }
+                            : { background: '#E5E7EB', color: '#6B7280' }
+                          }
                         >
                           {role.toUpperCase().replace(/_/g, " ")}
                         </span>
                       </div>
                     </div>
                     <ChevronRight
-                      className={`w-6 h-6 shrink-0 ${
-                        isSelected ? "text-indigo-600" : "text-gray-400"
-                      }`}
+                      className="w-6 h-6 shrink-0"
+                      style={{ color: isSelected ? C.forest : '#9CA3AF' }}
                     />
                   </div>
                 </button>
@@ -209,17 +225,17 @@ export default function CompanyRoleSelector() {
           <button
             onClick={handleContinue}
             disabled={!selectedRole}
-            className={`w-full py-4 rounded-lg font-medium transition flex items-center justify-center gap-2 ${
-              selectedRole
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
+            className="w-full py-4 rounded-lg font-medium transition flex items-center justify-center gap-2"
+            style={selectedRole
+              ? { background: C.forest, color: C.parchment }
+              : { background: '#E5E7EB', color: '#9CA3AF' }
+            }
           >
             Continue to Dashboard
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm mt-6" style={{ color: C.forest, opacity: 0.5 }}>
             You can switch between roles anytime from your profile settings.
           </p>
 
@@ -227,11 +243,13 @@ export default function CompanyRoleSelector() {
           <div className="flex justify-center mt-4">
             <button
               onClick={handleSignOut}
-              className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1 transition"
+              className="text-sm flex items-center gap-1 transition"
+              style={{ color: C.forest, opacity: 0.55 }}
             >
               <LogOut className="w-4 h-4" />
               Sign out
             </button>
+          </div>
           </div>
         </div>
       </div>

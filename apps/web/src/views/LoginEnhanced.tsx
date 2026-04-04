@@ -32,7 +32,11 @@ export default function LoginEnhanced({
   const nextPath = hasSafeNextPath ? nextPathParam : null;
 
   const handleCancel = () => {
-    navigate('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate('/');
+    }
   };
 
   const handleLogin = async (e: FormEvent) => {

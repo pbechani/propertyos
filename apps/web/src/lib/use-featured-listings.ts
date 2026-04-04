@@ -36,6 +36,7 @@ function derivePrice(p: { price: string; currency: string }): string {
 
 function deriveBadge(p: { verification_status: string; status: string; listing_type?: string | null }): string {
   if (p.listing_type === 'off_plan') return 'OFF-PLAN';
+  if (p.listing_type === 'to_rent') return 'FOR RENT';
   if (p.status === 'sold') return 'SOLD';
   if (p.status === 'under_offer') return 'UNDER OFFER';
   if (p.verification_status === 'verified') return 'VERIFIED';

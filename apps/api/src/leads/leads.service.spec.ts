@@ -240,7 +240,9 @@ describe('LeadsService', () => {
         .mockResolvedValueOnce([]) // pendingTasks
         .mockResolvedValueOnce([]) // recentActivities
         .mockResolvedValueOnce([{ type: 'buyer', count: '7' }, { type: 'seller', count: '3' }])
-        .mockResolvedValueOnce([{ temperature: 'hot', count: '3' }]);
+        .mockResolvedValueOnce([{ temperature: 'hot', count: '3' }])
+        .mockResolvedValueOnce([]) // recentLeads
+        .mockResolvedValueOnce([{ stage: 'new', count: '5' }, { stage: 'contacted', count: '3' }]); // stageRows
 
       const result = await service.getDashboard(userId, roles, companyId);
 
@@ -250,6 +252,8 @@ describe('LeadsService', () => {
       expect(result.pipelineValue).toBe(2500000);
       expect(result.byType).toEqual({ buyer: 7, seller: 3 });
       expect(result.byTemperature).toEqual({ hot: 3 });
+      expect(result.byStage).toEqual({ new: 5, contacted: 3 });
+      expect(result.recentLeads).toHaveLength(0);
     });
 
     it('returns zero values when no leads exist', async () => {
@@ -258,7 +262,9 @@ describe('LeadsService', () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]) // recentLeads
+        .mockResolvedValueOnce([]); // stageRows
 
       const result = await service.getDashboard(userId, roles, companyId);
 
