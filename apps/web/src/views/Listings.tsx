@@ -1972,12 +1972,19 @@ export default function Listings() {
 
   return (
     <div className="bg-[#F2E8D5] min-h-screen">
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* ── Option A: 4-row inline search ──────────────────────────────── */}
+      <div>
+        {/* ── Forest Command Zone ─────────────────────────────────────────── */}
         <div
-          style={{ background: '#0C0D10', border: '1px solid rgba(0,232,122,0.1)' }}
-          className="rounded-xl mb-4 relative overflow-visible"
+          style={{ background: '#1A3C28', padding: '32px 32px 0', position: 'relative', overflow: 'visible' }}
         >
+          {/* ── Page Header ── */}
+          <div className="relative pb-5 overflow-hidden" style={{ borderBottom: '1px solid rgba(242,232,213,0.1)' }}>
+            <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(196,86,42,0.07)', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: -20, right: 80, width: 100, height: 100, borderRadius: '50%', background: 'rgba(0,232,122,0.04)', pointerEvents: 'none' }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.18em', color: '#C4562A', textTransform: 'uppercase' }}>Marketplace · Property Search</span>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 700, color: '#F2E8D5', lineHeight: 1.1, margin: '6px 0 4px' }}>Browse Properties</h1>
+            <p style={{ color: 'rgba(242,232,213,0.5)', fontSize: 14 }}>Verified listings across Southern Africa</p>
+          </div>
           {/* ── Row 1: category · location · map · AI · Search ── */}
           <div className="flex flex-col lg:flex-row gap-1.5 p-2">
 
@@ -1996,7 +2003,7 @@ export default function Listings() {
               </button>
               {showListingCategoryDropdown && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 160 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 160 }}
                   className="absolute left-0 top-[calc(100%+6px)] shadow-2xl p-1"
                   onMouseDown={(e) => e.preventDefault()}
                 >
@@ -2025,7 +2032,7 @@ export default function Listings() {
                 {pendingFilters.locations.map((location) => (
                   <span
                     key={location}
-                    style={{ background: '#1A3C28', border: '1px solid rgba(0,232,122,0.3)', color: '#F2E8D5', borderRadius: 6, padding: '3px 8px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    style={{ background: 'rgba(242,232,213,0.12)', border: '1px solid rgba(242,232,213,0.3)', color: '#F2E8D5', borderRadius: 6, padding: '3px 8px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                   >
                     {location}
                     <button
@@ -2074,7 +2081,7 @@ export default function Listings() {
               </div>
               {showLocationSuggestions && locationSuggestions.length > 0 && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60 }}
                   className="absolute left-0 right-0 top-[calc(100%+6px)] shadow-2xl overflow-hidden"
                 >
                   {locationSuggestions.map((loc) => (
@@ -2113,7 +2120,7 @@ export default function Listings() {
             <button
               type="button"
               onClick={handleVoiceSearch}
-              style={{ background: '#B89040', color: 'white', borderRadius: 8, height: 44, padding: '0 18px', fontSize: 14, fontWeight: 600, border: 'none' }}
+              style={{ background: 'rgba(242,232,213,0.08)', border: '1px solid rgba(242,232,213,0.2)', color: 'rgba(242,232,213,0.85)', borderRadius: 8, height: 44, padding: '0 18px', fontSize: 14, fontWeight: 600 }}
               className="flex items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
             >
               <Mic className="w-4 h-4" />
@@ -2139,7 +2146,7 @@ export default function Listings() {
           )}
 
           {/* ── Row 2: Property Type · Min Price · Max Price · Bedrooms · More Filters ── */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="flex flex-wrap items-stretch">
+          <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="flex flex-wrap items-stretch">
 
             {/* Property Type */}
             <div className="relative">
@@ -2160,7 +2167,7 @@ export default function Listings() {
               </button>
               {showPropertyTypeDropdown && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
                   className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-2"
                   onMouseDown={(e) => e.preventDefault()}
                 >
@@ -2196,7 +2203,7 @@ export default function Listings() {
               </button>
               {showMinPriceDropdown && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
                   className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
                   onMouseDown={(e) => e.preventDefault()}
                 >
@@ -2255,7 +2262,7 @@ export default function Listings() {
               </button>
               {showMaxPriceDropdown && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
                   className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
                   onMouseDown={(e) => e.preventDefault()}
                 >
@@ -2315,7 +2322,7 @@ export default function Listings() {
               </button>
               {showBedroomsDropdown && (
                 <div
-                  style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                  style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
                   className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
                   onMouseDown={(e) => e.preventDefault()}
                 >
@@ -2376,7 +2383,7 @@ export default function Listings() {
           {/* ── Row 3 (expanded): Bathrooms · Parking · Floor Size · Erf Size ── */}
           {showTopMoreFilters && (
             <>
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="flex flex-wrap items-stretch">
+              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="flex flex-wrap items-stretch">
 
                 {/* Bathrooms */}
                 <div className="relative">
@@ -2392,7 +2399,7 @@ export default function Listings() {
                   </button>
                   {showBathroomsDropdown && (
                     <div
-                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                      style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
                       className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
                       onMouseDown={(e) => e.preventDefault()}
                     >
@@ -2448,7 +2455,7 @@ export default function Listings() {
                   </button>
                   {showParkingDropdown && (
                     <div
-                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
+                      style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 12, zIndex: 60, minWidth: 224 }}
                       className="absolute left-0 top-[calc(100%+4px)] shadow-2xl p-4"
                       onMouseDown={(e) => e.preventDefault()}
                     >
@@ -2503,7 +2510,7 @@ export default function Listings() {
                   </button>
                   {showFloorSizeDropdown && (
                     <div
-                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                      style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
                       className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
                       onMouseDown={(e) => e.preventDefault()}
                     >
@@ -2562,7 +2569,7 @@ export default function Listings() {
                   </button>
                   {showErfSizeDropdown && (
                     <div
-                      style={{ background: '#101518', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
+                      style={{ background: '#0F2318', border: '1px solid rgba(242,232,213,0.15)', borderRadius: 10, zIndex: 60, minWidth: 200 }}
                       className="absolute left-0 top-[calc(100%+4px)] shadow-2xl"
                       onMouseDown={(e) => e.preventDefault()}
                     >
@@ -2610,7 +2617,7 @@ export default function Listings() {
               </div>
 
               {/* ── Row 4: Feature + Other checkboxes ── */}
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }} className="px-4 py-3">
+              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="px-4 py-3">
                 <div className="flex flex-wrap gap-x-7 gap-y-2.5">
                   <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.14em', color: 'rgba(242,232,213,0.35)' }} className="uppercase w-full mb-0.5">Features &amp; Other</p>
                   {[
@@ -2646,7 +2653,7 @@ export default function Listings() {
 
           {/* ── Footer strip: count + clear ── */}
           <div
-            style={{ borderTop: '1px solid rgba(255,255,255,0.07)', borderRadius: '0 0 12px 12px', background: 'rgba(255,255,255,0.02)' }}
+            style={{ borderTop: '1px solid rgba(242,232,213,0.1)', background: 'rgba(0,0,0,0.12)' }}
             className="px-4 py-2.5 flex items-center justify-between gap-4"
           >
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(242,232,213,0.45)' }}>
@@ -2667,7 +2674,7 @@ export default function Listings() {
           </div>
         </div>
 
-        <div className="lg:flex lg:items-start lg:gap-6">
+        <div className="lg:flex lg:items-start lg:gap-6" style={{ padding: '24px 32px' }}>
         <div className="bg-card border border-border rounded-lg overflow-hidden h-full flex flex-col lg:flex-row overflow-x-hidden flex-1">
       {/* Filters Sidebar — forest-green slide-in overlay */}
       {(showFilters || showDesktopFilters) && (
@@ -2827,7 +2834,7 @@ export default function Listings() {
           </button>
           <button
             type="button"
-            style={{ backgroundColor: '#B89040' }}
+            style={{ backgroundColor: '#C4562A' }}
             className="w-full h-11 rounded-lg text-white font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
             onClick={handleVoiceSearch}
           >
@@ -3014,68 +3021,68 @@ export default function Listings() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Landing Panel — shown before any search is submitted */}
         {!hasSearched && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12" style={{ background: '#0C0D10', position: 'relative', overflow: 'hidden' }}>
+          <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12" style={{ background: '#F2E8D5', position: 'relative', overflow: 'hidden' }}>
             {/* Grid overlay */}
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(0,232,122,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,232,122,0.035) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(26,60,40,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(26,60,40,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
 
             <div className="max-w-2xl w-full text-center" style={{ position: 'relative', zIndex: 1 }}>
               {/* Shield icon */}
-              <div style={{ width: 58, height: 58, background: 'rgba(0,232,122,0.07)', border: '1px solid rgba(0,232,122,0.22)', borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 22px' }}>
-                <Shield style={{ width: 26, height: 26, color: '#00E87A' }} />
+              <div style={{ width: 58, height: 58, background: 'rgba(26,60,40,0.07)', border: '1px solid rgba(26,60,40,0.18)', borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 22px' }}>
+                <Shield style={{ width: 26, height: 26, color: '#1A3C28' }} />
               </div>
 
               {/* Eyebrow */}
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.22em', color: '#00E87A', marginBottom: 12 }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.22em', color: '#C4562A', marginBottom: 12 }}>
                 PROPERTY MARKETPLACE — VERIFIED LISTINGS
               </div>
 
               {/* Title */}
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 300, color: '#F2E8D5', lineHeight: 1.25, marginBottom: 12 }}>
-                Your <span style={{ color: '#00E87A' }}>Trusted</span><br />Property Platform
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 300, color: '#1A3C28', lineHeight: 1.25, marginBottom: 12 }}>
+                Your <span style={{ color: '#C4562A' }}>Trusted</span><br />Property Platform
               </h2>
 
               {/* Body */}
-              <p style={{ fontSize: 13, color: 'rgba(242,232,213,0.52)', lineHeight: 1.65, maxWidth: 320, margin: '0 auto 28px' }}>
+              <p style={{ fontSize: 13, color: 'rgba(26,60,40,0.6)', lineHeight: 1.65, maxWidth: 320, margin: '0 auto 28px' }}>
                 BuildTrust combines financial-grade transparency with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.
               </p>
 
               {/* Feature cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left mb-5">
                 {/* Fraud Protection */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(0,232,122,0.5)', borderRadius: 10, padding: '14px 14px' }}>
-                  <div style={{ width: 28, height: 28, background: 'rgba(0,232,122,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
-                    <Shield style={{ width: 14, height: 14, color: '#00E87A' }} />
+                <div style={{ background: '#FFFFFF', border: '1px solid rgba(26,60,40,0.1)', borderTop: '2.5px solid #1A3C28', borderRadius: 10, padding: '14px 14px' }}>
+                  <div style={{ width: 28, height: 28, background: 'rgba(26,60,40,0.08)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+                    <Shield style={{ width: 14, height: 14, color: '#1A3C28' }} />
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#00E87A', marginBottom: 4 }}>PROTECTION</div>
-                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>Fraud Protection</h4>
-                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Verified against title deeds with immutable audit trails that prevent double-selling.</p>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#1A3C28', marginBottom: 4 }}>PROTECTION</div>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#1A3C28', marginBottom: 5 }}>Fraud Protection</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(26,60,40,0.55)', lineHeight: 1.5 }}>Verified against title deeds with immutable audit trails that prevent double-selling.</p>
                 </div>
 
                 {/* Diaspora Ready */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(184,144,64,0.5)', borderRadius: 10, padding: '14px 14px' }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid rgba(26,60,40,0.1)', borderTop: '2.5px solid #B89040', borderRadius: 10, padding: '14px 14px' }}>
                   <div style={{ width: 28, height: 28, background: 'rgba(184,144,64,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
                     <MapPin style={{ width: 14, height: 14, color: '#B89040' }} />
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#B89040', marginBottom: 4 }}>DIASPORA</div>
-                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>Diaspora Ready</h4>
-                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Geo-tagged photos, escrow protection, and remote oversight tools built for international buyers.</p>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#1A3C28', marginBottom: 5 }}>Diaspora Ready</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(26,60,40,0.55)', lineHeight: 1.5 }}>Geo-tagged photos, escrow protection, and remote oversight tools built for international buyers.</p>
                 </div>
 
                 {/* 14-Stage Pipeline */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderTop: '2.5px solid rgba(196,86,42,0.5)', borderRadius: 10, padding: '14px 14px' }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid rgba(26,60,40,0.1)', borderTop: '2.5px solid #C4562A', borderRadius: 10, padding: '14px 14px' }}>
                   <div style={{ width: 28, height: 28, background: 'rgba(196,86,42,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
                     <TrendingUp style={{ width: 14, height: 14, color: '#C4562A' }} />
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: '0.18em', color: '#C4562A', marginBottom: 4 }}>PIPELINE</div>
-                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#F2E8D5', marginBottom: 5 }}>14-Stage Pipeline</h4>
-                  <p style={{ fontSize: 10, color: 'rgba(242,232,213,0.38)', lineHeight: 1.5 }}>Full document visibility at every legal stage with milestone escrow releases.</p>
+                  <h4 style={{ fontFamily: "'Fraunces', serif", fontSize: '0.83rem', fontWeight: 400, color: '#1A3C28', marginBottom: 5 }}>14-Stage Pipeline</h4>
+                  <p style={{ fontSize: 10, color: 'rgba(26,60,40,0.55)', lineHeight: 1.5 }}>Full document visibility at every legal stage with milestone escrow releases.</p>
                 </div>
               </div>
 
               {/* Search hint bar */}
-              <div style={{ border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, background: 'rgba(242,232,213,0.025)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(242,232,213,0.4)', justifyContent: 'center' }}>
+              <div style={{ border: '1px solid rgba(26,60,40,0.12)', borderRadius: 10, background: 'rgba(26,60,40,0.04)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'rgba(26,60,40,0.5)', justifyContent: 'center' }}>
                 <Search style={{ width: 14, height: 14, flexShrink: 0 }} />
-                Enter a location above and click&nbsp;<strong style={{ color: 'rgba(242,232,213,0.82)', fontWeight: 600 }}>Search</strong>&nbsp;to explore verified {listingCategory === 'Estate Agencies' ? 'estate agents' : listingCategory === 'News' ? 'news & updates' : 'properties'}
+                Enter a location above and click&nbsp;<strong style={{ color: '#1A3C28', fontWeight: 600 }}>Search</strong>&nbsp;to explore verified {listingCategory === 'Estate Agencies' ? 'estate agents' : listingCategory === 'News' ? 'news & updates' : 'properties'}
               </div>
             </div>
           </div>

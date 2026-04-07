@@ -1,21 +1,11 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Bell, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import { NotificationCenter } from "@/components/NotificationCenter";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AppSidebar } from "@/components/AppSidebar";
-import { UserAvatarContent } from "@/components/UserAvatarContent";
 import { FloatingAssistant } from "@/components/FloatingAssistant";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { authExtApi, notificationsApi, type AuthUser } from "@/lib/api-client";
 import {
   clearAuthSession,
@@ -34,7 +24,6 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -101,13 +90,7 @@ export function Layout({ children }: LayoutProps) {
     window.location.href = '/';
   };
 
-  const isPropertyDetailRoute = pathname.startsWith('/app/property/');
-  const shouldShowSidebar = isAuthenticated;
-  const shouldShowToolbar = !isPropertyDetailRoute;
-  const shouldShowThemeToggle = true;
-  const shouldShowHeader = true;
-  const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
-  const fullName = `${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim() || 'User';
+
 
   return (
     <div className="flex h-screen bg-background">
@@ -121,119 +104,24 @@ export function Layout({ children }: LayoutProps) {
         currentUser={currentUser}
         activeCompany={activeCompany}
         hasMultipleCompanies={hasMultipleCompanies}
+        unreadCount={unreadCount}
+        onNotificationsClick={() => setShowNotifications(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        {shouldShowHeader && (
-          <header className="bg-card border-b border-border px-4 md:px-8 py-4">
-            {!shouldShowToolbar ? (
-              <div className="flex items-center justify-between w-full">
-                {shouldShowSidebar && (
-                  <button
-                    onClick={() => setShowMobileMenu(true)}
-                    aria-label="Open navigation menu"
-                    className="lg:hidden text-muted-foreground hover:text-foreground"
-                  >
-                    <Menu className="w-6 h-6" />
-                  </button>
-                )}
-                <div className="flex items-center gap-2 ml-auto">
-                  {isAuthenticated && (
-                    <button
-                      aria-label="Open notifications"
-                      className="relative p-2 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowNotifications(true)}
-                    >
-                      <Bell className="w-5 h-5" aria-hidden="true" />
-                      {unreadCount > 0 && (
-                        <span
-                          className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-                          aria-label={`${unreadCount} unread notifications`}
-                        />
-                      )}
-                    </button>
-                  )}
-                  {shouldShowThemeToggle && <ThemeToggle />}
-                  {isAuthenticated && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          className="w-9 h-9 rounded-full bg-muted border border-border overflow-hidden flex items-center justify-center text-sm font-semibold hover:bg-accent transition-colors"
-                          aria-label="Open user menu"
-                          title={fullName}
-                        >
-                          <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile-dashboard">View Profile</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-                          Logout
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-4">
-                {/* Mobile Menu Button */}
-                <div className="flex items-center gap-2">
-                  {shouldShowSidebar && (
-                    <button
-                      onClick={() => setShowMobileMenu(true)}
-                      aria-label="Open navigation menu"
-                      className="lg:hidden text-muted-foreground hover:text-foreground"
-                    >
-                      <Menu className="w-6 h-6" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 md:gap-4">
-                  <button
-                    aria-label="Open notifications"
-                    className="relative p-2 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowNotifications(true)}
-                  >
-                    <Bell className="w-5 h-5" aria-hidden="true" />
-                    {unreadCount > 0 && (
-                      <span
-                        className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
-                        aria-label={`${unreadCount} unread notifications`}
-                      />
-                    )}
-                  </button>
-                  {shouldShowThemeToggle && <ThemeToggle />}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="w-9 h-9 rounded-full bg-muted border border-border overflow-hidden flex items-center justify-center text-sm font-semibold hover:bg-accent transition-colors"
-                        aria-label="Open user menu"
-                        title={fullName}
-                      >
-                        <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuItem asChild>
-                        <Link href="/profile-dashboard">View Profile</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onClick={handleLogout}>
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            )}
+        {/* Mobile-only header — hamburger to open sidebar drawer */}
+        {isAuthenticated && (
+          <header className="lg:hidden bg-card border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowMobileMenu(true)}
+              aria-label="Open navigation menu"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <span className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)' }}>PropertyOS</span>
           </header>
         )}
 

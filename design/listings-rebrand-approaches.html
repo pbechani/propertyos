@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Listings Page — Rebrand Approaches | PRIBEC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest: #1A3C28;
+  --forest-light: #2D5A40;
+  --forest-muted: #3A5E48;
+  --terracotta: #C4562A;
+  --terracotta-hover: #A84422;
+  --parchment: #F2E8D5;
+  --parchment-dark: #E8D9BC;
+  --egreen: #00E87A;
+  --carbon: #0C0D10;
+  --sidebar-border: rgba(242,232,213,0.12);
+  --card-bg: #FFFFFF;
+  --body-bg: #F2E8D5;
+  --text-dark: #1A3C28;
+  --text-muted: #6B8F7A;
+  --border: rgba(26,60,40,0.12);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #E8E0D2;
+  color: var(--text-dark);
+  min-height: 100vh;
+  padding: 40px 32px 80px;
+}
+
+/* ─── PAGE CHROME ──────────────────────────────────────────── */
+.page-chrome {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.intro-header { margin-bottom: 40px; }
+
+.intro-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 10px;
+}
+
+.intro-title {
+  font-family: 'Fraunces', serif;
+  font-size: 2.4rem;
+  font-weight: 300;
+  color: var(--forest);
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.intro-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 560px;
+  line-height: 1.65;
+}
+
+/* ─── APPROACH SELECTOR TABS ──────────────────────── */
+.approach-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.atab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 100px;
+  border: 1px solid rgba(26,60,40,0.18);
+  background: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.atab:hover { border-color: var(--forest); color: var(--forest); }
+
+.atab-a.active { background: rgba(26,60,40,0.1); color: var(--forest); border-color: var(--forest); }
+.atab-b.active { background: rgba(196,86,42,0.08); color: var(--terracotta); border-color: var(--terracotta); }
+.atab-c.active { background: rgba(0,232,122,0.08); color: #0A9A4F; border-color: rgba(0,232,122,0.5); }
+
+.rec-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(0,232,122,0.12);
+  color: #0A8A45;
+  border: 1px solid rgba(0,232,122,0.3);
+  padding: 2px 7px;
+  border-radius: 100px;
+  margin-left: 4px;
+}
+
+/* ─── APPROACH PANELS ──────────────────────────────── */
+.approach-panel { display: none; }
+.approach-panel.active { display: block; }
+
+/* ── Approach metadata block ── */
+.approach-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.meta-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.meta-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.meta-value {
+  font-size: 12.5px;
+  color: var(--text-dark);
+  line-height: 1.55;
+}
+
+.meta-value strong { font-weight: 700; }
+
+/* ─── PREVIEW SHELL ────────────────────────────────── */
+.preview-shell {
+  border: 1px solid rgba(26,60,40,0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+  margin-bottom: 20px;
+}
+
+.preview-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(26,60,40,0.35);
+  text-align: center;
+  padding: 10px 0 14px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   APPROACH A — "Forest Command" (Full lead-management parity)
+   Forest header + KPI strip + tabs, then parchment body
+════════════════════════════════════════════════════════════ */
+
+.a-page { background: var(--body-bg); }
+
+.a-header {
+  background: var(--forest);
+  padding: 28px 28px 0;
+  position: relative;
+  overflow: clip;
+}
+
+.a-header::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  background: var(--terracotta);
+  opacity: 0.07;
+  border-radius: 50%;
+}
+
+.a-header::after {
+  content: '';
+  position: absolute;
+  bottom: 10px; left: 38%;
+  width: 160px; height: 160px;
+  background: var(--egreen);
+  opacity: 0.04;
+  border-radius: 50%;
+}
+
+.a-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.a-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 6px;
+}
+
+.a-title {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+}
+
+.a-subtitle {
+  font-size: 13px;
+  color: rgba(242,232,213,0.5);
+  margin-top: 4px;
+}
+
+.a-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: var(--terracotta);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  background: rgba(242,232,213,0.08);
+  color: rgba(242,232,213,0.8);
+  border: 1px solid rgba(242,232,213,0.14);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* KPI strip */
+.a-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 20px;
+}
+
+.a-kpi {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(242,232,213,0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.a-kpi-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.4);
+  margin-bottom: 4px;
+}
+
+.a-kpi-value {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1;
+}
+
+.a-kpi-delta {
+  font-size: 11px;
+  color: var(--egreen);
+  margin-top: 3px;
+}
+
+/* Category tabs */
+.a-tabs {
+  display: flex;
+  background: var(--forest);
+  border-top: 1px solid rgba(242,232,213,0.08);
+  position: relative;
+  z-index: 2;
+}
+
+.a-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(242,232,213,0.5);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.a-tab.active {
+  color: var(--parchment);
+  border-bottom-color: var(--terracotta);
+}
+
+/* Search bar in header context */
+.a-search-zone {
+  background: var(--forest);
+  padding: 0 28px 20px;
+  position: relative;
+  z-index: 5;
+}
+
+.a-search-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.a-search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(242,232,213,0.15);
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 44px;
+}
+
+.a-search-input-wrap svg-icon {
+  width: 15px; height: 15px;
+  color: rgba(242,232,213,0.4);
+  flex-shrink: 0;
+}
+
+.a-search-placeholder {
+  font-size: 13px;
+  color: rgba(242,232,213,0.35);
+}
+
+.a-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(242,232,213,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.a-filter-pill {
+  padding: 0 16px;
+  height: 38px;
+  font-size: 12.5px;
+  color: rgba(242,232,213,0.65);
+  border-right: 1px solid rgba(242,232,213,0.08);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 500;
+  transition: background 0.12s;
+}
+
+.a-filter-pill:hover { background: rgba(255,255,255,0.05); }
+.a-filter-pill:last-child { border-right: none; }
+
+.a-filter-pill.active-pill { color: var(--egreen); }
+
+/* Content area */
+.a-content {
+  padding: 24px 28px;
+  background: var(--body-bg);
+}
+
+.a-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.a-results-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.a-results-count strong {
+  font-size: 14px;
+  color: var(--text-dark);
+  font-family: 'Fraunces', serif;
+}
+
+.a-view-toggle {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.a-view-btn {
+  width: 32px; height: 32px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.a-view-btn.active {
+  background: var(--forest);
+  color: var(--parchment);
+}
+
+/* Active filter badges */
+.a-filter-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.a-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: rgba(26,60,40,0.08);
+  border: 1px solid rgba(26,60,40,0.15);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.a-badge-x { color: var(--text-muted); cursor: pointer; margin-left: 2px; }
+
+/* Listing grid (sample 3 cards) */
+.a-listing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.a-listing-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.a-card-img {
+  height: 140px;
+  background: linear-gradient(135deg, #d4e8d4 0%, #b8d4b8 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient bg images for cards */
+.a-card-img-1 { background: linear-gradient(135deg, #c9dfc9 0%, #a8c8a8 50%, #8fb88f 100%); }
+.a-card-img-2 { background: linear-gradient(135deg, #dfd0c0 0%, #c8b89a 50%, #b8a485 100%); }
+.a-card-img-3 { background: linear-gradient(135deg, #c0cfd0 0%, #a0b8ba 50%, #89a5a8 100%); }
+
+.a-card-img-badge {
+  position: absolute;
+  top: 10px; left: 10px;
+  background: var(--forest);
+  color: var(--parchment);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+.a-card-verified {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(0,232,122,0.9);
+  color: #0C2018;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.a-card-body { padding: 14px 16px; }
+
+.a-card-price {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--terracotta);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.a-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.a-card-location {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+  margin-bottom: 10px;
+}
+
+.a-card-specs {
+  display: flex;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.a-spec {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
+
+.a-spec-val { font-weight: 700; color: var(--text-dark); }
+
+/* ════════════════════════════════════════════════════════════
+   APPROACH B — "Floating Search" (Forest header + white search card)
+   Forest header with title/KPIs, white card search floats on transition
+════════════════════════════════════════════════════════════ */
+
+.b-page { background: var(--body-bg); }
+
+.b-header {
+  background: var(--forest);
+  padding: 28px 28px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.b-header::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 260px; height: 260px;
+  background: var(--terracotta);
+  opacity: 0.06;
+  border-radius: 50%;
+}
+
+.b-header::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; left: 30%;
+  width: 200px; height: 200px;
+  background: var(--egreen);
+  opacity: 0.04;
+  border-radius: 50%;
+}
+
+.b-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.b-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 6px;
+}
+
+.b-title {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+}
+
+.b-subtitle {
+  font-size: 13px;
+  color: rgba(242,232,213,0.5);
+  margin-top: 4px;
+}
+
+.b-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.b-kpi {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(242,232,213,0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.b-kpi-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.4);
+  margin-bottom: 4px;
+}
+
+.b-kpi-value {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1;
+}
+
+.b-kpi-delta {
+  font-size: 11px;
+  color: var(--egreen);
+  margin-top: 3px;
+}
+
+/* Floating search card */
+.b-search-card-wrap {
+  padding: 0 28px;
+  margin-top: -2px;
+  position: relative;
+  z-index: 10;
+}
+
+.b-search-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+  padding: 20px 22px;
+  transform: translateY(-20px);
+}
+
+.b-cat-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+}
+
+.b-cat-tab {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.b-cat-tab.active {
+  background: var(--forest);
+  color: var(--parchment);
+}
+
+.b-search-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.b-search-input-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1.5px solid rgba(26,60,40,0.18);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.b-search-ph { font-size: 13.5px; color: rgba(26,60,40,0.3); flex: 1; }
+
+.b-filter-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.b-chip {
+  padding: 6px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.b-chip:hover { border-color: var(--forest); color: var(--forest); }
+.b-chip.active-chip { 
+  background: rgba(26,60,40,0.07); 
+  border-color: var(--forest); 
+  color: var(--forest); 
+}
+
+.b-chip-dot { 
+  width: 6px; height: 6px; border-radius: 50%; 
+  background: var(--egreen); flex-shrink: 0;
+}
+
+/* content */
+.b-content {
+  padding: 0 28px 24px;
+  background: var(--body-bg);
+  padding-top: 4px;
+}
+
+.b-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.b-results {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.b-results strong {
+  font-size: 14px;
+  color: var(--text-dark);
+  font-family: 'Fraunces', serif;
+}
+
+.b-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ════════════════════════════════════════════════════════════
+   APPROACH C — "Minimal Forest Edge" (Compact header, modern property portal)
+   Slimmer forest zone, category pills, collapsible filter panel
+════════════════════════════════════════════════════════════ */
+
+.c-page { background: var(--body-bg); }
+
+.c-top-bar {
+  background: var(--forest);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  border-bottom: 1px solid rgba(242,232,213,0.08);
+}
+
+.c-logo-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.c-logo-dot {
+  width: 28px; height: 28px;
+  background: var(--terracotta);
+  border-radius: 7px;
+}
+
+.c-logo-text {
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--parchment);
+}
+
+.c-breadcrumb {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.c-breadcrumb-sep { opacity: 0.3; }
+
+.c-breadcrumb-current { color: rgba(242,232,213,0.7); }
+
+/* Forest hero band */
+.c-hero {
+  background: var(--forest);
+  padding: 20px 28px 0;
+  position: relative;
+  overflow: clip;
+}
+
+.c-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: var(--terracotta);
+  opacity: 0.06;
+  border-radius: 50%;
+}
+
+.c-hero-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative; z-index: 1;
+}
+
+.c-hero-text { }
+
+.c-hero-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 5px;
+}
+
+.c-hero-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.c-hero-aside {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.c-stat {
+  text-align: right;
+}
+
+.c-stat-val {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1;
+}
+
+.c-stat-lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: rgba(242,232,213,0.4);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.c-stat-sep {
+  width: 1px; height: 36px;
+  background: rgba(242,232,213,0.1);
+}
+
+/* Category pills in hero */
+.c-cat-pills {
+  display: flex;
+  gap: 2px;
+  margin-top: 18px;
+  position: relative; z-index: 1;
+}
+
+.c-cat-pill {
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(242,232,213,0.5);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.c-cat-pill.active {
+  color: var(--parchment);
+  border-bottom-color: var(--terracotta);
+}
+
+/* Inline search row */
+.c-search-strip {
+  background: var(--body-bg);
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.c-search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1.5px solid rgba(26,60,40,0.2);
+  border-radius: 8px;
+}
+
+.c-search-ph {
+  font-size: 13px;
+  color: rgba(26,60,40,0.3);
+  flex: 1;
+}
+
+.c-filter-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.c-filter-pill {
+  padding: 0 14px;
+  height: 42px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.c-filter-pill:hover { border-color: var(--forest); color: var(--forest); }
+.c-filter-active { border-color: var(--forest); background: rgba(26,60,40,0.07); color: var(--forest); }
+
+.c-search-btn {
+  padding: 0 22px;
+  height: 42px;
+  background: var(--terracotta);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* content */
+.c-content {
+  padding: 20px 28px;
+}
+
+.c-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.c-results {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.c-results strong { font-family: 'Fraunces', serif; font-size: 15px; color: var(--text-dark); }
+
+/* ─── SHARED LISTING GRID ──────────────────────────── */
+.listing-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.listing-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+
+.card-img {
+  height: 130px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-img-1 { background: linear-gradient(140deg, #d0dfd0 0%, #aec4ae 100%); }
+.card-img-2 { background: linear-gradient(140deg, #dfd0be 0%, #c4a882 100%); }
+.card-img-3 { background: linear-gradient(140deg, #bec8d0 0%, #8ea5b0 100%); }
+
+.card-img-house-icon {
+  position: absolute;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.18;
+}
+
+.card-img-badge {
+  position: absolute;
+  top: 9px; left: 9px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.badge-for-sale { background: var(--forest); color: var(--parchment); }
+.badge-to-rent  { background: #1D4ED8; color: #fff; }
+.badge-sold     { background: #64748B; color: #fff; }
+
+.card-verified-badge {
+  position: absolute;
+  top: 9px; right: 9px;
+  background: rgba(0,232,122,0.88);
+  color: #0a2018;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+.card-body { padding: 13px 14px; }
+
+.card-price {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--terracotta);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-location {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 9px;
+}
+
+.card-specs {
+  display: flex;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.card-spec {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 3px;
+}
+
+.card-spec strong {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Fraunces', serif;
+}
+
+/* ─── ANNOTATION BOXES ──────────────────────── */
+.annotation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.annotation {
+  background: rgba(26,60,40,0.05);
+  border: 1px solid rgba(26,60,40,0.14);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.annotation-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 5px;
+}
+
+.annotation-text {
+  font-size: 12px;
+  color: var(--text-dark);
+  line-height: 1.55;
+}
+
+/* ─── SVG ICONS (inline) ──────────────────────────── */
+.ic { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ─── CURRENT STATE REFERENCE ─────────────────────── */
+.current-state-panel {
+  margin-bottom: 40px;
+}
+
+.current-state-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cs-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+
+.current-page {
+  background: #0C0D10;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.cp-search-bar {
+  padding: 10px;
+  display: flex; gap: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.cp-input {
+  flex: 1;
+  height: 44px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+
+.cp-input-ph { font-size: 13px; color: rgba(242,232,213,0.3); }
+
+.cp-btn {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.cp-btn-ai { background: #B89040; color: #fff; }
+.cp-btn-search { background: #C4562A; color: #fff; }
+
+.cp-filter-row {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.cp-filter-item {
+  padding: 0 18px;
+  height: 44px;
+  font-size: 13px;
+  color: rgba(242,232,213,0.65);
+  display: flex; align-items: center; gap: 6px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.cp-content {
+  background: #F2E8D5;
+  padding: 20px;
+}
+
+.cp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cp-results {
+  font-size: 13px;
+  color: #1A3C28;
+  font-weight: 600;
+}
+
+.what-changed {
+  background: rgba(196,86,42,0.06);
+  border: 1px solid rgba(196,86,42,0.2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 32px;
+}
+
+.wc-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 10px;
+}
+
+.wc-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dark);
+}
+
+.wc-from {
+  background: rgba(12,13,16,0.12);
+  color: var(--text-muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.wc-to {
+  background: rgba(26,60,40,0.1);
+  color: var(--forest);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.wc-arrow { color: var(--text-muted); font-size: 10px; margin-top: 4px; }
+
+/* ─── INFO BOX AT BOTTOM ─────────────── */
+.info-box {
+  background: rgba(26,60,40,0.06);
+  border: 1px solid rgba(26,60,40,0.15);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.info-col-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  margin-bottom: 8px;
+}
+
+.info-col ul {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.info-col ul li {
+  font-size: 12px;
+  color: var(--text-dark);
+  line-height: 1.5;
+  padding-left: 12px;
+  position: relative;
+}
+
+.info-col ul li::before {
+  content: '·';
+  position: absolute;
+  left: 2px;
+  color: var(--text-muted);
+}
+
+/* ─── SCROLL TRANSITION ──────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.approach-panel.active { animation: fadeUp 0.25s ease forwards; }
+
+</style>
+</head>
+<body>
+
+<div class="page-chrome">
+
+  <!-- ── Intro ───────────────────────────────────────────────── -->
+  <div class="intro-header">
+    <p class="intro-eyebrow">Design System · Listings Page · Rebrand Options</p>
+    <h1 class="intro-title">Listings Page Rebrand<br><em style="font-style:italic; font-weight:400;">— Three Approaches</em></h1>
+    <p class="intro-sub">
+      All three approaches keep every existing filter, sort, view-toggle, and 
+      listing card functional. Only the visual chrome is changed to align with 
+      the lead-management Forest/Parchment brand language.
+    </p>
+  </div>
+
+  <!-- ── Current State ──────────────────────────────────────── -->
+  <div class="what-changed">
+    <p class="wc-title">The Brand Gap — What We're Fixing</p>
+    <div class="wc-items">
+      <div class="wc-item">
+        <span class="wc-from">#0C0D10</span>
+        <span class="wc-arrow">→</span>
+        <span class="wc-to">#1A3C28</span>
+        <span>Search / header zone background changes from <strong>Carbon dark</strong> to <strong>Forest green</strong> — matching Lead Management, KYC, and all other authenticated screens.</span>
+      </div>
+      <div class="wc-item">
+        <span class="wc-from">No header</span>
+        <span class="wc-arrow">→</span>
+        <span class="wc-to">Forest header</span>
+        <span>Add a proper page-header section with Fraunces title, IBM Plex Mono eyebrow, and subtitle — consistent with every other page in the app.</span>
+      </div>
+      <div class="wc-item">
+        <span class="wc-from">Amber btn</span>
+        <span class="wc-arrow">→</span>
+        <span class="wc-to">Ghost btn</span>
+        <span>AI Search button changes from standalone amber to <strong>ghost style</strong>, keeping terracotta as the sole primary call-to-action colour (Search button).</span>
+      </div>
+      <div class="wc-item">
+        <span class="wc-from">3 options below</span>
+        <span class="wc-arrow">→</span>
+        <span class="wc-to">Your choice</span>
+        <span>Three approaches differ in how much vertical space the header takes and where the search/filter chrome sits. <strong>Functionality is identical across all three.</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Approach Selector ───────────────────────────────────── -->
+  <div class="approach-tabs">
+    <button class="atab atab-a active" onclick="showApproach('a', this)">
+      <span>A</span> Forest Command
+      <span class="rec-tag">Recommended</span>
+    </button>
+    <button class="atab atab-b" onclick="showApproach('b', this)">
+      <span>B</span> Floating Search
+    </button>
+    <button class="atab atab-c" onclick="showApproach('c', this)">
+      <span>C</span> Minimal Edge
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       APPROACH A — Forest Command
+  ══════════════════════════════════════════════════════════ -->
+  <div id="panel-a" class="approach-panel active">
+    
+    <div class="approach-meta">
+      <div class="meta-card">
+        <p class="meta-label">Philosophy</p>
+        <p class="meta-value"><strong>Full parity</strong> with Lead Management. Forest header + KPI strip + tab bar = one consistent authenticated shell across the entire app.</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Effort</p>
+        <p class="meta-value"><strong>Minimal.</strong> Replace the <code style="font-size:10px; background:#f0f0f0; padding:1px 5px; border-radius:3px;">#0C0D10</code> wrapper with forest and add the header block. No filter logic changes.</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Best For</p>
+        <p class="meta-value">Users who navigate between Listings and Lead Management — <strong>immediate continuity</strong>. No visual jarring.</p>
+      </div>
+    </div>
+
+    <div class="preview-label">APPROACH A — "FOREST COMMAND" — FULL PREVIEW</div>
+    <div class="preview-shell">
+      <div class="a-page">
+
+        <!-- Forest Header -->
+        <div class="a-header">
+          <div class="a-header-top">
+            <div>
+              <p class="a-eyebrow">Marketplace · Property Search</p>
+              <h2 class="a-title">Browse Properties</h2>
+              <p class="a-subtitle">500+ verified listings across Southern Africa</p>
+            </div>
+            <div class="a-actions">
+              <button class="btn-ghost">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87V19a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h9.5"/><rect x="8" y="11" width="8" height="5" rx="1"/></svg>
+                Add Listing
+              </button>
+              <button class="btn-primary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg>
+                Manage Listings
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Strip -->
+          <div class="a-kpi-strip">
+            <div class="a-kpi">
+              <p class="a-kpi-label">Active Listings</p>
+              <p class="a-kpi-value">342</p>
+              <p class="a-kpi-delta">↑ 18 this week</p>
+            </div>
+            <div class="a-kpi">
+              <p class="a-kpi-label">Avg. Asking Price</p>
+              <p class="a-kpi-value">R 2.1M</p>
+              <p class="a-kpi-delta">↑ 4.2% MoM</p>
+            </div>
+            <div class="a-kpi">
+              <p class="a-kpi-label">Verified Listings</p>
+              <p class="a-kpi-value">289</p>
+              <p class="a-kpi-delta" style="color: var(--egreen);">84% verified rate</p>
+            </div>
+            <div class="a-kpi">
+              <p class="a-kpi-label">New This Week</p>
+              <p class="a-kpi-value">41</p>
+              <p class="a-kpi-delta">↑ 12 vs last</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Tabs (bottom of header) -->
+        <div class="a-tabs">
+          <div class="a-tab active">For Sale</div>
+          <div class="a-tab">To Rent</div>
+          <div class="a-tab">Sold Prices</div>
+          <div class="a-tab">Developments</div>
+          <div class="a-tab">Estate Agencies</div>
+          <div class="a-tab">Trends</div>
+        </div>
+
+        <!-- Search Zone (still forest background) -->
+        <div class="a-search-zone">
+          <!-- Row 1 -->
+          <div class="a-search-row" style="margin-top: 16px; margin-bottom: 8px;">
+            <div class="a-search-input-wrap" style="min-width: 130px; flex: 0 0 auto; padding: 0 12px; gap: 8px; background: rgba(255,255,255,0.07); border: 1px solid rgba(242,232,213,0.15); border-radius: 8px; height: 44px; display: flex; align-items: center; font-size: 13px; color: rgba(242,232,213,0.75); font-weight: 500;">
+              For Sale <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left: auto; opacity: 0.5;"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="a-search-input-wrap" style="flex: 1;">
+              <svg width="14" height="14" fill="none" stroke="rgba(242,232,213,0.4)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="a-search-placeholder">Search location, suburb or city…</span>
+            </div>
+            <button style="background: rgba(255,255,255,0.08); border: 1px solid rgba(242,232,213,0.15); border-radius: 8px; height: 44px; padding: 0 18px; color: rgba(242,232,213,0.8); font-size: 13px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Map
+            </button>
+            <button style="background: rgba(255,255,255,0.08); border: 1px solid rgba(242,232,213,0.15); border-radius: 8px; height: 44px; padding: 0 18px; color: rgba(242,232,213,0.8); font-size: 13px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+              AI Search
+              <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L9 9H2l6 4.5L5.5 21 12 16.5 18.5 21 16 13.5 22 9h-7z"/></svg>
+            </button>
+            <button style="background: var(--terracotta); border: none; border-radius: 8px; height: 44px; padding: 0 28px; color: #fff; font-size: 15px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: flex; align-items: center;">
+              Search
+            </button>
+          </div>
+          <!-- Row 2: Filter pills -->
+          <div class="a-filter-row">
+            <div class="a-filter-pill">Property Type <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill">Min Price <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill">Max Price <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill active-pill">Cape Town <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></div>
+            <div class="a-filter-pill">Bedrooms <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill">Bathrooms <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill">Floor Size <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="a-filter-pill" style="margin-left: auto;">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg>
+              More Filters
+            </div>
+          </div>
+        </div>
+
+        <!-- Content area -->
+        <div class="a-content">
+          <div class="a-toolbar">
+            <p class="a-results-count"><strong>342</strong> properties found · For Sale</p>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:12.5px; color:var(--text-dark); font-family:'Plus Jakarta Sans',sans-serif;">
+                <option>Sort: Relevance</option>
+              </select>
+              <div class="a-view-toggle">
+                <div class="a-view-btn active">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </div>
+                <div class="a-view-btn">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </div>
+                <div class="a-view-btn">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Active filter badges -->
+          <div class="a-filter-badges">
+            <span class="a-badge">Cape Town <span class="a-badge-x">×</span></span>
+            <span class="a-badge">Verified Only <span class="a-badge-x">×</span></span>
+            <span style="font-size:12px; color:var(--text-muted); padding:4px 0; cursor:pointer; font-weight:600;">Clear all</span>
+          </div>
+          <!-- Listing grid -->
+          <div class="a-listing-grid">
+            <div class="a-listing-card">
+              <div class="a-card-img a-card-img-1">
+                <span class="a-card-img-badge">FOR SALE</span>
+                <span class="a-card-verified">✓ VERIFIED</span>
+              </div>
+              <div class="a-card-body">
+                <p class="a-card-price">R 4 850 000</p>
+                <p class="a-card-title">Modern Family Home — Atlantic Seaboard</p>
+                <p class="a-card-location">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="2"/></svg>
+                  Sea Point, Cape Town
+                </p>
+                <div class="a-card-specs">
+                  <span class="a-spec"><span class="a-spec-val">4</span> bed</span>
+                  <span class="a-spec"><span class="a-spec-val">3</span> bath</span>
+                  <span class="a-spec"><span class="a-spec-val">280</span> m²</span>
+                </div>
+              </div>
+            </div>
+            <div class="a-listing-card">
+              <div class="a-card-img a-card-img-2">
+                <span class="a-card-img-badge">FOR SALE</span>
+              </div>
+              <div class="a-card-body">
+                <p class="a-card-price">R 1 250 000</p>
+                <p class="a-card-title">Vacant Land — Security Estate</p>
+                <p class="a-card-location">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="2"/></svg>
+                  Gaborone, Botswana
+                </p>
+                <div class="a-card-specs">
+                  <span class="a-spec"><span class="a-spec-val">600</span> m² erf</span>
+                  <span class="a-spec">Plot</span>
+                </div>
+              </div>
+            </div>
+            <div class="a-listing-card">
+              <div class="a-card-img a-card-img-3">
+                <span class="a-card-img-badge">FOR SALE</span>
+                <span class="a-card-verified">✓ VERIFIED</span>
+              </div>
+              <div class="a-card-body">
+                <p class="a-card-price">R 2 100 000</p>
+                <p class="a-card-title">3 Bed Townhouse — Gated Complex</p>
+                <p class="a-card-location">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="2"/></svg>
+                  Sandton, Johannesburg
+                </p>
+                <div class="a-card-specs">
+                  <span class="a-spec"><span class="a-spec-val">3</span> bed</span>
+                  <span class="a-spec"><span class="a-spec-val">2</span> bath</span>
+                  <span class="a-spec"><span class="a-spec-val">145</span> m²</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-grid">
+      <div class="annotation">
+        <p class="annotation-title">What Changed</p>
+        <p class="annotation-text">The dark carbon search block is replaced with the Forest green header zone — identical structure to Lead Management, Construction Dashboard, and the Agent Cockpit. KPI strip and tab bar added above search filters.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">What Stays the Same</p>
+        <p class="annotation-text">All filter dropdowns, listing cards, sort controls, view-mode toggle (grid/list/map), AI voice search, and multi-listing drawer are untouched. Zero functional change.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Token Changes Only</p>
+        <p class="annotation-text">
+          <code style="font-size:10px; background:#f0f0f0; padding:1px 5px; border-radius:3px;">#0C0D10</code> → <code style="font-size:10px; background:#f0f0f0; padding:1px 5px; border-radius:3px;">#1A3C28</code> for the wrapper background.
+          <code style="font-size:10px; background:#f0f0f0; padding:1px 5px; border-radius:3px;">#101518</code> → <code style="font-size:10px; background:#f0f0f0; padding:1px 5px; border-radius:3px;">#162E1E</code> for dropdown panels.
+        </p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">AI Search Button</p>
+        <p class="annotation-text">Amber colour removed. AI Search moves to a ghost-style button matching the btn-ghost pattern everywhere else. The terracotta Search CTA remains the sole strong call-to-action.</p>
+      </div>
+    </div>
+
+  </div><!-- /panel-a -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       APPROACH B — Floating Search
+  ══════════════════════════════════════════════════════════ -->
+  <div id="panel-b" class="approach-panel">
+
+    <div class="approach-meta">
+      <div class="meta-card">
+        <p class="meta-label">Philosophy</p>
+        <p class="meta-value"><strong>Forest header for identity, white card for search.</strong> The search form floats above the parchment body, giving a premium property-portal feel.</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Effort</p>
+        <p class="meta-value"><strong>Moderate.</strong> The search row and filter bar move into a white card that partially overlaps the forest zone. Requires minor layout restructuring.</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Best For</p>
+        <p class="meta-value">When you want the Listings page to feel more like a <strong>property portal</strong> (Rightmove / Property24 premium) while still carrying the brand.</p>
+      </div>
+    </div>
+
+    <div class="preview-label">APPROACH B — "FLOATING SEARCH" — FULL PREVIEW</div>
+    <div class="preview-shell">
+      <div class="b-page">
+        <!-- Forest Header -->
+        <div class="b-header">
+          <div class="b-header-top">
+            <div>
+              <p class="b-eyebrow">Marketplace · Property Search</p>
+              <h2 class="b-title">Browse Properties</h2>
+              <p class="b-subtitle">500+ verified listings across Southern Africa</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; position:relative; z-index:1;">
+              <button class="btn-ghost">Add Listing</button>
+              <button class="btn-primary">Manage Listings</button>
+            </div>
+          </div>
+          <!-- KPI strip (in header) -->
+          <div class="b-kpi-strip">
+            <div class="b-kpi">
+              <p class="b-kpi-label">Active Listings</p>
+              <p class="b-kpi-value">342</p>
+              <p class="b-kpi-delta">↑ 18 this week</p>
+            </div>
+            <div class="b-kpi">
+              <p class="b-kpi-label">Avg. Asking Price</p>
+              <p class="b-kpi-value">R 2.1M</p>
+              <p class="b-kpi-delta">↑ 4.2% MoM</p>
+            </div>
+            <div class="b-kpi">
+              <p class="b-kpi-label">Verified Listings</p>
+              <p class="b-kpi-value">289</p>
+              <p class="b-kpi-delta">84% verified</p>
+            </div>
+            <div class="b-kpi">
+              <p class="b-kpi-label">New This Week</p>
+              <p class="b-kpi-value">41</p>
+              <p class="b-kpi-delta">↑ 12 vs last</p>
+            </div>
+          </div>
+        </div>
+        <!-- Floating search card -->
+        <div class="b-search-card-wrap">
+          <div class="b-search-card">
+            <!-- Category tabs inside card -->
+            <div class="b-cat-tabs">
+              <div class="b-cat-tab active">For Sale</div>
+              <div class="b-cat-tab">To Rent</div>
+              <div class="b-cat-tab">Sold Prices</div>
+              <div class="b-cat-tab">Developments</div>
+              <div class="b-cat-tab">Agencies</div>
+              <div class="b-cat-tab">Trends</div>
+            </div>
+            <!-- Search row -->
+            <div class="b-search-input-row">
+              <div class="b-search-input-box" style="flex:1;">
+                <svg width="14" height="14" fill="none" stroke="rgba(26,60,40,0.4)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="b-search-ph">Search location, suburb or city…</span>
+              </div>
+              <div class="b-search-input-box" style="flex:0 0 auto; min-width:130px;">
+                <span style="font-size:13px; color:rgba(26,60,40,0.7); font-weight:500;">Property Type</span>
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto; opacity:0.4;"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <button style="background: rgba(255,255,255,0.9); border: 1.5px solid rgba(26,60,40,0.2); border-radius: 8px; height: 46px; padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 6px;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Map
+              </button>
+              <button style="background: rgba(255,255,255,0.9); border: 1.5px solid rgba(26,60,40,0.2); border-radius: 8px; height: 46px; padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 6px;">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                AI Search
+              </button>
+              <button style="background: var(--terracotta); border: none; border-radius: 8px; height: 46px; padding: 0 28px; color: #fff; font-size: 15px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer;">
+                Search
+              </button>
+            </div>
+            <!-- Filter chips -->
+            <div class="b-filter-chips">
+              <div class="b-chip">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg>
+                Min Price
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="b-chip">
+                Max Price
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="b-chip">
+                Bedrooms
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="b-chip">
+                Bathrooms
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="b-chip active-chip">
+                <span class="b-chip-dot"></span>
+                Cape Town <span style="font-size:10px; opacity:0.5; margin-left:2px;">×</span>
+              </div>
+              <div class="b-chip active-chip">
+                <span class="b-chip-dot"></span>
+                Verified Only <span style="font-size:10px; opacity:0.5; margin-left:2px;">×</span>
+              </div>
+              <div class="b-chip" style="margin-left:auto;">
+                More Filters
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Content -->
+        <div class="b-content">
+          <div class="b-toolbar">
+            <p class="b-results"><strong>342</strong> properties · For Sale</p>
+            <div style="display:flex; gap:8px;">
+              <button class="b-sort-btn">Relevance <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <div style="display:flex; gap:3px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:3px;">
+                <div class="a-view-btn active"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+                <div class="a-view-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+                <div class="a-view-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div class="listing-grid-3">
+            <div class="listing-card">
+              <div class="card-img card-img-1">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+                <span class="card-verified-badge">✓ VERIFIED</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 4 850 000</p>
+                <p class="card-title">Modern Family Home — Atlantic Seaboard</p>
+                <p class="card-location">Sea Point, Cape Town</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>4</strong> bed</span>
+                  <span class="card-spec"><strong>3</strong> bath</span>
+                  <span class="card-spec"><strong>280</strong> m²</span>
+                </div>
+              </div>
+            </div>
+            <div class="listing-card">
+              <div class="card-img card-img-2">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 1 250 000</p>
+                <p class="card-title">Vacant Land — Security Estate</p>
+                <p class="card-location">Gaborone, Botswana</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>600</strong> m² erf</span>
+                  <span class="card-spec">Plot</span>
+                </div>
+              </div>
+            </div>
+            <div class="listing-card">
+              <div class="card-img card-img-3">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+                <span class="card-verified-badge">✓ VERIFIED</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 2 100 000</p>
+                <p class="card-title">3 Bed Townhouse — Gated Complex</p>
+                <p class="card-location">Sandton, Johannesburg</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>3</strong> bed</span>
+                  <span class="card-spec"><strong>2</strong> bath</span>
+                  <span class="card-spec"><strong>145</strong> m²</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-grid">
+      <div class="annotation">
+        <p class="annotation-title">The "Float" Effect</p>
+        <p class="annotation-text">The white search card overlaps the edge between forest and parchment by ~20px (translateY: -20px). It reads like the search is the focus, elevated above both context layers.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Category Tabs Move</p>
+        <p class="annotation-text">For Sale / To Rent / Sold Prices tabs move from the bottom of the forest header into the top of the floating card. Slightly different hierarchy from Lead Management but feels natural.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Input Style Change</p>
+        <p class="annotation-text">Inputs become white with forest-green borders instead of forest-tinted backgrounds. Higher contrast on the white card. Dropdowns remain dark (#101518) to anchor them visually.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Tradeoff</p>
+        <p class="annotation-text">Slightly more vertical height due to the overlap zone. Works best with a wider viewport. The filter chips row is more discoverable here vs. squeezed in the forest row.</p>
+      </div>
+    </div>
+
+  </div><!-- /panel-b -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       APPROACH C — Minimal Forest Edge
+  ══════════════════════════════════════════════════════════ -->
+  <div id="panel-c" class="approach-panel">
+
+    <div class="approach-meta">
+      <div class="meta-card">
+        <p class="meta-label">Philosophy</p>
+        <p class="meta-value"><strong>Slimmer forest presence.</strong> Compact hero accent with title + 2 stats, then a sticky white search strip. Feels like a modern property portal (Property24 / Rightmove).</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Effort</p>
+        <p class="meta-value"><strong>Most refactoring.</strong> Sticky search strip requires scroll behaviour. The hero section is separate from the search row.</p>
+      </div>
+      <div class="meta-card">
+        <p class="meta-label">Best For</p>
+        <p class="meta-value">Maximising property card visible area on load. Great for <strong>mobile-first</strong> use where vertical space is precious. Cleanest search UX.</p>
+      </div>
+    </div>
+
+    <div class="preview-label">APPROACH C — "MINIMAL EDGE" — FULL PREVIEW</div>
+    <div class="preview-shell">
+      <div class="c-page">
+        <!-- Slim top bar -->
+        <div class="c-top-bar">
+          <div class="c-logo-group">
+            <div class="c-logo-dot"></div>
+            <span class="c-logo-text">PRIBEC</span>
+          </div>
+          <div class="c-breadcrumb">
+            <span>Platform</span>
+            <span class="c-breadcrumb-sep">/</span>
+            <span class="c-breadcrumb-current">Marketplace</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn-ghost" style="font-size:12px; padding:7px 14px;">Add Listing</button>
+            <button class="btn-primary" style="font-size:12px; padding:7px 14px;">Manage</button>
+          </div>
+        </div>
+
+        <!-- Compact hero section -->
+        <div class="c-hero">
+          <div class="c-hero-inner">
+            <div class="c-hero-text">
+              <p class="c-hero-eyebrow">Property Marketplace</p>
+              <h2 class="c-hero-title">Browse Properties</h2>
+            </div>
+            <div class="c-hero-aside">
+              <div class="c-stat">
+                <p class="c-stat-val">342</p>
+                <p class="c-stat-lbl">Active</p>
+              </div>
+              <div class="c-stat-sep"></div>
+              <div class="c-stat">
+                <p class="c-stat-val">289</p>
+                <p class="c-stat-lbl">Verified</p>
+              </div>
+              <div class="c-stat-sep"></div>
+              <div class="c-stat">
+                <p class="c-stat-val">R 2.1M</p>
+                <p class="c-stat-lbl">Avg. Price</p>
+              </div>
+            </div>
+          </div>
+          <!-- Category pills at bottom of hero -->
+          <div class="c-cat-pills">
+            <div class="c-cat-pill active">For Sale</div>
+            <div class="c-cat-pill">To Rent</div>
+            <div class="c-cat-pill">Sold Prices</div>
+            <div class="c-cat-pill">Developments</div>
+            <div class="c-cat-pill">Estate Agencies</div>
+            <div class="c-cat-pill">Trends</div>
+          </div>
+        </div>
+
+        <!-- Sticky search strip (parchment bg) -->
+        <div class="c-search-strip">
+          <div class="c-search-input-wrap">
+            <svg width="14" height="14" fill="none" stroke="rgba(26,60,40,0.4)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="c-search-ph">Search location, suburb or city…</span>
+          </div>
+          <div class="c-filter-bar">
+            <div class="c-filter-pill">
+              Property Type <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="c-filter-pill">
+              Min Price <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="c-filter-pill">
+              Max Price <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="c-filter-pill c-filter-active">
+              Cape Town <span style="margin-left:4px; opacity:0.6;">×</span>
+            </div>
+            <div class="c-filter-pill">
+              Bedrooms <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="c-filter-pill">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg>
+              More
+            </div>
+            <button style="background: rgba(255,255,255,0.9); border: 1.5px solid rgba(26,60,40,0.2); border-radius: 8px; height: 42px; padding: 0 16px; font-size: 12.5px; font-weight: 600; color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+              AI
+            </button>
+          </div>
+          <button class="c-search-btn">Search</button>
+        </div>
+
+        <!-- Content -->
+        <div class="c-content">
+          <div class="c-toolbar">
+            <p class="c-results"><strong>342</strong> properties · For Sale · Cape Town</p>
+            <div style="display:flex; gap:8px;">
+              <button class="b-sort-btn" style="font-size:12px;">Relevance <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <div style="display:flex; gap:3px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:3px;">
+                <div class="a-view-btn active"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+                <div class="a-view-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+                <div class="a-view-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div class="listing-grid-3">
+            <div class="listing-card">
+              <div class="card-img card-img-1">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+                <span class="card-verified-badge">✓ VERIFIED</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 4 850 000</p>
+                <p class="card-title">Modern Family Home</p>
+                <p class="card-location">Sea Point, Cape Town</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>4</strong> bed</span>
+                  <span class="card-spec"><strong>3</strong> bath</span>
+                  <span class="card-spec"><strong>280</strong> m²</span>
+                </div>
+              </div>
+            </div>
+            <div class="listing-card">
+              <div class="card-img card-img-2">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 1 250 000</p>
+                <p class="card-title">Vacant Land — Design Estate</p>
+                <p class="card-location">Gaborone, Botswana</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>600</strong> m² erf</span>
+                  <span class="card-spec">Plot</span>
+                </div>
+              </div>
+            </div>
+            <div class="listing-card">
+              <div class="card-img card-img-3">
+                <span class="card-img-badge badge-for-sale">FOR SALE</span>
+                <span class="card-verified-badge">✓ VERIFIED</span>
+              </div>
+              <div class="card-body">
+                <p class="card-price">R 2 100 000</p>
+                <p class="card-title">3 Bed Townhouse</p>
+                <p class="card-location">Sandton, Johannesburg</p>
+                <div class="card-specs">
+                  <span class="card-spec"><strong>3</strong> bed</span>
+                  <span class="card-spec"><strong>2</strong> bath</span>
+                  <span class="card-spec"><strong>145</strong> m²</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-grid">
+      <div class="annotation">
+        <p class="annotation-title">Sticky Search on Scroll</p>
+        <p class="annotation-text">The parchment search strip becomes sticky as you scroll past the hero. The category pills stay visible (on the forest hero edge) only on initial load. This maximises card discovery above the fold.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Compact Hero</p>
+        <p class="annotation-text">The forest zone is ~120px tall vs ~260px for Options A/B. Great for users who know what they want and want cards immediately. Could feel "thin" to first-time users who need orientation.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Mobile First</p>
+        <p class="annotation-text">The filter pills collapse cleanly behind a "More" button on small screens. The sticky strip naturally becomes the persistent mobile filter bar without extra engineering.</p>
+      </div>
+      <div class="annotation">
+        <p class="annotation-title">Least Brand Depth</p>
+        <p class="annotation-text">Still forest + parchment, but the brand presence is slimmer. May feel less "premium trust platform" and more "property search tool". Better fit if the Listings page is primarily a public portal rather than an agent cockpit.</p>
+      </div>
+    </div>
+
+  </div><!-- /panel-c -->
+
+  <!-- ── Summary comparison ──────────────────────────────────── -->
+  <div class="info-box">
+    <div class="info-col">
+      <p class="info-col-title">Option A — Recommended</p>
+      <ul>
+        <li>Full Visual Consistency with all other authenticated pages</li>
+        <li>KPI strip gives agents instant context (listings, avg price, verified %)</li>
+        <li>Category tabs in forest header — familiar from Lead Management</li>
+        <li>Smallest code change — mostly token swap</li>
+        <li>Best for: Agent-facing dashboard use</li>
+      </ul>
+    </div>
+    <div class="info-col">
+      <p class="info-col-title">Option B — Premium Portal</p>
+      <ul>
+        <li>More "property marketplace" look and feel</li>
+        <li>Floating card elevates the search CTA visually</li>
+        <li>Filter chips more visible on white background</li>
+        <li>Slightly more refactoring (translateY + card wrapper)</li>
+        <li>Best for: Buyer-facing marketplace feel</li>
+      </ul>
+    </div>
+    <div class="info-col">
+      <p class="info-col-title">Option C — Space-Efficient</p>
+      <ul>
+        <li>Maximum card density above the fold</li>
+        <li>Sticky search strip is mobile-natural</li>
+        <li>Most engineering effort (sticky scroll behaviour)</li>
+        <li>Thinner brand presence vs A and B</li>
+        <li>Best for: Mobile + public listing portal use</li>
+      </ul>
+    </div>
+  </div>
+
+</div><!-- /page-chrome -->
+
+<script>
+function showApproach(id, clickedTab) {
+  // Hide all panels + deactivate all tabs
+  document.querySelectorAll('.approach-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.atab').forEach(t => { t.classList.remove('active'); });
+  
+  // Show selected
+  document.getElementById('panel-' + id).classList.add('active');
+  clickedTab.classList.add('active');
+}
+</script>
+</body>
+</html>

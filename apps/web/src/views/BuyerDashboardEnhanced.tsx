@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 import {
   propertiesApi,
   auditApi,
@@ -211,7 +211,6 @@ export default function BuyerDashboardEnhanced() {
               <p className="text-sm text-gray-600">Welcome back, {userName}</p>
             </div>
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               <Button variant="outline" className="border-gray-300 dark:border-gray-700">
                 <Bell className="w-4 h-4 mr-2" />
                 {notifications.length > 0 && (

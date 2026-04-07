@@ -4,9 +4,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert, HardHat, DoorOpen, Megaphone, Zap, CheckSquare } from 'lucide-react';
+import { Home, Building2, Shield, BarChart3, User, Menu, X, LayoutDashboard, ChevronDown, ArrowLeftRight, Users, ClipboardList, Briefcase, Activity, UserX, Settings, Gauge, Target, Kanban, Brain, History, DollarSign, Scale, FileText, Calendar, ShieldCheck, ShieldAlert, HardHat, DoorOpen, Megaphone, Zap, CheckSquare, Bell } from 'lucide-react';
 import type { AuthUser, CompanyContext } from '@/lib/api-client';
 import { getIsPlatformAdminFromToken } from '@/lib/auth-session';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+import { UserAvatarContent } from '@/components/UserAvatarContent';
 
 interface AppSidebarProps {
   pathname: string;
@@ -18,6 +27,9 @@ interface AppSidebarProps {
   currentUser?: AuthUser | null;
   activeCompany?: CompanyContext | null;
   hasMultipleCompanies?: boolean;
+  unreadCount?: number;
+  onNotificationsClick?: () => void;
+  onLogout?: () => void;
 }
 
 /** Navigation shown for the platform admin (role = 'admin') under Platform Admin Cockpit. */
@@ -130,7 +142,12 @@ export function AppSidebar({
   currentUser,
   activeCompany,
   hasMultipleCompanies = false,
+  unreadCount = 0,
+  onNotificationsClick,
+  onLogout,
 }: AppSidebarProps) {
+  const initials = `${currentUser?.firstName?.[0] ?? ''}${currentUser?.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
+  const fullName = `${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim() || 'User';
   const router = useRouter();
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [showAdminGroup, setShowAdminGroup] = useState(true);
@@ -265,7 +282,7 @@ export function AppSidebar({
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1" aria-label="Main navigation">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto" aria-label="Main navigation">
           {isPlatformAdmin ? (
             <div>
               <button
@@ -585,6 +602,79 @@ export function AppSidebar({
           )}
 
         </nav>
+
+        {/* ── Footer strip: avatar + name/role + bell ─────────── */}
+        <div
+          className={`border-t border-sidebar-border shrink-0 ${
+            isSidebarCollapsed
+              ? 'p-2 flex flex-col items-center gap-2'
+              : 'p-2 flex items-center gap-2'
+          }`}
+          style={{ background: 'rgba(0,0,0,0.07)' }}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold shrink-0 hover:ring-2 hover:ring-white/20 transition-all focus-visible:outline-none"
+                aria-label="Open user menu"
+                title={fullName}
+              >
+                <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-64 mb-1">
+              <div className="px-3 py-2 border-b border-border">
+                <p className="text-xs font-semibold truncate">{fullName}</p>
+                {companyRole && (
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-mono truncate">{companyRole}</p>
+                )}
+              </div>
+              <DropdownMenuItem asChild>
+                <Link href="/profile-dashboard">View Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={onLogout}>
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {!isSidebarCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate" style={{ color: 'var(--sidebar-foreground)' }}>{fullName}</p>
+              {companyRole && (
+                <p
+                  className="text-[10px] uppercase tracking-wide truncate"
+                  style={{ color: 'var(--sidebar-foreground)', opacity: 0.5, fontFamily: 'var(--font-mono)' }}
+                >
+                  {companyRole}
+                </p>
+              )}
+            </div>
+          )}
+
+          {onNotificationsClick && (
+            <button
+              onClick={onNotificationsClick}
+              aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Open notifications'}
+              className="relative p-1.5 rounded-lg transition-colors border shrink-0"
+              style={{
+                background: 'rgba(242,232,213,0.06)',
+                borderColor: 'rgba(242,232,213,0.12)',
+                color: 'rgba(242,232,213,0.6)',
+              }}
+            >
+              <Bell className="w-4 h-4" aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"
+                  style={{ border: '1.5px solid var(--sidebar)' }}
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          )}
+        </div>
 
       </aside>
 
@@ -957,6 +1047,73 @@ export function AppSidebar({
               )}
 
             </nav>
+
+            {/* ── Mobile footer strip ───────────────────────────── */}
+            <div
+              className="border-t border-sidebar-border shrink-0 p-3 flex items-center gap-3"
+              style={{ background: 'rgba(0,0,0,0.07)' }}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold shrink-0 focus-visible:outline-none"
+                    aria-label="Open user menu"
+                    title={fullName}
+                  >
+                    <UserAvatarContent avatarUrl={currentUser?.avatarUrl} initials={initials} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start" className="w-48 mb-1">
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-xs font-semibold truncate">{fullName}</p>
+                    {companyRole && (
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-mono truncate">{companyRole}</p>
+                    )}
+                  </div>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile-dashboard" onClick={() => setShowMobileMenu(false)}>View Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={onLogout}>
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--sidebar-foreground)' }}>{fullName}</p>
+                {companyRole && (
+                  <p
+                    className="text-xs uppercase tracking-wide truncate"
+                    style={{ color: 'var(--sidebar-foreground)', opacity: 0.5, fontFamily: 'var(--font-mono)' }}
+                  >
+                    {companyRole}
+                  </p>
+                )}
+              </div>
+
+              {onNotificationsClick && (
+                <button
+                  onClick={() => { onNotificationsClick(); setShowMobileMenu(false); }}
+                  aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Open notifications'}
+                  className="relative p-2 rounded-lg transition-colors border shrink-0"
+                  style={{
+                    background: 'rgba(242,232,213,0.06)',
+                    borderColor: 'rgba(242,232,213,0.12)',
+                    color: 'rgba(242,232,213,0.6)',
+                  }}
+                >
+                  <Bell className="w-5 h-5" aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+                      style={{ border: '1.5px solid var(--sidebar)' }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              )}
+            </div>
 
           </aside>
         </div>

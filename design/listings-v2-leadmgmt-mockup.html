@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Listings – v2 Redesign (Lead Mgmt Style)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest: #1A3C28;
+    --forest-light: #2D5A40;
+    --forest-muted: #3A5E48;
+    --terracotta: #C4562A;
+    --terracotta-hover: #A84422;
+    --parchment: #F2E8D5;
+    --parchment-dark: #E8D9BC;
+    --egreen: #00E87A;
+    --amber: #B89040;
+    --sidebar-border: rgba(242,232,213,0.12);
+    --card-bg: #FFFFFF;
+    --body-bg: #F2E8D5;
+    --text-dark: #1A3C28;
+    --text-muted: #6B8F7A;
+    --border: rgba(26,60,40,0.12);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Sidebar ─────────────────────────────────── */
+  .sidebar {
+    width: 248px;
+    min-height: 100vh;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--terracotta);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-text {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.2px;
+  }
+
+  .sidebar-section { padding: 12px 8px 4px; }
+
+  .sidebar-label {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(242,232,213,0.4);
+    padding: 0 8px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: rgba(242,232,213,0.75);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 1px; text-decoration: none;
+  }
+
+  .sidebar-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+
+  .sidebar-item.active {
+    background: rgba(0,232,122,0.12);
+    color: var(--egreen);
+  }
+
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .sidebar-item.active svg { opacity: 1; color: var(--egreen); }
+  .sidebar-item-text { flex: 1; }
+
+  .badge-count {
+    font-size: 10px; font-weight: 700;
+    background: var(--terracotta);
+    color: #fff;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-role-badge {
+    margin: 8px 8px 12px;
+    padding: 8px 12px;
+    background: rgba(242,232,213,0.06);
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 8px;
+  }
+
+  .role-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(242,232,213,0.4); font-family: 'IBM Plex Mono', monospace; }
+  .role-name  { font-size: 12px; font-weight: 600; color: var(--parchment); margin-top: 2px; }
+  .role-tag   { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; margin-top: 4px; background: rgba(196,86,42,0.2); color: #E8A080; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Main ────────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-x: hidden; }
+
+  /* ── Page header ─────────────────────────────── */
+  .page-header {
+    background: var(--forest);
+    padding: 32px 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: var(--terracotta); opacity: 0.08; border-radius: 50%;
+  }
+
+  .page-header::after {
+    content: '';
+    position: absolute; bottom: 10px; left: 40%;
+    width: 160px; height: 160px;
+    background: var(--egreen); opacity: 0.04; border-radius: 50%;
+  }
+
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 24px; position: relative; z-index: 1;
+  }
+
+  .header-eyebrow {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terracotta); margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .header-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--parchment); letter-spacing: -0.5px; line-height: 1.15;
+  }
+
+  .header-subtitle { font-size: 13px; color: rgba(242,232,213,0.55); margin-top: 4px; font-weight: 400; }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+    transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .btn svg { width: 15px; height: 15px; }
+  .btn-primary { background: var(--terracotta); color: #fff; }
+  .btn-primary:hover { background: var(--terracotta-hover); }
+  .btn-ghost { background: rgba(242,232,213,0.08); color: rgba(242,232,213,0.8); border: 1px solid rgba(242,232,213,0.14); }
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); color: var(--parchment); }
+
+  /* ── KPI strip ───────────────────────────────── */
+  .kpi-strip {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 0;
+    position: relative; z-index: 1;
+    padding-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .kpi-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: rgba(242,232,213,0.45); margin-bottom: 6px; font-family: 'IBM Plex Mono', monospace; }
+  .kpi-value { font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--parchment); line-height: 1; }
+  .kpi-delta { font-size: 11px; font-weight: 500; color: var(--egreen); margin-top: 4px; }
+  .kpi-delta.down { color: #F87171; }
+
+  /* ── Tabs bar ────────────────────────────────── */
+  .tabs-bar {
+    display: flex; gap: 0;
+    background: var(--forest);
+    border-top: 1px solid rgba(242,232,213,0.08);
+    position: relative; z-index: 2;
+    overflow-x: auto;
+  }
+
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 22px;
+    font-size: 13px; font-weight: 600;
+    color: rgba(242,232,213,0.5);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.15s; white-space: nowrap; user-select: none;
+    flex-shrink: 0;
+  }
+
+  .tab:hover { color: rgba(242,232,213,0.85); }
+
+  .tab.active {
+    color: var(--parchment);
+    border-bottom-color: var(--terracotta);
+  }
+
+  .tab svg { width: 15px; height: 15px; }
+
+  .tab-badge {
+    font-size: 10px; font-weight: 700;
+    background: rgba(196,86,42,0.25); color: var(--terracotta);
+    padding: 1px 6px; border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .tab.active .tab-badge { background: var(--terracotta); color: #fff; }
+
+  /* ── Content area ────────────────────────────── */
+  .content-area { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+  /* ── Cards ───────────────────────────────────── */
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+  .card-body { padding: 20px; }
+
+  /* ── Toolbar ─────────────────────────────────── */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+  .search-box {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; color: var(--text-muted);
+    max-width: 280px;
+  }
+
+  .search-box svg { width: 14px; height: 14px; opacity: 0.5; flex-shrink: 0; }
+  .search-box input { flex: 1; border: none; outline: none; background: transparent; font-size: 12px; color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  .type-filter-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 12px; border-radius: 7px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer; border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-toggle-btn {
+    padding: 7px 12px; background: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s;
+  }
+  .view-toggle-btn svg { width: 13px; height: 13px; }
+  .view-toggle-btn.active { background: var(--forest); color: var(--parchment); }
+
+  /* ── Smart alerts bar ────────────────────────── */
+  .alerts-bar {
+    background: white; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px; flex-wrap: wrap;
+  }
+
+  .alerts-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    padding-right: 12px; border-right: 1px solid var(--border);
+    margin-right: 2px; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+  }
+
+  .alert-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s; border: 1px solid; white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .alert-chip:hover { opacity: 0.8; }
+  .alert-chip .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .alert-hot   { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+  .alert-hot .dot { background: #DC2626; }
+  .alert-stale { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+  .alert-stale .dot { background: #B45309; }
+  .alert-mandate { background: #FFF7ED; color: #C2410C; border-color: #FDBA74; }
+  .alert-mandate .dot { background: #C2410C; }
+
+  /* ── Grid layouts ────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .listing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+
+  /* ── Section divider ─────────────────────────── */
+  .section-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 700; color: var(--text-dark); }
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); white-space: nowrap; }
+
+  /* ── Annotation ──────────────────────────────── */
+  .annotation {
+    display: inline-block; background: #FFFBEB; border: 1.5px dashed #F59E0B; color: #92400E;
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; margin-left: 8px;
+    font-family: 'IBM Plex Mono', monospace; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* ══════════════════════════════════════════════
+     LISTING CARD  (new lead-mgmt-style cards)
+  ══════════════════════════════════════════════ */
+  .listing-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    transition: box-shadow 0.15s, transform 0.1s;
+    display: flex; flex-direction: column;
+  }
+
+  .listing-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.09); transform: translateY(-1px); }
+  .listing-card.heat-hot  { border-color: rgba(220,38,38,0.28); }
+  .listing-card.heat-warm { border-color: rgba(217,119,6,0.28); }
+
+  /* card header: thumbnail + info + badges */
+  .lcard-header {
+    padding: 16px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+
+  .lcard-thumb-wrap { position: relative; flex-shrink: 0; }
+
+  .lcard-thumb {
+    width: 86px; height: 64px; object-fit: cover; border-radius: 8px; display: block;
+  }
+
+  .lcard-health-ring { position: absolute; bottom: -7px; right: -7px; }
+
+  .lcard-info { flex: 1; min-width: 0; }
+
+  .lcard-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+
+  .type-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: 4px; display: inline-block;
+  }
+
+  .heat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  .heat-hot  { background: #FEE2E2; color: #DC2626; }
+  .heat-warm { background: #FEF3C7; color: #D97706; }
+  .heat-cold { background: #DBEAFE; color: #2563EB; }
+
+  .lcard-title { font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 700; color: var(--text-dark); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lcard-specs { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .lcard-price { font-family: 'Fraunces', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-top: 5px; line-height: 1; }
+  .lcard-dom   { font-family: 'IBM Plex Mono', monospace; font-size: 10px; margin-top: 3px; }
+  .dom-ok      { color: #059669; }
+  .dom-warn    { color: #DC2626; }
+
+  /* metrics strip */
+  .metrics-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,60,40,0.02);
+  }
+
+  .metrics-cell { padding: 8px 0; text-align: center; border-right: 1px solid var(--border); }
+  .metrics-cell:last-child { border-right: none; }
+  .metrics-val { font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 700; color: var(--text-dark); line-height: 1; }
+  .metrics-val.highlight { color: var(--terracotta); }
+  .metrics-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 2px; }
+
+  /* card body with portals + mandate */
+  .lcard-body { padding: 12px 16px; flex: 1; }
+  .lcard-portals-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .portals-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .portal-dot { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 7px; font-weight: 700; text-transform: uppercase; }
+  .portal-synced  { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+  .portal-pending { background: #FEF9C3; color: #854D0E; border: 1px solid #FEF08A; }
+  .portal-none    { background: #F1F5F9; color: #94A3B8; border: 1px solid #E2E8F0; }
+  .portal-failed  { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+  .portals-status { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted); margin-left: 4px; }
+
+  .stale-nudge {
+    background: rgba(196,86,42,0.06); border: 1px solid rgba(196,86,42,0.18);
+    border-radius: 6px; padding: 6px 10px; margin-bottom: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--terracotta);
+  }
+
+  .mandate-label-row { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--text-muted); margin-bottom: 4px; }
+  .mandate-bar-wrap { height: 3px; background: rgba(26,60,40,0.1); border-radius: 2px; overflow: hidden; }
+  .mandate-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* card actions */
+  .lcard-actions { display: flex; gap: 6px; padding: 10px 14px 14px; border-top: 1px solid var(--border); }
+
+  .card-act-primary {
+    flex: 1; padding: 6px 0; border-radius: 7px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    border: none; background: var(--forest); color: var(--parchment);
+    font-family: 'Plus Jakarta Sans', sans-serif; transition: opacity 0.15s;
+  }
+
+  .card-act-outline {
+    flex: 1; padding: 6px 0; border-radius: 7px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--text-dark);
+    border: 1px solid var(--border);
+    font-family: 'Plus Jakarta Sans', sans-serif; transition: opacity 0.15s;
+  }
+
+  .card-act-primary:hover { opacity: 0.87; }
+  .card-act-outline:hover { background: rgba(26,60,40,0.04); }
+
+  /* ══════════════════════════════════════════════
+     PIPELINE BOARD  (offer pipeline bottom card)
+  ══════════════════════════════════════════════ */
+  .offer-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .offer-row:last-child { border-bottom: none; }
+  .offer-thumb { width: 40px; height: 30px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+  .offer-info { flex: 1; min-width: 0; }
+  .offer-name { font-size: 12px; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .offer-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .offer-price { font-family: 'Fraunces', Georgia, serif; font-size: 13px; font-weight: 700; color: var(--terracotta); margin-right: 8px; white-space: nowrap; }
+  .offer-link  { font-size: 11px; font-weight: 600; color: var(--terracotta); text-decoration: none; white-space: nowrap; }
+
+  /* ══════════════════════════════════════════════
+     SYNDICATION MATRIX
+  ══════════════════════════════════════════════ */
+  .sync-dot { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+  .sync-dot span { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .sync-live   { color: #15803D; }
+  .sync-live span   { background: #22C55E; }
+  .sync-pend   { color: #B45309; }
+  .sync-pend span   { background: #F59E0B; }
+  .sync-fail   { color: #DC2626; }
+  .sync-fail span   { background: #EF4444; }
+  .sync-none   { color: #94A3B8; }
+  .sync-none span   { background: #CBD5E1; }
+
+  /* ── 3-cell tally ────────────────────────────── */
+  .tally-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--border); }
+  .tally-cell { padding: 12px 16px; text-align: center; border-right: 1px solid var(--border); }
+  .tally-cell:last-child { border-right: none; }
+  .tally-val { font-family: 'Fraunces', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--text-dark); line-height: 1; }
+  .tally-val.accent { color: var(--terracotta); }
+  .tally-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-top: 3px; }
+
+  /* ── lead row (reused for offer pipeline rows) ── */
+  .lead-row { display: flex; align-items: center; gap: 14px; padding: 10px 20px; border-bottom: 1px solid var(--border); }
+  .lead-row:last-child { border-bottom: none; }
+  .lead-info { flex: 1; min-width: 0; }
+  .lead-name { font-size: 12px; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Table view ──────────────────────────────── */
+  .table-view { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .table-view table { width: 100%; border-collapse: collapse; }
+  .table-view th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; background: rgba(26,60,40,0.03); border-bottom: 1px solid var(--border); }
+  .table-view td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .table-view tr:last-child td { border-bottom: none; }
+  .table-view tr:hover td { background: rgba(26,60,40,0.02); }
+
+  /* nav toggle between card/table view */
+  #view-cards { display: grid; }
+  #view-table { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>
+    </div>
+    <span class="logo-text">PRIBEC</span>
+  </div>
+
+  <div class="sidebar-role-badge">
+    <div class="role-label">Logged in as</div>
+    <div class="role-name">Sarah Molefe</div>
+    <span class="role-tag">Estate Agent</span>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Agent Cockpit</div>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="sidebar-item-text">Dashboard</span>
+    </a>
+
+    <a class="sidebar-item active">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/></svg>
+      <span class="sidebar-item-text">My Listings</span>
+      <span class="badge-count">28</span>
+    </a>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <span class="sidebar-item-text">Leads</span>
+      <span class="badge-count">12</span>
+    </a>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span class="sidebar-item-text">Viewings</span>
+    </a>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span class="sidebar-item-text">Mandates</span>
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Tools</div>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sidebar-item-text">Analytics</span>
+    </a>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 4.93a10 10 0 000 14.14"/></svg>
+      <span class="sidebar-item-text">AI Assistant</span>
+    </a>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── PAGE HEADER (dark forest, matches lead management) ── -->
+  <div class="page-header">
+    <div class="header-top">
+      <div>
+        <div class="header-eyebrow">Agent Cockpit › Portfolio Headquarters</div>
+        <h1 class="header-title">My Listings</h1>
+        <p class="header-subtitle">28 active properties · R142M portfolio · 18 avg. days on market · 3 portals synced</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          Sync All Portals
+        </button>
+        <button class="btn btn-primary">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Listing
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI strip (6 cells — same structure as lead management, but 6-col) -->
+    <div class="kpi-strip" style="grid-template-columns: repeat(6, 1fr);">
+      <div class="kpi-card">
+        <div class="kpi-label">Active Listings</div>
+        <div class="kpi-value" style="color: #00E87A;">28</div>
+        <div class="kpi-delta">+3 this month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Portfolio Value</div>
+        <div class="kpi-value">R142M</div>
+        <div class="kpi-delta">↑ 8.4% vs last qtr</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Avg. Days on Mkt</div>
+        <div class="kpi-value" style="color: #F5C87A;">18</div>
+        <div class="kpi-delta down">-2 vs market avg</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Inquiries / Month</div>
+        <div class="kpi-value" style="color: #E8A080;">48</div>
+        <div class="kpi-delta">+12 vs last month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Active Offers</div>
+        <div class="kpi-value" style="color: #00E87A;">6</div>
+        <div class="kpi-delta">R4.2M in pipeline</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Portal Sync</div>
+        <div class="kpi-value">14/18</div>
+        <div class="kpi-delta down">4 need attention</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TABS BAR (status filters, same visual pattern as lead management tabs) ── -->
+  <div class="tabs-bar">
+    <!-- tabs styled identically to lead management: forest bg, parchment text, terracotta active underline -->
+    <div class="tab active" onclick="setTab(this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      All Listings
+      <span class="tab-badge">28</span>
+    </div>
+    <div class="tab" onclick="setTab(this)">
+      🔥 Hot
+      <span class="tab-badge">3</span>
+    </div>
+    <div class="tab" onclick="setTab(this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>
+      Active
+      <span class="tab-badge">18</span>
+    </div>
+    <div class="tab" onclick="setTab(this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+      Under Offer
+      <span class="tab-badge">4</span>
+    </div>
+    <div class="tab" onclick="setTab(this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Stale 30d+
+      <span class="tab-badge" style="background:rgba(196,86,42,0.25);color:var(--terracotta);">2</span>
+    </div>
+    <div class="tab" onclick="setTab(this)">Draft <span class="tab-badge">3</span></div>
+    <div class="tab" onclick="setTab(this)">Sold <span class="tab-badge">6</span></div>
+  </div>
+
+
+  <!-- ── CONTENT AREA (parchment bg, same as lead management) ── -->
+  <div class="content-area">
+
+    <!-- SMART ALERTS BAR -->
+    <div class="alerts-bar">
+      <div class="alerts-label">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Smart Alerts
+      </div>
+      <span class="alert-chip alert-hot">
+        <span class="dot"></span>
+        🔥 3 hot listings — high demand
+      </span>
+      <span class="alert-chip alert-stale">
+        <span class="dot"></span>
+        ⚠ 2 stale listings — consider a price drop
+      </span>
+      <span class="alert-chip alert-mandate">
+        <span class="dot"></span>
+        📅 Mandate expiring: 14 Acacia St in 6 days
+      </span>
+      <span style="margin-left:auto; font-size:11px; color:var(--text-muted); cursor:pointer; display:flex; align-items:center; gap:4px;">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Dismiss
+      </span>
+    </div>
+
+    <!-- TOOLBAR: search + type filters + view toggle (same pattern as lead management toolbar) -->
+    <div class="toolbar">
+      <div class="search-box">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search listings by title or address…" />
+      </div>
+      <!-- Type filters styled as IBM Plex Mono uppercase toggle buttons -->
+      <button class="type-filter-btn" style="background: #1A3C28; color: #F2E8D5;">For Sale</button>
+      <button class="type-filter-btn" style="background: rgba(26,60,40,0.07); color: var(--text-muted);">To Rent</button>
+      <button class="type-filter-btn" style="background: rgba(26,60,40,0.07); color: var(--text-muted);">Dev</button>
+      <!-- View toggle (same as lead management) -->
+      <div style="margin-left: auto;">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" onclick="switchView('cards', this, event)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Cards
+          </button>
+          <button class="view-toggle-btn" onclick="switchView('table', this, event)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Table
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════
+         CARDS VIEW (default)
+    ═══════════════════════════════════════════ -->
+    <div id="view-cards" class="listing-grid">
+
+      <!-- ── CARD 1: Hot / For Sale ── -->
+      <div class="listing-card heat-hot">
+        <div class="lcard-header">
+          <div class="lcard-thumb-wrap">
+            <img class="lcard-thumb" src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&h=140&fit=crop" alt="" />
+            <!-- health ring SVG — same health ring as before, redesigned closer to lead mgmt card feel -->
+            <div class="lcard-health-ring">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="11" fill="white" stroke="rgba(26,60,40,0.12)" stroke-width="4"/>
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#22C55E" stroke-width="4"
+                  stroke-dasharray="64 69.1" stroke-dashoffset="17.3"
+                  stroke-linecap="round" transform="rotate(-90 16 16)"/>
+                <text x="16" y="20" text-anchor="middle"
+                  font-family="'Fraunces',serif" font-size="8" font-weight="700" fill="#1A3C28">91</text>
+              </svg>
+            </div>
+          </div>
+          <div class="lcard-info">
+            <div class="lcard-badges">
+              <span class="type-badge" style="background:#1A3C28; color:#F2E8D5;">For Sale</span>
+              <span class="heat-badge heat-hot">🔥 High</span>
+            </div>
+            <div class="lcard-title">14 Acacia Street, Sandton</div>
+            <div class="lcard-specs">4 bed · 3 bath · 280m²</div>
+            <div class="lcard-price">R 4,950,000</div>
+            <div class="lcard-dom dom-ok">⏱ 12 days on market</div>
+          </div>
+        </div>
+
+        <div class="metrics-strip">
+          <div class="metrics-cell"><div class="metrics-val">142</div><div class="metrics-lbl">Views</div></div>
+          <div class="metrics-cell"><div class="metrics-val">18</div><div class="metrics-lbl">Inquiries</div></div>
+          <div class="metrics-cell"><div class="metrics-val highlight">3</div><div class="metrics-lbl">Offers</div></div>
+          <div class="metrics-cell"><div class="metrics-val">5</div><div class="metrics-lbl">Tours</div></div>
+        </div>
+
+        <div class="lcard-body">
+          <div class="lcard-portals-row">
+            <span class="portals-label">Portals:</span>
+            <span class="portal-dot portal-synced" title="Property24 — synced">P24</span>
+            <span class="portal-dot portal-synced" title="Private Property — synced">PP</span>
+            <span class="portal-dot portal-pending" title="Gumtree — pending">GTR</span>
+            <span class="portal-dot portal-none" title="Lightstone — not listed">LST</span>
+            <span class="portals-status">2 live · 1 pending</span>
+          </div>
+          <!-- mandate progress bar — red because expiring in 6 days -->
+          <div>
+            <div class="mandate-label-row">
+              <span>Mandate expires</span>
+              <span style="color:#DC2626; font-weight:600;">6 days remaining ⚠</span>
+            </div>
+            <div class="mandate-bar-wrap">
+              <div class="mandate-bar-fill" style="width:14%; background:#DC2626;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lcard-actions">
+          <button class="card-act-primary">View</button>
+          <button class="card-act-outline">Edit</button>
+          <button class="card-act-outline">Dupe</button>
+          <button class="card-act-outline">Sync</button>
+        </div>
+      </div>
+
+
+      <!-- ── CARD 2: Warm / To Rent ── -->
+      <div class="listing-card heat-warm">
+        <div class="lcard-header">
+          <div class="lcard-thumb-wrap">
+            <img class="lcard-thumb" src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=200&h=140&fit=crop" alt="" />
+            <div class="lcard-health-ring">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="11" fill="white" stroke="rgba(26,60,40,0.12)" stroke-width="4"/>
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#F59E0B" stroke-width="4"
+                  stroke-dasharray="50 69.1" stroke-dashoffset="17.3"
+                  stroke-linecap="round" transform="rotate(-90 16 16)"/>
+                <text x="16" y="20" text-anchor="middle"
+                  font-family="'Fraunces',serif" font-size="8" font-weight="700" fill="#1A3C28">73</text>
+              </svg>
+            </div>
+          </div>
+          <div class="lcard-info">
+            <div class="lcard-badges">
+              <span class="type-badge" style="background:#B45309; color:#fff;">To Rent</span>
+              <span class="heat-badge heat-warm">⚡ Warm</span>
+            </div>
+            <div class="lcard-title">8 Protea Ave, Rosebank</div>
+            <div class="lcard-specs">3 bed · 2 bath · 180m²</div>
+            <div class="lcard-price">R 28,500 /mo</div>
+            <div class="lcard-dom dom-ok">⏱ 8 days on market</div>
+          </div>
+        </div>
+
+        <div class="metrics-strip">
+          <div class="metrics-cell"><div class="metrics-val">87</div><div class="metrics-lbl">Views</div></div>
+          <div class="metrics-cell"><div class="metrics-val">9</div><div class="metrics-lbl">Inquiries</div></div>
+          <div class="metrics-cell"><div class="metrics-val highlight">1</div><div class="metrics-lbl">Offers</div></div>
+          <div class="metrics-cell"><div class="metrics-val">3</div><div class="metrics-lbl">Tours</div></div>
+        </div>
+
+        <div class="lcard-body">
+          <div class="lcard-portals-row">
+            <span class="portals-label">Portals:</span>
+            <span class="portal-dot portal-synced">P24</span>
+            <span class="portal-dot portal-synced">PP</span>
+            <span class="portal-dot portal-none">GTR</span>
+            <span class="portal-dot portal-none">LST</span>
+            <span class="portals-status">2 live · 2 not listed</span>
+          </div>
+          <div>
+            <div class="mandate-label-row">
+              <span>Mandate expires</span>
+              <span style="color:#B45309; font-weight:600;">18 days remaining</span>
+            </div>
+            <div class="mandate-bar-wrap">
+              <div class="mandate-bar-fill" style="width:44%; background:#F59E0B;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lcard-actions">
+          <button class="card-act-primary">View</button>
+          <button class="card-act-outline">Edit</button>
+          <button class="card-act-outline">Dupe</button>
+          <button class="card-act-outline">Sync</button>
+        </div>
+      </div>
+
+
+      <!-- ── CARD 3: Cold / Stale ── -->
+      <div class="listing-card">
+        <div class="lcard-header">
+          <div class="lcard-thumb-wrap">
+            <img class="lcard-thumb" src="https://images.unsplash.com/photo-1554995207-c18c203602cb?w=200&h=140&fit=crop" alt="" />
+            <div class="lcard-health-ring">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="11" fill="white" stroke="rgba(26,60,40,0.12)" stroke-width="4"/>
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#EF4444" stroke-width="4"
+                  stroke-dasharray="28 69.1" stroke-dashoffset="17.3"
+                  stroke-linecap="round" transform="rotate(-90 16 16)"/>
+                <text x="16" y="20" text-anchor="middle"
+                  font-family="'Fraunces',serif" font-size="8" font-weight="700" fill="#1A3C28">40</text>
+              </svg>
+            </div>
+          </div>
+          <div class="lcard-info">
+            <div class="lcard-badges">
+              <span class="type-badge" style="background:#1A3C28; color:#F2E8D5;">For Sale</span>
+              <span class="heat-badge heat-cold">❄ Slow</span>
+            </div>
+            <div class="lcard-title">22 Jacaranda Close, Pretoria</div>
+            <div class="lcard-specs">3 bed · 2 bath · 155m²</div>
+            <div class="lcard-price">R 2,150,000</div>
+            <div class="lcard-dom dom-warn">⏱ 47 days on market ⚠</div>
+          </div>
+        </div>
+
+        <div class="metrics-strip">
+          <div class="metrics-cell"><div class="metrics-val">23</div><div class="metrics-lbl">Views</div></div>
+          <div class="metrics-cell"><div class="metrics-val">1</div><div class="metrics-lbl">Inquiries</div></div>
+          <div class="metrics-cell"><div class="metrics-val">0</div><div class="metrics-lbl">Offers</div></div>
+          <div class="metrics-cell"><div class="metrics-val">0</div><div class="metrics-lbl">Tours</div></div>
+        </div>
+
+        <div class="lcard-body">
+          <div class="stale-nudge">✦ 47 days stale — consider a price reduction</div>
+          <div class="lcard-portals-row">
+            <span class="portals-label">Portals:</span>
+            <span class="portal-dot portal-synced">P24</span>
+            <span class="portal-dot portal-none">PP</span>
+            <span class="portal-dot portal-none">GTR</span>
+            <span class="portal-dot portal-none">LST</span>
+            <span class="portals-status">1 live · 3 not listed</span>
+          </div>
+          <div>
+            <div class="mandate-label-row">
+              <span>Mandate expires</span>
+              <span style="color:#059669; font-weight:600;">38 days remaining</span>
+            </div>
+            <div class="mandate-bar-wrap">
+              <div class="mandate-bar-fill" style="width:70%; background:#22C55E;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lcard-actions">
+          <button class="card-act-primary">View</button>
+          <button class="card-act-outline">Edit</button>
+          <button class="card-act-outline">Dupe</button>
+          <button class="card-act-outline">Sync</button>
+        </div>
+      </div>
+
+
+      <!-- ── CARD 4: Under Offer ── -->
+      <div class="listing-card" style="border-color: rgba(5,150,105,0.25);">
+        <div class="lcard-header">
+          <div class="lcard-thumb-wrap">
+            <img class="lcard-thumb" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=200&h=140&fit=crop" alt="" />
+            <div class="lcard-health-ring">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="11" fill="white" stroke="rgba(26,60,40,0.12)" stroke-width="4"/>
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#22C55E" stroke-width="4"
+                  stroke-dasharray="62 69.1" stroke-dashoffset="17.3"
+                  stroke-linecap="round" transform="rotate(-90 16 16)"/>
+                <text x="16" y="20" text-anchor="middle"
+                  font-family="'Fraunces',serif" font-size="8" font-weight="700" fill="#1A3C28">90</text>
+              </svg>
+            </div>
+          </div>
+          <div class="lcard-info">
+            <div class="lcard-badges">
+              <span class="type-badge" style="background:#1A3C28; color:#F2E8D5;">For Sale</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; background:#D1FAE5; color:#065F46; text-transform:uppercase; letter-spacing:0.04em;">✓ Under Offer</span>
+            </div>
+            <div class="lcard-title">3 Fynbos Lane, Stellenbosch</div>
+            <div class="lcard-specs">5 bed · 4 bath · 380m²</div>
+            <div class="lcard-price">R 8,200,000</div>
+            <div class="lcard-dom dom-ok">⏱ 22 days · 2 active offers</div>
+          </div>
+        </div>
+
+        <div class="metrics-strip">
+          <div class="metrics-cell"><div class="metrics-val">210</div><div class="metrics-lbl">Views</div></div>
+          <div class="metrics-cell"><div class="metrics-val">24</div><div class="metrics-lbl">Inquiries</div></div>
+          <div class="metrics-cell"><div class="metrics-val highlight">2</div><div class="metrics-lbl">Offers</div></div>
+          <div class="metrics-cell"><div class="metrics-val">7</div><div class="metrics-lbl">Tours</div></div>
+        </div>
+
+        <div class="lcard-body">
+          <div class="lcard-portals-row">
+            <span class="portals-label">Portals:</span>
+            <span class="portal-dot portal-synced">P24</span>
+            <span class="portal-dot portal-synced">PP</span>
+            <span class="portal-dot portal-synced">GTR</span>
+            <span class="portal-dot portal-none">LST</span>
+            <span class="portals-status">3 live ✓</span>
+          </div>
+          <div>
+            <div class="mandate-label-row">
+              <span>Mandate expires</span>
+              <span style="color:#059669; font-weight:600;">52 days remaining</span>
+            </div>
+            <div class="mandate-bar-wrap">
+              <div class="mandate-bar-fill" style="width:80%; background:#22C55E;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lcard-actions">
+          <button class="card-act-primary">View</button>
+          <button class="card-act-outline">Edit</button>
+          <button class="card-act-outline">Dupe</button>
+          <button class="card-act-outline">Sync</button>
+        </div>
+      </div>
+
+    </div><!-- /view-cards -->
+
+
+    <!-- ═══════════════════════════════════════════
+         TABLE VIEW (hidden by default)
+    ═══════════════════════════════════════════ -->
+    <div id="view-table" class="table-view" style="margin-bottom: 28px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Heat</th>
+            <th>Price</th>
+            <th>Specs</th>
+            <th>Performance</th>
+            <th>Health</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=80&h=60&fit=crop" style="width:48px; height:36px; object-fit:cover; border-radius:5px; flex-shrink:0;" />
+                <div>
+                  <div style="font-weight:600; font-size:12px;">14 Acacia Street, Sandton</div>
+                  <div style="font-size:10px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; margin-top:1px;">12 days on market</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="heat-badge heat-hot">🔥 High</span></td>
+            <td><span style="font-family:'Fraunces',serif; font-size:13px; font-weight:700; color:var(--text-dark);">R4,950,000</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">4b · 3ba · 280m²</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">142 views · 18 inq · 3 offers</span></td>
+            <td>
+              <svg width="28" height="28" viewBox="0 0 28 28">
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#E8F0EC" stroke-width="3.5"/>
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#22C55E" stroke-width="3.5"
+                  stroke-dasharray="56 62.8" stroke-linecap="round" transform="rotate(-90 14 14)"/>
+                <text x="14" y="18" text-anchor="middle" font-family="'Fraunces',serif" font-size="7" font-weight="700" fill="#1A3C28">91</text>
+              </svg>
+            </td>
+            <td>
+              <div style="display:flex; gap:5px;">
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:var(--forest); color:var(--parchment); border:none; cursor:pointer;">View</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Edit</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Sync</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=80&h=60&fit=crop" style="width:48px; height:36px; object-fit:cover; border-radius:5px; flex-shrink:0;" />
+                <div>
+                  <div style="font-weight:600; font-size:12px;">8 Protea Ave, Rosebank</div>
+                  <div style="font-size:10px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace; margin-top:1px;">8 days on market</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="heat-badge heat-warm">⚡ Warm</span></td>
+            <td><span style="font-family:'Fraunces',serif; font-size:13px; font-weight:700; color:var(--text-dark);">R28,500/mo</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">3b · 2ba · 180m²</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">87 views · 9 inq · 1 offers</span></td>
+            <td>
+              <svg width="28" height="28" viewBox="0 0 28 28">
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#E8F0EC" stroke-width="3.5"/>
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#F59E0B" stroke-width="3.5"
+                  stroke-dasharray="46 62.8" stroke-linecap="round" transform="rotate(-90 14 14)"/>
+                <text x="14" y="18" text-anchor="middle" font-family="'Fraunces',serif" font-size="7" font-weight="700" fill="#1A3C28">73</text>
+              </svg>
+            </td>
+            <td>
+              <div style="display:flex; gap:5px;">
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:var(--forest); color:var(--parchment); border:none; cursor:pointer;">View</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Edit</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Sync</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?w=80&h=60&fit=crop" style="width:48px; height:36px; object-fit:cover; border-radius:5px; flex-shrink:0;" />
+                <div>
+                  <div style="font-weight:600; font-size:12px; color:#DC2626;">22 Jacaranda Close, Pretoria</div>
+                  <div style="font-size:10px; color:#DC2626; font-family:'IBM Plex Mono',monospace; margin-top:1px;">47 days on market ⚠</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="heat-badge heat-cold">❄ Slow</span></td>
+            <td><span style="font-family:'Fraunces',serif; font-size:13px; font-weight:700; color:var(--text-dark);">R2,150,000</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">3b · 2ba · 155m²</span></td>
+            <td><span style="font-size:11px; color:var(--text-muted);">23 views · 1 inq · 0 offers</span></td>
+            <td>
+              <svg width="28" height="28" viewBox="0 0 28 28">
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#E8F0EC" stroke-width="3.5"/>
+                <circle cx="14" cy="14" r="10" fill="none" stroke="#EF4444" stroke-width="3.5"
+                  stroke-dasharray="25 62.8" stroke-linecap="round" transform="rotate(-90 14 14)"/>
+                <text x="14" y="18" text-anchor="middle" font-family="'Fraunces',serif" font-size="7" font-weight="700" fill="#1A3C28">40</text>
+              </svg>
+            </td>
+            <td>
+              <div style="display:flex; gap:5px;">
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:var(--forest); color:var(--parchment); border:none; cursor:pointer;">View</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Edit</button>
+                <button style="padding:4px 9px; border-radius:5px; font-size:10px; font-weight:600; background:transparent; color:var(--text-dark); border:1px solid var(--border); cursor:pointer;">Sync</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div><!-- /view-table -->
+
+
+    <!-- ═══════════════════════════════════════════
+         BOTTOM ROW: Offer Pipeline + Syndication
+    ═══════════════════════════════════════════ -->
+    <div class="section-row">
+      <span class="section-title">Pipeline &amp; Syndication</span>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- ── OFFER PIPELINE (same card pattern as lead management) ── -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <span class="card-title">Offer Pipeline</span>
+            <span class="annotation">Live</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-muted);">6 listings · 8 offers</span>
+        </div>
+
+        <!-- 3-cell tally (Fraunces numbers, same pattern as lead management analytics KPIs) -->
+        <div class="tally-grid">
+          <div class="tally-cell"><div class="tally-val">6</div><div class="tally-lbl">With Offers</div></div>
+          <div class="tally-cell"><div class="tally-val accent">8</div><div class="tally-lbl">Total Offers</div></div>
+          <div class="tally-cell"><div class="tally-val">1.3</div><div class="tally-lbl">Avg / Listing</div></div>
+        </div>
+
+        <!-- listing rows with offers — same lead-row pattern from lead management -->
+        <div style="padding: 0 20px;">
+          <div class="lead-row" style="padding: 11px 0;">
+            <img class="offer-thumb" src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=80&h=60&fit=crop" />
+            <div class="lead-info">
+              <div class="lead-name">14 Acacia Street, Sandton</div>
+              <div class="lead-meta">3 offers · highest: R4.8M</div>
+            </div>
+            <span class="offer-price">R4.8M</span>
+            <a class="offer-link">Review →</a>
+          </div>
+          <div class="lead-row" style="padding: 11px 0;">
+            <img class="offer-thumb" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=80&h=60&fit=crop" />
+            <div class="lead-info">
+              <div class="lead-name">3 Fynbos Lane, Stellenbosch</div>
+              <div class="lead-meta">2 offers · highest: R7.9M</div>
+            </div>
+            <span class="offer-price">R7.9M</span>
+            <a class="offer-link">Review →</a>
+          </div>
+          <div class="lead-row" style="padding: 11px 0;">
+            <img class="offer-thumb" src="https://images.unsplash.com/photo-1470093851219-69951fcbb533?w=80&h=60&fit=crop" />
+            <div class="lead-info">
+              <div class="lead-name">5 Morningside Drive, Durban</div>
+              <div class="lead-meta">1 offer · highest: R3.2M</div>
+            </div>
+            <span class="offer-price">R3.2M</span>
+            <a class="offer-link">Review →</a>
+          </div>
+        </div>
+
+        <div style="padding: 10px 20px; border-top: 1px solid var(--border);">
+          <a style="font-size:11px; font-weight:600; color:var(--text-muted); text-decoration:none; cursor:pointer;">View all 6 listings with offers →</a>
+        </div>
+      </div>
+
+
+      <!-- ── SYNDICATION MATRIX ── -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <span class="card-title">Syndication Status</span>
+            <span class="annotation">New</span>
+          </div>
+          <button class="btn btn-ghost" style="padding:5px 10px; font-size:11px; border-radius:6px;">Sync All →</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(26,60,40,0.03); border-bottom:1px solid var(--border);">
+                <th style="padding:9px 16px; text-align:left; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">Listing</th>
+                <th style="padding:9px 12px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">P24</th>
+                <th style="padding:9px 12px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">PP</th>
+                <th style="padding:9px 12px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">GTR</th>
+                <th style="padding:9px 12px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted);">LST</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:9px 16px; font-size:12px; font-weight:500; color:var(--text-dark);">14 Acacia St</td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-pend"><span></span>Pend</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:9px 16px; font-size:12px; font-weight:500; color:var(--text-dark);">8 Protea Ave</td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:9px 16px; font-size:12px; font-weight:500; color:var(--text-dark);">22 Jacaranda Cl.</td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:9px 16px; font-size:12px; font-weight:500; color:var(--text-dark);">3 Fynbos Lane</td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-live"><span></span>Live</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+              </tr>
+              <tr>
+                <td style="padding:9px 16px; font-size:12px; font-weight:500; color:var(--text-dark);">5 Morningside Dr</td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-fail"><span></span>Fail</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+                <td style="padding:9px 12px; text-align:center;"><span class="sync-dot sync-none"><span></span>—</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="padding:10px 16px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; gap:12px;">
+            <span class="sync-dot sync-live" style="font-size:10px;"><span></span>Live</span>
+            <span class="sync-dot sync-pend" style="font-size:10px;"><span></span>Pending</span>
+            <span class="sync-dot sync-fail" style="font-size:10px;"><span></span>Failed</span>
+            <span class="sync-dot sync-none" style="font-size:10px;"><span></span>Not Listed</span>
+          </div>
+          <button style="font-size:10px; font-weight:700; padding:5px 12px; border-radius:6px; background:rgba(196,86,42,0.1); color:var(--terracotta); border:1px solid rgba(196,86,42,0.2); cursor:pointer; font-family:'IBM Plex Mono',monospace; letter-spacing:0.04em;">Fill Gaps →</button>
+        </div>
+      </div>
+
+    </div><!-- /grid-2 bottom row -->
+
+  </div><!-- /content-area -->
+</div><!-- /main -->
+
+
+<script>
+  // Tab switching (status filter tabs)
+  function setTab(el) {
+    document.querySelectorAll('.tabs-bar .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Cards / Table view toggle
+  function switchView(view, btn, e) {
+    e.preventDefault();
+    const cards = document.getElementById('view-cards');
+    const table = document.getElementById('view-table');
+    document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (view === 'cards') {
+      cards.style.display = 'grid';
+      table.style.display = 'none';
+    } else {
+      cards.style.display = 'none';
+      table.style.display = 'block';
+    }
+  }
+</script>
+
+</body>
+</html>

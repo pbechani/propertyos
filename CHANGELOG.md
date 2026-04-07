@@ -14,6 +14,70 @@ Related docs:
 
 ### Changed
 
+- **UI — Agent Dashboard: removed Analytics & AI Intelligence tabs (2026-04-07)**
+  - **`apps/web/src/views/AgentDashboardEnhanced.tsx`** — removed the two non-essential tabs to slim the dashboard:
+    - Deleted `Analytics` tab content block (Recharts-powered views/listing performance charts)
+    - Deleted `AI Intelligence` tab block (`<AIIntelligencePanel />`)
+    - Removed entire `recharts` import (`LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart`)
+    - Removed `BarChart3` from lucide-react import
+    - Removed `AIIntelligencePanel` view import
+    - Removed unused `viewsData` and `listingPerformance` `useMemo` derivations
+    - Removed `PipelineFunnelWidget` sub-component (was only used on Analytics tab)
+    - Updated `selectedTab` type union and `useState` type to `"overview" | "listings" | "viewings" | "mandates" | "crm"` (dropped `"analytics"` and `"ai"`)
+    - Updated `SmartAlertBar` `onNavigate` prop type accordingly
+    - Tab array entries for `analytics` and `ai` removed
+
+- **UI — AppSidebar user-controls consolidation (2026-04-07)**
+  - **`apps/web/src/components/AppSidebar.tsx`** — moved user avatar, notifications bell, and logout into the sidebar footer:
+    - Added `Bell` icon and `DropdownMenu*` imports
+    - Added `UserAvatarContent` import for avatar rendering
+    - New props: `unreadCount`, `onNotificationsClick`, `onLogout`
+    - Sidebar nav set to `overflow-y-auto` to scroll when content overflows
+    - Sidebar footer now renders a `DropdownMenu` with the user initials avatar, full name, notification bell badge, and "Log out" action
+
+- **UI — Layout header simplified (2026-04-07)**
+  - **`apps/web/src/components/Layout.tsx`** — removed the legacy top-right header bar:
+    - `router`, `Link`, `Bell`, `ThemeToggle`, `UserAvatarContent`, `DropdownMenu*` imports removed (no longer needed in Layout)
+    - `initials`, `fullName`, `isPropertyDetailRoute`, `shouldShowSidebar`, etc. local variables removed
+    - `unreadCount`, `onNotificationsClick`, `onLogout` now forwarded from Layout state down to `AppSidebar`
+
+- **UI — ThemeToggle redesigned to pill segmented control (2026-04-07)**
+  - **`apps/web/src/components/ThemeToggle.tsx`** — replaced single icon button with a pill-shaped Light/Dark toggle:
+    - Uses `setTheme` from `useTheme` directly instead of `toggleTheme`
+    - Active option shown with white pill + forest text; inactive option muted with hover
+    - Icons + text labels (Sun · Light, Moon · Dark) on each segment
+
+- **UI — ThemeContext FOUC prevention + lock simplification (2026-04-07)**
+  - **`apps/web/src/contexts/ThemeContext.tsx`**:
+    - Added module-level guard that removes `"dark"` and adds `"light"` class on `document.documentElement` at import time (fires on HMR too), preventing flash of unstyled / dark-mode content
+    - Removed `LOCKED_THEME` constant; simplified to a single `useState("light")` with no-op `setTheme`/`toggleTheme`
+    - `isThemeLocked` changed to `false` so the `ThemeToggle` component renders (toggle is cosmetic; theme stays light functionally)
+
+- **UI — globals.css PRIBEC brand dark palette (2026-04-07)**
+  - **`apps/web/src/app/globals.css`** — updated `.dark` CSS variable block:
+    - Background: `#0C0D10` (near-black carbon)
+    - Foreground / card foreground: `#F2E8D5` (parchment)
+    - Card / popover: `#1A1B1F`
+    - Primary: `#00E87A` (electric green); primary-foreground: `#0C0D10`
+    - Secondary / muted: `#2A2B30`; muted-foreground: `#8A9A90`
+    - Accent: `#2D5A40` (mid-forest); accent-foreground: parchment
+
+- **UI — Listings Forest Command Zone header (2026-04-07)**
+  - **`apps/web/src/views/Listings.tsx`** — redesigned the search header:
+    - Outer wrapper: removed `max-w-7xl mx-auto p-4 md:p-8` wrapper; content now full-width
+    - Header zone: forest green `#1A3C28` background with `32px` side padding
+    - Added page title block: IBM Plex Mono eyebrow ("Marketplace · Property Search"), Fraunces `h1` "Browse Properties", parchment subtitle
+    - Decorative circles (terracotta + electric green opacity) for visual depth
+    - All dropdown popover backgrounds: `#101518` → `#0F2318` (deeper forest)
+    - All dropdown borders: `rgba(255,255,255,0.12)` → `rgba(242,232,213,0.15)` (parchment-tinted)
+    - All dividers: `rgba(255,255,255,0.07)` → `rgba(242,232,213,0.1)`
+    - Results area: `padding: 24px 32px` to align with header
+
+- **API — agentApi.getOpenHouseAnalytics (2026-04-07)**
+  - **`apps/web/src/lib/api-client.ts`** — added `getOpenHouseAnalytics(authToken, from?, to?)` to `agentApi`:
+    - `GET /agent/open-houses/analytics` with optional `from` / `to` date query params
+    - Enables future analytics charting for open-house traffic and conversion
+
 - **UI — Lead Management: pixel-faithful rewrite of all 5 views to match brand mockup (2026-04-04)**
   - **`apps/web/src/views/LeadManagementHub.tsx`** *(new)* — Unified 5-tab hub (Dashboard · All Leads · Pipeline · Analytics · Tasks) with dark forest header, KPI strip, and `?tab=` URL-param routing; `isEmbedded` prop suppresses standalone headers when composed
   - **`apps/web/src/views/LeadDashboard.tsx`** — Full rewrite matching mockup: recent-leads list (avatar initials, budget, temperature badge), pipeline funnel chart from `byStage` API data; de-hardwired via `getDashboard` extension (`recentLeads[]`, `byStage`)

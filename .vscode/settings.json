@@ -1,0 +1,10 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "docker compose": true,
+        "open": true,
+        "break": true,
+        "npm run dev": true,
+        "npx next": true,
+        "npx tsc": true
+    }
+}

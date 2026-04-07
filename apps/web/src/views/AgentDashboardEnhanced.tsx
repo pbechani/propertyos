@@ -8,19 +8,15 @@ import {
   MessageSquare, Plus,
   Home, DollarSign, Copy,
   Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity, Users,
-  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, BarChart3, AlertCircle, Share2, Bell
+  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, AlertCircle, Share2, Bell
 } from "lucide-react";
-import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, Area, AreaChart
-} from "recharts";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAccessToken, getSessionClaims, getStoredUser } from "@/lib/auth-session";
 import { propertiesApi, agentApi, viewingActionsApi, leadsApi, viewingsApi, syndicationApi, notificationsApi, type AgentDashboardResponse, type PropertyListing, type ViewingResponse, type CreateOpenHousePayload, type OpenHouseRecord, type CommissionPipelineItem, type ActivityFeedItem, type MandateRecord, type LeadRow, type LeadActivityRow, type LeadDashboardResponse, type CreateLeadPayload, type SyndicationRecord, type AgentBookViewingPayload, type AgentDeclineViewingPayload, type RescheduleViewingPayload, type UserNotification, LEAD_STATUSES, ACTIVITY_TYPES, LEAD_SOURCES } from "@/lib/api-client";
 import { EditListing } from "@/components/EditListing";
-import AIIntelligencePanel from "@/views/AIIntelligencePanel";
 
 type DashboardListing = {
   id: string;
@@ -74,7 +70,7 @@ function SmartAlertBar({ pendingViewings, expiringMandates, staleLeadsCount, onN
   pendingViewings: number;
   expiringMandates: number;
   staleLeadsCount: number;
-  onNavigate: (tab: "overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm" | "ai") => void;
+  onNavigate: (tab: "overview" | "listings" | "viewings" | "mandates" | "crm") => void;
   dismissed: boolean;
   setDismissed: (v: boolean) => void;
 }) {
@@ -97,83 +93,22 @@ function SmartAlertBar({ pendingViewings, expiringMandates, staleLeadsCount, onN
   );
 }
 
-// ── Pipeline Funnel Widget ────────────────────────────────────────────────────
-function PipelineFunnelWidget({ views, enquiries, viewingsCount, activeListings, mandatesCount, commissionTotal, compact = false }: {
-  views: number; enquiries: number; viewingsCount: number;
-  activeListings: number; mandatesCount: number; commissionTotal: number; compact?: boolean;
-}) {
-  const stages = [
-    { label: "Views", value: views, color: "#1A3C28" },
-    { label: "Enquiries", value: enquiries, color: "#2D5A40" },
-    { label: "Viewings", value: viewingsCount, color: "#4A7C5A" },
-    { label: "Listings", value: activeListings, color: "#6B9E7A" },
-    { label: "Mandates", value: mandatesCount, color: "#00E87A" },
-  ];
-  const max = Math.max(...stages.map((s) => s.value), 1);
-  return (
-    <Card className={compact ? "p-4 h-full flex flex-col" : "p-6 mb-6"}>
-      <div className={compact ? "flex items-center justify-between mb-3" : "flex items-center justify-between mb-4"}>
-        <h3 className={compact ? "font-semibold text-sm" : "font-semibold text-lg"} style={{ fontFamily: "var(--font-fraunces)" }}>Pipeline Funnel</h3>
-        <span className="text-[10px] text-muted-foreground">{commissionTotal > 0 ? `R${(commissionTotal / 1000).toFixed(0)}k` : "—"}</span>
-      </div>
-      <div className={compact ? "space-y-1.5 flex-1" : "space-y-2"}>
-        {stages.map((s, i) => {
-          const pct = Math.round((s.value / max) * 100);
-          const dropOff = i > 0 && stages[i - 1].value > 0 ? Math.round(((stages[i - 1].value - s.value) / stages[i - 1].value) * 100) : null;
-          return (
-            <div key={s.label} className="flex items-center gap-2">
-              <span className={compact ? "text-[10px] text-muted-foreground w-14 shrink-0" : "text-xs text-muted-foreground w-16 shrink-0"}>{s.label}</span>
-              <div className={`flex-1 bg-gray-100 rounded-full relative overflow-hidden ${compact ? "h-2" : "h-3"}`}>
-                <div className={`rounded-full transition-all duration-500 ${compact ? "h-2" : "h-3"}`} style={{ width: `${pct}%`, backgroundColor: s.color }} />
-              </div>
-              <span className={compact ? "text-[10px] font-semibold w-6 text-right" : "text-xs font-semibold w-8 text-right"} style={{ color: s.color }}>{s.value}</span>
-              {!compact && dropOff !== null && dropOff > 0 && (
-                <span className="text-[10px] text-[#C4562A] w-10 text-right shrink-0">-{dropOff}%</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
+
+
+// ── Listing Heat Score ───────────────────────────────────────────────────────
+function listingHeat(l: DashboardListing): 'hot' | 'warm' | 'cold' {
+  if (l.offers >= 2 || (l.views > 20 && l.inquiries > 5)) return 'hot';
+  if (l.offers >= 1 || (l.views > 5 && l.inquiries > 1)) return 'warm';
+  return 'cold';
 }
 
-// ── Today Schedule Panel ──────────────────────────────────────────────────────
-function TodaySchedulePanel({ viewings, onAddViewing }: { viewings: ViewingResponse[]; onAddViewing: () => void }) {
-  const todayStr = new Date().toISOString().split("T")[0];
-  const todayViewings = viewings.filter((v) => v.scheduled_at.startsWith(todayStr));
-  return (
-    <Card className="p-5 flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold" style={{ fontFamily: "var(--font-fraunces)" }}>Today&apos;s Schedule</h3>
-        <button onClick={onAddViewing} className="text-xs text-[#1A3C28] hover:underline font-medium">+ Add</button>
-      </div>
-      {todayViewings.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center py-6 text-center gap-2">
-          <Calendar className="w-8 h-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No viewings today</p>
-          <button onClick={onAddViewing} className="text-xs font-medium text-[#1A3C28] hover:underline">Schedule one</button>
-        </div>
-      ) : (
-        <div className="space-y-2 overflow-y-auto max-h-48">
-          {todayViewings
-            .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-            .map((v) => (
-              <div key={v.id} className="flex items-start gap-2 p-2 rounded-lg bg-[#E8F0EC]/60">
-                <Clock className="w-3.5 h-3.5 text-[#1A3C28] mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">{v.property_title ?? "Property"}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {new Date(v.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
-                    {" · "}{v.status}
-                  </p>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-    </Card>
-  );
+// ── Listing Status Category ───────────────────────────────────────────────────
+function listingCategory(l: DashboardListing): string {
+  if (l.status === 'sold') return 'sold';
+  if (l.status === 'draft') return 'draft';
+  if (l.status === 'under_offer' || l.offers > 0) return 'under_offer';
+  if (l.daysOnMarket > 30 && l.inquiries < 2) return 'stale';
+  return 'active';
 }
 
 // ── Listing Health Score ──────────────────────────────────────────────────────
@@ -221,7 +156,7 @@ function CommissionGoalTracker({ earned, currency, compact = false }: { earned: 
 
   if (compact) {
     return (
-      <Card className="flex items-center gap-3 px-4 py-3 h-full">
+      <div className="rounded-xl bg-white flex items-center gap-3 px-4 py-3 h-full" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
         <svg width="40" height="40" viewBox="0 0 40 40" className="shrink-0">
           <circle cx="20" cy="20" r={compactRadius} fill="none" stroke="#E8F0EC" strokeWidth="4" />
           <circle
@@ -231,7 +166,7 @@ function CommissionGoalTracker({ earned, currency, compact = false }: { earned: 
             strokeLinecap="round"
             transform="rotate(-90 20 20)"
             className="transition-all duration-700"
-          />
+        />
           <text x="20" y="24" textAnchor="middle" fontSize="9" fontWeight="700" fill="#1A3C28">{pct}%</text>
         </svg>
         <div className="min-w-0">
@@ -251,12 +186,12 @@ function CommissionGoalTracker({ earned, currency, compact = false }: { earned: 
             />
           )}
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="p-5 flex flex-col items-center gap-3">
+    <div className="rounded-xl bg-white p-5 flex flex-col items-center gap-3" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
       <h3 className="font-semibold text-sm w-full" style={{ fontFamily: "var(--font-fraunces)" }}>Commission Goal</h3>
       <div className="relative w-24 h-24">
         <svg width="96" height="96" viewBox="0 0 96 96">
@@ -294,7 +229,7 @@ function CommissionGoalTracker({ earned, currency, compact = false }: { earned: 
           </button>
         )}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -348,7 +283,7 @@ function LeadKanban({ leads, onStatusChange }: { leads: LeadRow[]; onStatusChang
 
 export default function AgentDashboardEnhanced() {
   const router = useRouter();
-  const [selectedTab, setSelectedTab] = useState<"overview" | "analytics" | "listings" | "viewings" | "mandates" | "crm" | "ai">("overview");
+  const [selectedTab, setSelectedTab] = useState<"overview" | "listings" | "viewings" | "mandates" | "crm">("overview");
   const [activeListings, setActiveListings] = useState<DashboardListing[]>([]);
   const [rawListings, setRawListings] = useState<PropertyListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -370,6 +305,13 @@ export default function AgentDashboardEnhanced() {
   const [agentOpenHouses, setAgentOpenHouses] = useState<OpenHouseRecord[]>([]);
   const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [duplicateError, setDuplicateError] = useState("");
+
+  // Listings tab UI state
+  const [listingsFilter, setListingsFilter] = useState<string>("all");
+  const [listingTypeFilter, setListingTypeFilter] = useState<string>("all");
+  const [listingsView, setListingsView] = useState<"cards" | "table">("cards");
+  const [listingsSearch, setListingsSearch] = useState("");
+  const [listingSyndications, setListingSyndications] = useState<Record<string, SyndicationRecord[]>>({});
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
   // Syndication state
   const [syndicationPropertyId, setSyndicationPropertyId] = useState<string | null>(null);
@@ -470,21 +412,6 @@ export default function AgentDashboardEnhanced() {
     return `${user.firstName} ${user.lastName}`.trim() || 'Agent';
   }, []);
 
-  // Views comparison built from API metrics (previous 7d vs last 7d)
-  const viewsData = useMemo(() => [
-    { period: 'Previous 7d', views: dashboardMetrics.listingViewsPrevious7d, inquiries: 0 },
-    { period: 'Last 7d', views: dashboardMetrics.listingViewsLast7d, inquiries: dashboardMetrics.newInquiries7d },
-  ], [dashboardMetrics]);
-
-  // Top listings for performance chart, derived from real listing data
-  const listingPerformance = useMemo(() =>
-    activeListings.slice(0, 5).map((l) => ({
-      name: l.address.split(',')[0]?.trim().substring(0, 16) || 'Listing',
-      views: l.views,
-      inquiries: l.inquiries,
-    })),
-  [activeListings]);
-
   const openSyndication = async (propertyId: string, title: string) => {
     const token = getAccessToken();
     if (!token) return;
@@ -496,6 +423,7 @@ export default function AgentDashboardEnhanced() {
     try {
       const records = await syndicationApi.getStatus(token, propertyId);
       setSyndicationRecords(records);
+      setListingSyndications(prev => ({ ...prev, [propertyId]: records }));
     } catch {
       setSyndicationError("Failed to load syndication status.");
     } finally {
@@ -912,139 +840,124 @@ export default function AgentDashboardEnhanced() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-card border-b border-border px-4 md:px-8 py-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-1">Agent Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {agentName}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowNotifications((p) => !p);
-                  if (!showNotifications && unreadCount > 0) {
-                    const token = getAccessToken();
-                    if (token) notificationsApi.markAllRead(token).then(() => setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))).catch(() => undefined);
-                  }
-                }}
-                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5 text-gray-600" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                    <p className="font-semibold text-sm">Notifications</p>
-                    <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                    {notifications.length === 0 ? (
-                      <p className="text-sm text-gray-400 text-center py-8">No notifications</p>
-                    ) : (
-                      notifications.slice(0, 20).map((n) => (
-                        <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800 bg-[#E8F0EC]/40"}`}>
-                          <p className="font-medium">{n.title}</p>
-                          <p className="text-xs mt-0.5 text-gray-500">{n.body}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-ZA", { dateStyle: "short", timeStyle: "short" })}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <Button 
-              onClick={() => router.push('/app/my-listings/new')}
-              className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Listing
-            </Button>
-          </div>
-        </div>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bt-parchment)' }}>
+      {/* ── Brand Header ──────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ backgroundColor: 'var(--bt-forest)' }}>
+        {/* Decorative background circles */}
+        <div className="pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-5" style={{ backgroundColor: 'var(--bt-egreen)' }} />
+        <div className="pointer-events-none absolute right-40 -bottom-12 w-48 h-48 rounded-full opacity-5" style={{ backgroundColor: 'var(--bt-terracotta)' }} />
 
-        {/* Tabs */}
-        <div className="flex items-center gap-2 mt-6 overflow-x-auto">
-          <button
-            onClick={() => setSelectedTab("overview")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "overview"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setSelectedTab("analytics")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "analytics"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            Analytics
-          </button>
-          <button
-            onClick={() => setSelectedTab("listings")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "listings"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            My Listings
-          </button>
-          <button
-            onClick={() => setSelectedTab("viewings")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "viewings"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            Viewings
-          </button>
-          <button
-            onClick={() => setSelectedTab("mandates")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "mandates"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            Mandates
-          </button>
-          <button
-            onClick={() => setSelectedTab("crm")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-              selectedTab === "crm"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            CRM
-          </button>
-          <button
-            onClick={() => setSelectedTab("ai")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-              selectedTab === "ai"
-                ? "bg-[#1A3C28] text-[#F2E8D5]"
-                : "text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            <span>🧠</span> AI Intelligence
-          </button>
+        <div className="relative px-4 md:px-8 pt-6 pb-0">
+          {/* Top row: title + actions */}
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-1" style={{ color: 'var(--bt-terracotta)', fontFamily: 'var(--font-mono, ui-monospace)' }}>
+                PropertyOS · Agent Portal
+              </p>
+              <h1 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-parchment)' }}>
+                Welcome back, {agentName}
+              </h1>
+              <p className="text-sm mt-1 opacity-60" style={{ color: 'var(--bt-parchment)' }}>
+                {new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowNotifications((p) => !p);
+                    if (!showNotifications && unreadCount > 0) {
+                      const token = getAccessToken();
+                      if (token) notificationsApi.markAllRead(token).then(() => setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))).catch(() => undefined);
+                    }
+                  }}
+                  className="relative p-2 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'rgba(242,232,213,0.1)' }}
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-5 h-5" style={{ color: 'var(--bt-parchment)' }} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 text-white text-[10px] font-bold rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--bt-terracotta)' }}>
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <p className="font-semibold text-sm">Notifications</p>
+                      <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                      {notifications.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-8">No notifications</p>
+                      ) : (
+                        notifications.slice(0, 20).map((n) => (
+                          <div key={n.id} className={`px-4 py-3 text-sm ${n.read_at ? "text-gray-500" : "text-gray-800"}`} style={!n.read_at ? { backgroundColor: 'rgba(26,60,40,0.06)' } : {}}>
+                            <p className="font-medium">{n.title}</p>
+                            <p className="text-xs mt-0.5 text-gray-500">{n.body}</p>
+                            <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString("en-ZA", { dateStyle: "short", timeStyle: "short" })}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => router.push('/app/my-listings/new')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                style={{ backgroundColor: 'var(--bt-terracotta)', color: '#fff' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add New Listing
+              </button>
+            </div>
+          </div>
+
+          {/* ── KPI strip ───────────────────────────────────────────────────────── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-0 mt-6 border-t" style={{ borderColor: 'rgba(242,232,213,0.12)' }}>
+            {[
+              { label: 'Active Listings', value: activeListings.filter(l => l.status === 'active').length, sub: `${activeListings.length} total`, icon: <Home className="w-3.5 h-3.5" /> },
+              { label: 'Open Leads', value: crmDashboard.totalLeads ?? '—', sub: `${crmDashboard.hotLeads ?? 0} hot`, icon: <Users className="w-3.5 h-3.5" /> },
+              { label: 'Pipeline Value', value: formatMoney(String(totalPortfolioValue), 'ZAR'), sub: 'portfolio', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+              { label: 'Commission Est.', value: formatMoney(String(commissionTotal), 'ZAR'), sub: `${commissionPipeline.length} mandates`, icon: <DollarSign className="w-3.5 h-3.5" /> },
+              { label: 'Response Rate', value: `${dashboardMetrics.inquiryResponseRatePct ?? 0}%`, sub: `${dashboardMetrics.newInquiries7d ?? 0} new inquiries`, icon: <MessageSquare className="w-3.5 h-3.5" /> },
+            ].map((kpi, i) => (
+              <div key={i} className="px-4 py-3 border-r last:border-r-0" style={{ borderColor: 'rgba(242,232,213,0.12)' }}>
+                <div className="flex items-center gap-1.5 mb-1 opacity-60" style={{ color: 'var(--bt-parchment)' }}>
+                  {kpi.icon}
+                  <span className="text-[10px] font-semibold uppercase tracking-wide">{kpi.label}</span>
+                </div>
+                <div className="text-lg font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-parchment)' }}>{kpi.value}</div>
+                <div className="text-[10px] opacity-50 mt-0.5" style={{ color: 'var(--bt-parchment)' }}>{kpi.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
+          <div className="flex items-center gap-0 mt-2 overflow-x-auto">
+            {([
+              { id: 'overview',  label: 'Overview' },
+              { id: 'listings',  label: 'My Listings' },
+              { id: 'viewings',  label: 'Viewings' },
+              { id: 'mandates',  label: 'Mandates' },
+              { id: 'crm',       label: 'Lead Pipeline' },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedTab(tab.id)}
+                className="relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors"
+                style={{
+                  color: selectedTab === tab.id ? 'var(--bt-parchment)' : 'rgba(242,232,213,0.5)',
+                  borderBottom: selectedTab === tab.id ? `2px solid var(--bt-terracotta)` : '2px solid transparent',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1064,496 +977,1093 @@ export default function AgentDashboardEnhanced() {
         setDismissed={setAlertsDismissed}
       />
 
-      <div className="p-4 md:p-8">
+      <div className="p-4 md:p-8" style={{ backgroundColor: 'var(--bt-parchment)' }}>
         {/* Overview Tab */}
         {selectedTab === "overview" && (
           <>
-            {/* ── Row 1: Compact KPI strip ─────────────────────────────────────────── */}
+            {/* ── Row 1: Metric quick-view strip ───────────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-              <Card className="p-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Total Listings</div>
-                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{activeListings.length}</div>
-                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-2.5 h-2.5" />
-                      Live
+              {[
+                { label: 'Total Listings', value: activeListings.length, sub: 'Live', subColour: 'var(--bt-egreen)', icon: <Home className="w-4 h-4" />, iconBg: '#E8F0EC', iconColour: 'var(--bt-forest)' },
+                { label: 'Views (7d)', value: dashboardMetrics.listingViewsLast7d, sub: `${dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}${dashboardMetrics.listingViewsTrendPct}%`, subColour: 'var(--bt-egreen)', icon: <Eye className="w-4 h-4" />, iconBg: '#F2E8D5', iconColour: 'var(--bt-amber)' },
+                { label: 'Inquiries', value: dashboardMetrics.newInquiries7d, sub: `${dashboardMetrics.inquiryResponseRatePct}% resp.`, subColour: 'var(--bt-egreen)', icon: <MessageSquare className="w-4 h-4" />, iconBg: '#D4F7E5', iconColour: 'var(--bt-forest)' },
+                { label: 'Portfolio Value', value: formatMoney(String(totalPortfolioValue), 'ZAR'), sub: 'From database', subColour: 'var(--bt-egreen)', icon: <DollarSign className="w-4 h-4" />, iconBg: '#FAE8DF', iconColour: 'var(--bt-terracotta)' },
+                { label: 'Active Mandates', value: agentMandates.length, sub: 'Exclus. + open', subColour: undefined, icon: <FileText className="w-4 h-4" />, iconBg: '#E8F0EC', iconColour: 'var(--bt-forest)' },
+              ].map((m, i) => (
+                <div key={i} className="rounded-xl bg-white p-3 px-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">{m.label}</div>
+                      <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{m.value}</div>
+                      <div className="text-[10px] flex items-center gap-1 mt-1" style={{ color: m.subColour ?? '#6b7280' }}>
+                        {m.subColour === 'var(--bt-egreen)' && <TrendingUp className="w-2.5 h-2.5" />}
+                        {m.sub}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: m.iconBg, color: m.iconColour }}>
+                      {m.icon}
                     </div>
                   </div>
-                  <div className="w-9 h-9 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
-                    <Home className="w-4 h-4 text-[#1A3C28]" />
-                  </div>
                 </div>
-              </Card>
-
-              <Card className="p-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Views (7d)</div>
-                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.listingViewsLast7d}</div>
-                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-2.5 h-2.5" />
-                      {dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 bg-[#F2E8D5] rounded-lg flex items-center justify-center shrink-0">
-                    <Eye className="w-4 h-4 text-[#B89040]" />
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Inquiries</div>
-                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.newInquiries7d}</div>
-                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-2.5 h-2.5" />
-                      {dashboardMetrics.inquiryResponseRatePct}% resp.
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 bg-[#D4F7E5] rounded-lg flex items-center justify-center shrink-0">
-                    <MessageSquare className="w-4 h-4 text-[#1A3C28]" />
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Portfolio Value</div>
-                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{formatMoney(String(totalPortfolioValue), 'ZAR')}</div>
-                    <div className="text-[10px] text-green-600 flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-2.5 h-2.5" />
-                      From database
-                    </div>
-                  </div>
-                  <div className="w-9 h-9 bg-[#FAE8DF] rounded-lg flex items-center justify-center shrink-0">
-                    <DollarSign className="w-4 h-4 text-[#C4562A]" />
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Active Mandates</div>
-                    <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>{agentMandates.length}</div>
-                    <div className="text-[10px] text-muted-foreground mt-1">Exclus. + open</div>
-                  </div>
-                  <div className="w-9 h-9 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4 text-[#1A3C28]" />
-                  </div>
-                </div>
-              </Card>
+              ))}
 
               <CommissionGoalTracker earned={commissionTotal} currency="ZAR" compact />
             </div>
 
-            {/* ── Row 2: Bento — funnel · chart · schedule ─────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
-              <PipelineFunnelWidget
-                compact
-                views={dashboardMetrics.listingViewsLast7d ?? 0}
-                enquiries={dashboardMetrics.newInquiries7d ?? 0}
-                viewingsCount={agentViewings.length}
-                activeListings={activeListings.filter((l) => l.status === "active").length}
-                mandatesCount={agentMandates.length}
-                commissionTotal={commissionTotal}
-              />
-              <div className="lg:col-span-2">
-                <Card className="p-4 h-full">
-                  <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)' }}>Performance Overview</h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={viewsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
-                      <Area type="monotone" dataKey="views" stroke="#1A3C28" fill="#B8D4C0" name="Views" />
-                      <Area type="monotone" dataKey="inquiries" stroke="#00E87A" fill="#B3F0D1" name="Inquiries" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Card>
-              </div>
-              <TodaySchedulePanel viewings={agentViewings} onAddViewing={() => setShowScheduleViewing(true)} />
+            {/* ── Row A: Today's Priorities + Document Compliance + Performance Score ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+              {/* Today's Priorities */}
+              {(() => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayViewings = agentViewings.filter(v => v.scheduled_at.startsWith(todayStr));
+                const overdueLeads = leads.filter(l => l.next_follow_up && new Date(l.next_follow_up) < new Date() && l.stage !== 'closed_won' && l.stage !== 'closed_lost');
+                const expiringMandates = agentMandates.filter(m => {
+                  const days = Math.floor((new Date(m.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  return days >= 0 && days <= 7;
+                });
+                type PItem = { type: string; title: string; sub: string; time: string; urgent: boolean };
+                const priorities: PItem[] = [
+                  ...todayViewings.slice(0, 2).map(v => ({
+                    type: 'Viewing',
+                    title: v.property_title ?? 'Property Viewing',
+                    sub: v.viewing_type ?? '',
+                    time: new Date(v.scheduled_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }),
+                    urgent: false,
+                  })),
+                  ...overdueLeads.slice(0, 2).map(l => ({
+                    type: 'Follow-up',
+                    title: `Call ${l.name}`,
+                    sub: l.stage?.replace(/_/g, ' ') ?? 'Lead',
+                    time: 'Overdue',
+                    urgent: true,
+                  })),
+                  ...expiringMandates.slice(0, 1).map(() => ({
+                    type: 'Alert',
+                    title: 'Mandate expiring soon',
+                    sub: 'Review mandate details',
+                    time: 'Urgent',
+                    urgent: true,
+                  })),
+                  ...crmDashboard.pendingTasks.filter(t => !t.completed).slice(0, 2).map(t => ({
+                    type: 'Task',
+                    title: t.title,
+                    sub: t.due_date ? `Due: ${new Date(t.due_date).toLocaleDateString('en-ZA')}` : '',
+                    time: t.priority === 'high' ? 'Urgent' : 'EOD',
+                    urgent: t.priority === 'high',
+                  })),
+                ];
+                const urgentCount = priorities.filter(p => p.urgent).length;
+                const tagStyle: Record<string, string> = {
+                  Viewing: 'bg-blue-100 text-blue-700',
+                  'Follow-up': 'bg-amber-100 text-amber-700',
+                  Alert: 'bg-red-100 text-red-700',
+                  Task: 'bg-purple-100 text-purple-700',
+                };
+                return (
+                  <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Today&apos;s Priorities</h3>
+                      <span className="text-[10px] text-gray-500">{priorities.length} tasks{urgentCount > 0 ? ` — ${urgentCount} urgent` : ''}</span>
+                    </div>
+                    {priorities.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 gap-2">
+                        <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--bt-egreen)' }} />
+                        <p className="text-xs text-gray-500">All clear — no tasks today!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {priorities.map((p, idx) => (
+                          <div key={idx} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: p.urgent ? 'var(--bt-terracotta)' : 'var(--bt-forest)' }} />
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${tagStyle[p.type] ?? 'bg-gray-100 text-gray-600'}`}>{p.type}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate">{p.title}</div>
+                              {p.sub && <div className="text-[10px] text-gray-500 truncate">{p.sub}</div>}
+                            </div>
+                            <span className={`text-[10px] font-semibold shrink-0 ${p.urgent ? 'text-red-600' : 'text-gray-400'}`}>{p.time}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Document Compliance Alerts */}
+              {(() => {
+                type DocAlert = { level: 'urgent' | 'warn' | 'ok'; title: string; sub: string; action: string };
+                const alerts: DocAlert[] = [];
+                leads.filter(l => l.next_follow_up && new Date(l.next_follow_up) < new Date() && l.stage !== 'closed_won' && l.stage !== 'closed_lost').slice(0, 2).forEach(l => {
+                  const daysOver = Math.floor((Date.now() - new Date(l.next_follow_up!).getTime()) / (1000 * 60 * 60 * 24));
+                  alerts.push({ level: 'urgent', title: `Overdue follow-up — ${l.name}`, sub: `${daysOver}d overdue · ${l.stage?.replace(/_/g, ' ') ?? ''}`, action: 'Call Now' });
+                });
+                agentMandates.filter(m => {
+                  const days = Math.floor((new Date(m.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  return days >= 0 && days <= 30;
+                }).slice(0, 1).forEach(m => {
+                  const days = Math.floor((new Date(m.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  alerts.push({ level: days <= 7 ? 'urgent' : 'warn', title: `Mandate expiring`, sub: `Expires in ${days} day${days !== 1 ? 's' : ''} · ${m.mandate_type}`, action: 'Renew' });
+                });
+                const totalVerified = Object.values(dashboardMetrics.verificationSummary ?? {}).reduce((s, c) => s + (c as number), 0);
+                if (totalVerified > 0) alerts.push({ level: 'ok', title: `${totalVerified} listing${totalVerified !== 1 ? 's' : ''} verified`, sub: 'Documents reviewed · Ready to transfer', action: 'View' });
+                const staleCount = leads.filter(l => Math.floor((Date.now() - new Date(l.updated_at ?? l.created_at).getTime()) / (1000 * 60 * 60 * 24)) > 14 && l.stage !== 'closed_won' && l.stage !== 'closed_lost').length;
+                if (staleCount > 0 && alerts.length < 4) alerts.push({ level: 'warn', title: `${staleCount} stale lead${staleCount !== 1 ? 's' : ''} need attention`, sub: 'No activity in 14+ days', action: 'Review' });
+                const needAttention = alerts.filter(a => a.level !== 'ok').length;
+                const bgMap: Record<string, string> = { urgent: '#FEF2F2', warn: '#FFFBEB', ok: '#F0FDF4' };
+                const borderMap: Record<string, string> = { urgent: '#FECACA', warn: '#FDE68A', ok: '#BBF7D0' };
+                const iconBgMap: Record<string, string> = { urgent: '#FEE2E2', warn: '#FEF3C7', ok: '#D1FAE5' };
+                const iconColorMap: Record<string, string> = { urgent: '#DC2626', warn: '#D97706', ok: '#059669' };
+                const actionColorMap: Record<string, string> = { urgent: 'var(--bt-terracotta)', warn: 'var(--bt-amber)', ok: '#059669' };
+                return (
+                  <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Document Compliance</h3>
+                      {needAttention > 0 && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{needAttention} need attention</span>}
+                    </div>
+                    {alerts.length === 0 ? (
+                      <div className="flex items-center gap-2 py-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <p className="text-xs text-gray-500">All compliance checks passed.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {alerts.slice(0, 4).map((a, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: bgMap[a.level], border: `1px solid ${borderMap[a.level]}` }}>
+                            <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: iconBgMap[a.level] }}>
+                              {a.level === 'ok' ? <CheckCircle2 className="w-3 h-3" style={{ color: iconColorMap[a.level] }} /> : <AlertCircle className="w-3 h-3" style={{ color: iconColorMap[a.level] }} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold truncate" style={{ color: 'var(--bt-forest)' }}>{a.title}</div>
+                              <div className="text-[10px] text-gray-500 truncate">{a.sub}</div>
+                            </div>
+                            <span className="text-[10px] font-bold shrink-0" style={{ color: actionColorMap[a.level] }}>{a.action} →</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Performance Score Ring */}
+              {(() => {
+                const respRate = Math.min(dashboardMetrics.inquiryResponseRatePct ?? 0, 100);
+                const viewsTrend = Math.min(Math.max(dashboardMetrics.listingViewsTrendPct ?? 0, 0), 100);
+                const mandateConv = agentMandates.length > 0 ? Math.min(Math.round((activeListings.filter(l => l.status === 'active').length / agentMandates.length) * 100), 100) : 0;
+                const score = Math.round((respRate * 0.4) + (viewsTrend * 0.3) + (mandateConv * 0.3));
+                const r = 37;
+                const circ = 2 * Math.PI * r;
+                const filled = (score / 100) * circ;
+                const convRate = leads.length > 0 ? Math.round((leads.filter(l => l.stage === 'closed_won').length / leads.length) * 100) : 0;
+                const avgDays = activeListings.length > 0 ? Math.round(activeListings.reduce((s, l) => s + (l.daysOnMarket ?? 0), 0) / activeListings.length) : 0;
+                const closedWon = leads.filter(l => l.stage === 'closed_won').length;
+                const inProgress = leads.filter(l => l.stage === 'active_offer').length;
+                return (
+                  <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                    <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Performance Score</h3>
+                    <div className="flex items-center gap-4">
+                      <svg width="90" height="90" viewBox="0 0 90 90" className="shrink-0">
+                        <circle cx="45" cy="45" r={r} fill="none" stroke="rgba(26,60,40,0.1)" strokeWidth="8" />
+                        <circle cx="45" cy="45" r={r} fill="none" stroke="var(--bt-terracotta)" strokeWidth="8"
+                          strokeDasharray={`${filled.toFixed(1)} ${circ.toFixed(1)}`}
+                          strokeLinecap="round" transform="rotate(-90 45 45)" />
+                        <text x="45" y="42" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="18" fontWeight="700" fill="#1A3C28">{score}</text>
+                        <text x="45" y="56" textAnchor="middle" fontFamily="IBM Plex Mono, monospace" fontSize="9" fill="#6B8F7A">/ 100</text>
+                      </svg>
+                      <div className="flex-1 space-y-1.5">
+                        {[
+                          { label: 'Conversion Rate', value: `${convRate}%` },
+                          { label: 'Avg. Days on Mkt', value: avgDays > 0 ? `${avgDays}d` : '—' },
+                          { label: 'Response Rate', value: `${respRate}%` },
+                          { label: 'Deals Closed', value: `${closedWon} / ${closedWon + inProgress}` },
+                        ].map(s => (
+                          <div key={s.label} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
+                            <span className="text-[10px] text-gray-500">{s.label}</span>
+                            <span className="text-xs font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>{s.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* ── Row 3: Status + Verification merged pill card ────────────────────── */}
-            {(Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 || Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0) && (
-              <Card className="p-4 mb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <BarChart3 className="w-3.5 h-3.5 text-[#1A3C28]" />
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listings by Status</p>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
-                          const pillColours: Record<string, string> = {
-                            active: 'bg-green-100 text-green-700 border-green-200',
-                            draft: 'bg-gray-100 text-gray-600 border-gray-200',
-                            under_offer: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-                            sold: 'bg-blue-100 text-blue-700 border-blue-200',
-                            withdrawn: 'bg-red-100 text-red-600 border-red-200',
-                            back_to_market: 'bg-purple-100 text-purple-700 border-purple-200',
-                          };
-                          const cls = pillColours[status] ?? 'bg-gray-100 text-gray-600 border-gray-200';
-                          return (
-                            <span key={status} className={`inline-flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
-                              {count} <span className="capitalize">{status.replace(/_/g, ' ')}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1A3C28]" />
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Verification</p>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
-                          const pillColours: Record<string, string> = {
-                            verified: 'bg-green-100 text-green-700 border-green-200',
-                            partial: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-                            unverified: 'bg-red-100 text-red-600 border-red-200',
-                            pending: 'bg-blue-100 text-blue-700 border-blue-200',
-                          };
-                          const cls = pillColours[level] ?? 'bg-gray-100 text-gray-600 border-gray-200';
-                          return (
-                            <span key={level} className={`inline-flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
-                              {count} <span className="capitalize">{level}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+            {/* ── Row B: Active Listings + Commission Tracker ──────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              {/* Active Listings */}
+              <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Active Listings</h3>
+                  <button onClick={() => setSelectedTab('listings')} className="text-[10px] font-semibold" style={{ color: 'var(--bt-terracotta)' }}>View All →</button>
                 </div>
-              </Card>
-            )}
-
-            {/* ── Row 4: Commission Pipeline + Recent Activity side-by-side ─────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {commissionPipeline.length > 0 && (
-                <Card className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)' }}>Commission Pipeline</h3>
-                    <div className="text-right">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-wide">Total Est.</div>
-                      <div className="text-sm font-bold text-green-700">{formatMoney(String(commissionTotal), 'ZAR')}</div>
-                    </div>
+                {activeListings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 gap-2">
+                    <Home className="w-8 h-8 text-gray-300" />
+                    <p className="text-sm text-gray-400">No active listings yet.</p>
                   </div>
+                ) : (
                   <div className="space-y-2">
-                    {commissionPipeline.slice(0, 5).map((item) => (
-                      <div key={item.mandate_id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium truncate">{item.property_title}</p>
-                          <p className="text-[10px] text-gray-500 capitalize">{item.mandate_type?.replace('_', ' ')} · {item.listing_status}</p>
+                    {activeListings.slice(0, 4).map((l) => {
+                      const heat = l.views > 15 || l.inquiries > 3 ? 'hot' : l.views > 5 || l.inquiries > 0 ? 'warm' : 'cold';
+                      return (
+                        <div key={l.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100 flex items-center justify-center">
+                            {l.image && l.image !== DEFAULT_LISTING_IMAGE ? (
+                              <img src={l.image} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Home className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold truncate">{l.title}</div>
+                            <div className="text-[10px] text-gray-500 truncate">{l.address}{l.beds ? ` · ${l.beds}b/${l.baths}ba` : ''}</div>
+                            <div className="flex gap-2 mt-0.5">
+                              <span className="text-[10px] text-gray-400">{l.views} views</span>
+                              <span className="text-[10px] text-gray-400">{l.inquiries} leads</span>
+                              {l.offers > 0 && <span className="text-[10px] font-semibold" style={{ color: 'var(--bt-egreen)' }}>{l.offers} offers</span>}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>{l.price}</div>
+                            <div className={`text-[10px] font-semibold mt-1 ${heat === 'hot' ? 'text-red-600' : heat === 'warm' ? 'text-amber-600' : 'text-blue-500'}`}>
+                              {heat === 'hot' ? '🔥 High' : heat === 'warm' ? '⚡ Warm' : '❄ Slow'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-right shrink-0 ml-3">
-                          <p className="text-xs font-semibold text-green-700">{formatMoney(String(item.estimated_commission ?? 0), 'ZAR')}</p>
-                          <p className="text-[10px] text-gray-400">{item.commission_rate}%</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                </Card>
-              )}
+                )}
+              </div>
 
-              <Card className={commissionPipeline.length === 0 ? "p-4 lg:col-span-2" : "p-4"}>
-                <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)' }}>Recent Activity</h3>
-                <div className="space-y-2">
-                  {activityFeed.length === 0 ? (
-                    <p className="text-sm text-gray-500">No recent activity. Add your first listing to get started.</p>
-                  ) : (
-                    activityFeed.slice(0, 5).map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 py-1.5 border-b border-gray-100 last:border-0">
-                        <div className="w-7 h-7 bg-[#E8F0EC] rounded-full flex items-center justify-center shrink-0">
-                          <Activity className="w-3.5 h-3.5 text-[#1A3C28]" />
+              {/* Commission Tracker */}
+              {(() => {
+                const GOAL_KEY = 'commissionGoalTarget';
+                const target = typeof window !== 'undefined' ? Number(localStorage.getItem(GOAL_KEY) || '400000') : 400000;
+                const monthlyTarget = Math.round(target / 12) || 1;
+                const monthPct = Math.min(Math.round((commissionTotal / monthlyTarget) * 100), 100);
+                const ytdPct = Math.min(Math.round((commissionTotal / (target || 1)) * 100), 100);
+                const sparkHeights = [55, 62, 48, 70, 65, 82, 100];
+                const pendingItems = commissionPipeline.filter(c => (c.estimated_commission ?? 0) > 0).slice(0, 2);
+                return (
+                  <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Commission Tracker</h3>
+                      <span className="text-[10px] text-gray-400">{new Date().toLocaleString('en-ZA', { month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-semibold text-gray-700">Monthly Target</span>
+                        <span className="text-xs font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-terracotta)' }}>{formatMoney(String(commissionTotal), 'ZAR')} / {formatMoney(String(monthlyTarget), 'ZAR')}</span>
+                      </div>
+                      <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,60,40,0.06)' }}>
+                        <div className="h-full rounded-full" style={{ width: `${monthPct}%`, background: 'linear-gradient(90deg, var(--bt-terracotta), #E8734A)' }} />
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{monthPct}% of target — {formatMoney(String(Math.max(0, monthlyTarget - commissionTotal)), 'ZAR')} remaining</div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-semibold text-gray-700">YTD Earned</span>
+                        <span className="text-xs font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>{formatMoney(String(commissionTotal), 'ZAR')} / {formatMoney(String(target), 'ZAR')}</span>
+                      </div>
+                      <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(26,60,40,0.06)' }}>
+                        <div className="h-full rounded-full" style={{ width: `${ytdPct}%`, background: 'linear-gradient(90deg, var(--bt-forest), #2D5A40)' }} />
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">Monthly Trend</div>
+                      <div className="flex items-end gap-1 h-8">
+                        {sparkHeights.map((h, i) => (
+                          <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: i === sparkHeights.length - 1 ? 'var(--bt-terracotta)' : 'rgba(196,86,42,0.2)' }} />
+                        ))}
+                      </div>
+                    </div>
+                    {pendingItems.length > 0 && (
+                      <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                        <div className="px-3 py-1.5 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(26,60,40,0.08)', backgroundColor: '#E8F0EC' }}>
+                          <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--bt-forest)' }}>Pending Commissions</span>
+                          <span className="text-[10px] text-gray-400">{pendingItems.length} deals</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-xs truncate">{item.property_title ?? item.entity_type}</div>
-                          <div className="text-[10px] text-gray-500">
-                            {item.action.replace(/_/g, ' ')} · {new Date(item.created_at).toLocaleDateString('en-ZA', { dateStyle: 'medium' })}
+                        {pendingItems.map((c, idx) => (
+                          <div key={c.mandate_id} className="px-3 py-2 flex items-center justify-between" style={{ borderTop: idx > 0 ? '1px solid rgba(26,60,40,0.06)' : undefined }}>
+                            <div>
+                              <div className="text-xs font-semibold">{c.property_title}</div>
+                              <div className="text-[10px] text-gray-400">{c.listing_status} · {c.commission_rate}% rate</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-terracotta)' }}>{formatMoney(String(c.estimated_commission ?? 0), 'ZAR')}</div>
+                              <div className="text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5" style={{ background: '#FEF3C7', color: '#B45309' }}>PENDING</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ── Row C: Lead Funnel + Market Heatmap + Hot Leads + Recent Activity ─── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Lead Conversion Funnel */}
+              <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Lead Conversion Funnel</h3>
+                  <span className="text-[10px] text-gray-400">This month</span>
+                </div>
+                {(() => {
+                  const byStage = crmDashboard.byStage ?? {};
+                  const funnelStages = [
+                    { label: 'New Leads', key: 'new_lead', color: 'var(--bt-forest)' },
+                    { label: 'Contacted', key: 'contacted', color: '#2D5A40' },
+                    { label: 'Qualified', key: 'qualified', color: '#4A7C5A' },
+                    { label: 'Active Offer', key: 'active_offer', color: '#6B9E7A' },
+                    { label: 'Closed', key: 'closed_won', color: 'var(--bt-terracotta)' },
+                  ];
+                  const counts = funnelStages.map(s => ({ ...s, count: Number(byStage[s.key] ?? 0) }));
+                  const maxCount = Math.max(...counts.map(s => s.count), 1);
+                  const closed = counts.find(s => s.key === 'closed_won')?.count ?? 0;
+                  const totalLeadsBase = Math.max(counts.find(s => s.key === 'new_lead')?.count ?? 0, leads.length, 1);
+                  const convRate = ((closed / totalLeadsBase) * 100).toFixed(1);
+                  const avgDealVal = crmDashboard.pipelineValue > 0 && leads.length > 0 ? Math.round(crmDashboard.pipelineValue / leads.length) : 0;
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        {counts.map(s => (
+                          <div key={s.key} className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-gray-600 w-20 shrink-0">{s.label}</span>
+                            <div className="flex-1 h-5 rounded overflow-hidden" style={{ backgroundColor: 'rgba(26,60,40,0.06)' }}>
+                              <div className="h-full rounded flex items-center px-2" style={{ width: `${Math.max(Math.round((s.count / maxCount) * 100), s.count > 0 ? 10 : 0)}%`, backgroundColor: s.color }}>
+                                {s.count > 0 && <span className="text-[10px] font-bold text-white/80">{s.count}</span>}
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-500 w-5 text-right">{s.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Conv. Rate</div>
+                          <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-terracotta)' }}>{convRate}%</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Avg. Value</div>
+                          <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>
+                            {avgDealVal > 0 ? formatMoney(String(avgDealVal), 'ZAR') : '—'}
                           </div>
                         </div>
                       </div>
-                    ))
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Market Heatmap — visual SVG with per-city hotspots */}
+              <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Market Heatmap</h3>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded" style={{ background: '#FEE2E2', color: '#DC2626' }}>● High Activity</span>
+                </div>
+                {(() => {
+                  const cityMap = activeListings.reduce<Record<string, { views: number; count: number }>>((acc, l) => {
+                    const city = l.address?.split(',').slice(-2, -1)[0]?.trim() ?? 'Unknown';
+                    if (!acc[city]) acc[city] = { views: 0, count: 0 };
+                    acc[city].views += l.views ?? 0;
+                    acc[city].count += 1;
+                    return acc;
+                  }, {});
+                  const cityData = Object.entries(cityMap).sort((a, b) => b[1].views - a[1].views).slice(0, 3);
+                  const positions: { top: string; left: string }[] = [{ top: '47%', left: '38%' }, { top: '62%', left: '74%' }, { top: '28%', left: '62%' }];
+                  const dotColors = ['#DC2626', '#2563EB', '#C4562A'];
+                  return (
+                    <>
+                      <div className="relative rounded-lg overflow-hidden" style={{ height: 170, backgroundColor: '#E8F0EA' }}>
+                        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full opacity-20">
+                          <rect width="400" height="200" fill="#C5D9C8" />
+                          <path d="M0,100 Q100,60 200,90 Q300,120 400,80 L400,200 L0,200z" fill="#B0C9B4" opacity="0.6" />
+                          <ellipse cx="160" cy="95" rx="60" ry="40" fill="#96B59A" opacity="0.4" />
+                          <ellipse cx="300" cy="110" rx="50" ry="35" fill="#96B59A" opacity="0.3" />
+                          <line x1="0" y1="100" x2="400" y2="100" stroke="#fff" strokeWidth="1.5" opacity="0.8" />
+                          <line x1="200" y1="0" x2="200" y2="200" stroke="#fff" strokeWidth="1.5" opacity="0.8" />
+                          <line x1="100" y1="0" x2="100" y2="200" stroke="#fff" strokeWidth="1" opacity="0.5" />
+                          <line x1="300" y1="0" x2="300" y2="200" stroke="#fff" strokeWidth="1" opacity="0.5" />
+                        </svg>
+                        {activeListings.length === 0 ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <p className="text-xs text-gray-400">Add listings to see market data.</p>
+                          </div>
+                        ) : cityData.map(([city, data], idx) => (
+                          <div key={city} className="absolute" style={{ top: positions[idx]?.top ?? '50%', left: positions[idx]?.left ?? '50%', transform: 'translate(-50%,-50%)' }}>
+                            <div className="relative flex items-center justify-center" style={{ width: 14, height: 14 }}>
+                              <div className="absolute rounded-full border-2 animate-ping" style={{ width: 28, height: 28, borderColor: dotColors[idx], opacity: 0.35, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+                              <div className="rounded-full absolute" style={{ width: 10, height: 10, backgroundColor: dotColors[idx] }} />
+                            </div>
+                            <div className="absolute whitespace-nowrap bg-white rounded-full px-1.5 py-0.5 shadow-sm text-[9px] font-bold" style={{ top: 18, left: '50%', transform: 'translateX(-50%)', color: 'var(--bt-forest)' }}>
+                              {city} <span style={{ color: dotColors[idx] }}>{data.views}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        {cityData.map(([city], i) => (
+                          <div key={city} className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: dotColors[i] }} />
+                            <span className="text-[10px] text-gray-400">{city}</span>
+                          </div>
+                        ))}
+                        <span className="ml-auto text-[10px] text-gray-400">Views last 30d</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Hot Leads + Recent Activity stacked */}
+              <div className="flex flex-col gap-4">
+                {/* Hot Leads */}
+                <div className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Hot Leads</h3>
+                    <button onClick={() => setSelectedTab('crm')} className="text-[10px] font-semibold" style={{ color: 'var(--bt-terracotta)' }}>All Leads →</button>
+                  </div>
+                  {leads.filter(l => l.temperature === 'hot' || l.temperature === 'warm').length === 0 ? (
+                    <p className="text-xs text-gray-400 py-2">No hot leads yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {leads.filter(l => l.temperature === 'hot' || l.temperature === 'warm').slice(0, 3).map((lead) => {
+                        const initials = lead.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                        const avatarColors = ['#1A3C28', '#C4562A', '#2D5A40', '#B89040'];
+                        const avatarBg = avatarColors[lead.name.charCodeAt(0) % avatarColors.length];
+                        const tempBg = lead.temperature === 'hot' ? '#FEF2F2' : '#FFFBEB';
+                        const tempColor = lead.temperature === 'hot' ? '#DC2626' : '#D97706';
+                        return (
+                          <div key={lead.id} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ backgroundColor: avatarBg }}>
+                              {initials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold truncate">{lead.name}</div>
+                              <div className="text-[10px] text-gray-500 truncate">
+                                {lead.type}{lead.budget_min ? ` · R${Number(lead.budget_min) >= 1000000 ? (Number(lead.budget_min) / 1000000).toFixed(1) + 'M' : Math.round(Number(lead.budget_min) / 1000) + 'K'}` : ''}
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: tempBg, color: tempColor }}>
+                              {lead.temperature === 'hot' ? '🔥 Hot' : '🌡 Warm'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              </Card>
-            </div>
-          </>
-        )}
 
-        {/* Analytics Tab */}
-        {selectedTab === "analytics" && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Views & Inquiries Over Time */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Views & Inquiries Trend</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={viewsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="views" stroke="#1A3C28" strokeWidth={2} name="Page Views" />
-                    <Line type="monotone" dataKey="inquiries" stroke="#00E87A" strokeWidth={2} name="Inquiries" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Card>
-
-              {/* Listing Performance */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Top Performing Listings</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={listingPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="views" fill="#1A3C28" name="Views" />
-                    <Bar dataKey="inquiries" fill="#00E87A" name="Inquiries" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
-
-            {/* Conversion Metrics */}
-            <Card className="p-6 mb-6">
-              <h3 className="font-semibold text-lg mb-4" style={{ fontFamily: 'var(--font-fraunces)' }}>Conversion Metrics</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center p-4 bg-[#E8F0EC] rounded-lg">
-                  <div className="text-3xl font-bold text-[#1A3C28] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.listingViewsTrendPct >= 0 ? '+' : ''}{dashboardMetrics.listingViewsTrendPct}%</div>
-                  <div className="text-sm text-gray-600">Views Trend (7d)</div>
-                </div>
-                <div className="text-center p-4 bg-[#D4F7E5] rounded-lg">
-                  <div className="text-3xl font-bold text-[#1A3C28] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.inquiryResponseRatePct}%</div>
-                  <div className="text-sm text-gray-600">Inquiry Response Rate</div>
-                </div>
-                <div className="text-center p-4 bg-[#FEF3C7] rounded-lg">
-                  <div className="text-3xl font-bold text-[#B89040] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.byStatus['under_offer'] ?? 0}</div>
-                  <div className="text-sm text-gray-600">Under Offer</div>
-                </div>
-                <div className="text-center p-4 bg-[#FAE8DF] rounded-lg">
-                  <div className="text-3xl font-bold text-[#C4562A] mb-1" style={{ fontFamily: 'var(--font-fraunces)' }}>{dashboardMetrics.byStatus['sold'] ?? 0}</div>
-                  <div className="text-sm text-gray-600">Sold</div>
+                {/* Recent Activity */}
+                <div className="rounded-xl bg-white p-4 flex-1" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <h3 className="font-semibold text-sm mb-3" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>Recent Activity</h3>
+                  <div className="space-y-2">
+                    {activityFeed.length === 0 ? (
+                      <p className="text-xs text-gray-500">No recent activity yet.</p>
+                    ) : (
+                      activityFeed.slice(0, 3).map((item) => (
+                        <div key={item.id} className="flex items-center gap-2 py-1.5 border-b border-gray-100 last:border-0">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: '#E8F0EC', color: 'var(--bt-forest)' }}>
+                            <Activity className="w-3 h-3" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate">{item.property_title ?? item.entity_type}</div>
+                            <div className="text-[10px] text-gray-500">{item.action.replace(/_/g, ' ')} · {new Date(item.created_at).toLocaleDateString('en-ZA', { dateStyle: 'short' })}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
-            </Card>
-
-            {/* Listing Status Breakdown */}
-            {Object.keys(dashboardMetrics.byStatus ?? {}).length > 0 && (
-              <Card className="p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-5 h-5 text-[#1A3C28]" />
-                  <h3 className="font-semibold text-lg" style={{ fontFamily: 'var(--font-fraunces)' }}>Portfolio by Status</h3>
-                </div>
-                <div className="space-y-3">
-                  {Object.entries(dashboardMetrics.byStatus ?? {}).map(([status, count]) => {
-                    const total = activeListings.length || 1;
-                    const pct = Math.round((count / total) * 100);
-                    const barColours: Record<string, string> = {
-                      active: 'bg-green-500',
-                      draft: 'bg-gray-400',
-                      under_offer: 'bg-yellow-500',
-                      sold: 'bg-blue-500',
-                      withdrawn: 'bg-red-400',
-                      back_to_market: 'bg-purple-500',
-                    };
-                    return (
-                      <div key={status} className="flex items-center gap-3">
-                        <div className="w-24 text-xs text-gray-600 capitalize shrink-0">{status.replace(/_/g, ' ')}</div>
-                        <div className="flex-1 bg-gray-100 rounded-full h-2.5">
-                          <div
-                            className={`h-2.5 rounded-full ${barColours[status] ?? 'bg-gray-400'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <div className="text-xs font-semibold w-10 text-right">{count}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Verification Breakdown */}
-            {Object.keys(dashboardMetrics.verificationSummary ?? {}).length > 0 && (
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-[#1A3C28]" />
-                  <h3 className="font-semibold text-lg" style={{ fontFamily: 'var(--font-fraunces)' }}>Verification Breakdown</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {Object.entries(dashboardMetrics.verificationSummary ?? {}).map(([level, count]) => {
-                    const colours: Record<string, string> = {
-                      verified: 'bg-green-50 border-green-200 text-green-700',
-                      partial: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-                      unverified: 'bg-red-50 border-red-200 text-red-600',
-                      pending: 'bg-blue-50 border-blue-200 text-blue-700',
-                    };
-                    return (
-                      <div key={level} className={`border rounded-xl p-4 text-center ${colours[level] ?? 'bg-gray-50 border-gray-200 text-gray-600'}`}>
-                        <div className="text-2xl font-bold">{count}</div>
-                        <div className="text-xs mt-1 capitalize">{level}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
+            </div>
           </>
         )}
 
         {/* Listings Tab */}
-        {selectedTab === "listings" && (
-          <div className="space-y-6">
-            {isLoadingListings && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                Loading listings from database...
-              </div>
-            )}
+        {selectedTab === "listings" && (() => {
+          // ── Derived data ────────────────────────────────────────────────────────
+          const totalOffers = activeListings.reduce((s, l) => s + l.offers, 0);
 
-            {!isLoadingListings && listingError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {listingError}
-              </div>
-            )}
+          const hotListings = activeListings.filter(l => listingHeat(l) === 'hot');
+          const staleListings = activeListings.filter(l => listingCategory(l) === 'stale');
+          const expiringMandates = agentMandates.filter(m => {
+            if (m.status !== 'active') return false;
+            const daysLeft = Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000);
+            return daysLeft <= 14 && daysLeft >= 0;
+          });
 
-            {duplicateError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
-                <span>Duplicate failed: {duplicateError}</span>
-                <button onClick={() => setDuplicateError("")} className="ml-4 text-red-500 hover:text-red-700 font-bold">✕</button>
-              </div>
-            )}
+          const filteredListings = activeListings.filter(l => {
+            const matchesSearch = !listingsSearch ||
+              l.title.toLowerCase().includes(listingsSearch.toLowerCase()) ||
+              l.address.toLowerCase().includes(listingsSearch.toLowerCase());
+            const matchesType = listingTypeFilter === 'all' || l.listingType === listingTypeFilter;
+            const cat = listingCategory(l);
+            const heat = listingHeat(l);
+            const matchesFilter =
+              listingsFilter === 'all' ||
+              (listingsFilter === 'hot' && heat === 'hot') ||
+              (listingsFilter === 'active' && cat === 'active') ||
+              (listingsFilter === 'under_offer' && cat === 'under_offer') ||
+              (listingsFilter === 'stale' && cat === 'stale') ||
+              (listingsFilter === 'draft' && cat === 'draft') ||
+              (listingsFilter === 'sold' && cat === 'sold');
+            return matchesSearch && matchesType && matchesFilter;
+          });
 
-            <Card className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Property</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Price</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Details</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Performance</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Health</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {!isLoadingListings && activeListings.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                        No listings found for this agent in the database.
-                      </td>
-                    </tr>
+          const listingsWithOffers = activeListings.filter(l => l.offers > 0);
+
+          const PORTALS: { key: string; name: string; match: (n: string) => boolean }[] = [
+            { key: 'p24',        name: 'P24',       match: n => n.toLowerCase().includes('property24') || n.toLowerCase().includes('p24') },
+            { key: 'pp',         name: 'PP',        match: n => n.toLowerCase().includes('private') || n.toLowerCase().includes('pp') },
+            { key: 'gumtree',    name: 'GTR',       match: n => n.toLowerCase().includes('gumtree') },
+            { key: 'lightstone', name: 'LST',       match: n => n.toLowerCase().includes('lightstone') },
+          ];
+
+          return (
+            <div>
+              {/* ── Banners ──────────────────────────────────────────────────── */}
+              {isLoadingListings && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 mb-4">
+                  Loading listings from database...
+                </div>
+              )}
+              {!isLoadingListings && listingError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-4">
+                  {listingError}
+                </div>
+              )}
+              {duplicateError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between mb-4">
+                  <span>Duplicate failed: {duplicateError}</span>
+                  <button onClick={() => setDuplicateError("")} className="ml-4 text-red-500 hover:text-red-700 font-bold">✕</button>
+                </div>
+              )}
+
+              {/* ── Smart Alerts Bar ─────────────────────────────────────────── */}
+              {(hotListings.length > 0 || staleListings.length > 0 || expiringMandates.length > 0) && (
+                <div className="flex items-center gap-2.5 rounded-xl bg-white px-3.5 py-2.5 overflow-x-auto mb-4" style={{ border: '1px solid rgba(26,60,40,0.12)', flexWrap: 'wrap' }}>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider shrink-0 pr-2.5 mr-1 border-r" style={{ color: '#6B8F7A', borderColor: 'rgba(26,60,40,0.12)', fontFamily: 'var(--font-ibm-plex-mono)' }}>
+                    <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Smart Alerts
+                  </span>
+                  {hotListings.length > 0 && (
+                    <button
+                      onClick={() => setListingsFilter('hot')}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold shrink-0 transition-opacity hover:opacity-80"
+                      style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
+                      🔥 {hotListings.length} hot listing{hotListings.length > 1 ? 's' : ''} — high demand
+                    </button>
                   )}
-                  {activeListings.map((listing) => (
-                    <tr key={listing.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="relative shrink-0 w-16 h-12">
-                            <img 
-                              src={listing.image} 
-                              alt={listing.title}
-                              className="w-full h-full object-cover rounded"
-                            />
-                            {listing.listingType && (
-                              <span className={`absolute bottom-0 left-0 right-0 text-center text-[9px] font-semibold px-1 py-0.5 rounded-b leading-tight ${
-                                listing.listingType === 'for_sale' ? 'bg-[#1A3C28] text-white' :
-                                listing.listingType === 'to_rent' ? 'bg-amber-600 text-white' :
-                                'bg-[#C4562A] text-white'
-                              }`}>
-                                {listing.listingType === 'for_sale' ? 'For Sale' :
-                                 listing.listingType === 'to_rent' ? 'To Rent' : 'Development'}
+                  {staleListings.length > 0 && (
+                    <button
+                      onClick={() => setListingsFilter('stale')}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold shrink-0 transition-opacity hover:opacity-80"
+                      style={{ background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A' }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600 inline-block" />
+                      ⚠ {staleListings.length} stale listing{staleListings.length > 1 ? 's' : ''} — consider a price drop
+                    </button>
+                  )}
+                  {expiringMandates.map(m => {
+                    const daysLeft = Math.ceil((new Date(m.end_date).getTime() - Date.now()) / 86400000);
+                    const listing = activeListings.find(l => l.id === m.property_id);
+                    return (
+                      <span
+                        key={m.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold shrink-0"
+                        style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FDBA74' }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-600 inline-block" />
+                        📅 Mandate expiring: {listing?.title ?? 'Listing'} in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── Toolbar: Search + Type Filters + View Toggle ─────────────── */}
+              <div className="flex items-center gap-2.5 flex-wrap mb-4">
+                {/* Search */}
+                <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2" style={{ border: '1px solid rgba(26,60,40,0.12)', color: '#6B8F7A', flex: '1 1 180px', maxWidth: 280 }}>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ opacity: 0.5, flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input
+                    className="outline-none bg-transparent flex-1 text-xs"
+                    placeholder="Search listings by title or address…"
+                    value={listingsSearch}
+                    onChange={e => setListingsSearch(e.target.value)}
+                    style={{ color: '#1A3C28', fontFamily: 'var(--font-sans)' }}
+                  />
+                </div>
+
+                {/* Type filter buttons */}
+                {[
+                  { key: 'for_sale',    label: 'For Sale',    activeBg: '#1A3C28', activeColor: '#F2E8D5' },
+                  { key: 'to_rent',     label: 'To Rent',     activeBg: '#B45309', activeColor: '#fff' },
+                  { key: 'development', label: 'Dev',         activeBg: '#7C3AED', activeColor: '#fff' },
+                ].map(t => (
+                  <button
+                    key={t.key}
+                    onClick={() => setListingTypeFilter(listingTypeFilter === t.key ? 'all' : t.key)}
+                    className="text-[11px] font-bold px-3 py-2 rounded-lg uppercase transition-opacity"
+                    style={{
+                      fontFamily: 'var(--font-ibm-plex-mono)',
+                      letterSpacing: '0.05em',
+                      background: listingTypeFilter === t.key ? t.activeBg : 'rgba(26,60,40,0.07)',
+                      color: listingTypeFilter === t.key ? t.activeColor : '#6B8F7A',
+                      border: 'none',
+                      opacity: listingTypeFilter !== 'all' && listingTypeFilter !== t.key ? 0.5 : 1,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+
+                {/* View toggle */}
+                <div className="flex ml-auto rounded-lg overflow-hidden bg-white" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <button
+                    onClick={() => setListingsView('cards')}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-all"
+                    style={{ background: listingsView === 'cards' ? '#1A3C28' : 'transparent', color: listingsView === 'cards' ? '#F2E8D5' : '#6B8F7A', border: 'none' }}
+                  >
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Cards
+                  </button>
+                  <button
+                    onClick={() => setListingsView('table')}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-all"
+                    style={{ background: listingsView === 'table' ? '#1A3C28' : 'transparent', color: listingsView === 'table' ? '#F2E8D5' : '#6B8F7A', border: 'none' }}
+                  >
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    Table
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Listing Cards Grid ────────────────────────────────────────── */}
+              {listingsView === 'cards' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-7">
+                  {!isLoadingListings && filteredListings.length === 0 && (
+                    <div className="col-span-2 rounded-xl bg-white py-12 text-center text-xs" style={{ border: '1px solid rgba(26,60,40,0.12)', color: '#6B8F7A', fontFamily: 'var(--font-ibm-plex-mono)' }}>
+                      No listings match the current filters.
+                    </div>
+                  )}
+                  {filteredListings.map(listing => {
+                    const heat = listingHeat(listing);
+                    const cat = listingCategory(listing);
+                    const score = healthScore(listing);
+                    // ring circumference for r=14: 2π×14 ≈ 87.96
+                    const ringColor = score >= 70 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444';
+                    const isStale = cat === 'stale';
+                    const mandate = agentMandates.find(m => m.property_id === listing.id && m.status === 'active');
+                    const mandateDaysLeft = mandate ? Math.ceil((new Date(mandate.end_date).getTime() - Date.now()) / 86400000) : null;
+                    const mandateTotalDays = mandate ? Math.max(1, Math.ceil((new Date(mandate.end_date).getTime() - new Date(mandate.start_date).getTime()) / 86400000)) : null;
+                    const mandatePct = mandateDaysLeft !== null && mandateTotalDays !== null ? Math.max(0, Math.min(100, (mandateDaysLeft / mandateTotalDays) * 100)) : null;
+                    const mandateBarColor = mandateDaysLeft !== null && mandateDaysLeft <= 7 ? '#DC2626' : mandateDaysLeft !== null && mandateDaysLeft <= 21 ? '#F59E0B' : '#22C55E';
+                    const syndicationList = listingSyndications[listing.id] ?? [];
+                    const tourCount = agentViewings.filter(v => v.property_id === listing.id).length;
+                    const heatBorderColor = heat === 'hot' ? 'rgba(220,38,38,0.28)' : heat === 'warm' ? 'rgba(217,119,6,0.28)' : 'rgba(26,60,40,0.12)';
+                    const typeBg = listing.listingType === 'for_sale' ? '#1A3C28' : listing.listingType === 'to_rent' ? '#B45309' : '#7C3AED';
+                    const typeLabel = listing.listingType === 'for_sale' ? 'For Sale' : listing.listingType === 'to_rent' ? 'To Rent' : listing.listingType === 'development' ? 'Dev' : '';
+                    const heatBadge = heat === 'hot'
+                      ? { bg: '#FEE2E2', color: '#DC2626', label: '🔥 High' }
+                      : heat === 'warm'
+                      ? { bg: '#FEF3C7', color: '#D97706', label: '⚡ Warm' }
+                      : { bg: '#DBEAFE', color: '#2563EB', label: '❄ Slow' };
+
+                    return (
+                      <div
+                        key={listing.id}
+                        className="rounded-xl overflow-hidden bg-white transition-all hover:shadow-lg hover:-translate-y-px"
+                        style={{ border: `1px solid ${heatBorderColor}` }}
+                      >
+                        {/* ── Image Area ── */}
+                        <div style={{ position: 'relative', width: '100%', height: 140, overflow: 'hidden', background: 'linear-gradient(135deg, #1A3C28 0%, #2D5A3D 100%)' }}>
+                          <img
+                            src={listing.image}
+                            alt={listing.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.42) 100%)' }} />
+                          {/* Type badge — top-left */}
+                          {typeLabel && (
+                            <span style={{ position: 'absolute', top: 10, left: 10, fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: 5, background: typeBg, color: '#F2E8D5' }}>
+                              {typeLabel}
+                            </span>
+                          )}
+                          {/* Heat badge — top-right */}
+                          <span style={{ position: 'absolute', top: 10, right: 10, fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: heatBadge.bg, color: heatBadge.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {heatBadge.label}
+                          </span>
+                          {/* Health ring — bottom-right (r=14, circumference≈87.96) */}
+                          <div style={{ position: 'absolute', bottom: 8, right: 8 }}>
+                            <svg width="38" height="38" viewBox="0 0 38 38">
+                              <circle cx="19" cy="19" r="14" fill="white" fillOpacity="0.92" stroke="rgba(26,60,40,0.12)" strokeWidth="4.5" />
+                              <circle cx="19" cy="19" r="14" fill="none" stroke={ringColor} strokeWidth="4.5"
+                                strokeDasharray={`${Math.round((score / 100) * 87.96)} 87.96`} strokeDashoffset="22"
+                                strokeLinecap="round" transform="rotate(-90 19 19)" />
+                              <text x="19" y="23" textAnchor="middle" fontFamily="var(--font-fraunces),serif" fontSize="9" fontWeight="700" fill="#1A3C28">{score}</text>
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* ── Card Body ── */}
+                        <div style={{ padding: '14px 16px 8px' }}>
+                          <div className="truncate" style={{ fontFamily: 'var(--font-fraunces)', fontSize: 15, fontWeight: 700, color: '#1A3C28', lineHeight: 1.25, marginBottom: 3 }}>{listing.title}</div>
+                          <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: '#6B8F7A', marginBottom: 10 }}>{listing.beds}b · {listing.baths}ba · {listing.sqm}m²</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                            <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: '#1A3C28', lineHeight: 1 }}>{listing.price}</span>
+                            <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: isStale ? '#DC2626' : '#059669' }}>⏱ {listing.daysOnMarket}d{isStale ? ' ⚠' : ''}</span>
+                          </div>
+                        </div>
+
+                        {/* ── Metrics Strip ── */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid rgba(26,60,40,0.08)', borderBottom: '1px solid rgba(26,60,40,0.08)', background: 'rgba(26,60,40,0.02)' }}>
+                          {[
+                            { val: listing.views,     lbl: 'Views',     highlight: false },
+                            { val: listing.inquiries,  lbl: 'Inquiries', highlight: false },
+                            { val: listing.offers,    lbl: 'Offers',    highlight: listing.offers > 0 },
+                            { val: tourCount,         lbl: 'Tours',     highlight: false },
+                          ].map((m, mi) => (
+                            <div key={m.lbl} style={{ padding: '8px 0', textAlign: 'center', borderRight: mi < 3 ? '1px solid rgba(26,60,40,0.08)' : 'none' }}>
+                              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 15, fontWeight: 700, color: m.highlight ? '#C4562A' : '#1A3C28', lineHeight: 1 }}>{m.val}</div>
+                              <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B8F7A', marginTop: 2 }}>{m.lbl}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* ── AI Insight / Stale Nudge ── */}
+                        {isStale && (
+                          <div style={{ margin: '10px 16px 0', padding: '8px 10px', borderRadius: 7, background: 'linear-gradient(135deg, rgba(0,232,122,0.06), rgba(26,60,40,0.04))', border: '1px solid rgba(0,232,122,0.2)', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: '#1A3C28' }}>
+                            ✦ {listing.daysOnMarket} days on market — consider a price reduction
+                          </div>
+                        )}
+
+                        {/* ── Portal Row + Mandate Bar ── */}
+                        <div style={{ padding: '10px 16px' }}>
+                          {syndicationList.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: mandate ? 10 : 4 }}>
+                              <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#6B8F7A' }}>Portals:</span>
+                              {syndicationList.slice(0, 6).map(r => {
+                                const dotStyle = r.sync_status === 'synced'
+                                  ? { bg: '#DCFCE7', color: '#15803D', border: '#BBF7D0' }
+                                  : r.sync_status === 'pending'
+                                  ? { bg: '#FEF9C3', color: '#854D0E', border: '#FEF08A' }
+                                  : r.sync_status === 'failed'
+                                  ? { bg: '#FEE2E2', color: '#DC2626', border: '#FECACA' }
+                                  : { bg: '#F1F5F9', color: '#94A3B8', border: '#E2E8F0' };
+                                const abbr = (r.portal_name.match(/[A-Z]/g) ?? []).join('').slice(0, 3) || r.portal_name.slice(0, 3).toUpperCase();
+                                return (
+                                  <div
+                                    key={r.id}
+                                    title={`${r.portal_name} – ${r.sync_status}`}
+                                    style={{ width: 22, height: 22, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 7, fontWeight: 700, background: dotStyle.bg, color: dotStyle.color, border: `1px solid ${dotStyle.border}` }}
+                                  >
+                                    {abbr}
+                                  </div>
+                                );
+                              })}
+                              <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, color: '#6B8F7A', marginLeft: 4 }}>
+                                {syndicationList.filter(r => r.sync_status === 'synced').length} live
+                                {syndicationList.filter(r => r.sync_status !== 'synced').length > 0
+                                  ? ` · ${syndicationList.filter(r => r.sync_status !== 'synced').length} pending`
+                                  : ' ✓'}
                               </span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-semibold text-sm truncate">{listing.title}</div>
-                            <div className="text-xs text-gray-400 truncate mt-0.5">{listing.address}</div>
-                            <div className="text-xs text-gray-400">{listing.daysOnMarket} days on market</div>
-                          </div>
+                            </div>
+                          )}
+                          {mandate && mandateDaysLeft !== null && mandatePct !== null && (
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, color: '#6B8F7A', marginBottom: 4 }}>
+                                <span>Mandate expires</span>
+                                <span style={{ color: mandateBarColor, fontWeight: 600 }}>
+                                  {mandateDaysLeft > 0 ? `${mandateDaysLeft} days remaining` : 'Expired'}
+                                  {mandateDaysLeft <= 7 && mandateDaysLeft > 0 ? ' ⚠' : ''}
+                                </span>
+                              </div>
+                              <div style={{ height: 4, background: 'rgba(26,60,40,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${mandatePct}%`, background: mandateBarColor, borderRadius: 2 }} />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-[#1A3C28]">{listing.price}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600">
-                          {listing.beds} bed • {listing.baths} bath • {listing.sqm} m²
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Eye className="w-3 h-3 text-gray-400" />
-                            <span>{listing.views} views</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MessageSquare className="w-3 h-3 text-gray-400" />
-                            <span>{listing.inquiries} inquiries</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-3 h-3 text-gray-400" />
-                            <span>{listing.offers} offers</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <HealthBadge score={healthScore(listing)} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge className="bg-green-100 text-green-700">{listing.status}</Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link to={`/app/property/${listing.id}`}>View</Link>
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => { const raw = rawListings.find((r) => r.id === listing.id); if (raw) setEditingListing(raw); }}>
-                            <PenLine className="w-3 h-3 mr-1" />
+
+                        {/* ── Card Actions ── */}
+                        <div style={{ display: 'flex', gap: 6, padding: '6px 16px 12px', borderTop: '1px solid rgba(26,60,40,0.07)' }}>
+                          <Link
+                            to={`/app/property/${listing.id}`}
+                            style={{ flex: 1, display: 'block', textAlign: 'center', padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, background: '#1A3C28', color: '#F2E8D5', border: '1px solid #1A3C28' }}
+                          >
+                            View
+                          </Link>
+                          <button
+                            onClick={() => { const raw = rawListings.find(r => r.id === listing.id); if (raw) setEditingListing(raw); }}
+                            style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid rgba(26,60,40,0.15)', color: '#1A3C28', background: 'transparent', cursor: 'pointer' }}
+                          >
                             Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={duplicatingIds.has(listing.id)}
-                            onClick={() => { void handleDuplicateListing(listing.id); }}
-                            title="Duplicate as draft"
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            {duplicatingIds.has(listing.id) ? "Copying…" : "Duplicate"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
+                          </button>
+                          {listing.offers > 0 ? (
+                            <Link
+                              to={`/app/property/${listing.id}`}
+                              style={{ flex: 1, display: 'block', textAlign: 'center', padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid rgba(196,86,42,0.3)', color: '#C4562A', background: 'rgba(196,86,42,0.06)' }}
+                            >
+                              Offers
+                            </Link>
+                          ) : mandate && mandateDaysLeft !== null && mandateDaysLeft <= 21 ? (
+                            <button style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid rgba(217,119,6,0.3)', color: '#D97706', background: 'rgba(217,119,6,0.06)', cursor: 'pointer' }}>
+                              Renew
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => { void handleDuplicateListing(listing.id); }}
+                              disabled={duplicatingIds.has(listing.id)}
+                              style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid rgba(26,60,40,0.15)', color: '#1A3C28', background: 'transparent', cursor: 'pointer', opacity: duplicatingIds.has(listing.id) ? 0.5 : 1 }}
+                            >
+                              {duplicatingIds.has(listing.id) ? '…' : 'Dupe'}
+                            </button>
+                          )}
+                          <button
                             onClick={() => { void openSyndication(listing.id, listing.title); }}
-                            title="Syndicate to portals"
+                            style={{ flex: 1, padding: '7px 0', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid rgba(26,60,40,0.15)', color: '#1A3C28', background: 'transparent', cursor: 'pointer' }}
                           >
-                            <Share2 className="w-3 h-3 mr-1" />
-                            Syndicate
-                          </Button>
+                            Sync
+                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          </div>
-        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── Table View ────────────────────────────────────────────────── */}
+              {listingsView === 'table' && (
+                <div className="rounded-xl bg-white overflow-x-auto mb-7" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                    <thead style={{ background: 'rgba(26,60,40,0.03)', borderBottom: '1px solid rgba(26,60,40,0.12)' }}>
+                      <tr>
+                        {['Property', 'Heat', 'Price', 'Specs', 'Performance', 'Health', 'Actions'].map(h => (
+                          <th key={h} className="text-left" style={{ padding: '12px 16px', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6B8F7A' }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {!isLoadingListings && filteredListings.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-8 text-center text-sm" style={{ color: '#6B8F7A' }}>
+                            No listings match the current filters.
+                          </td>
+                        </tr>
+                      )}
+                      {filteredListings.map(listing => {
+                        const heat = listingHeat(listing);
+                        const score = healthScore(listing);
+                        const heatChip = heat === 'hot'
+                          ? { bg: '#FEE2E2', color: '#DC2626', label: '🔥 High' }
+                          : heat === 'warm'
+                          ? { bg: '#FEF3C7', color: '#B45309', label: '⚡ Warm' }
+                          : { bg: '#DBEAFE', color: '#2563EB', label: '❄ Slow' };
+                        const isStale = listingCategory(listing) === 'stale';
+                        return (
+                          <tr key={listing.id} style={{ borderBottom: '1px solid rgba(26,60,40,0.08)' }} className="hover:bg-gray-50">
+                            <td style={{ padding: '12px 16px' }}>
+                              <div className="flex items-center gap-2.5">
+                                <img src={listing.image} alt={listing.title} style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-xs truncate" style={{ color: isStale ? '#DC2626' : '#1A3C28' }}>{listing.title}</div>
+                                  <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: isStale ? '#DC2626' : '#6B8F7A', marginTop: 1 }}>{listing.daysOnMarket} days on market{isStale ? ' ⚠' : ''}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: heatChip.bg, color: heatChip.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                {heatChip.label}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 13, fontWeight: 700, color: '#1A3C28' }}>{listing.price}</div>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{ fontSize: 11, color: '#6B8F7A' }}>{listing.beds}b · {listing.baths}ba · {listing.sqm}m²</span>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{ fontSize: 11, color: '#6B8F7A' }}>{listing.views} views · {listing.inquiries} inq · {listing.offers} offers</span>
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <HealthBadge score={score} />
+                            </td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <div className="flex items-center gap-1.5">
+                                <Button size="sm" variant="outline" asChild>
+                                  <Link to={`/app/property/${listing.id}`}>View</Link>
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => { const raw = rawListings.find(r => r.id === listing.id); if (raw) setEditingListing(raw); }}>
+                                  <PenLine className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" disabled={duplicatingIds.has(listing.id)} onClick={() => { void handleDuplicateListing(listing.id); }}>
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => { void openSyndication(listing.id, listing.title); }}>
+                                  <Share2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Bottom Row: Offer Pipeline + Syndication Matrix ───────────── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Offer Pipeline */}
+                <div className="rounded-xl bg-white overflow-hidden" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: 'rgba(26,60,40,0.12)' }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 14, fontWeight: 700, color: '#1A3C28' }}>Offer Pipeline</span>
+                      <span style={{ display: 'inline-block', background: '#FFFBEB', border: '1.5px dashed #F59E0B', color: '#92400E', fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, fontFamily: 'var(--font-ibm-plex-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Live</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: '#6B8F7A' }}>
+                      {listingsWithOffers.length} listing{listingsWithOffers.length !== 1 ? 's' : ''} · {totalOffers} offer{totalOffers !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {/* 3-cell tally */}
+                  <div className="grid grid-cols-3 border-b" style={{ borderColor: 'rgba(26,60,40,0.12)' }}>
+                    {[
+                      { label: 'With Offers',  value: listingsWithOffers.length,                                                                           color: '#1A3C28' },
+                      { label: 'Total Offers', value: totalOffers,                                                                                          color: '#C4562A' },
+                      { label: 'Avg / Listing',value: listingsWithOffers.length > 0 ? (totalOffers / listingsWithOffers.length).toFixed(1) : '0',           color: '#059669' },
+                    ].map((t, i) => (
+                      <div key={t.label} className="text-center" style={{ padding: '12px 16px', borderRight: i < 2 ? '1px solid rgba(26,60,40,0.12)' : 'none' }}>
+                        <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: t.color, lineHeight: 1 }}>{t.value}</div>
+                        <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6B8F7A', marginTop: 3 }}>{t.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Listing rows */}
+                  <div className="px-5">
+                    {listingsWithOffers.length === 0 ? (
+                      <div className="py-8 text-center text-xs" style={{ color: '#6B8F7A', fontFamily: 'var(--font-ibm-plex-mono)' }}>
+                        No active offers at this time.
+                      </div>
+                    ) : (
+                      listingsWithOffers.slice(0, 5).map(listing => (
+                        <div key={listing.id} className="flex items-center gap-3.5 border-b last:border-b-0" style={{ padding: '11px 0', borderColor: 'rgba(26,60,40,0.10)' }}>
+                          <img src={listing.image} alt={listing.title} style={{ width: 40, height: 30, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold truncate" style={{ color: '#1A3C28' }}>{listing.title}</div>
+                            <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: '#6B8F7A', marginTop: 1 }}>{listing.offers} offer{listing.offers > 1 ? 's' : ''} received</div>
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 13, fontWeight: 700, color: '#C4562A', flexShrink: 0, marginRight: 8 }}>{listing.price}</div>
+                          <Link to={`/app/property/${listing.id}`} className="text-[11px] font-semibold shrink-0" style={{ color: '#C4562A' }}>Review →</Link>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {listingsWithOffers.length > 5 && (
+                    <div className="px-5 py-2.5 text-center border-t" style={{ borderColor: 'rgba(26,60,40,0.10)' }}>
+                      <button className="text-xs font-semibold" style={{ color: '#6B8F7A' }}>View all {listingsWithOffers.length} listings with offers →</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Syndication Matrix */}
+                <div className="rounded-xl bg-white overflow-hidden" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: 'rgba(26,60,40,0.12)' }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 14, fontWeight: 700, color: '#1A3C28' }}>Syndication Status</span>
+                      <span style={{ display: 'inline-block', background: '#FFFBEB', border: '1.5px dashed #F59E0B', color: '#92400E', fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, fontFamily: 'var(--font-ibm-plex-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>New</span>
+                    </div>
+                    <button
+                      onClick={() => { if (activeListings[0]) void openSyndication(activeListings[0].id, activeListings[0].title); }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-md transition-all"
+                      style={{ padding: '5px 10px', background: 'rgba(242,232,213,0.08)', color: 'rgba(26,60,40,0.7)', border: '1px solid rgba(26,60,40,0.15)' }}
+                    >
+                      Sync All →
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                      <thead style={{ background: 'rgba(26,60,40,0.03)', borderBottom: '1px solid rgba(26,60,40,0.12)' }}>
+                        <tr>
+                          <th style={{ padding: '9px 16px', textAlign: 'left', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6B8F7A' }}>Listing</th>
+                          {PORTALS.map(p => (
+                            <th key={p.key} style={{ padding: '9px 12px', textAlign: 'center', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#6B8F7A' }}>{p.name}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeListings.length === 0 && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12, color: '#6B8F7A', fontFamily: 'var(--font-ibm-plex-mono)' }}>No listings to display.</td>
+                          </tr>
+                        )}
+                        {activeListings.slice(0, 5).map(listing => {
+                          const synds = listingSyndications[listing.id] ?? [];
+                          return (
+                            <tr key={listing.id} style={{ borderBottom: '1px solid rgba(26,60,40,0.06)' }}>
+                              <td style={{ padding: '9px 16px', fontSize: 12, fontWeight: 500, color: '#1A3C28' }}>
+                                <span className="block truncate" style={{ maxWidth: 110 }}>{listing.title.split(',')[0]}</span>
+                              </td>
+                              {PORTALS.map(p => {
+                                const record = synds.find(r => p.match(r.portal_name));
+                                const isLive = record?.sync_status === 'synced';
+                                const isPending = record?.sync_status === 'pending';
+                                const isFailed = record?.sync_status === 'failed';
+                                return (
+                                  <td key={p.key} style={{ padding: '9px 12px', textAlign: 'center' }}>
+                                    <span className="inline-flex flex-col items-center gap-0.5">
+                                      <span className="w-2 h-2 rounded-full inline-block" style={{ background: isLive ? '#22C55E' : isPending ? '#F59E0B' : isFailed ? '#EF4444' : '#CBD5E1' }} />
+                                      <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 8, fontWeight: 600, color: isLive ? '#15803D' : isPending ? '#B45309' : isFailed ? '#DC2626' : '#94A3B8' }}>
+                                        {isLive ? 'Live' : isPending ? 'Pend' : isFailed ? 'Fail' : '—'}
+                                      </span>
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Legend + Fill Gaps */}
+                  <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-2.5 border-t" style={{ borderColor: 'rgba(26,60,40,0.12)' }}>
+                    <div className="flex gap-3">
+                      {[
+                        { dot: '#22C55E', label: 'Live',       textColor: '#15803D' },
+                        { dot: '#F59E0B', label: 'Pending',    textColor: '#B45309' },
+                        { dot: '#EF4444', label: 'Failed',     textColor: '#DC2626' },
+                        { dot: '#CBD5E1', label: 'Not Listed', textColor: '#94A3B8' },
+                      ].map(l => (
+                        <div key={l.label} className="flex items-center gap-1.5" style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, fontWeight: 600, color: l.textColor }}>
+                          <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.dot }} />
+                          {l.label}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => { if (activeListings[0]) void openSyndication(activeListings[0].id, activeListings[0].title); }}
+                      style={{ fontSize: 10, fontWeight: 700, padding: '5px 12px', borderRadius: 6, background: 'rgba(196,86,42,0.1)', color: '#C4562A', border: '1px solid rgba(196,86,42,0.2)', cursor: 'pointer', fontFamily: 'var(--font-ibm-plex-mono)', letterSpacing: '0.04em' }}
+                    >
+                      Fill Gaps →
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Mandates Tab */}
         {selectedTab === "mandates" && (
@@ -1573,15 +2083,15 @@ export default function AgentDashboardEnhanced() {
             )}
 
             {isLoadingMandates ? (
-              <Card className="py-12 text-center text-gray-400">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#1A3C28]" />
+              <div className="rounded-xl bg-white py-12 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" style={{ color: 'var(--bt-forest)' }} />
                 <p className="text-sm">Loading mandates…</p>
-              </Card>
+              </div>
             ) : agentMandates.length === 0 ? (
-              <Card className="py-12 text-center text-gray-400">
+              <div className="rounded-xl bg-white py-12 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                 <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">No mandates found. Mandates are created from individual property listings.</p>
-              </Card>
+              </div>
             ) : (
               <>
                 {/* Summary grid */}
@@ -1604,16 +2114,16 @@ export default function AgentDashboardEnhanced() {
                 </div>
 
                 {/* Mandate table */}
-                <Card className="overflow-x-auto">
+                <div className="rounded-xl bg-white overflow-x-auto" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead style={{ backgroundColor: '#E8F0EC' }} className="border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Property</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Type</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Commission</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Period</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Signatures</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Property</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Type</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Commission</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Period</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Signatures</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold" style={{ color: 'var(--bt-forest)' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1661,7 +2171,7 @@ export default function AgentDashboardEnhanced() {
                       ))}
                     </tbody>
                   </table>
-                </Card>
+                </div>
               </>
             )}
           </div>
@@ -1688,22 +2198,22 @@ export default function AgentDashboardEnhanced() {
 
             {/* CRM Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.totalLeads}</div>
+              <div className="rounded-xl bg-white p-4 text-center" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>{crmDashboard.totalLeads}</div>
                 <div className="text-xs text-gray-500 mt-1">Total Leads</div>
-              </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-[#C4562A]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.hotLeads}</div>
+              </div>
+              <div className="rounded-xl bg-white p-4 text-center" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-terracotta)' }}>{crmDashboard.hotLeads}</div>
                 <div className="text-xs text-gray-500 mt-1">Hot Leads</div>
-              </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-[#B89040]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.activeDeals}</div>
+              </div>
+              <div className="rounded-xl bg-white p-4 text-center" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-amber)' }}>{crmDashboard.activeDeals}</div>
                 <div className="text-xs text-gray-500 mt-1">Active Deals</div>
-              </Card>
-              <Card className="p-4 text-center">
-                <div className="text-3xl font-bold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>{crmDashboard.recentActivities?.length ?? 0}</div>
+              </div>
+              <div className="rounded-xl bg-white p-4 text-center" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <div className="text-3xl font-bold" style={{ fontFamily: 'var(--font-fraunces)', color: 'var(--bt-forest)' }}>{crmDashboard.recentActivities?.length ?? 0}</div>
                 <div className="text-xs text-gray-500 mt-1">Recent Activities</div>
-              </Card>
+              </div>
             </div>
 
             {/* Temperature breakdown pills */}
@@ -1742,7 +2252,7 @@ export default function AgentDashboardEnhanced() {
                     <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
                     {staleLeads.length} stale lead{staleLeads.length > 1 ? "s" : ""} (no activity in 14+ days)
                   </summary>
-                  <Card className="mt-2 overflow-hidden">
+                  <div className="mt-2 rounded-xl bg-white overflow-hidden" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                     <div className="divide-y divide-gray-100">
                       {staleLeads.map((lead) => (
                         <div key={lead.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#E8F0EC]/30">
@@ -1759,7 +2269,7 @@ export default function AgentDashboardEnhanced() {
                         </div>
                       ))}
                     </div>
-                  </Card>
+                  </div>
                 </details>
               );
             })()}
@@ -1768,10 +2278,10 @@ export default function AgentDashboardEnhanced() {
             {isLoadingCrm ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
             ) : crmError ? (
-              <Card className="p-6 text-center text-red-600">
+              <div className="rounded-xl bg-white p-6 text-center text-red-600" style={{ border: '1px solid rgba(239,68,68,0.2)' }}>
                 <AlertCircle className="w-6 h-6 mx-auto mb-2" />
                 <p>{crmError}</p>
-              </Card>
+              </div>
             ) : crmView === "kanban" ? (
               <LeadKanban
                 leads={leads}
@@ -1784,17 +2294,17 @@ export default function AgentDashboardEnhanced() {
                 }}
               />
             ) : leads.length === 0 ? (
-              <Card className="py-16 text-center text-gray-400">
+              <div className="rounded-xl bg-white py-16 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">No leads yet</p>
                 <p className="text-sm mt-1">Create your first lead to start tracking your pipeline</p>
-              </Card>
+              </div>
             ) : (
-              <Card className="overflow-hidden">
+              <div className="rounded-xl bg-white overflow-hidden" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
+                      <tr style={{ backgroundColor: '#E8F0EC' }} className="border-b border-gray-200">
                         <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
                         <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Source</th>
                         <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
@@ -1886,7 +2396,7 @@ export default function AgentDashboardEnhanced() {
                     </div>
                   </div>
                 )}
-              </Card>
+              </div>
             )}
           </div>
         )}
@@ -1948,13 +2458,13 @@ export default function AgentDashboardEnhanced() {
             )}
 
             {isLoadingViewings ? (
-              <Card className="py-12 text-center text-gray-400">
-                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-[#1A3C28]" />
+              <div className="rounded-xl bg-white py-12 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" style={{ color: 'var(--bt-forest)' }} />
                 <p className="text-sm">Loading viewings…</p>
-              </Card>
+              </div>
             ) : viewingsView === "calendar" ? (
               /* ── Calendar View ── */
-              <Card className="p-4 md:p-6">
+              <div className="rounded-xl bg-white p-4 md:p-6" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                 {/* Month navigation */}
                 <div className="flex items-center justify-between mb-4">
                   <button
@@ -2178,7 +2688,7 @@ export default function AgentDashboardEnhanced() {
                     No events on {new Date(selectedCalDay + "T12:00:00").toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
                   </div>
                 )}
-              </Card>
+              </div>
             ) : (
               /* ── List View ── */
               <>
@@ -2188,14 +2698,14 @@ export default function AgentDashboardEnhanced() {
                     Upcoming ({upcomingViewings.length})
                   </h3>
                   {upcomingViewings.length === 0 ? (
-                    <Card className="py-8 text-center text-gray-400">
+                    <div className="rounded-xl bg-white py-8 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                       <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">No upcoming viewings</p>
-                    </Card>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {upcomingViewings.map((v) => (
-                        <Card key={v.id} className="p-4">
+                        <div key={v.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                           <div className="flex items-start gap-4">
                             <div className="w-10 h-10 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
                               <Calendar className="w-5 h-5 text-[#1A3C28]" />
@@ -2286,7 +2796,7 @@ export default function AgentDashboardEnhanced() {
                               </Button>
                             </div>
                           )}
-                        </Card>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -2298,7 +2808,7 @@ export default function AgentDashboardEnhanced() {
                     <h3 className="font-semibold text-gray-700 mb-3">Past ({pastViewings.length})</h3>
                     <div className="space-y-3">
                       {pastViewings.slice(0, 10).map((v) => (
-                        <Card key={v.id} className="p-4 flex items-start gap-4 opacity-70">
+                        <div key={v.id} className="rounded-xl bg-white p-4 flex items-start gap-4 opacity-70" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                             <Clock className="w-5 h-5 text-gray-500" />
                           </div>
@@ -2320,7 +2830,7 @@ export default function AgentDashboardEnhanced() {
                           <Badge className={v.status === "completed" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}>
                             {v.status}
                           </Badge>
-                        </Card>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -2335,7 +2845,7 @@ export default function AgentDashboardEnhanced() {
                     </h3>
                     <div className="space-y-3">
                       {agentOpenHouses.map((oh) => (
-                        <Card key={oh.id} className="p-4 flex items-start gap-4">
+                        <div key={oh.id} className="rounded-xl bg-white p-4 flex items-start gap-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
                           <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                             <Users className="w-5 h-5 text-purple-600" />
                           </div>
@@ -2360,7 +2870,7 @@ export default function AgentDashboardEnhanced() {
                           }>
                             {oh.status}
                           </Badge>
-                        </Card>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -2370,10 +2880,6 @@ export default function AgentDashboardEnhanced() {
           </div>
         )}
 
-        {/* AI Intelligence Tab */}
-        {selectedTab === "ai" && (
-          <AIIntelligencePanel />
-        )}
       </div>
 
       {/* Schedule Viewing Modal (agent books on behalf of buyer) */}

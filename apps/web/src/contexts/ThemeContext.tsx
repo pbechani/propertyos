@@ -2,8 +2,14 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
+// Enforce light mode immediately at module load time (fires on HMR too)
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('dark');
+  document.documentElement.classList.add('light');
+  try { localStorage.setItem('theme', 'light'); } catch { /* noop */ }
+}
+
 type Theme = "light" | "dark";
-const LOCKED_THEME: Theme = "light";
 
 interface ThemeContextType {
   theme: Theme;
@@ -15,25 +21,21 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(LOCKED_THEME);
-
-  useEffect(() => {
-    setThemeState(LOCKED_THEME);
-  }, []);
+  const [theme] = useState<Theme>("light");
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    root.classList.add(LOCKED_THEME);
-    localStorage.setItem("theme", LOCKED_THEME);
-  }, [theme]);
+    root.classList.add("light");
+    localStorage.setItem("theme", "light");
+  }, []);
 
   const setTheme = (_nextTheme: Theme) => {
-    setThemeState(LOCKED_THEME);
+    // Theme is locked to light (Theme 2)
   };
 
   const toggleTheme = () => {
-    setThemeState(LOCKED_THEME);
+    // Theme is locked to light (Theme 2)
   };
 
   return (
@@ -42,7 +44,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         setTheme,
         toggleTheme,
-        isThemeLocked: true,
+        isThemeLocked: false,
       }}
     >
       {children}

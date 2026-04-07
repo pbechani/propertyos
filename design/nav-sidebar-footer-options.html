@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sidebar Footer — Nav Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:         #1A3C28;
+    --forest-light:   #2D5A40;
+    --terracotta:     #C4562A;
+    --parchment:      #F2E8D5;
+    --parchment-dark: #E8D9BC;
+    --egreen:         #00E87A;
+    --sb-border:      rgba(242,232,213,0.12);
+    --body-bg:        #EDE3CF;
+    --muted:          rgba(242,232,213,0.45);
+    --muted-mid:      rgba(242,232,213,0.65);
+    --text-dark:      #1A3C28;
+    --text-muted:     #6B8F7A;
+    --border:         rgba(26,60,40,0.12);
+  }
+
+  html, body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+  }
+
+  /* ── Page shell ─────────────────────────────────── */
+  .page {
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 52px 40px 80px;
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  .page-intro {
+    margin-bottom: 52px;
+    max-width: 680px;
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terracotta);
+    margin-bottom: 10px;
+  }
+  .page-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 36px; font-weight: 800;
+    color: var(--forest); letter-spacing: -0.8px;
+    line-height: 1.1; margin-bottom: 14px;
+  }
+  .page-sub {
+    font-size: 14px; line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  /* ── Options grid ────────────────────────────────── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── Option card ─────────────────────────────────── */
+  .option-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 16px rgba(26,60,40,0.06), 0 1px 4px rgba(26,60,40,0.04);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .option-card:hover {
+    box-shadow: 0 8px 40px rgba(26,60,40,0.12), 0 2px 8px rgba(26,60,40,0.06);
+    transform: translateY(-2px);
+  }
+  .option-card.recommended {
+    border-color: var(--terracotta);
+    box-shadow: 0 2px 16px rgba(196,86,42,0.1), 0 1px 4px rgba(26,60,40,0.04);
+  }
+  .option-card.recommended:hover {
+    box-shadow: 0 8px 40px rgba(196,86,42,0.16), 0 2px 8px rgba(26,60,40,0.06);
+  }
+
+  /* ── Card label bar ──────────────────────────────── */
+  .card-label {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px 12px;
+    background: #fafaf9;
+    border-bottom: 1px solid var(--border);
+  }
+  .option-name {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 15px; font-weight: 700; color: var(--forest);
+  }
+  .option-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .tag-rec { background: rgba(196,86,42,0.12); color: var(--terracotta); }
+  .tag-alt { background: rgba(26,60,40,0.07); color: var(--text-muted); }
+
+  /* ── Preview area ────────────────────────────────── */
+  .preview-wrap {
+    padding: 20px;
+    background: #f1ece4;
+  }
+
+  /* ── Mini layout frame ───────────────────────────── */
+  .mini-layout {
+    display: flex;
+    height: 360px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(26,60,40,0.15);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    background: var(--parchment);
+  }
+
+  /* Sidebar */
+  .mini-sidebar {
+    width: 88px;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .mini-sidebar.wide { width: 140px; }
+
+  /* Sidebar logo row */
+  .ms-logo {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--sb-border);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .ms-logo-icon {
+    width: 22px; height: 22px;
+    background: var(--terracotta);
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .ms-logo-text {
+    font-family: 'Fraunces', serif;
+    font-size: 9px; font-weight: 700;
+    color: var(--parchment);
+    white-space: nowrap;
+  }
+
+  /* Nav items */
+  .ms-nav { padding: 8px 6px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .ms-item {
+    height: 26px; border-radius: 6px;
+    background: rgba(242,232,213,0.06);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 6px;
+  }
+  .ms-item.active { background: rgba(0,232,122,0.14); }
+  .ms-item-dot { width: 11px; height: 11px; border-radius: 3px; background: rgba(242,232,213,0.2); flex-shrink: 0; }
+  .ms-item.active .ms-item-dot { background: var(--egreen); opacity: 0.85; }
+  .ms-item-line { height: 4px; border-radius: 2px; background: rgba(242,232,213,0.15); flex: 1; }
+  .ms-item.active .ms-item-line { background: rgba(0,232,122,0.4); }
+
+  /* ── OPTION A: Compact Footer Strip ─────────────── */
+  .ms-footer-strip {
+    padding: 8px 6px;
+    border-top: 1px solid var(--sb-border);
+    background: rgba(0,0,0,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 5px;
+  }
+  .ms-avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ms-avatar-sm span {
+    font-family: 'Fraunces', serif;
+    font-size: 9px; font-weight: 700; color: #fff;
+  }
+  .ms-bell {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(242,232,213,0.08);
+    border: 1px solid rgba(242,232,213,0.14);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+  }
+  .ms-bell svg { width: 12px; height: 12px; color: rgba(242,232,213,0.7); }
+  .ms-bell-badge {
+    position: absolute; top: 2px; right: 2px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #EF4444;
+    border: 1.5px solid var(--forest);
+  }
+  .ms-theme {
+    width: 22px; height: 22px; border-radius: 5px;
+    background: rgba(242,232,213,0.06);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ms-theme svg { width: 10px; height: 10px; color: var(--muted); }
+
+  /* ── OPTION A wide (expanded sidebar) */
+  .ms-footer-strip.wide {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .ms-avatar-name {
+    display: flex; flex-direction: column; flex: 1; min-width: 0;
+  }
+  .ms-avatar-name-text {
+    font-size: 9px; font-weight: 700;
+    color: var(--parchment); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ms-avatar-name-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7.5px; color: var(--muted);
+  }
+
+  /* ── OPTION B: Account Row ───────────────────────── */
+  .ms-footer-account {
+    border-top: 1px solid var(--sb-border);
+    background: rgba(0,0,0,0.1);
+  }
+  .ms-acc-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 8px;
+  }
+  .ms-acc-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ms-acc-avatar span {
+    font-family: 'Fraunces', serif;
+    font-size: 9px; font-weight: 700; color: #fff;
+  }
+  .ms-acc-info { flex: 1; min-width: 0; }
+  .ms-acc-name {
+    font-size: 9px; font-weight: 700;
+    color: var(--parchment); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ms-acc-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7px; color: var(--muted);
+  }
+  .ms-acc-bell {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: rgba(242,232,213,0.08);
+    border: 1px solid rgba(242,232,213,0.14);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+  }
+  .ms-acc-bell svg { width: 11px; height: 11px; color: rgba(242,232,213,0.7); }
+  .ms-acc-bell-badge {
+    position: absolute; top: 2px; right: 2px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #EF4444; border: 1.5px solid rgba(0,0,0,0.4);
+  }
+  .ms-divider { height: 1px; background: var(--sb-border); margin: 0 8px; }
+
+  /* ── OPTION C: Bottom Nav Items ──────────────────── */
+  .ms-nav-c { padding: 6px 6px; flex: 1; display: flex; flex-direction: column; }
+  .ms-nav-c-top { display: flex; flex-direction: column; gap: 2px; }
+  .ms-nav-c-spacer { flex: 1; min-height: 8px; }
+  .ms-nav-c-bottom {
+    display: flex; flex-direction: column; gap: 2px;
+    border-top: 1px solid var(--sb-border);
+    padding-top: 6px;
+  }
+  .ms-item-notif {
+    height: 26px; border-radius: 6px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 6px;
+    background: rgba(242,232,213,0.06);
+  }
+  .ms-item-notif-dot { width: 11px; height: 11px; border-radius: 3px; background: rgba(242,232,213,0.2); flex-shrink: 0; }
+  .ms-item-notif-line { height: 4px; border-radius: 2px; background: rgba(242,232,213,0.15); flex: 1; }
+  .ms-item-notif-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7px; font-weight: 700;
+    background: var(--terracotta); color: #fff;
+    padding: 1px 4px; border-radius: 3px;
+  }
+  .ms-item-profile {
+    height: 30px; border-radius: 6px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 6px;
+    background: rgba(242,232,213,0.04);
+  }
+  .ms-item-profile-ava {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ms-item-profile-ava span { font-size: 7px; font-weight: 700; color: #fff; font-family: 'Fraunces', serif; }
+  .ms-item-profile-line { height: 4px; border-radius: 2px; background: rgba(242,232,213,0.15); flex: 1; }
+
+  /* ── Main content mock ───────────────────────────── */
+  .mini-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* Old header (strike) */
+  .mini-header-old {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 7px 12px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .mini-header-old-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mini-header-old-avatar span {
+    font-family: 'Fraunces', serif; font-size: 7.5px; font-weight: 700; color: #fff;
+  }
+  .mini-header-old-bell {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: rgba(26,60,40,0.05);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .mini-header-old-bell svg { width: 11px; height: 11px; color: var(--text-muted); }
+  .mini-header-old-bell-badge {
+    position: absolute; top: 2px; right: 2px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #EF4444;
+  }
+
+  /* No header */
+  .mini-header-gone {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 7px 12px;
+    display: flex; align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+  }
+  .mini-header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+  .mini-strikethrough {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .mini-strikethrough::after {
+    content: '';
+    position: absolute; left: 0; right: 0;
+    top: 50%; height: 1.5px;
+    background: #EF4444; opacity: 0.8;
+  }
+
+  /* Page body */
+  .mini-body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+  .mini-forest-header {
+    background: var(--forest);
+    border-radius: 7px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .mini-fh-row { display: flex; align-items: center; gap: 6px; }
+  .mini-fh-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--terracotta); flex-shrink: 0; }
+  .mini-fh-name { height: 7px; border-radius: 3px; background: rgba(242,232,213,0.6); width: 80px; }
+  .mini-fh-badge { height: 7px; border-radius: 3px; background: rgba(0,232,122,0.3); width: 36px; }
+  .mini-fh-kpi { display: flex; gap: 5px; }
+  .mini-fh-kpi-item { flex: 1; height: 28px; border-radius: 5px; background: rgba(255,255,255,0.07); border: 1px solid rgba(242,232,213,0.08); }
+  .mini-content { display: grid; grid-template-columns: 1fr 0.45fr; gap: 6px; flex: 1; }
+  .mini-content-col { display: flex; flex-direction: column; gap: 6px; }
+  .mini-card { border-radius: 6px; background: white; border: 1px solid var(--border); flex: 1; }
+
+  /* ── Annotation ──────────────────────────────────── */
+  .annotation-bar {
+    padding: 16px 20px;
+    background: #fafaf9;
+    border-top: 1px solid var(--border);
+  }
+  .ann-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .ann-row:last-child { margin-bottom: 0; }
+  .ann-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .ann-body {}
+  .ann-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    margin-bottom: 2px;
+  }
+  .ann-text { font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+
+  /* ── Rec badge ───────────────────────────────────── */
+  .rec-ribbon {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(196,86,42,0.07);
+    border-bottom: 1px solid rgba(196,86,42,0.15);
+    padding: 8px 18px;
+  }
+  .rec-ribbon-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta); flex-shrink: 0; }
+  .rec-ribbon-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--terracotta);
+  }
+
+  /* ── Before / after label ────────────────────────── */
+  .ba-label {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ba-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .ba-before { background: rgba(239,68,68,0.1); color: #DC2626; }
+  .ba-after  { background: rgba(0,232,122,0.12); color: #059669; }
+  .ba-arrow  { color: var(--text-muted); font-size: 12px; }
+
+  /* ── Bottom demo: before/after side by side ──────── */
+  .ba-section {
+    margin-top: 52px;
+  }
+  .ba-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--forest); margin-bottom: 8px; letter-spacing: -0.4px;
+  }
+  .ba-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .ba-panel {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(26,60,40,0.05);
+  }
+  .ba-panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ba-panel-header-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .ba-panel-header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .ba-panel-body { padding: 16px; background: #f1ece4; }
+  .ba-mini-layout { border-radius: 9px; overflow: hidden; border: 1px solid rgba(26,60,40,0.14); box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+
+  /* Wider before/after minis */
+  .ba-layout { display: flex; height: 280px; background: var(--parchment); }
+  .ba-sidebar {
+    width: 110px;
+    background: var(--forest);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .ba-sidebar-logo {
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--sb-border);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ba-sidebar-logo-icon { width: 20px; height: 20px; background: var(--terracotta); border-radius: 5px; flex-shrink: 0; }
+  .ba-sidebar-logo-text {
+    font-family: 'Fraunces', serif; font-size: 9px; font-weight: 700;
+    color: var(--parchment); white-space: nowrap;
+  }
+  .ba-sidebar-nav { padding: 6px 6px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .ba-nav-item { height: 24px; border-radius: 5px; background: rgba(242,232,213,0.06); display: flex; align-items: center; gap: 5px; padding: 0 6px; }
+  .ba-nav-item.active { background: rgba(0,232,122,0.14); }
+  .ba-nav-dot { width: 10px; height: 10px; border-radius: 3px; background: rgba(242,232,213,0.2); flex-shrink: 0; }
+  .ba-nav-item.active .ba-nav-dot { background: var(--egreen); opacity: 0.85; }
+  .ba-nav-line { height: 3px; border-radius: 2px; background: rgba(242,232,213,0.12); flex: 1; }
+  .ba-nav-item.active .ba-nav-line { background: rgba(0,232,122,0.4); }
+
+  /* BEFORE: top header */
+  .ba-before-main { flex: 1; display: flex; flex-direction: column; }
+  .ba-before-header {
+    background: white; border-bottom: 1px solid var(--border);
+    padding: 7px 12px;
+    display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    flex-shrink: 0;
+  }
+  .ba-hdr-bell {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: 1px solid var(--border); background: rgba(26,60,40,0.03);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .ba-hdr-bell svg { width: 11px; height: 11px; color: var(--text-muted); }
+  .ba-hdr-bell-badge { position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; }
+  .ba-hdr-avatar {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ba-hdr-avatar span { font-family: 'Fraunces', serif; font-size: 7.5px; font-weight: 700; color: #fff; }
+  .ba-before-body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .ba-forest-block { background: var(--forest); border-radius: 6px; padding: 8px 10px; }
+  .ba-fb-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+  .ba-fb-ava { width: 20px; height: 20px; border-radius: 50%; background: var(--terracotta); flex-shrink: 0; }
+  .ba-fb-name { height: 6px; border-radius: 2px; background: rgba(242,232,213,0.5); width: 70px; }
+  .ba-fb-kpi { display: flex; gap: 4px; }
+  .ba-fb-kpi-item { flex: 1; height: 24px; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid rgba(242,232,213,0.08); }
+  .ba-body-cards { display: grid; grid-template-columns: 1fr 0.45fr; gap: 5px; flex: 1; }
+  .ba-card { border-radius: 5px; background: white; border: 1px solid var(--border); }
+
+  /* AFTER sidebar footer */
+  .ba-after-sidebar-footer {
+    border-top: 1px solid var(--sb-border);
+    background: rgba(0,0,0,0.08);
+    padding: 7px 6px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 5px;
+  }
+  .ba-after-ava {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ba-after-ava span { font-family: 'Fraunces', serif; font-size: 9px; font-weight: 700; color: #fff; }
+  .ba-after-bell {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: rgba(242,232,213,0.08);
+    border: 1px solid rgba(242,232,213,0.14);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+  }
+  .ba-after-bell svg { width: 11px; height: 11px; color: rgba(242,232,213,0.7); }
+  .ba-after-bell-badge { position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid var(--forest); }
+  .ba-after-main { flex: 1; display: flex; flex-direction: column; }
+  .ba-after-body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* Arrow badge */
+  .removed-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+    color: #DC2626; border-radius: 6px;
+    padding: 3px 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .added-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(0,232,122,0.1); border: 1px solid rgba(0,232,122,0.2);
+    color: #059669; border-radius: 6px;
+    padding: 3px 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* ── Scrolled demo ───────────────────────────────── */
+  .scroll-note {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,232,122,0.08); border: 1px solid rgba(0,232,122,0.18);
+    border-radius: 8px; padding: 8px 14px;
+    font-size: 12px; color: #065F46;
+    margin-top: 10px;
+  }
+  .scroll-note svg { flex-shrink: 0; color: var(--egreen); }
+
+  /* Collapsed sidebar demo */
+  .collapsed-demo-wrap { margin-top: 40px; }
+  .collapsed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .collapsed-card {
+    background: white; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(26,60,40,0.05);
+  }
+  .collapsed-card-header {
+    padding: 10px 14px; background: #fafaf9;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .collapsed-card-title { font-family: 'Fraunces', serif; font-size: 13px; font-weight: 700; color: var(--forest); }
+  .collapsed-card-body { padding: 14px; background: #f1ece4; }
+
+  /* Collapsed sidebar */
+  .cs-layout { display: flex; height: 200px; background: var(--parchment); border-radius: 8px; overflow: hidden; border: 1px solid rgba(26,60,40,0.14); }
+  .cs-sidebar { width: 52px; background: var(--forest); display: flex; flex-direction: column; flex-shrink: 0; }
+  .cs-sidebar-logo { padding: 9px 0; border-bottom: 1px solid var(--sb-border); display: flex; align-items: center; justify-content: center; }
+  .cs-sidebar-logo-icon { width: 22px; height: 22px; background: var(--terracotta); border-radius: 5px; }
+  .cs-nav { padding: 6px 8px; flex: 1; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .cs-item { width: 32px; height: 28px; border-radius: 6px; background: rgba(242,232,213,0.06); display: flex; align-items: center; justify-content: center; }
+  .cs-item.active { background: rgba(0,232,122,0.14); }
+  .cs-dot { width: 12px; height: 12px; border-radius: 3px; background: rgba(242,232,213,0.2); }
+  .cs-item.active .cs-dot { background: var(--egreen); opacity: 0.85; }
+  .cs-footer { border-top: 1px solid var(--sb-border); background: rgba(0,0,0,0.08); padding: 7px 8px; display: flex; flex-direction: column; gap: 5px; align-items: center; }
+  .cs-ava { width: 28px; height: 28px; border-radius: 50%; background: var(--terracotta); display: flex; align-items: center; justify-content: center; }
+  .cs-ava span { font-family: 'Fraunces', serif; font-size: 9px; font-weight: 700; color: #fff; }
+  .cs-bell { width: 28px; height: 28px; border-radius: 6px; background: rgba(242,232,213,0.08); border: 1px solid rgba(242,232,213,0.14); display: flex; align-items: center; justify-content: center; position: relative; }
+  .cs-bell svg { width: 12px; height: 12px; color: rgba(242,232,213,0.7); }
+  .cs-bell-badge { position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: #EF4444; border: 1.5px solid var(--forest); }
+  .cs-main { flex: 1; }
+
+  /* Summary table */
+  .summary-section { margin-top: 52px; }
+  .summary-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(26,60,40,0.05); border: 1px solid var(--border); }
+  .summary-table th {
+    text-align: left; padding: 12px 16px;
+    background: var(--forest); color: var(--parchment);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .summary-table td {
+    padding: 11px 16px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-dark); vertical-align: top;
+  }
+  .summary-table tr:first-child td { border-top: none; }
+  .summary-table tr:nth-child(even) td { background: #fafaf9; }
+  .check { color: #059669; font-size: 14px; }
+  .cross { color: #DC2626; font-size: 14px; }
+  .neutral { color: var(--text-muted); font-size: 14px; }
+
+  /* SVG icons inline */
+  svg { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══ Intro ══════════════════════════════════════════════════════════ -->
+  <div class="page-intro">
+    <div class="eyebrow">Navigation Design · 3 Options</div>
+    <h1 class="page-title">Move Nav Controls to Sidebar Footer</h1>
+    <p class="page-sub">
+      Remove the top header bar entirely. Profile avatar and notification bell relocate to the bottom of the left sidebar — always visible, always accessible, regardless of scroll position.
+    </p>
+  </div>
+
+  <!-- ══ 3 Options Grid ════════════════════════════════════════════════ -->
+  <div class="options-grid">
+
+    <!-- ─ Option A: Compact Strip ─────────────────────── RECOMMENDED -->
+    <div class="option-card recommended">
+      <div class="rec-ribbon">
+        <div class="rec-ribbon-dot"></div>
+        <span class="rec-ribbon-text">Recommended</span>
+      </div>
+      <div class="card-label">
+        <span class="option-name">Option A — Compact Strip</span>
+        <span class="option-tag tag-rec">Slack · Linear</span>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="ba-label">
+          <span class="ba-chip ba-after">After</span>
+          <span class="ba-chip" style="background:rgba(26,60,40,0.06);color:var(--text-muted);">Expanded sidebar</span>
+        </div>
+        <div class="mini-layout">
+          <!-- Sidebar -->
+          <div class="mini-sidebar wide">
+            <div class="ms-logo">
+              <div class="ms-logo-icon"></div>
+              <span class="ms-logo-text">PropertyOS</span>
+            </div>
+            <div class="ms-nav">
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item active"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+            </div>
+            <!-- Footer strip -->
+            <div class="ms-footer-strip wide">
+              <div class="ms-avatar-sm"><span>TM</span></div>
+              <div class="ms-avatar-name">
+                <div class="ms-avatar-name-text">Themba M.</div>
+                <div class="ms-avatar-name-role">Agent</div>
+              </div>
+              <div class="ms-bell">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+                <div class="ms-bell-badge"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main — no header -->
+          <div class="mini-main">
+            <div class="mini-header-gone">
+              <div class="mini-strikethrough">
+                <span class="mini-header-label">Top bar</span>
+              </div>
+              <span style="font-size:9px;color:#DC2626;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-left:4px;">removed</span>
+            </div>
+            <div class="mini-body">
+              <div class="mini-forest-header">
+                <div class="mini-fh-row">
+                  <div class="mini-fh-avatar"></div>
+                  <div class="mini-fh-name"></div>
+                  <div class="mini-fh-badge"></div>
+                </div>
+                <div class="mini-fh-kpi">
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                </div>
+              </div>
+              <div class="mini-content">
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                  <div class="mini-card"></div>
+                </div>
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /mini-layout -->
+
+        <div class="scroll-note">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/>
+          </svg>
+          Sticky footer — avatar &amp; bell stay put during scroll
+        </div>
+      </div>
+
+      <div class="annotation-bar">
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Avatar + name row</div>
+            <div class="ann-text">Initials circle + truncated name + role. Clicking opens dropdown: View Profile, Settings, Logout.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Bell with badge</div>
+            <div class="ann-text">Unread dot count. Opens NotificationCenter panel upward from bottom when triggered.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Theme toggle</div>
+            <div class="ann-text">Moves into the profile dropdown menu — reduces visual clutter in the strip.</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /Option A -->
+
+
+    <!-- ─ Option B: Account Row ────────────────────────────────────── -->
+    <div class="option-card">
+      <div class="card-label">
+        <span class="option-name">Option B — Account Row</span>
+        <span class="option-tag tag-alt">Figma · Vercel</span>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="ba-label">
+          <span class="ba-chip ba-after">After</span>
+          <span class="ba-chip" style="background:rgba(26,60,40,0.06);color:var(--text-muted);">Expanded sidebar</span>
+        </div>
+        <div class="mini-layout">
+          <!-- Sidebar -->
+          <div class="mini-sidebar wide">
+            <div class="ms-logo">
+              <div class="ms-logo-icon"></div>
+              <span class="ms-logo-text">PropertyOS</span>
+            </div>
+            <div class="ms-nav">
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item active"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+            </div>
+            <!-- Account row footer -->
+            <div class="ms-footer-account">
+              <div class="ms-divider"></div>
+              <div class="ms-acc-row">
+                <div class="ms-acc-avatar"><span>TM</span></div>
+                <div class="ms-acc-info">
+                  <div class="ms-acc-name">Themba Mokoena</div>
+                  <div class="ms-acc-role">Agent · Horizon Realty</div>
+                </div>
+                <div class="ms-acc-bell">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                  </svg>
+                  <div class="ms-acc-bell-badge"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main — no header -->
+          <div class="mini-main">
+            <div class="mini-header-gone">
+              <div class="mini-strikethrough">
+                <span class="mini-header-label">Top bar</span>
+              </div>
+              <span style="font-size:9px;color:#DC2626;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-left:4px;">removed</span>
+            </div>
+            <div class="mini-body">
+              <div class="mini-forest-header">
+                <div class="mini-fh-row">
+                  <div class="mini-fh-avatar"></div>
+                  <div class="mini-fh-name"></div>
+                  <div class="mini-fh-badge"></div>
+                </div>
+                <div class="mini-fh-kpi">
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                </div>
+              </div>
+              <div class="mini-content">
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                  <div class="mini-card"></div>
+                </div>
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /mini-layout -->
+
+        <div class="scroll-note">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/>
+          </svg>
+          Full identity always visible — who you're logged in as
+        </div>
+      </div>
+
+      <div class="annotation-bar">
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Full account row</div>
+            <div class="ann-text">Avatar · full name · role &amp; company. Entire row is clickable → profile dropdown.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Separate bell</div>
+            <div class="ann-text">Notification bell standalone on the right of the row, not grouped with avatar.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(239,68,68,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#DC2626;">Collapsed trade-off</div>
+            <div class="ann-text">Name/role hidden when sidebar is collapsed — falls back to icon-only row which looks sparse.</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /Option B -->
+
+
+    <!-- ─ Option C: Nav Items ─────────────────────────────────────── -->
+    <div class="option-card">
+      <div class="card-label">
+        <span class="option-name">Option C — Bottom Nav Items</span>
+        <span class="option-tag tag-alt">VS Code · Raycast</span>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="ba-label">
+          <span class="ba-chip ba-after">After</span>
+          <span class="ba-chip" style="background:rgba(26,60,40,0.06);color:var(--text-muted);">Expanded sidebar</span>
+        </div>
+        <div class="mini-layout">
+          <!-- Sidebar -->
+          <div class="mini-sidebar wide">
+            <div class="ms-logo">
+              <div class="ms-logo-icon"></div>
+              <span class="ms-logo-text">PropertyOS</span>
+            </div>
+            <div class="ms-nav-c">
+              <div class="ms-nav-c-top">
+                <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+                <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+                <div class="ms-item active"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+                <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+                <div class="ms-item"><div class="ms-item-dot"></div><div class="ms-item-line"></div></div>
+              </div>
+              <div class="ms-nav-c-spacer"></div>
+              <div class="ms-nav-c-bottom">
+                <div class="ms-item-notif">
+                  <div class="ms-item-notif-dot"></div>
+                  <div class="ms-item-notif-line"></div>
+                  <div class="ms-item-notif-badge">3</div>
+                </div>
+                <div class="ms-item-profile">
+                  <div class="ms-item-profile-ava"><span>TM</span></div>
+                  <div class="ms-item-profile-line"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main — no header -->
+          <div class="mini-main">
+            <div class="mini-header-gone">
+              <div class="mini-strikethrough">
+                <span class="mini-header-label">Top bar</span>
+              </div>
+              <span style="font-size:9px;color:#DC2626;font-family:'IBM Plex Mono',monospace;font-weight:700;margin-left:4px;">removed</span>
+            </div>
+            <div class="mini-body">
+              <div class="mini-forest-header">
+                <div class="mini-fh-row">
+                  <div class="mini-fh-avatar"></div>
+                  <div class="mini-fh-name"></div>
+                  <div class="mini-fh-badge"></div>
+                </div>
+                <div class="mini-fh-kpi">
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                  <div class="mini-fh-kpi-item"></div>
+                </div>
+              </div>
+              <div class="mini-content">
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                  <div class="mini-card"></div>
+                </div>
+                <div class="mini-content-col">
+                  <div class="mini-card"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /mini-layout -->
+
+        <div class="scroll-note" style="background:rgba(26,60,40,0.05);border-color:rgba(26,60,40,0.1);color:var(--text-muted);">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--text-muted);">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Nav items — Logout moves to a Settings page
+        </div>
+      </div>
+
+      <div class="annotation-bar">
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#059669;">Familiar pattern</div>
+            <div class="ann-text">Consistent with top nav items — no visual distinction needed. Works in collapsed mode identically.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(239,68,68,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#DC2626;">Logout discoverability</div>
+            <div class="ann-text">Logout no longer directly accessible — must be buried in profile page or settings.</div>
+          </div>
+        </div>
+        <div class="ann-row">
+          <div class="ann-icon" style="background:rgba(239,68,68,0.1);">
+            <svg width="11" height="11" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div class="ann-body">
+            <div class="ann-label" style="color:#DC2626;">No identity signal</div>
+            <div class="ann-text">Account controls blend into nav — loses the visual separation between navigation and identity.</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /Option C -->
+
+  </div><!-- /options-grid -->
+
+
+  <!-- ══ Before / After comparison ═══════════════════════════════════ -->
+  <div class="ba-section">
+    <h2 class="ba-title">Before &amp; After — Option A</h2>
+    <p class="ba-sub">Same screen, same content. Header row removed, controls moved to sidebar footer.</p>
+
+    <div class="ba-grid">
+
+      <!-- BEFORE -->
+      <div class="ba-panel">
+        <div class="ba-panel-header">
+          <div class="ba-panel-header-dot" style="background:#EF4444;"></div>
+          <span class="ba-panel-header-label" style="color:#DC2626;">Before — Top Bar Exists</span>
+          <span class="removed-badge" style="margin-left:auto;">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Header bar
+          </span>
+        </div>
+        <div class="ba-panel-body">
+          <div class="ba-mini-layout">
+            <div class="ba-layout">
+              <div class="ba-sidebar">
+                <div class="ba-sidebar-logo">
+                  <div class="ba-sidebar-logo-icon"></div>
+                  <span class="ba-sidebar-logo-text">PropertyOS</span>
+                </div>
+                <div class="ba-sidebar-nav">
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item active"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                </div>
+                <!-- no footer controls -->
+              </div>
+              <div class="ba-before-main">
+                <!-- Header with controls -->
+                <div class="ba-before-header">
+                  <div class="ba-hdr-bell">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                    <div class="ba-hdr-bell-badge"></div>
+                  </div>
+                  <div class="ba-hdr-avatar"><span>TM</span></div>
+                </div>
+                <div class="ba-before-body">
+                  <div class="ba-forest-block">
+                    <div class="ba-fb-row">
+                      <div class="ba-fb-ava"></div>
+                      <div class="ba-fb-name"></div>
+                    </div>
+                    <div class="ba-fb-kpi">
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                    </div>
+                  </div>
+                  <div class="ba-body-cards">
+                    <div class="ba-card"></div>
+                    <div class="ba-card"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /before -->
+
+      <!-- AFTER -->
+      <div class="ba-panel" style="border-color:rgba(0,232,122,0.3);">
+        <div class="ba-panel-header" style="border-color:rgba(0,232,122,0.15);">
+          <div class="ba-panel-header-dot" style="background:var(--egreen);"></div>
+          <span class="ba-panel-header-label" style="color:#059669;">After — Header Removed</span>
+          <span class="added-badge" style="margin-left:auto;">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Sidebar footer
+          </span>
+        </div>
+        <div class="ba-panel-body">
+          <div class="ba-mini-layout" style="border-color:rgba(0,232,122,0.2);">
+            <div class="ba-layout">
+              <div class="ba-sidebar">
+                <div class="ba-sidebar-logo">
+                  <div class="ba-sidebar-logo-icon"></div>
+                  <span class="ba-sidebar-logo-text">PropertyOS</span>
+                </div>
+                <div class="ba-sidebar-nav">
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item active"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                  <div class="ba-nav-item"><div class="ba-nav-dot"></div><div class="ba-nav-line"></div></div>
+                </div>
+                <!-- Footer with controls -->
+                <div class="ba-after-sidebar-footer">
+                  <div class="ba-after-ava"><span>TM</span></div>
+                  <div class="ba-after-bell">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                    <div class="ba-after-bell-badge"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Main — no topbar -->
+              <div class="ba-after-main">
+                <div class="ba-after-body">
+                  <div class="ba-forest-block">
+                    <div class="ba-fb-row">
+                      <div class="ba-fb-ava"></div>
+                      <div class="ba-fb-name"></div>
+                    </div>
+                    <div class="ba-fb-kpi">
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                      <div class="ba-fb-kpi-item"></div>
+                    </div>
+                  </div>
+                  <div class="ba-body-cards">
+                    <div class="ba-card"></div>
+                    <div class="ba-card"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /after -->
+
+    </div><!-- /ba-grid -->
+  </div><!-- /ba-section -->
+
+
+  <!-- ══ Collapsed sidebar demo ══════════════════════════════════════  -->
+  <div class="collapsed-demo-wrap">
+    <h2 class="ba-title" style="margin-bottom:6px;">Collapsed Sidebar — Option A</h2>
+    <p class="ba-sub">Icons only, tooltip on hover. Badge count stays visible.</p>
+
+    <div class="collapsed-grid">
+
+      <div class="collapsed-card">
+        <div class="collapsed-card-header">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--terracotta);flex-shrink:0;"></div>
+          <span class="collapsed-card-title">Collapsed — 52px wide</span>
+        </div>
+        <div class="collapsed-card-body">
+          <div class="cs-layout">
+            <div class="cs-sidebar">
+              <div class="cs-sidebar-logo"><div class="cs-sidebar-logo-icon"></div></div>
+              <div class="cs-nav">
+                <div class="cs-item"><div class="cs-dot"></div></div>
+                <div class="cs-item"><div class="cs-dot"></div></div>
+                <div class="cs-item active"><div class="cs-dot"></div></div>
+                <div class="cs-item"><div class="cs-dot"></div></div>
+                <div class="cs-item"><div class="cs-dot"></div></div>
+              </div>
+              <div class="cs-footer">
+                <div class="cs-ava"><span>TM</span></div>
+                <div class="cs-bell">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                  </svg>
+                  <div class="cs-bell-badge"></div>
+                </div>
+              </div>
+            </div>
+            <div class="cs-main"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsed-card">
+        <div class="collapsed-card-header">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--egreen);flex-shrink:0;"></div>
+          <span class="collapsed-card-title">Behaviour notes</span>
+        </div>
+        <div class="collapsed-card-body" style="background:white;padding:16px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="ann-row">
+              <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+                <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ann-body">
+                <div class="ann-label" style="color:#059669;font-size:9px;">Avatar stacks above bell</div>
+                <div class="ann-text">Two separate rows in the footer — avatar on top, bell below. Both centered.</div>
+              </div>
+            </div>
+            <div class="ann-row">
+              <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+                <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ann-body">
+                <div class="ann-label" style="color:#059669;font-size:9px;">Unread badge stays</div>
+                <div class="ann-text">Red dot badge on bell persists in collapsed state — count hidden, dot visible.</div>
+              </div>
+            </div>
+            <div class="ann-row">
+              <div class="ann-icon" style="background:rgba(0,232,122,0.1);">
+                <svg width="11" height="11" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="ann-body">
+                <div class="ann-label" style="color:#059669;font-size:9px;">Tooltip on hover</div>
+                <div class="ann-text">"Themba Mokoena — Agent" tooltip on avatar. "Notifications (3)" tooltip on bell.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══ Summary table ═══════════════════════════════════════════════ -->
+  <div class="summary-section">
+    <h2 class="ba-title" style="margin-bottom:6px;">Comparison Summary</h2>
+    <p class="ba-sub">Quick decision matrix across the three options.</p>
+
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th style="width:200px;">Criterion</th>
+          <th>A — Compact Strip</th>
+          <th>B — Account Row</th>
+          <th>C — Nav Items</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Collapsed sidebar support</strong></td>
+          <td><span class="check">✓</span> Icons stack cleanly</td>
+          <td><span class="neutral">~</span> Falls back to sparse icon row</td>
+          <td><span class="check">✓</span> Icons only, identical</td>
+        </tr>
+        <tr>
+          <td><strong>Identity always visible</strong></td>
+          <td><span class="check">✓</span> Name + role in expanded</td>
+          <td><span class="check">✓✓</span> Full name + company</td>
+          <td><span class="cross">✗</span> Avatar only, no name</td>
+        </tr>
+        <tr>
+          <td><strong>Logout discoverability</strong></td>
+          <td><span class="check">✓</span> Avatar dropdown</td>
+          <td><span class="check">✓</span> Row dropdown</td>
+          <td><span class="cross">✗</span> Buried in settings</td>
+        </tr>
+        <tr>
+          <td><strong>Visual separation (nav vs. identity)</strong></td>
+          <td><span class="check">✓</span> Clear footer zone</td>
+          <td><span class="check">✓</span> Clear footer zone</td>
+          <td><span class="cross">✗</span> Blends into nav items</td>
+        </tr>
+        <tr>
+          <td><strong>Vertical space efficiency</strong></td>
+          <td><span class="check">✓</span> Compact (38px)</td>
+          <td><span class="neutral">~</span> Taller (50px)</td>
+          <td><span class="check">✓</span> No dedicated zone</td>
+        </tr>
+        <tr>
+          <td><strong>Notification panel anchor</strong></td>
+          <td><span class="check">✓</span> Opens upward from bell</td>
+          <td><span class="check">✓</span> Opens upward from bell</td>
+          <td><span class="neutral">~</span> Opens as fixed overlay</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-company role clarity</strong></td>
+          <td><span class="check">✓</span> Role shown inline</td>
+          <td><span class="check">✓✓</span> Company + role shown</td>
+          <td><span class="cross">✗</span> Not shown</td>
+        </tr>
+        <tr>
+          <td><strong>Implementation effort</strong></td>
+          <td><span class="check">✓</span> Low</td>
+          <td><span class="check">✓</span> Low</td>
+          <td><span class="check">✓</span> Low</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /page -->
+
+</body>
+</html>

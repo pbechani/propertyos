@@ -12,7 +12,7 @@ const BT = {
   carbon: '#0C0D10',
 };
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { UserAvatarContent } from '@/components/UserAvatarContent';
 import {
   DropdownMenu,
@@ -155,7 +155,6 @@ export default function HomeNavbar() {
           </div>
 
           <div className="flex items-center justify-end gap-3 md:gap-6">
-            <ThemeToggle className={`border-0 bg-transparent`} />
             {!showAuthenticatedUserMenu ? (
               <Button
                 variant="ghost"

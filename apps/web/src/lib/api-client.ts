@@ -2041,6 +2041,17 @@ export const agentApi = {
       method: 'GET',
       authToken,
     }),
+
+  getOpenHouseAnalytics: (authToken: string, from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const query = params.toString();
+    return apiRequest<any>(`/agent/open-houses/analytics${query ? `?${query}` : ''}`, {
+      method: 'GET',
+      authToken,
+    });
+  },
 };
 
 export const viewingActionsApi = {

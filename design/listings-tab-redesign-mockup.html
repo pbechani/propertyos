@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent Dashboard – My Listings Tab Redesign – PRIBEC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:          #1A3C28;
+    --forest-light:    #2D5A40;
+    --forest-muted:    #3A5E48;
+    --terracotta:      #C4562A;
+    --terracotta-light:#E8A080;
+    --terracotta-hover:#A84422;
+    --parchment:       #F2E8D5;
+    --parchment-dark:  #E8D9BC;
+    --egreen:          #00E87A;
+    --amber:           #B89040;
+    --amber-light:     #F5E6C0;
+    --sidebar-border:  rgba(242,232,213,0.12);
+    --card-bg:         #FFFFFF;
+    --body-bg:         #F2E8D5;
+    --text-dark:       #1A3C28;
+    --text-muted:      #6B8F7A;
+    --border:          rgba(26,60,40,0.12);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Sidebar (condensed reference) ─────────────────── */
+  .sidebar {
+    width: 248px;
+    min-height: 100vh;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--terracotta);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-text {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.2px;
+  }
+  .sidebar-section { padding: 12px 8px 4px; }
+  .sidebar-label {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(242,232,213,0.4);
+    padding: 0 8px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: rgba(242,232,213,0.75);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 1px;
+  }
+  .sidebar-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+  .sidebar-item.active { background: rgba(0,232,122,0.12); color: var(--egreen); }
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .sidebar-item.active svg { opacity: 1; color: var(--egreen); }
+  .sidebar-item-text { flex: 1; }
+  .badge-count {
+    font-size: 10px; font-weight: 700;
+    background: var(--terracotta); color: #fff;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar-role-badge {
+    margin: 0 8px 12px;
+    padding: 8px 12px;
+    background: rgba(242,232,213,0.06);
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 8px;
+  }
+  .role-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(242,232,213,0.4); font-family: 'IBM Plex Mono', monospace; }
+  .role-name { font-size: 12px; font-weight: 600; color: var(--parchment); margin-top: 2px; }
+  .role-tag {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+    background: rgba(196,86,42,0.2); color: #E8A080;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 8px;
+    border-top: 1px solid var(--sidebar-border);
+  }
+  .sidebar-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* ── Main shell ─────────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* ── Page Header (forest dark) ─────────────────────── */
+  .page-header {
+    background: var(--forest);
+    padding: 28px 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 240px; height: 240px;
+    background: var(--terracotta); opacity: 0.08; border-radius: 50%;
+  }
+  .page-header::after {
+    content: '';
+    position: absolute; bottom: 10px; left: 38%;
+    width: 180px; height: 180px;
+    background: var(--egreen); opacity: 0.04; border-radius: 50%;
+  }
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 22px; position: relative; z-index: 1;
+  }
+  .header-eyebrow {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terracotta); margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .header-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 26px; font-weight: 700;
+    color: var(--parchment); letter-spacing: -0.4px; line-height: 1.15;
+  }
+  .header-title em { font-style: italic; color: var(--egreen); }
+  .header-subtitle { font-size: 13px; color: rgba(242,232,213,0.55); margin-top: 5px; font-weight: 400; }
+  .header-actions {
+    display: flex; align-items: center; gap: 10px;
+    position: relative; z-index: 1;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; text-decoration: none; transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-primary {
+    background: var(--terracotta); color: #fff;
+  }
+  .btn-primary:hover { background: var(--terracotta-hover); }
+  .btn-ghost {
+    background: rgba(242,232,213,0.1);
+    border: 1px solid rgba(242,232,213,0.2);
+    color: rgba(242,232,213,0.85);
+  }
+  .btn-ghost:hover { background: rgba(242,232,213,0.18); }
+  .btn-sm {
+    padding: 5px 11px; font-size: 12px; border-radius: 6px;
+  }
+
+  /* KPI mini strip inside header */
+  .kpi-strip {
+    display: flex; gap: 0;
+    background: rgba(0,0,0,0.18);
+    border-radius: 12px 12px 0 0;
+    border: 1px solid rgba(242,232,213,0.1);
+    border-bottom: none;
+    overflow: hidden;
+    position: relative; z-index: 1;
+    margin-top: 4px;
+  }
+  .kpi-cell {
+    flex: 1;
+    padding: 14px 20px;
+    border-right: 1px solid rgba(242,232,213,0.08);
+    min-width: 0;
+  }
+  .kpi-cell:last-child { border-right: none; }
+  .kpi-label {
+    font-size: 9.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(242,232,213,0.45);
+    font-family: 'IBM Plex Mono', monospace; margin-bottom: 5px;
+  }
+  .kpi-value {
+    font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700;
+    color: var(--parchment); line-height: 1; letter-spacing: -0.5px;
+  }
+  .kpi-value.green { color: var(--egreen); }
+  .kpi-value.terracotta { color: var(--terracotta-light); }
+  .kpi-value.amber { color: #F5C87A; }
+  .kpi-delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 600; margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .kpi-delta.up { color: var(--egreen); }
+  .kpi-delta.down { color: #F87171; }
+  .kpi-delta.neutral { color: rgba(242,232,213,0.4); }
+
+  /* ── Tabs bar ───────────────────────────────────────── */
+  .tabs-bar {
+    background: var(--forest);
+    padding: 0 32px;
+    border-bottom: 1px solid rgba(242,232,213,0.1);
+    display: flex; gap: 2px; position: relative; z-index: 1;
+  }
+  .tab {
+    padding: 12px 18px; font-size: 13px; font-weight: 500;
+    color: rgba(242,232,213,0.55); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s; white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .tab:hover { color: rgba(242,232,213,0.85); }
+  .tab.active {
+    color: var(--parchment); font-weight: 600;
+    border-bottom-color: var(--egreen);
+  }
+  .tab-badge {
+    font-size: 10px; font-weight: 700;
+    background: rgba(196,86,42,0.25); color: var(--terracotta-light);
+    padding: 1px 6px; border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .tab.active .tab-badge {
+    background: rgba(0,232,122,0.15); color: var(--egreen);
+  }
+
+  /* ── Content area ──────────────────────────────────── */
+  .content-area {
+    flex: 1; padding: 24px 32px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* ── Smart Insights Alert Bar ──────────────────────── */
+  .insights-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    overflow-x: auto;
+  }
+  .insights-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap; flex-shrink: 0;
+    padding-right: 10px;
+    border-right: 1px solid var(--border);
+    margin-right: 2px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .insight-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    white-space: nowrap; cursor: pointer; flex-shrink: 0;
+    transition: opacity 0.15s; border: 1px solid transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .insight-chip:hover { opacity: 0.8; }
+  .chip-hot { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+  .chip-warn { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+  .chip-alert { background: #FFF7ED; color: #C2410C; border-color: #FDBA74; }
+  .chip-ok { background: #F0FDF4; color: #166534; border-color: #BBF7D0; }
+  .chip-info { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+  .chip-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+  }
+
+  /* ── Filter + View Controls ────────────────────────── */
+  .controls-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .filter-pills {
+    display: flex; gap: 4px; background: rgba(26,60,40,0.06);
+    padding: 4px; border-radius: 10px;
+  }
+  .filter-pill {
+    padding: 5px 13px; border-radius: 7px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    color: var(--text-muted); font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .filter-pill.active {
+    background: var(--forest); color: var(--parchment);
+  }
+  .filter-pill:not(.active):hover { background: rgba(26,60,40,0.1); color: var(--text-dark); }
+  .filter-count {
+    font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    opacity: 0.6; margin-left: 3px;
+  }
+  .view-toggle {
+    display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    background: #fff; margin-left: auto;
+  }
+  .view-btn {
+    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    color: var(--text-muted); transition: all 0.15s; border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; gap: 5px;
+    background: transparent;
+  }
+  .view-btn.active { background: var(--forest); color: var(--parchment); }
+  .search-box {
+    display: flex; align-items: center; gap: 7px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; font-size: 12px;
+    color: var(--text-muted); min-width: 180px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .search-box svg { flex-shrink: 0; }
+
+  /* ── Listing Cards Grid ────────────────────────────── */
+  .listings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  /* Listing card */
+  .listing-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .listing-card:hover {
+    box-shadow: 0 4px 20px rgba(26,60,40,0.10);
+    transform: translateY(-1px);
+  }
+  .listing-card-image {
+    width: 100%; height: 140px;
+    background: linear-gradient(135deg, #C5D9C8 0%, #B0C9B4 100%);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .listing-card-image svg { opacity: 0.25; }
+  .listing-type-badge {
+    position: absolute; top: 10px; left: 10px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 3px 9px; border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .type-sale { background: var(--forest); color: var(--parchment); }
+  .type-rent { background: #B45309; color: #fff; }
+  .type-dev  { background: #7C3AED; color: #fff; }
+  .listing-heat-badge {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 10px; font-weight: 700; padding: 3px 9px;
+    border-radius: 20px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .heat-hot  { background: rgba(220,38,38,0.9);  color: #fff; }
+  .heat-warm { background: rgba(217,119,6,0.9);  color: #fff; }
+  .heat-cold { background: rgba(59,130,246,0.85); color: #fff; }
+
+  .listing-card-body { padding: 14px 16px 10px; }
+  .listing-card-title {
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700;
+    color: var(--forest); margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .listing-card-addr {
+    font-size: 11px; color: var(--text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 10px;
+  }
+
+  .listing-price-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .listing-card-price {
+    font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700;
+    color: var(--forest); letter-spacing: -0.3px;
+  }
+  .listing-dom {
+    font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-muted); display: flex; align-items: center; gap: 3px;
+  }
+  .dom-stale { color: #DC2626; }
+  .dom-ok { color: #059669; }
+
+  /* Metrics bar */
+  .listing-metrics {
+    display: flex; gap: 0;
+    background: rgba(26,60,40,0.04);
+    border-radius: 8px; overflow: hidden;
+    border: 1px solid rgba(26,60,40,0.08);
+    margin-bottom: 10px;
+  }
+  .metric-cell {
+    flex: 1; padding: 7px 6px; text-align: center;
+    border-right: 1px solid rgba(26,60,40,0.08);
+  }
+  .metric-cell:last-child { border-right: none; }
+  .metric-val {
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+  .metric-val.highlight { color: var(--terracotta); }
+  .metric-lbl {
+    font-size: 9px; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;
+  }
+
+  /* Tags row */
+  .listing-tags {
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .tag-chip {
+    font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+    font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em;
+  }
+  .tag-expiring { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+  .tag-expiring-urgent { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+  .tag-synced { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+  .tag-draft  { background: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; }
+  .tag-offer  { background: rgba(26,60,40,0.08); color: var(--forest); border: 1px solid rgba(26,60,40,0.16); }
+
+  /* Portal icons row */
+  .portal-row {
+    display: flex; align-items: center; gap: 5px; margin-bottom: 10px;
+  }
+  .portal-icon {
+    width: 20px; height: 20px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 800; font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0;
+  }
+  .portal-live  { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+  .portal-pend  { background: #FEF9C3; color: #854D0E; border: 1px solid #FEF08A; }
+  .portal-off   { background: #F1F5F9; color: #94A3B8; border: 1px solid #E2E8F0; }
+  .portal-label { font-size: 9px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+
+  /* Card actions */
+  .listing-card-actions {
+    display: flex; gap: 6px;
+    padding: 10px 16px 12px;
+    border-top: 1px solid rgba(26,60,40,0.07);
+  }
+  .action-btn {
+    flex: 1; padding: 6px 0; text-align: center;
+    font-size: 11px; font-weight: 600; border-radius: 7px;
+    cursor: pointer; border: 1px solid rgba(26,60,40,0.15);
+    color: var(--forest); background: transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: rgba(26,60,40,0.06); }
+  .action-btn.primary {
+    background: var(--forest); color: var(--parchment); border-color: var(--forest);
+  }
+  .action-btn.primary:hover { background: var(--forest-light); }
+
+  /* ── Health Gauge Ring ─────────────────────────────── */
+  .health-ring-wrap {
+    position: absolute; bottom: 10px; right: 12px;
+  }
+
+  /* ── Bottom two-col ────────────────────────────────── */
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+
+  /* Card (white bubble) */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title {
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700;
+    color: var(--forest);
+  }
+  .card-meta {
+    font-size: 11px; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .annotation {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+    font-family: 'IBM Plex Mono', monospace; vertical-align: middle;
+  }
+  .annotation.new { background: rgba(0,232,122,0.15); color: var(--egreen); }
+  .card-body { padding: 16px 18px; }
+
+  /* Offer Pipeline rows */
+  .offer-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid rgba(26,60,40,0.06);
+  }
+  .offer-row:last-child { border-bottom: none; }
+  .offer-thumb {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #C5D9C8 0%, #B0C9B4 100%);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .offer-info { flex: 1; min-width: 0; }
+  .offer-name {
+    font-size: 12px; font-weight: 600; color: var(--text-dark);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .offer-sub {
+    font-size: 10px; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace; margin-top: 2px;
+  }
+  .offer-meta { text-align: right; flex-shrink: 0; }
+  .offer-amount {
+    font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700;
+    color: var(--forest);
+  }
+  .offer-status {
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace; margin-top: 3px; display: block;
+    text-align: center;
+  }
+  .offer-pending  { background: #FEF3C7; color: #B45309; }
+  .offer-counter  { background: #DBEAFE; color: #1D4ED8; }
+  .offer-accepted { background: #D1FAE5; color: #065F46; }
+  .offer-days { font-size: 9px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; margin-top: 2px; display: block; }
+
+  /* Syndication Matrix */
+  .syn-table { width: 100%; border-collapse: collapse; }
+  .syn-table th {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 8px 10px; text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .syn-table th:first-child { text-align: left; }
+  .syn-table td {
+    padding: 9px 10px; font-size: 11px; color: var(--text-dark);
+    border-bottom: 1px solid rgba(26,60,40,0.05);
+    text-align: center;
+  }
+  .syn-table td:first-child { text-align: left; font-weight: 600; font-size: 11px; }
+  .syn-table tr:last-child td { border-bottom: none; }
+  .syn-dot {
+    width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  }
+  .syn-live { background: #22C55E; }
+  .syn-pend { background: #F59E0B; }
+  .syn-off  { background: #D1D5DB; }
+  .syn-portal-name {
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .syn-listing-name {
+    max-width: 130px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .syn-live-label { font-size: 9px; color: #15803D; font-family: 'IBM Plex Mono', monospace; }
+  .syn-pend-label { font-size: 9px; color: #B45309; font-family: 'IBM Plex Mono', monospace; }
+  .syn-off-label  { font-size: 9px; color: #94A3B8; font-family: 'IBM Plex Mono', monospace; }
+
+  /* Section label */
+  .section-link {
+    font-size: 11px; font-weight: 700; color: var(--terracotta);
+    text-decoration: none; font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+  }
+  .section-link:hover { color: var(--terracotta-hover); }
+
+  /* ── Empty state ───────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  }
+
+  /* ── Price Reduction nudge on card ─────────────────── */
+  .price-nudge {
+    background: rgba(196,86,42,0.07);
+    border: 1px solid rgba(196,86,42,0.18);
+    border-radius: 7px; padding: 5px 9px;
+    font-size: 10px; color: var(--terracotta); font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 10px;
+  }
+
+  /* ── AI insight accent ─────────────────────────────── */
+  .ai-insight {
+    background: linear-gradient(135deg, rgba(0,232,122,0.06) 0%, rgba(26,60,40,0.04) 100%);
+    border: 1px solid rgba(0,232,122,0.2);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 11px; color: var(--forest); font-weight: 500;
+    display: flex; align-items: flex-start; gap: 7px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .ai-icon {
+    font-size: 14px; flex-shrink: 0; line-height: 1.3;
+  }
+
+  /* Mandate expiry bar inside card */
+  .mandate-bar-wrap {
+    margin-bottom: 10px;
+  }
+  .mandate-bar-label {
+    font-size: 9px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace;
+    display: flex; justify-content: space-between; margin-bottom: 3px;
+  }
+  .mandate-bar-track {
+    height: 4px; border-radius: 2px; background: rgba(26,60,40,0.1); overflow: hidden;
+  }
+  .mandate-bar-fill {
+    height: 100%; border-radius: 2px;
+  }
+  .mandate-fill-ok      { background: #22C55E; }
+  .mandate-fill-warn    { background: #F59E0B; }
+  .mandate-fill-critical { background: #DC2626; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .listings-grid { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SIDEBAR (abbreviated – same as other tabs)
+═══════════════════════════════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <span class="logo-text">PRIBEC</span>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Workspace</div>
+    <div class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="sidebar-item-text">Overview</span>
+    </div>
+    <div class="sidebar-item active">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="sidebar-item-text">My Listings</span>
+      <span class="badge-count">12</span>
+    </div>
+    <div class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="sidebar-item-text">Lead Pipeline</span>
+      <span class="badge-count">7</span>
+    </div>
+    <div class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span class="sidebar-item-text">Schedule</span>
+    </div>
+    <div class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span class="sidebar-item-text">Commission</span>
+    </div>
+    <div class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="sidebar-item-text">Mandates</span>
+    </div>
+  </div>
+
+  <div class="sidebar-role-badge" style="margin-top:auto;">
+    <div class="role-label">Logged in as</div>
+    <div class="role-name">Sipho Dlamini</div>
+    <div class="role-tag">Agent</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-item">
+      <div class="sidebar-avatar">SD</div>
+      <div><div style="font-size:12px;font-weight:600;color:var(--parchment);">Sipho Dlamini</div><div style="font-size:10px;color:rgba(242,232,213,0.45);font-family:'IBM Plex Mono',monospace;">Premium Agent</div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Page Header ──────────────────────────────────── -->
+  <div class="page-header">
+    <div style="position:absolute;top:30px;right:260px;width:120px;height:120px;background:var(--parchment);opacity:0.03;border-radius:50%;"></div>
+
+    <div class="header-top">
+      <div>
+        <div class="header-eyebrow">My Listings · April 2026</div>
+        <div class="header-title">Portfolio <em>Intelligence</em></div>
+        <div class="header-subtitle">Your active book · <strong>R 18.7M</strong> combined value · <strong>12 properties</strong></div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Listing
+        </button>
+        <button class="btn btn-primary btn-sm">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Syndicate All
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI strip in header -->
+    <div class="kpi-strip">
+      <div class="kpi-cell">
+        <div class="kpi-label">Active Listings</div>
+        <div class="kpi-value green">12</div>
+        <div class="kpi-delta up">▲ 2 this month</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">Portfolio Value</div>
+        <div class="kpi-value">R 18.7M</div>
+        <div class="kpi-delta neutral">combined asking</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">Avg. Days on Mkt</div>
+        <div class="kpi-value amber">34</div>
+        <div class="kpi-delta down">▼ 3 vs last month</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">Inquiries (Month)</div>
+        <div class="kpi-value terracotta">47</div>
+        <div class="kpi-delta up">▲ 18% vs last month</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">Active Offers</div>
+        <div class="kpi-value green">5</div>
+        <div class="kpi-delta up">▲ 2 new this week</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-label">Synced Portals</div>
+        <div class="kpi-value">38<span style="font-size:12px;font-weight:500;color:rgba(242,232,213,0.4);"> / 48</span></div>
+        <div class="kpi-delta neutral">2 pending review</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs bar ──────────────────────────────────────── -->
+  <div class="tabs-bar">
+    <div class="tab">Overview</div>
+    <div class="tab">Analytics</div>
+    <div class="tab active">
+      My Listings
+      <span class="tab-badge">12</span>
+    </div>
+    <div class="tab">Viewings</div>
+    <div class="tab">Mandates</div>
+    <div class="tab">CRM <span class="tab-badge">7</span></div>
+    <div class="tab">AI Assistant</div>
+  </div>
+
+  <!-- ── Content ───────────────────────────────────────── -->
+  <div class="content-area">
+
+    <!-- ─── SECTION 1: Smart Insights Bar ──────────────── -->
+    <div class="insights-bar">
+      <span class="insights-label">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Smart Alerts
+      </span>
+      <div class="insight-chip chip-hot">
+        <span class="chip-dot" style="background:#DC2626;"></span>
+        🔥 Riverside Estate has 5 offers — review now
+      </div>
+      <div class="insight-chip chip-warn">
+        <span class="chip-dot" style="background:#D97706;"></span>
+        ⚠ 2 listings: zero inquiries in 14d — price drop?
+      </div>
+      <div class="insight-chip chip-alert">
+        <span class="chip-dot" style="background:#C2410C;"></span>
+        📅 Mandate expiring: 88 Sunset Blvd in 6 days
+      </div>
+      <div class="insight-chip chip-ok">
+        <span class="chip-dot" style="background:#166534;"></span>
+        ✓ Sunset Villa — all docs verified, transfer ready
+      </div>
+      <div class="insight-chip chip-info">
+        <span class="chip-dot" style="background:#1D4ED8;"></span>
+        ℹ 4 listings not synced to Property24
+      </div>
+    </div>
+
+    <!-- ─── SECTION 2: Filter + View Controls ──────────── -->
+    <div class="controls-row">
+      <!-- Status filters -->
+      <div class="filter-pills">
+        <div class="filter-pill active">All <span class="filter-count">(12)</span></div>
+        <div class="filter-pill">🔥 Hot <span class="filter-count">(4)</span></div>
+        <div class="filter-pill">Active <span class="filter-count">(8)</span></div>
+        <div class="filter-pill">Under Offer <span class="filter-count">(3)</span></div>
+        <div class="filter-pill">Stale 30d+ <span class="filter-count">(2)</span></div>
+        <div class="filter-pill">Draft <span class="filter-count">(1)</span></div>
+        <div class="filter-pill">Sold <span class="filter-count">(4)</span></div>
+      </div>
+
+      <!-- Search -->
+      <div class="search-box">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search listings…
+      </div>
+
+      <!-- Type filter -->
+      <div class="filter-pills" style="background:transparent;gap:5px;padding:0;">
+        <div class="tag-chip type-sale" style="padding:5px 10px;font-size:10px;cursor:pointer;">For Sale</div>
+        <div class="tag-chip type-rent" style="padding:5px 10px;font-size:10px;cursor:pointer;opacity:0.5;">To Rent</div>
+        <div class="tag-chip type-dev"  style="padding:5px 10px;font-size:10px;cursor:pointer;opacity:0.5;">Development</div>
+      </div>
+
+      <!-- View toggle -->
+      <div class="view-toggle">
+        <button class="view-btn active">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Cards
+        </button>
+        <button class="view-btn">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Table
+        </button>
+      </div>
+
+      <!-- Sort -->
+      <div class="view-toggle">
+        <button class="view-btn active" style="gap:4px;">
+          Sort: Heat ▾
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3: Listing Cards Grid ──────────────── -->
+    <div class="listings-grid">
+
+      <!-- Card 1: Riverside Estate (HOT, 5 offers) -->
+      <div class="listing-card" style="border-color:rgba(220,38,38,0.25);">
+        <div class="listing-card-image" style="background:linear-gradient(135deg,#C5D9C8,#8FAD93);">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="listing-type-badge type-sale">For Sale</span>
+          <span class="listing-heat-badge heat-hot">🔥 High</span>
+          <!-- Health ring -->
+          <div class="health-ring-wrap">
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="19" r="14" fill="rgba(255,255,255,0.9)" stroke="rgba(26,60,40,0.15)" stroke-width="5"/>
+              <circle cx="19" cy="19" r="14" fill="none" stroke="#22C55E" stroke-width="5"
+                stroke-dasharray="79 88" stroke-dashoffset="22"
+                stroke-linecap="round" transform="rotate(-90 19 19)"/>
+              <text x="19" y="20" text-anchor="middle" dominant-baseline="middle"
+                font-family="Fraunces,serif" font-size="9" font-weight="700" fill="#1A3C28">91</text>
+            </svg>
+          </div>
+        </div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">Riverside Estate, Lot 7</div>
+          <div class="listing-card-addr">Riverside, Johannesburg · 5 bed · 4 bath · 320 m²</div>
+          <div class="listing-price-row">
+            <div class="listing-card-price">R 2.1M</div>
+            <div class="listing-dom dom-ok">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              22 days
+            </div>
+          </div>
+          <div class="listing-metrics">
+            <div class="metric-cell">
+              <div class="metric-val">31</div>
+              <div class="metric-lbl">Views</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">18</div>
+              <div class="metric-lbl">Inquiries</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val highlight">5</div>
+              <div class="metric-lbl">Offers</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">18</div>
+              <div class="metric-lbl">Tours</div>
+            </div>
+          </div>
+          <!-- AI Insight -->
+          <div class="ai-insight" style="margin-bottom:10px;">
+            <span class="ai-icon">✦</span>
+            <span><strong>5 offers received</strong> — highest asking R 2.08M from J. van der Berg. Counter-offer window closes tomorrow.</span>
+          </div>
+          <!-- Tags -->
+          <div class="listing-tags">
+            <span class="tag-chip tag-offer">5 Offers</span>
+            <span class="tag-chip tag-synced">✓ 4 Portals</span>
+          </div>
+          <!-- Portal row -->
+          <div class="portal-row">
+            <div class="portal-icon portal-live" title="Property24 – Live">P24</div>
+            <div class="portal-icon portal-live" title="Private Property – Live">PP</div>
+            <div class="portal-icon portal-live" title="Gumtree – Live">GT</div>
+            <div class="portal-icon portal-live" title="Lightstone – Live">LS</div>
+            <span class="portal-label" style="margin-left:4px;">All synced</span>
+          </div>
+          <!-- Mandate bar -->
+          <div class="mandate-bar-wrap">
+            <div class="mandate-bar-label">
+              <span>Mandate expires</span><span style="color:#059669;">82 days remaining</span>
+            </div>
+            <div class="mandate-bar-track"><div class="mandate-bar-fill mandate-fill-ok" style="width:78%;"></div></div>
+          </div>
+        </div>
+        <div class="listing-card-actions">
+          <button class="action-btn primary">View</button>
+          <button class="action-btn">Edit</button>
+          <button class="action-btn">⚡ Offers</button>
+          <button class="action-btn">Syndicate</button>
+        </div>
+      </div>
+
+      <!-- Card 2: Sunset Villa (HOT, mandate expiring!) -->
+      <div class="listing-card" style="border-color:rgba(217,119,6,0.25);">
+        <div class="listing-card-image" style="background:linear-gradient(135deg,#E8D9BC,#C5A870);">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="listing-type-badge type-sale">For Sale</span>
+          <span class="listing-heat-badge heat-hot">🔥 High</span>
+          <div class="health-ring-wrap">
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="19" r="14" fill="rgba(255,255,255,0.9)" stroke="rgba(26,60,40,0.15)" stroke-width="5"/>
+              <circle cx="19" cy="19" r="14" fill="none" stroke="#F59E0B" stroke-width="5"
+                stroke-dasharray="66 88" stroke-dashoffset="22"
+                stroke-linecap="round" transform="rotate(-90 19 19)"/>
+              <text x="19" y="20" text-anchor="middle" dominant-baseline="middle"
+                font-family="Fraunces,serif" font-size="9" font-weight="700" fill="#1A3C28">75</text>
+            </svg>
+          </div>
+        </div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">88 Sunset Boulevard</div>
+          <div class="listing-card-addr">West Hills, Pretoria · 4 bed · 3 bath · 240 m²</div>
+          <div class="listing-price-row">
+            <div class="listing-card-price">R 1.25M</div>
+            <div class="listing-dom dom-ok">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              28 days
+            </div>
+          </div>
+          <div class="listing-metrics">
+            <div class="metric-cell">
+              <div class="metric-val">24</div>
+              <div class="metric-lbl">Views</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">12</div>
+              <div class="metric-lbl">Inquiries</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val highlight">3</div>
+              <div class="metric-lbl">Offers</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">12</div>
+              <div class="metric-lbl">Tours</div>
+            </div>
+          </div>
+          <!-- Expiry nudge -->
+          <div class="price-nudge">
+            📅 Mandate expires in <strong>6 days</strong> — schedule renewal with seller
+          </div>
+          <!-- Tags -->
+          <div class="listing-tags">
+            <span class="tag-chip tag-expiring-urgent">Mandate 6d</span>
+            <span class="tag-chip tag-offer">3 Offers</span>
+            <span class="tag-chip tag-synced">✓ 4 Portals</span>
+          </div>
+          <div class="portal-row">
+            <div class="portal-icon portal-live">P24</div>
+            <div class="portal-icon portal-live">PP</div>
+            <div class="portal-icon portal-live">GT</div>
+            <div class="portal-icon portal-pend">LS</div>
+            <span class="portal-label" style="margin-left:4px;">1 portal pending</span>
+          </div>
+          <div class="mandate-bar-wrap">
+            <div class="mandate-bar-label">
+              <span>Mandate expires</span><span style="color:#DC2626;">6 days remaining</span>
+            </div>
+            <div class="mandate-bar-track"><div class="mandate-bar-fill mandate-fill-critical" style="width:4%;"></div></div>
+          </div>
+        </div>
+        <div class="listing-card-actions">
+          <button class="action-btn primary">View</button>
+          <button class="action-btn">Edit</button>
+          <button class="action-btn" style="color:var(--terracotta);border-color:rgba(196,86,42,0.3);">⚠ Renew</button>
+          <button class="action-btn">Syndicate</button>
+        </div>
+      </div>
+
+      <!-- Card 3: Sky View Tower (Warm, missing portals) -->
+      <div class="listing-card">
+        <div class="listing-card-image" style="background:linear-gradient(135deg,#DBEAFE,#93C5FD);">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="listing-type-badge type-sale">For Sale</span>
+          <span class="listing-heat-badge heat-warm">⚡ Warm</span>
+          <div class="health-ring-wrap">
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="19" r="14" fill="rgba(255,255,255,0.9)" stroke="rgba(26,60,40,0.15)" stroke-width="5"/>
+              <circle cx="19" cy="19" r="14" fill="none" stroke="#3B82F6" stroke-width="5"
+                stroke-dasharray="57 88" stroke-dashoffset="22"
+                stroke-linecap="round" transform="rotate(-90 19 19)"/>
+              <text x="19" y="20" text-anchor="middle" dominant-baseline="middle"
+                font-family="Fraunces,serif" font-size="9" font-weight="700" fill="#1A3C28">65</text>
+            </svg>
+          </div>
+        </div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">204 Sky View Tower, Unit 12</div>
+          <div class="listing-card-addr">Downtown, JHB · 2 bed · 2 bath · 95 m²</div>
+          <div class="listing-price-row">
+            <div class="listing-card-price">R 450K</div>
+            <div class="listing-dom dom-ok">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              19 days
+            </div>
+          </div>
+          <div class="listing-metrics">
+            <div class="metric-cell">
+              <div class="metric-val">8</div>
+              <div class="metric-lbl">Views</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">3</div>
+              <div class="metric-lbl">Inquiries</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">0</div>
+              <div class="metric-lbl">Offers</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">3</div>
+              <div class="metric-lbl">Tours</div>
+            </div>
+          </div>
+          <div class="ai-insight" style="margin-bottom:10px;">
+            <span class="ai-icon">✦</span>
+            <span>Only 2 portals synced — add Property24 to increase views by ~40%.</span>
+          </div>
+          <div class="listing-tags">
+            <span class="tag-chip tag-expiring">Mandate 34d</span>
+          </div>
+          <div class="portal-row">
+            <div class="portal-icon portal-live">PP</div>
+            <div class="portal-icon portal-live">GT</div>
+            <div class="portal-icon portal-off">P24</div>
+            <div class="portal-icon portal-off">LS</div>
+            <span class="portal-label" style="margin-left:4px;">2 portals not synced</span>
+          </div>
+          <div class="mandate-bar-wrap">
+            <div class="mandate-bar-label">
+              <span>Mandate expires</span><span style="color:#059669;">34 days remaining</span>
+            </div>
+            <div class="mandate-bar-track"><div class="mandate-bar-fill mandate-fill-warn" style="width:28%;"></div></div>
+          </div>
+        </div>
+        <div class="listing-card-actions">
+          <button class="action-btn primary">View</button>
+          <button class="action-btn">Edit</button>
+          <button class="action-btn">Duplicate</button>
+          <button class="action-btn" style="color:#2563EB;border-color:rgba(37,99,235,0.25);">+ Portals</button>
+        </div>
+      </div>
+
+      <!-- Card 4: The Pines (STALE / Cold + price nudge) -->
+      <div class="listing-card" style="border-color:rgba(148,163,184,0.3);">
+        <div class="listing-card-image" style="background:linear-gradient(135deg,#F1F5F9,#CBD5E1);">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="listing-type-badge type-sale">For Sale</span>
+          <span class="listing-heat-badge heat-cold">❄ Slow</span>
+          <div class="health-ring-wrap">
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="19" r="14" fill="rgba(255,255,255,0.9)" stroke="rgba(26,60,40,0.15)" stroke-width="5"/>
+              <circle cx="19" cy="19" r="14" fill="none" stroke="#EF4444" stroke-width="5"
+                stroke-dasharray="35 88" stroke-dashoffset="22"
+                stroke-linecap="round" transform="rotate(-90 19 19)"/>
+              <text x="19" y="20" text-anchor="middle" dominant-baseline="middle"
+                font-family="Fraunces,serif" font-size="9" font-weight="700" fill="#1A3C28">40</text>
+            </svg>
+          </div>
+        </div>
+        <div class="listing-card-body">
+          <div class="listing-card-title">The Pines, Unit 4B</div>
+          <div class="listing-card-addr">Sandton, JHB · 3 bed · 2 bath · 140 m²</div>
+          <div class="listing-price-row">
+            <div class="listing-card-price">R 780K</div>
+            <div class="listing-dom dom-stale">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              52 days ⚠
+            </div>
+          </div>
+          <div class="listing-metrics">
+            <div class="metric-cell">
+              <div class="metric-val">5</div>
+              <div class="metric-lbl">Views</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">1</div>
+              <div class="metric-lbl">Inquiries</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">0</div>
+              <div class="metric-lbl">Offers</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">1</div>
+              <div class="metric-lbl">Tours</div>
+            </div>
+          </div>
+          <!-- Price nudge -->
+          <div class="price-nudge">
+            ✦ <strong>52 days stale</strong> — comparable unit sold at R 740K. Consider reducing by 4–6%.
+          </div>
+          <div class="listing-tags">
+            <span class="tag-chip tag-expiring-urgent">Stale 52d</span>
+            <span class="tag-chip tag-draft">Price review needed</span>
+          </div>
+          <div class="portal-row">
+            <div class="portal-icon portal-live">P24</div>
+            <div class="portal-icon portal-off">PP</div>
+            <div class="portal-icon portal-off">GT</div>
+            <div class="portal-icon portal-off">LS</div>
+            <span class="portal-label" style="margin-left:4px;">Only 1 portal active</span>
+          </div>
+          <div class="mandate-bar-wrap">
+            <div class="mandate-bar-label">
+              <span>Mandate expires</span><span style="color:#B45309;">21 days remaining</span>
+            </div>
+            <div class="mandate-bar-track"><div class="mandate-bar-fill mandate-fill-warn" style="width:18%;"></div></div>
+          </div>
+        </div>
+        <div class="listing-card-actions">
+          <button class="action-btn primary">View</button>
+          <button class="action-btn">Edit</button>
+          <button class="action-btn" style="color:var(--terracotta);border-color:rgba(196,86,42,0.3);">Price Drop</button>
+          <button class="action-btn">Syndicate</button>
+        </div>
+      </div>
+
+    </div><!-- /listings-grid -->
+
+    <!-- ─── SECTION 4: Offer Pipeline + Syndication Status ─ -->
+    <div class="grid-2">
+
+      <!-- Offer Pipeline -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Offer Pipeline <span class="annotation new">New</span></span>
+          <span class="card-meta">5 active offers · R 8.4M</span>
+        </div>
+        <!-- Offer summary tally -->
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;padding:10px 14px;text-align:center;border-right:1px solid var(--border);">
+            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#DC2626;">3</div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Pending</div>
+          </div>
+          <div style="flex:1;padding:10px 14px;text-align:center;border-right:1px solid var(--border);">
+            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#2563EB;">1</div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Counter</div>
+          </div>
+          <div style="flex:1;padding:10px 14px;text-align:center;">
+            <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:#059669;">1</div>
+            <div style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Accepted</div>
+          </div>
+        </div>
+        <!-- Offer rows -->
+        <div class="offer-row">
+          <div class="offer-thumb">
+            <svg width="18" height="18" fill="none" stroke="#1A3C28" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="offer-info">
+            <div class="offer-name">Riverside Estate, Lot 7</div>
+            <div class="offer-sub">J. van der Berg · R 2.08M offered</div>
+          </div>
+          <div class="offer-meta">
+            <div class="offer-amount">R 2.08M</div>
+            <span class="offer-status offer-pending">PENDING</span>
+            <span class="offer-days">3 days ago</span>
+          </div>
+        </div>
+        <div class="offer-row">
+          <div class="offer-thumb">
+            <svg width="18" height="18" fill="none" stroke="#1A3C28" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="offer-info">
+            <div class="offer-name">Riverside Estate, Lot 7</div>
+            <div class="offer-sub">T. Mokoena · R 1.98M offered</div>
+          </div>
+          <div class="offer-meta">
+            <div class="offer-amount">R 1.98M</div>
+            <span class="offer-status offer-counter">COUNTER</span>
+            <span class="offer-days">1 day ago</span>
+          </div>
+        </div>
+        <div class="offer-row">
+          <div class="offer-thumb">
+            <svg width="18" height="18" fill="none" stroke="#1A3C28" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="offer-info">
+            <div class="offer-name">88 Sunset Boulevard</div>
+            <div class="offer-sub">S. Khumalo · R 1.22M offered</div>
+          </div>
+          <div class="offer-meta">
+            <div class="offer-amount">R 1.22M</div>
+            <span class="offer-status offer-pending">PENDING</span>
+            <span class="offer-days">5 days ago</span>
+          </div>
+        </div>
+        <div class="offer-row">
+          <div class="offer-thumb">
+            <svg width="18" height="18" fill="none" stroke="#1A3C28" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="offer-info">
+            <div class="offer-name">88 Sunset Boulevard</div>
+            <div class="offer-sub">M. Chen · R 1.21M offered</div>
+          </div>
+          <div class="offer-meta">
+            <div class="offer-amount">R 1.21M</div>
+            <span class="offer-status offer-accepted">ACCEPTED</span>
+            <span class="offer-days">Today</span>
+          </div>
+        </div>
+        <div style="padding:10px 18px 14px;text-align:center;">
+          <a class="section-link">View all 5 offers →</a>
+        </div>
+      </div>
+
+      <!-- Syndication Status Matrix -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Syndication Status <span class="annotation new">New</span></span>
+          <a class="section-link">Sync All →</a>
+        </div>
+        <div style="padding:4px 0 0;">
+          <table class="syn-table">
+            <thead>
+              <tr>
+                <th>Listing</th>
+                <th><span class="syn-portal-name">P24</span></th>
+                <th><span class="syn-portal-name">PrivProp</span></th>
+                <th><span class="syn-portal-name">Gumtree</span></th>
+                <th><span class="syn-portal-name">Lightstone</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="syn-listing-name">Riverside Estate</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+              </tr>
+              <tr>
+                <td><span class="syn-listing-name">88 Sunset Blvd</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-pend"></span><br><span class="syn-pend-label">Pending</span></td>
+              </tr>
+              <tr>
+                <td><span class="syn-listing-name">204 Sky View Tower</span></td>
+                <td><span class="syn-dot syn-off"></span><br><span class="syn-off-label">—</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-off"></span><br><span class="syn-off-label">—</span></td>
+              </tr>
+              <tr>
+                <td><span class="syn-listing-name">The Pines, Unit 4B</span></td>
+                <td><span class="syn-dot syn-live"></span><br><span class="syn-live-label">Live</span></td>
+                <td><span class="syn-dot syn-off"></span><br><span class="syn-off-label">—</span></td>
+                <td><span class="syn-dot syn-off"></span><br><span class="syn-off-label">—</span></td>
+                <td><span class="syn-dot syn-off"></span><br><span class="syn-off-label">—</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+            <span class="syn-dot syn-live" style="display:inline-block;"></span>Live
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+            <span class="syn-dot syn-pend" style="display:inline-block;"></span>Pending review
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+            <span class="syn-dot syn-off" style="display:inline-block;"></span>Not listed
+          </div>
+          <div style="margin-left:auto;">
+            <button class="btn btn-primary btn-sm" style="font-size:11px;">Fill Gaps →</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /grid-2 bottom row -->
+
+  </div><!-- /content-area -->
+</div><!-- /main -->
+
+</body>
+</html>

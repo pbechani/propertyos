@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Detail – Themba Mokoena – Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:          #1A3C28;
+    --forest-light:    #2D5A40;
+    --forest-muted:    #3A5E48;
+    --terracotta:      #C4562A;
+    --terracotta-hover:#A84422;
+    --parchment:       #F2E8D5;
+    --parchment-dark:  #E8D9BC;
+    --egreen:          #00E87A;
+    --sidebar-border:  rgba(242,232,213,0.12);
+    --card-bg:         #FFFFFF;
+    --body-bg:         #F2E8D5;
+    --text-dark:       #1A3C28;
+    --text-muted:      #6B8F7A;
+    --border:          rgba(26,60,40,0.12);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  .sidebar {
+    width: 248px;
+    min-height: 100vh;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--terracotta);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { color: #fff; }
+  .logo-text {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.2px;
+  }
+  .sidebar-section { padding: 12px 8px 4px; }
+  .sidebar-label {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(242,232,213,0.4);
+    padding: 0 8px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: rgba(242,232,213,0.75);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 1px; text-decoration: none;
+  }
+  .sidebar-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+  .sidebar-item.active { background: rgba(0,232,122,0.12); color: var(--egreen); }
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .sidebar-item.active svg { opacity: 1; color: var(--egreen); }
+  .sidebar-item-text { flex: 1; }
+  .badge-count {
+    font-size: 10px; font-weight: 700;
+    background: var(--terracotta); color: #fff;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar-role-badge {
+    margin: 0 8px 12px;
+    padding: 8px 12px;
+    background: rgba(242,232,213,0.06);
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 8px;
+  }
+  .role-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.4); font-family: 'IBM Plex Mono', monospace;
+  }
+  .role-name { font-size: 12px; font-weight: 600; color: var(--parchment); margin-top: 2px; }
+  .role-tag {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+    background: rgba(196,86,42,0.2); color: #E8A080;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── Main content ────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-x: hidden; }
+
+  /* ── Page header ─────────────────────────────────── */
+  .page-header {
+    background: var(--forest);
+    padding: 28px 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: var(--terracotta); opacity: 0.08; border-radius: 50%;
+  }
+  .page-header::after {
+    content: '';
+    position: absolute; bottom: 10px; left: 40%;
+    width: 160px; height: 160px;
+    background: var(--egreen); opacity: 0.04; border-radius: 50%;
+  }
+
+  /* ── Breadcrumb back link ─────────────────────────── */
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.45);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 16px;
+    position: relative; z-index: 2;
+    text-decoration: none;
+  }
+  .breadcrumb:hover { color: rgba(242,232,213,0.72); }
+  .breadcrumb svg { width: 12px; height: 12px; }
+  .breadcrumb-sep { opacity: 0.4; }
+
+  /* ── Header top row ───────────────────────────────── */
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 20px; position: relative; z-index: 1;
+  }
+  .header-lead-identity { display: flex; align-items: center; gap: 14px; }
+  .header-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 17px; font-weight: 700;
+    color: #fff; flex-shrink: 0;
+    border: 2.5px solid rgba(242,232,213,0.25);
+  }
+  .header-name-block {}
+  .header-eyebrow {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terracotta); margin-bottom: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .header-lead-name {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 26px; font-weight: 700;
+    color: var(--parchment); letter-spacing: -0.5px; line-height: 1.1;
+  }
+  .header-badges {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    margin-top: 7px;
+  }
+  .header-actions {
+    display: flex; align-items: center; gap: 8px;
+    position: relative; z-index: 1;
+    flex-shrink: 0;
+  }
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 15px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary { background: var(--terracotta); color: #fff; }
+  .btn-primary:hover { background: var(--terracotta-hover); }
+  .btn-ghost {
+    background: rgba(242,232,213,0.08); color: rgba(242,232,213,0.8);
+    border: 1px solid rgba(242,232,213,0.14);
+  }
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); color: var(--parchment); }
+  .btn-destructive {
+    background: rgba(239,68,68,0.12); color: #FCA5A5;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+  .btn-destructive:hover { background: rgba(239,68,68,0.2); color: #FEE2E2; }
+
+  /* ── KPI strip ───────────────────────────────────── */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; padding-bottom: 20px;
+    position: relative; z-index: 1;
+  }
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px; padding: 13px 15px;
+  }
+  .kpi-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em;
+    color: rgba(242,232,213,0.45); margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .kpi-value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 20px; font-weight: 700; color: var(--parchment); line-height: 1;
+  }
+  .kpi-sub {
+    font-size: 10px; color: rgba(242,232,213,0.45);
+    margin-top: 4px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .kpi-sub.positive { color: var(--egreen); }
+
+  /* ── Tabs bar ────────────────────────────────────── */
+  .tabs-bar {
+    display: flex; gap: 0;
+    background: var(--forest);
+    border-top: 1px solid rgba(242,232,213,0.08);
+    position: relative; z-index: 2;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 13px 20px; font-size: 13px; font-weight: 600;
+    color: rgba(242,232,213,0.5); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+    white-space: nowrap; user-select: none;
+  }
+  .tab:hover { color: rgba(242,232,213,0.85); }
+  .tab.active { color: var(--parchment); border-bottom-color: var(--terracotta); }
+  .tab svg { width: 14px; height: 14px; }
+  .tab-badge {
+    font-size: 10px; font-weight: 700;
+    background: rgba(196,86,42,0.25); color: var(--terracotta);
+    padding: 1px 6px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .tab.active .tab-badge { background: var(--terracotta); color: #fff; }
+
+  /* ── Content area ────────────────────────────────── */
+  .content-area { flex: 1; padding: 26px 32px; }
+
+  /* ── Section title ───────────────────────────────── */
+  .section-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 15px; font-weight: 700; color: var(--text-dark); margin-bottom: 12px;
+  }
+
+  /* ── Cards ───────────────────────────────────────── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px; font-weight: 700; color: var(--text-dark);
+  }
+  .card-body { padding: 20px; }
+  .card + .card { margin-top: 16px; }
+
+  /* ── Two-column layout ───────────────────────────── */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+  .detail-main { display: flex; flex-direction: column; gap: 16px; }
+  .detail-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── Contact info rows ───────────────────────────── */
+  .contact-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .contact-icon svg { width: 14px; height: 14px; }
+  .contact-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted); font-family: 'IBM Plex Mono', monospace;
+    width: 100px; flex-shrink: 0;
+  }
+  .contact-value { font-size: 13px; font-weight: 500; color: var(--text-dark); flex: 1; }
+  .contact-value a { color: inherit; text-decoration: none; }
+  .contact-value a:hover { color: var(--terracotta); }
+
+  /* ── Details grid ────────────────────────────────── */
+  .details-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px;
+  }
+  .detail-item {}
+  .detail-item-label {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; margin-bottom: 4px;
+  }
+  .detail-item-value {
+    font-size: 13px; font-weight: 600; color: var(--text-dark);
+  }
+  .detail-item-value.money {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 15px; font-weight: 700; color: var(--terracotta);
+  }
+
+  /* ── Notes / prefs block ─────────────────────────── */
+  .note-block {
+    font-size: 13px; line-height: 1.65; color: var(--text-dark);
+    white-space: pre-wrap;
+    background: rgba(242,232,213,0.35);
+    border: 1px solid var(--parchment-dark);
+    border-radius: 8px; padding: 14px 16px;
+  }
+
+  /* ── Activity timeline ───────────────────────────── */
+  .activity-list { display: flex; flex-direction: column; }
+  .activity-item {
+    display: flex; gap: 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .activity-dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .activity-dot svg { width: 13px; height: 13px; }
+  .activity-connector { width: 2px; flex: 1; background: var(--border); margin: 4px 0; min-height: 10px; }
+  .activity-body { flex: 1; padding-bottom: 2px; }
+  .activity-type {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: 'IBM Plex Mono', monospace; margin-bottom: 3px;
+    color: var(--text-muted);
+  }
+  .activity-text { font-size: 13px; color: var(--text-dark); line-height: 1.45; }
+  .activity-meta { font-size: 10px; color: var(--text-muted); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Quick actions ───────────────────────────────── */
+  .action-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-size: 13px; font-weight: 600; color: var(--text-dark);
+    cursor: pointer; transition: all 0.15s; text-decoration: none;
+  }
+  .action-row:hover { background: var(--body-bg); border-color: rgba(26,60,40,0.22); }
+  .action-row + .action-row { margin-top: 7px; }
+  .action-row svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .action-row-label { flex: 1; }
+
+  /* ── Task rows ───────────────────────────────────── */
+  .task-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+  }
+  .task-row:last-child { border-bottom: none; }
+  .task-check-wrap { padding-top: 1px; }
+  .task-check {
+    width: 17px; height: 17px; border-radius: 5px;
+    border: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .task-check.done { background: var(--forest); border-color: var(--forest); }
+  .task-check.done svg { width: 10px; height: 10px; color: #fff; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 12.5px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
+  .task-title.done { text-decoration: line-through; color: var(--text-muted); }
+  .task-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .task-due { font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--text-muted); }
+  .task-due.overdue { color: #DC2626; font-weight: 700; }
+  .task-due.today { color: #D97706; font-weight: 700; }
+  .priority-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Stage stepper ───────────────────────────────── */
+  .stage-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px;
+    font-size: 12.5px; transition: all 0.1s;
+  }
+  .stage-step + .stage-step { margin-top: 5px; }
+  .stage-step.past { color: var(--text-muted); }
+  .stage-step.current {
+    background: var(--forest); color: var(--parchment);
+    border: 1px solid rgba(242,232,213,0.12);
+  }
+  .stage-step.future { color: var(--text-muted); opacity: 0.45; }
+  .stage-pip {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .stage-step.past .stage-pip { background: #10B981; }
+  .stage-step.current .stage-pip { background: var(--egreen); }
+  .stage-step.future .stage-pip { background: rgba(26,60,40,0.25); }
+  .stage-step-label { flex: 1; font-weight: 600; }
+  .stage-step-badge {
+    font-size: 9.5px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .stage-step.current .stage-step-badge { color: var(--egreen); }
+  .stage-step.past .stage-step-badge { color: #10B981; }
+
+  /* ── Temperature & stage badges ─────────────────── */
+  .temp-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .temp-hot     { background: #FEE2E2; color: #DC2626; }
+  .temp-warm    { background: #FEF3C7; color: #D97706; }
+  .temp-cold    { background: #DBEAFE; color: #2563EB; }
+  .temp-nurture { background: #EDE9FE; color: #7C3AED; }
+
+  .stage-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .stage-new            { background: rgba(242,242,242,0.8); color: #374151; }
+  .stage-contacted      { background: #DBEAFE; color: #1D4ED8; }
+  .stage-qualified      { background: #EDE9FE; color: #6D28D9; }
+  .stage-active         { background: #D1FAE5; color: #065F46; }
+  .stage-under-contract { background: #FEF3C7; color: #92400E; }
+  .stage-closed         { background: #DCFCE7; color: #166534; }
+  .stage-lost           { background: #FEE2E2; color: #991B1B; }
+
+  .preq-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    background: rgba(0,232,122,0.15); color: var(--egreen);
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    border: 1px solid rgba(0,232,122,0.25);
+  }
+
+  /* ── Type badge ──────────────────────────────────── */
+  .type-badge-buyer    { background: #DBEAFE; color: #1D4ED8; }
+  .type-badge-seller   { background: #D1FAE5; color: #065F46; }
+  .type-badge-investor { background: #EDE9FE; color: #6D28D9; }
+  .type-badge-tenant   { background: #FEF3C7; color: #92400E; }
+
+  .type-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 8px; border-radius: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── Divider ─────────────────────────────────────── */
+  .divider { border: none; border-top: 1px solid var(--border); }
+
+  /* ── Tab panels ──────────────────────────────────── */
+  #panel-overview  { display: block; }
+  #panel-activity  { display: none; }
+  #panel-tasks     { display: none; }
+
+  /* ── Source chip ─────────────────────────────────── */
+  .source-chip {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    background: rgba(26,60,40,0.07); color: var(--forest);
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* ── Util ────────────────────────────────────────── */
+  .mt-0 { margin-top: 0; }
+  .gap-8 { gap: 8px; }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ SIDEBAR ═════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <span class="logo-text">PropertyOS</span>
+  </div>
+
+  <div style="padding: 10px 8px;">
+    <div class="sidebar-role-badge">
+      <div class="role-label">Current Company</div>
+      <div class="role-name">Horizon Realty</div>
+      <span class="role-tag">Agent</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Agent Cockpit</div>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+      <span class="sidebar-item-text">Agent Dashboard</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+      </svg>
+      <span class="sidebar-item-text">My Listings</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+      <span class="sidebar-item-text">Listings</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 4l1.5 3h3.5l-2.8 2 1 3.5L12 11l-3.2 1.5 1-3.5L7 7h3.5z"/>
+      </svg>
+      <span class="sidebar-item-text">My Sales</span>
+    </a>
+
+    <!-- Lead Management ACTIVE (parent of this detail view) -->
+    <a class="sidebar-item active" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      <span class="sidebar-item-text">Lead Management</span>
+      <span class="badge-count">24</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span class="sidebar-item-text">Safety</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      <span class="sidebar-item-text">Analytics</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/>
+        <path d="M3 14v1a9 9 0 0018 0v-1"/>
+      </svg>
+      <span class="sidebar-item-text">AI Intelligence</span>
+    </a>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ MAIN ════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Page header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+
+    <!-- Breadcrumb -->
+    <a class="breadcrumb" href="lead-management-mockup.html">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Lead Management
+      <span class="breadcrumb-sep">/</span>
+      Themba Mokoena
+    </a>
+
+    <!-- Lead identity + actions -->
+    <div class="header-top">
+      <div class="header-lead-identity">
+        <div class="header-avatar">TM</div>
+        <div class="header-name-block">
+          <div class="header-eyebrow">Active Lead &rsaquo; Buyer</div>
+          <div class="header-lead-name">Themba Mokoena</div>
+          <div class="header-badges">
+            <span class="temp-badge temp-hot">🔥 Hot</span>
+            <span class="stage-badge stage-active">Active</span>
+            <span class="type-badge type-badge-buyer">Buyer</span>
+            <span class="preq-badge">✓ Pre-qualified</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit Lead
+        </button>
+        <button class="btn btn-primary" onclick="alert('Log activity')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Log Activity
+        </button>
+        <button class="btn btn-destructive">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+          </svg>
+          Delete
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Budget</div>
+        <div class="kpi-value">R 1.8M</div>
+        <div class="kpi-sub">R 1.2M – R 1.8M range</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pipeline Stage</div>
+        <div class="kpi-value" style="font-size:15px;padding-top:3px;">Active</div>
+        <div class="kpi-sub positive">3 of 6 stages</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Last Contact</div>
+        <div class="kpi-value" style="font-size:15px;padding-top:3px;">Today</div>
+        <div class="kpi-sub positive">2 hours ago</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Deal Value</div>
+        <div class="kpi-value">R 1.8M</div>
+        <div class="kpi-sub">Next follow-up: Mon 7 Apr</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+      <div class="tab active" onclick="showPanel('overview', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Overview
+      </div>
+      <div class="tab" onclick="showPanel('activity', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Activity
+        <span class="tab-badge">6</span>
+      </div>
+      <div class="tab" onclick="showPanel('tasks', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="9 11 12 14 22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        Tasks
+        <span class="tab-badge" style="background:#DC2626;">3</span>
+      </div>
+    </div>
+  </div><!-- /page-header -->
+
+  <!-- ══════════════ PANEL: OVERVIEW ═══════════════ -->
+  <div class="content-area" id="panel-overview">
+    <div class="detail-grid">
+
+      <!-- ── Left main column ──────────────────────── -->
+      <div class="detail-main">
+
+        <!-- Contact Info -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Contact Information</span>
+            <a href="mailto:themba@example.com" style="font-size:11px;font-weight:600;color:var(--terracotta);text-decoration:none;font-family:'IBM Plex Mono',monospace;">Send Email →</a>
+          </div>
+          <div class="card-body" style="padding: 8px 20px;">
+
+            <div class="contact-row">
+              <div class="contact-icon" style="background:#DBEAFE;">
+                <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+              <span class="contact-label">Email</span>
+              <span class="contact-value"><a href="mailto:themba@example.com">themba@example.com</a></span>
+            </div>
+
+            <div class="contact-row">
+              <div class="contact-icon" style="background:#D1FAE5;">
+                <svg fill="none" stroke="#065F46" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.66 19.79 19.79 0 01.1 1.09 2 2 0 012.07.07h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.29 6.29l1-1.41..."/>
+                </svg>
+              </div>
+              <span class="contact-label">Phone</span>
+              <span class="contact-value"><a href="tel:+27821234567">+27 82 123 4567</a></span>
+            </div>
+
+            <div class="contact-row">
+              <div class="contact-icon" style="background:#FEF3C7;">
+                <svg fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <span class="contact-label">Location</span>
+              <span class="contact-value">Sandton, Johannesburg</span>
+            </div>
+
+            <div class="contact-row">
+              <div class="contact-icon" style="background:#EDE9FE;">
+                <svg fill="none" stroke="#6D28D9" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              </div>
+              <span class="contact-label">Source</span>
+              <span class="contact-value"><span class="source-chip">Referral</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lead Details -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Lead Details</span>
+          </div>
+          <div class="card-body">
+            <div class="details-grid">
+              <div class="detail-item">
+                <div class="detail-item-label">Lead Type</div>
+                <div class="detail-item-value"><span class="type-badge type-badge-buyer">Buyer</span></div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Budget Range</div>
+                <div class="detail-item-value money">R 1.2M – R 1.8M</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Deal Value</div>
+                <div class="detail-item-value money">R 1.8M</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Timeline</div>
+                <div class="detail-item-value">3 months</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Pre-qualified</div>
+                <div class="detail-item-value" style="color:#10B981;">Yes ✓</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Added</div>
+                <div class="detail-item-value">12 Mar 2026</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Assigned Agent</div>
+                <div class="detail-item-value">Priya Naidoo</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Last Contact</div>
+                <div class="detail-item-value">4 Apr 2026</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-item-label">Next Follow-up</div>
+                <div class="detail-item-value" style="color:#D97706;font-weight:700;">Mon, 7 Apr</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Property Preferences</span>
+          </div>
+          <div class="card-body">
+            <div class="note-block">Looking for a 3–4 bedroom house in Sandton or Midrand. Must have a double garage and security estate. Prefers north-facing garden. Open to new developments if transfer duty is covered. Would consider off-plan if the developer is well-rated.</div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Agent Notes</span>
+          </div>
+          <div class="card-body">
+            <div class="note-block">Referred by Sipho Dlamini (existing client). Very motivated buyer — bank pre-approval confirmed up to R 1.8M. Spouse is involved in decisions, ideally both should attend viewings. Has viewed 3 properties so far, closest match was the Olivedale estate — re-opening viewing next week.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right sidebar ──────────────────────────── -->
+      <div class="detail-sidebar">
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Quick Actions</span>
+          </div>
+          <div class="card-body" style="padding: 14px;">
+            <a href="tel:+27821234567" class="action-row">
+              <svg fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.66 19.79 19.79 0 01.1 1.09 2 2 0 012.07.07h3a2 2 0 012 1.72..."/>
+              </svg>
+              <span class="action-row-label">Call Lead</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="mailto:themba@example.com" class="action-row">
+              <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <span class="action-row-label">Send Email</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="#" class="action-row">
+              <svg fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+              <span class="action-row-label">Log SMS</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="#" class="action-row">
+              <svg fill="none" stroke="#EA580C" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span class="action-row-label">Log Meeting</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="#" class="action-row">
+              <svg fill="none" stroke="#4F46E5" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+              <span class="action-row-label">Add Task</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+            <a href="#" class="action-row">
+              <svg fill="none" stroke="#0891B2" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span class="action-row-label">Match Properties</span>
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px;height:12px;opacity:0.3;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Stage Progress -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Stage Progress</span>
+          </div>
+          <div class="card-body" style="padding: 14px;">
+            <div class="stage-step past">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">New</span>
+              <span class="stage-step-badge">✓</span>
+            </div>
+            <div class="stage-step past">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">Contacted</span>
+              <span class="stage-step-badge">✓</span>
+            </div>
+            <div class="stage-step past">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">Qualified</span>
+              <span class="stage-step-badge">✓</span>
+            </div>
+            <div class="stage-step current">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">Active</span>
+              <span class="stage-step-badge">Current</span>
+            </div>
+            <div class="stage-step future">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">Under Contract</span>
+              <span class="stage-step-badge"></span>
+            </div>
+            <div class="stage-step future">
+              <div class="stage-pip"></div>
+              <span class="stage-step-label">Closed</span>
+              <span class="stage-step-badge"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Tasks (preview) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pending Tasks</span>
+            <span style="font-size:11px;font-weight:600;color:#DC2626;font-family:'IBM Plex Mono',monospace;">3 due</span>
+          </div>
+          <div class="card-body" style="padding: 4px 16px 12px;">
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Call re: Sandton viewing confirmation</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#DC2626;"></div>
+                  <span class="task-due today">Today 10:00</span>
+                </div>
+              </div>
+            </div>
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Send Olivedale estate brochure + floorplans</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#D97706;"></div>
+                  <span class="task-due today">Today 14:00</span>
+                </div>
+              </div>
+            </div>
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Check pre-approval validity with FNB</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#6D28D9;"></div>
+                  <span class="task-due">Mon, 7 Apr</span>
+                </div>
+              </div>
+            </div>
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check done">
+                <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div></div>
+              <div class="task-body">
+                <div class="task-title done">Review client KYC documents</div>
+                <div class="task-meta"><span class="task-due">Completed 28 Mar</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /detail-sidebar -->
+    </div><!-- /detail-grid -->
+  </div><!-- /panel-overview -->
+
+  <!-- ══════════════ PANEL: ACTIVITY ════════════════ -->
+  <div class="content-area" id="panel-activity">
+    <div class="detail-grid">
+      <div class="detail-main">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Activity Timeline</span>
+            <span style="font-size:11px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">6 interactions</span>
+          </div>
+          <div class="card-body" style="padding: 8px 20px;">
+            <div class="activity-list">
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#FEE2E2;">
+                    <svg fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07..."/>
+                    </svg>
+                  </div>
+                  <div class="activity-connector"></div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">Call</div>
+                  <div class="activity-text">Called Themba — confirmed interest in Sandton viewing. Spouse can attend Saturday morning.</div>
+                  <div class="activity-meta">Priya Naidoo &middot; Today, 08:32</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#DBEAFE;">
+                    <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </div>
+                  <div class="activity-connector"></div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">Email</div>
+                  <div class="activity-text">Sent property listings digest — 4 matching properties in Sandton &amp; Midrand. Included Olivedale estate as top recommendation.</div>
+                  <div class="activity-meta">Priya Naidoo &middot; Yesterday, 14:15</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#D1FAE5;">
+                    <svg fill="none" stroke="#065F46" stroke-width="2" viewBox="0 0 24 24">
+                      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+                    </svg>
+                  </div>
+                  <div class="activity-connector"></div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">Stage Change</div>
+                  <div class="activity-text">Moved to <strong>Active</strong> stage — pre-approval confirmed, shortlisting in progress.</div>
+                  <div class="activity-meta">System &middot; 2 Apr 2026, 09:00</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#FEF3C7;">
+                    <svg fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </div>
+                  <div class="activity-connector"></div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">Meeting</div>
+                  <div class="activity-text">In-office consultation — discussed financing options, confirmed 3–4 bed requirement. Showed area maps for Sandton north &amp; Midrand.</div>
+                  <div class="activity-meta">Priya Naidoo &middot; 31 Mar 2026, 11:00</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#EDE9FE;">
+                    <svg fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                  </div>
+                  <div class="activity-connector"></div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">SMS</div>
+                  <div class="activity-text">Sent welcome message + link to buyer guide PDF. Confirmed WhatsApp number.</div>
+                  <div class="activity-meta">Priya Naidoo &middot; 12 Mar 2026, 15:44</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <div class="activity-spine">
+                  <div class="activity-dot" style="background:#F3F4F6;">
+                    <svg fill="none" stroke="#374151" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-type">Note</div>
+                  <div class="activity-text">Lead created — referred by Sipho Dlamini. Contacted same day. Strong intent — immediate follow-up required.</div>
+                  <div class="activity-meta">Priya Naidoo &middot; 12 Mar 2026, 09:00</div>
+                </div>
+              </div>
+
+            </div><!-- /activity-list -->
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-sidebar">
+        <!-- Activity summary -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Interaction Summary</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--text-muted);">📞 Calls</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--text-dark);">2</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--text-muted);">✉️ Emails</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--text-dark);">1</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--text-muted);">💬 SMS</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--text-dark);">1</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--text-muted);">📅 Meetings</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;color:var(--text-dark);">1</span>
+              </div>
+              <hr class="divider" style="margin:4px 0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;font-weight:600;color:var(--text-dark);">Total interactions</span>
+                <span style="font-family:'Fraunces',serif;font-weight:700;font-size:18px;color:var(--terracotta);">6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log activity quick CTA -->
+        <div class="card" style="background:var(--forest);border-color:rgba(242,232,213,0.1);">
+          <div class="card-body" style="padding:18px;">
+            <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--parchment);margin-bottom:6px;">Log a new interaction</div>
+            <div style="font-size:12px;color:rgba(242,232,213,0.55);margin-bottom:14px;line-height:1.5;">Keep Themba's timeline complete with every touchpoint.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="btn btn-ghost" style="justify-content:center;padding:7px 10px;font-size:12px;">📞 Call</button>
+              <button class="btn btn-ghost" style="justify-content:center;padding:7px 10px;font-size:12px;">✉️ Email</button>
+              <button class="btn btn-ghost" style="justify-content:center;padding:7px 10px;font-size:12px;">💬 SMS</button>
+              <button class="btn btn-primary" style="justify-content:center;padding:7px 10px;font-size:12px;">📅 Meeting</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-activity -->
+
+  <!-- ══════════════ PANEL: TASKS ═══════════════════ -->
+  <div class="content-area" id="panel-tasks">
+    <div class="detail-grid">
+      <div class="detail-main">
+
+        <!-- Task summary strip -->
+        <div style="display:flex;gap:12px;margin-bottom:4px;">
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 20px;text-align:center;min-width:90px;">
+            <div style="font-size:22px;font-weight:800;color:#DC2626;font-family:'Fraunces',serif;">0</div>
+            <div style="font-size:10px;color:#DC2626;font-weight:700;font-family:'IBM Plex Mono',monospace;">OVERDUE</div>
+          </div>
+          <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 20px;text-align:center;min-width:90px;">
+            <div style="font-size:22px;font-weight:800;color:#D97706;font-family:'Fraunces',serif;">2</div>
+            <div style="font-size:10px;color:#D97706;font-weight:700;font-family:'IBM Plex Mono',monospace;">DUE TODAY</div>
+          </div>
+          <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 20px;text-align:center;min-width:90px;">
+            <div style="font-size:22px;font-weight:800;color:#16A34A;font-family:'Fraunces',serif;">1</div>
+            <div style="font-size:10px;color:#16A34A;font-weight:700;font-family:'IBM Plex Mono',monospace;">THIS WEEK</div>
+          </div>
+          <div style="background:#F9F8F6;border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:90px;">
+            <div style="font-size:22px;font-weight:800;color:var(--text-dark);font-family:'Fraunces',serif;">1</div>
+            <div style="font-size:10px;color:var(--text-muted);font-weight:700;font-family:'IBM Plex Mono',monospace;">COMPLETED</div>
+          </div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-primary" style="align-self:center;">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Task
+          </button>
+        </div>
+
+        <div class="card">
+
+          <!-- Due Today -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#D97706;padding:10px 20px 6px;border-top:none;font-family:'IBM Plex Mono',monospace;">📅 Due Today</div>
+
+          <div style="padding:0 20px;">
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Call re: Sandton viewing confirmation</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#DC2626;"></div>
+                  <span style="font-size:10px;font-weight:700;color:#DC2626;font-family:'IBM Plex Mono',monospace;">HIGH</span>
+                  <span class="task-due today">Today 10:00</span>
+                </div>
+              </div>
+            </div>
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Send Olivedale estate brochure + floorplans</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#D97706;"></div>
+                  <span style="font-size:10px;font-weight:700;color:#D97706;font-family:'IBM Plex Mono',monospace;">MEDIUM</span>
+                  <span class="task-due today">Today 14:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- This Week -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:10px 20px 6px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;">📆 This Week</div>
+
+          <div style="padding:0 20px;">
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check"></div></div>
+              <div class="task-body">
+                <div class="task-title">Check pre-approval validity with FNB</div>
+                <div class="task-meta">
+                  <div class="priority-dot" style="background:#6D28D9;"></div>
+                  <span style="font-size:10px;font-weight:700;color:#6D28D9;font-family:'IBM Plex Mono',monospace;">MEDIUM</span>
+                  <span class="task-due">Mon, 7 Apr</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completed -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#10B981;padding:10px 20px 6px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;">✓ Completed</div>
+
+          <div style="padding:0 20px;">
+            <div class="task-row">
+              <div class="task-check-wrap"><div class="task-check done">
+                <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div></div>
+              <div class="task-body">
+                <div class="task-title done">Review client KYC documents</div>
+                <div class="task-meta"><span class="task-due">Completed 28 Mar</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /card -->
+      </div>
+
+      <div class="detail-sidebar">
+        <!-- Add task CTA sidebar -->
+        <div class="card" style="background:var(--forest);border-color:rgba(242,232,213,0.1);">
+          <div class="card-body" style="padding:18px;">
+            <div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--parchment);margin-bottom:6px;">Create a task</div>
+            <div style="font-size:12px;color:rgba(242,232,213,0.55);margin-bottom:14px;line-height:1.5;">Stay on top of follow-ups and keep this lead moving.</div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Task
+            </button>
+          </div>
+        </div>
+
+        <!-- Stage progress (same in all panels) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Stage Progress</span>
+          </div>
+          <div class="card-body" style="padding: 14px;">
+            <div class="stage-step past"><div class="stage-pip"></div><span class="stage-step-label">New</span><span class="stage-step-badge">✓</span></div>
+            <div class="stage-step past"><div class="stage-pip"></div><span class="stage-step-label">Contacted</span><span class="stage-step-badge">✓</span></div>
+            <div class="stage-step past"><div class="stage-pip"></div><span class="stage-step-label">Qualified</span><span class="stage-step-badge">✓</span></div>
+            <div class="stage-step current"><div class="stage-pip"></div><span class="stage-step-label">Active</span><span class="stage-step-badge">Current</span></div>
+            <div class="stage-step future"><div class="stage-pip"></div><span class="stage-step-label">Under Contract</span><span class="stage-step-badge"></span></div>
+            <div class="stage-step future"><div class="stage-pip"></div><span class="stage-step-label">Closed</span><span class="stage-step-badge"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /panel-tasks -->
+
+</div><!-- /main -->
+
+<script>
+function showPanel(id, el) {
+  ['overview', 'activity', 'tasks'].forEach(p => {
+    document.getElementById('panel-' + p).style.display = 'none';
+  });
+  document.getElementById('panel-' + id).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

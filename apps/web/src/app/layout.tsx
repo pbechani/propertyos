@@ -44,14 +44,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="light" suppressHydrationWarning>
       <body className={`${fraunces.variable} ${jakarta.variable} ${mono.variable} ${jakarta.className} app-theme-scope`} suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive">
           {`(function () {
             try {
-              document.documentElement.classList.remove('dark');
-              document.documentElement.classList.add('light');
               localStorage.setItem('theme', 'light');
+              document.documentElement.classList.remove('light', 'dark');
+              document.documentElement.classList.add('light');
             } catch (e) {
               document.documentElement.classList.add('light');
             }
