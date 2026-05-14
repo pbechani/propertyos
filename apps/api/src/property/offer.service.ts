@@ -137,7 +137,7 @@ export class OfferService {
       LIMIT 1
     `;
     if (!rows[0]) throw new NotFoundException('Offer not found');
-    if (rows[0].status !== 'countered') {
+    if (!['countered', 'buyer_countered'].includes(rows[0].status)) {
       throw new ForbiddenException('Only countered offers can be responded to');
     }
 
@@ -185,7 +185,7 @@ export class OfferService {
       result = await this.prisma.$queryRaw<unknown[]>`
         UPDATE sales.property_offers
         SET
-          status = 'countered',
+          status = 'buyer_countered',
           counter_amount = ${payload.counterAmount},
           counter_notes = ${payload.counterNotes ?? null},
           countered_at = NOW(),

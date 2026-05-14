@@ -163,17 +163,14 @@ export function RespondToCounterOfferModal({ open, onOpenChange, offer, onSucces
       }
 
       const result = await buyerOffersApi.respond(token, offer.id, payload);
-      void result; // response acknowledged; build update from known local state
+      // Merge backend response with existing offer (backend only returns changed fields)
       const updatedOffer: BuyerOfferResponse = {
         ...offer,
-        status:
-          selectedAction === 'accept' ? 'accepted' :
-          selectedAction === 'decline' ? 'rejected' :
-          'countered',
-        ...(selectedAction === 'counter' && {
-          counter_amount: String(payload.counterAmount ?? offer.counter_amount),
-          counter_notes: payload.counterNotes ?? offer.counter_notes,
-        }),
+        ...result,
+        // Ensure joined fields that backend doesn't return are preserved
+        property_title: offer.property_title,
+        property_price: offer.property_price,
+        property_currency: offer.property_currency,
       };
       setStep('success');
       onSuccess(updatedOffer);

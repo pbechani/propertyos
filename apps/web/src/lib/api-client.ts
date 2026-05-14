@@ -3140,7 +3140,7 @@ export type BuyerOfferResponse = {
   amount: string;
   deposit_amount: string;
   financing: string;
-  status: 'submitted' | 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+  status: 'submitted' | 'pending' | 'accepted' | 'rejected' | 'countered' | 'buyer_countered' | 'withdrawn';
   expires_at: string;
   submitted_at: string;
   created_at: string;

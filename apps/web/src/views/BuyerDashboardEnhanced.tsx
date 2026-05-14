@@ -129,7 +129,7 @@ const STAGE_CHECKLISTS: Record<number, Array<{ text: string; done: boolean }>> =
 };
 
 function offerStageInfo(status: BuyerOfferResponse['status']): { stageNum: number; stageLabel: string } {
-  if (status === 'countered') return { stageNum: 3, stageLabel: 'Offer / Negotiation' };
+  if (status === 'countered' || status === 'buyer_countered') return { stageNum: 3, stageLabel: 'Offer / Negotiation' };
   if (status === 'accepted')  return { stageNum: 4, stageLabel: 'Sale Agreement'       };
   return                             { stageNum: 2, stageLabel: 'Offer Submission'      };
 }
@@ -437,7 +437,12 @@ function PurchaseCard({
     DEFAULT_PROP_IMAGE;
 
   const title = property?.title ?? `Property #${offer.property_id.slice(0, 8)}`;
-  const checklist = STAGE_CHECKLISTS[stageNum] ?? STAGE_CHECKLISTS[2];
+  const checklist = (STAGE_CHECKLISTS[stageNum] ?? STAGE_CHECKLISTS[2]).map((item) => ({
+    ...item,
+    done: item.text === 'Respond to counter-offer'
+      ? offer.status !== 'countered'   // checked once buyer has responded
+      : item.done,
+  }));
 
   function dotState(s: number): 'done' | 'active' | 'pending' {
     if (s < stageNum) return 'done';
@@ -464,6 +469,12 @@ function PurchaseCard({
       sub: `Seller responded · Expires ${fmtDate(offer.expires_at)} · Original: ${fmtMoney(offer.amount)}`,
       cta: 'Respond Now',
     },
+    buyer_countered: {
+      icon: '🔄',
+      title: 'Your counter-offer sent — awaiting seller response',
+      sub: `Counter: ${fmtMoney(offer.counter_amount ?? offer.amount)} · Expires ${fmtDate(offer.expires_at)}`,
+      cta: null,
+    },
     accepted: {
       icon: '✅',
       title: 'Offer accepted — purchase in progress',
@@ -479,6 +490,7 @@ function PurchaseCard({
     submitted: "Waiting for seller review — you'll be notified when they respond",
     pending:   'Your offer is under review — check back soon',
     countered: "Accept, counter, or decline seller's counter-offer",
+    buyer_countered: 'Seller response — your counter-offer is with the seller',
     accepted:  'Proceed to sale agreement and deposit payment',
     withdrawn: 'Offer withdrawn',
     rejected:  'Offer declined',
@@ -488,6 +500,7 @@ function PurchaseCard({
     submitted: { bg: 'rgba(0,232,122,0.06)',  border: 'rgba(0,232,122,0.25)'  },
     pending:   { bg: 'rgba(0,232,122,0.06)',  border: 'rgba(0,232,122,0.25)'  },
     countered: { bg: 'rgba(184,144,64,0.06)', border: 'rgba(184,144,64,0.25)' },
+    buyer_countered: { bg: 'rgba(0,232,122,0.06)', border: 'rgba(0,232,122,0.25)' },
     accepted:  { bg: 'rgba(26,60,40,0.05)',   border: 'rgba(26,60,40,0.15)'   },
     withdrawn: { bg: 'rgba(196,86,42,0.06)',  border: 'rgba(196,86,42,0.25)'  },
     rejected:  { bg: 'rgba(196,86,42,0.06)',  border: 'rgba(196,86,42,0.25)'  },
