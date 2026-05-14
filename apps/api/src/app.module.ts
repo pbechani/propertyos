@@ -20,6 +20,7 @@ import { ConveyancingModule } from './conveyancing/conveyancing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { PublicStatsModule } from './public-stats/public-stats.module';
 import { ContactModule } from './contact/contact.module';
+import { EsignModule } from './esign/esign.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { ContactModule } from './contact/contact.module';
     MarketplaceModule,
     PublicStatsModule,
     ContactModule,
+    EsignModule,
   ],
   providers: [
     {

@@ -8,6 +8,7 @@ export type EmailMessage = {
   to: string;
   subject: string;
   body: string;
+  html?: string;
   attachments?: EmailAttachment[];
 };
 

@@ -305,6 +305,15 @@ export class RescheduleViewingDto {
   reason?: string;
 }
 
+export class SendViewingMessageDto {
+  @IsIn(['email', 'sms'])
+  channel!: 'email' | 'sms';
+
+  @IsString()
+  @MinLength(1)
+  message!: string;
+}
+
 export class MarketingOptionDto {
   @IsString()
   channel!: string;
@@ -397,6 +406,65 @@ export class CheckInAttendeeDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+// ──────────────────────────────────────────────────────────
+// AGENT CAPTURE FEEDBACK DTO
+// ──────────────────────────────────────────────────────────
+
+export const AGENT_OBJECTION_TYPES = [
+  'price_too_high',
+  'layout',
+  'location',
+  'size',
+  'condition',
+  'other',
+] as const;
+
+export const AGENT_INTENT_TYPES = [
+  'not_interested',
+  'considering',
+  'second_viewing',
+  'ready_to_offer',
+] as const;
+
+export class AgentCaptureFeedbackDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  likes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  dislikes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsIn(AGENT_OBJECTION_TYPES, { each: true })
+  objections?: (typeof AGENT_OBJECTION_TYPES)[number][];
+
+  @IsOptional()
+  @IsIn(AGENT_INTENT_TYPES)
+  intent?: (typeof AGENT_INTENT_TYPES)[number];
+
+  @IsOptional()
+  @IsIn(['low', 'medium', 'high'])
+  interestLevel?: 'low' | 'medium' | 'high';
+
+  @IsOptional()
+  @IsIn(['positive', 'neutral', 'negative'])
+  emotionalState?: 'positive' | 'neutral' | 'negative';
+
+  @IsOptional()
+  @IsString()
+  agentNotes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(480)
+  actualDurationMinutes?: number;
 }
 
 

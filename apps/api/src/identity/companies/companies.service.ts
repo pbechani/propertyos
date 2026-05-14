@@ -122,6 +122,90 @@ export class CompaniesService {
     return rows[0];
   }
 
+  /** Public profile — safe subset of fields, no auth required. */
+  async findByIdPublic(id: string) {
+    const rows = await this.prisma.$queryRaw<Array<Record<string, unknown>>>`
+      SELECT
+        c.id, c.name, c.slug, c.category, c.email, c.phone, c.website,
+        c.description, c.logo_url, c.brand_color, c.status,
+        c.verification_status, c.is_system, c.registration_number,
+        c.address, c.created_at,
+        (SELECT COUNT(*)::int FROM identity.company_members cm
+         WHERE cm.company_id = c.id AND cm.status = 'active') AS members_count,
+        (SELECT COUNT(*)::int FROM property.properties p
+         WHERE p.company_id = c.id AND p.status = 'active') AS active_listings_count
+      FROM identity.companies c
+      WHERE c.id = ${id}::uuid
+        AND c.status = 'active'
+      LIMIT 1
+    `;
+    if (!rows[0]) throw new NotFoundException('Company not found');
+    return rows[0];
+  }
+
+  /** Public member list — name, role, avatar only. No auth required. */
+  async findPublicMembers(id: string) {
+    return this.prisma.$queryRaw<
+      Array<{
+        first_name: string | null;
+        last_name: string | null;
+        role: string;
+        is_admin: boolean;
+        avatar_url: string | null;
+      }>
+    >`
+      SELECT
+        u.first_name,
+        u.last_name,
+        cm.role,
+        cm.is_admin,
+        u.avatar_url
+      FROM identity.company_members cm
+      JOIN identity.users u ON u.id = cm.user_id
+      WHERE cm.company_id = ${id}::uuid
+        AND cm.status = 'active'
+      ORDER BY cm.is_admin DESC, cm.created_at ASC
+      LIMIT 20
+    `;
+  }
+
+  /** Public listings snapshot — first 6 active listings for a company. No auth required. */
+  async findPublicListings(id: string) {
+    return this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        title: string;
+        listing_type: string | null;
+        property_type: string;
+        price: string;
+        currency: string;
+        city: string | null;
+        region: string | null;
+        thumbnail_url: string | null;
+      }>
+    >`
+      SELECT
+        p.id,
+        p.title,
+        p.listing_type,
+        p.property_type,
+        p.price,
+        p.currency,
+        loc.city,
+        loc.region,
+        (SELECT pm.url
+         FROM property.property_media pm
+         WHERE pm.property_id = p.id AND pm.is_primary = true
+         LIMIT 1) AS thumbnail_url
+      FROM property.properties p
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE p.company_id = ${id}::uuid
+        AND p.status = 'active'
+      ORDER BY p.created_at DESC
+      LIMIT 6
+    `;
+  }
+
   async update(
     id: string,
     dto: UpdateCompanyDto,

@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Sprint 04 Enhanced — OTP (Offer to Purchase) Service
 // ─────────────────────────────────────────────────────────────────────────────
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { SalesAuditService } from './sales-audit.service';
 import { CreateOtpDto, CounterOfferDto, SignOtpDto, WithdrawOtpDto } from './sales-enhanced.dto';
+import { EsignService } from '../esign/esign.service';
 
 /** Utility: generate a human-readable OTP reference e.g. OTP-20260310-A1B2 */
 function generateOtpReference(): string {
@@ -19,6 +20,7 @@ export class OtpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: SalesAuditService,
+    @Optional() private readonly esign: EsignService | null = null,
   ) {}
 
   // ── Create initial OTP ────────────────────────────────────────────────────
@@ -273,6 +275,102 @@ export class OtpService {
     return this.prisma.offerToPurchase.findMany({
       where: { saleId, status: 'pending' },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // ── E-SIGNATURE ───────────────────────────────────────────────────────────
+
+  /**
+   * Initiate a DocuSeal submission for the OTP with buyer + seller as signers.
+   * Returns the per-signer URLs so the caller can redirect each party.
+   */
+  async initiateEsign(
+    saleId: string,
+    otpId: string,
+    buyerName: string,
+    buyerEmail: string,
+    sellerName: string,
+    sellerEmail: string,
+    templateId: number,
+  ): Promise<{ buyerSignUrl: string | null; sellerSignUrl: string | null; submissionId: string }> {
+    const otp = await this.findOtp(otpId, saleId);
+
+    if (otp.status !== 'pending') {
+      throw new BadRequestException('OTP is not in pending state');
+    }
+    if (!this.esign) {
+      throw new BadRequestException('E-signature provider not configured');
+    }
+
+    const submission = await this.esign.createSubmission({
+      templateId,
+      submitters: [
+        { name: buyerName, email: buyerEmail, role: 'Buyer' },
+        { name: sellerName, email: sellerEmail, role: 'Seller' },
+      ],
+      metadata: { flow: 'otp', otpId, saleId },
+    });
+
+    const submissionId = String(submission.id);
+
+    await this.prisma.offerToPurchase.update({
+      where: { id: otpId },
+      data: {
+        esignSubmissionId: submissionId,
+        esignProvider: 'docuseal',
+      } as Prisma.OfferToPurchaseUncheckedUpdateInput,
+    });
+
+    return {
+      buyerSignUrl: this.esign.getSignerUrl(submission, 'Buyer'),
+      sellerSignUrl: this.esign.getSignerUrl(submission, 'Seller'),
+      submissionId,
+    };
+  }
+
+  /**
+   * Called by the webhook dispatcher when a signer completes their form.
+   * `completedRole` is 'Buyer' or 'Seller' (DocuSeal role name).
+   */
+  async onEsignCompleted(
+    submissionId: string,
+    otpId: string,
+    saleId: string,
+    completedRole: string,
+  ): Promise<void> {
+    const otp = await this.findOtp(otpId, saleId);
+
+    // Guard: make sure this event belongs to the OTP's submission
+    const otpAny = otp as unknown as Record<string, unknown>;
+    if (otpAny['esignSubmissionId'] !== submissionId) return;
+
+    const now = new Date();
+    const update: Prisma.OfferToPurchaseUncheckedUpdateInput = {};
+
+    if (completedRole === 'Buyer' && !otp.buyerSignedAt) {
+      update.buyerSignedAt = now;
+    } else if (completedRole === 'Seller' && !otp.sellerSignedAt) {
+      update.sellerSignedAt = now;
+    }
+
+    const tentative = { ...otp, ...update };
+    if (tentative.buyerSignedAt && tentative.sellerSignedAt) {
+      update.status = 'accepted';
+      update.acceptedAt = now;
+    }
+
+    await this.prisma.offerToPurchase.update({
+      where: { id: otpId },
+      data: update,
+    });
+
+    await this.audit.log({
+      action: 'otp.esign_completed',
+      actorId: otpId,
+      actorRole: 'system',
+      resourceType: 'offer_to_purchase',
+      resourceId: otpId,
+      payload: { saleId, submissionId, completedRole },
     });
   }
 

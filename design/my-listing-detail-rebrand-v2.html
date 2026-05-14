@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Listing Detail — Brand-Faithful Mockup v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:      #1A3C28;
+    --forest-l:    #4A7C5A;
+    --parchment:   #F2E8D5;
+    --cream:       #EAD9C4;
+    --amber:       #B89040;
+    --terra:       #C4562A;
+    --egreen:      #00E87A;
+    --muted:       #E8F0EC;
+    --text-muted:  #6B8F7A;
+    --border:      rgba(26,60,40,0.12);
+    --font-serif:  'Fraunces', serif;
+    --font-body:   'Plus Jakarta Sans', sans-serif;
+    --font-mono:   'IBM Plex Mono', monospace;
+    /* alpha helpers */
+    --forest-60:   rgba(26,60,40,0.60);
+    --forest-30:   rgba(26,60,40,0.30);
+    --forest-12:   rgba(26,60,40,0.12);
+    --forest-08:   rgba(26,60,40,0.08);
+    --forest-05:   rgba(26,60,40,0.05);
+    --amber-15:    rgba(184,144,64,0.15);
+    --amber-08:    rgba(184,144,64,0.08);
+    --terra-20:    rgba(196,86,42,0.20);
+    --terra-12:    rgba(196,86,42,0.12);
+    --terra-06:    rgba(196,86,42,0.06);
+    --egreen-20:   rgba(0,232,122,0.20);
+    --egreen-10:   rgba(0,232,122,0.10);
+  }
+
+  body {
+    background: var(--parchment);
+    font-family: var(--font-body);
+    color: var(--forest);
+    min-height: 100vh;
+  }
+
+  /* Utility */
+  .mono { font-family: var(--font-mono); }
+  .serif { font-family: var(--font-serif); }
+
+  /* ── App shell chrome (sidebar simulation) ──────────────────── */
+  .shell {
+    display: flex;
+    min-height: 100vh;
+  }
+  .sidebar {
+    width: 64px;
+    background: var(--forest);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .sidebar-logo {
+    width: 36px; height: 36px;
+    background: var(--parchment);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .sidebar-logo-letter {
+    font-family: var(--font-serif);
+    font-size: 18px; font-weight: 700;
+    color: var(--forest);
+  }
+  .nav-item {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: rgba(242,232,213,0.45);
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+  .nav-item.active {
+    background: rgba(242,232,213,0.12);
+    color: var(--parchment);
+  }
+  .nav-item.active svg { opacity: 1; }
+
+  /* ── Main content area ──────────────────────────────────────── */
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Forest sub-header (matches my-listings/[id]/page.tsx) ─── */
+  .listing-header {
+    background: var(--forest);
+    position: relative;
+    overflow: hidden;
+  }
+  .listing-header .deco-circle-1 {
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: var(--terra); opacity: 0.08;
+    border-radius: 50%; pointer-events: none;
+  }
+  .listing-header .deco-circle-2 {
+    position: absolute; bottom: 10px; left: 40%;
+    width: 160px; height: 160px;
+    background: var(--egreen); opacity: 0.04;
+    border-radius: 50%; pointer-events: none;
+  }
+
+  .header-inner {
+    padding: 24px 32px 0;
+    position: relative; z-index: 1;
+  }
+
+  .header-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terra);
+    margin-bottom: 6px;
+  }
+  .header-eyebrow a { color: inherit; text-decoration: none; opacity: 0.75; }
+  .header-eyebrow a:hover { opacity: 1; }
+
+  .header-title-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 20px; gap: 16px;
+  }
+  .header-title {
+    font-family: var(--font-serif);
+    font-size: 26px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.5px; line-height: 1.15;
+  }
+  .header-subtitle {
+    font-size: 13px; color: rgba(242,232,213,0.55);
+    margin-top: 4px; font-weight: 400;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header-subtitle-sep {
+    width: 3px; height: 3px;
+    background: rgba(242,232,213,0.3);
+    border-radius: 50%;
+  }
+  .listing-type-badge {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--forest); color: var(--parchment);
+    border: 1px solid rgba(242,232,213,0.2);
+  }
+  .listing-type-badge.for-sale { background: var(--forest); }
+  .listing-type-badge.to-rent  { background: #B45309; color: #fff; }
+
+  .header-actions {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: rgba(242,232,213,0.08);
+    color: rgba(242,232,213,0.8);
+    border: 1px solid rgba(242,232,213,0.14);
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--terra); color: #fff;
+    border: none; transition: all 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ai {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    background: var(--forest);
+    color: var(--egreen);
+    border: 1px solid rgba(0,232,122,0.25);
+    transition: all 0.15s;
+  }
+  .btn-ai .ai-pulse {
+    width: 6px; height: 6px;
+    background: var(--egreen); border-radius: 50%;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  /* ── Header stats strip ─────────────────────────────────────── */
+  .header-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding-bottom: 20px;
+  }
+  .stat-cell {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: rgba(242,232,213,0.45);
+    margin-bottom: 5px;
+  }
+  .stat-value {
+    font-family: var(--font-serif);
+    font-size: 20px; font-weight: 700; line-height: 1;
+  }
+  .stat-delta {
+    font-size: 11px; font-weight: 500;
+    margin-top: 3px;
+  }
+  .stat-value.green { color: var(--egreen); }
+  .stat-value.parchment { color: var(--parchment); }
+  .stat-value.amber { color: #F5C87A; }
+  .stat-value.rose  { color: #E8A080; }
+  .stat-delta.up   { color: var(--egreen); }
+  .stat-delta.warn { color: #F87171; }
+
+  /* ── Overflow Tab Bar — matches OverflowTabBar.tsx ──────────── */
+  .tabbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(234,217,196,0.5);  /* EAD9C4/50 = cream/50 */
+    overflow-x: auto;
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(8px);
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+    background: transparent; border: none;
+    color: rgba(26,60,40,0.6);
+    flex-shrink: 0; font-family: var(--font-body);
+  }
+  .tab-btn:hover {
+    background: rgba(26,60,40,0.07);
+    color: var(--forest);
+  }
+  .tab-btn.active {
+    background: var(--forest);
+    color: #fff;
+  }
+  .tab-btn.active svg { color: #fff; opacity: 1; }
+  .tab-btn svg { width: 14px; height: 14px; color: rgba(26,60,40,0.4); }
+  .tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px;
+    padding: 0 4px; border-radius: 9px;
+    font-size: 10px; font-weight: 700;
+    background: var(--terra); color: #fff;
+  }
+  .tab-btn.active .tab-badge {
+    background: #fff; color: var(--forest);
+  }
+  .tab-more {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    background: #fff; color: rgba(26,60,40,0.5);
+    border: 1px solid rgba(26,60,40,0.15); flex-shrink: 0;
+    font-family: var(--font-body);
+  }
+
+  /* ── Body ────────────────────────────────────────────────────── */
+  .body-wrap {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    padding: 24px 32px 40px;
+    align-items: start;
+  }
+  @media (max-width: 1100px) {
+    .body-wrap { grid-template-columns: 1fr; }
+  }
+
+  /* ── Section Card — matches SectionCard in ListingDetails.tsx ── */
+  .section-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .section-card:last-child { margin-bottom: 0; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(26,60,40,0.08);
+    background: rgba(26,60,40,0.03);
+  }
+  .section-header svg {
+    width: 16px; height: 16px; color: var(--forest);
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 700;
+    color: var(--forest); letter-spacing: 0.01em;
+  }
+  .section-subtitle {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--text-muted); font-weight: 500;
+  }
+  .section-body { padding: 20px; }
+
+  /* ── Photo gallery ───────────────────────────────────────────── */
+  .gallery-main {
+    position: relative;
+    border-radius: 8px; overflow: hidden;
+    background: #000; height: 240px;
+    margin-bottom: 10px;
+  }
+  .gallery-main img {
+    width: 100%; height: 100%; object-fit: cover; opacity: 0.9;
+  }
+  .gallery-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    display: flex; justify-content: space-between; width: 100%; padding: 0 10px;
+  }
+  .gallery-nav-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.88);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .gallery-nav-btn svg { width: 16px; height: 16px; color: var(--forest); }
+  .gallery-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(26,60,40,0.7); backdrop-filter: blur(4px);
+    color: var(--parchment); border-radius: 6px; padding: 4px 8px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  }
+  .gallery-thumbs {
+    display: flex; gap: 8px; overflow-x: auto;
+  }
+  .gallery-thumbs::-webkit-scrollbar { display: none; }
+  .thumb {
+    flex-shrink: 0;
+    width: 72px; height: 52px;
+    border-radius: 6px; overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .thumb.active { border-color: var(--forest); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ── Spec tile grid — matches SpecTile ──────────────────────── */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .spec-tile {
+    background: rgba(26,60,40,0.04);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .spec-icon { color: var(--forest); margin-bottom: 2px; }
+  .spec-icon svg { width: 16px; height: 16px; }
+  .spec-icon.terra svg { color: var(--terra); }
+  .spec-icon.amber svg { color: var(--amber); }
+  .spec-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .spec-value {
+    font-family: var(--font-serif);
+    font-size: 18px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+
+  /* ── Meta row — matches MetaRow ─────────────────────────────── */
+  .meta-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(26,60,40,0.08);
+    font-size: 13px;
+  }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-label { color: var(--text-muted); font-weight: 500; }
+  .meta-value { font-weight: 600; color: var(--forest); }
+  .meta-value.mono { font-family: var(--font-mono); font-size: 12px; }
+
+  /* ── Financial hero block ───────────────────────────────────── */
+  .fin-hero {
+    background: var(--forest);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .fin-hero::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: var(--terra); opacity: 0.08; border-radius: 50%;
+  }
+  .fin-hero-label {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--egreen); margin-bottom: 6px;
+  }
+  .fin-hero-price {
+    font-family: var(--font-serif);
+    font-size: 30px; font-weight: 700;
+    color: #fff; line-height: 1; letter-spacing: -1px;
+    position: relative;
+  }
+  .fin-hero-sub {
+    font-size: 12px; color: rgba(242,232,213,0.6);
+    margin-top: 4px; position: relative;
+  }
+  .fin-costs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px; margin-bottom: 14px;
+  }
+  .fin-cost-tile {
+    background: rgba(26,60,40,0.04);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .fin-cost-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted); margin-bottom: 3px;
+  }
+  .fin-cost-value {
+    font-family: var(--font-serif);
+    font-size: 15px; font-weight: 700;
+    color: var(--forest);
+  }
+
+  /* ── Location 3-col mini grid ──────────────────────────────── */
+  .loc-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 14px;
+  }
+  .loc-cell {
+    background: rgba(26,60,40,0.04);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .loc-cell-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 2px;
+  }
+  .loc-cell-value {
+    font-size: 13px; font-weight: 700; color: var(--forest);
+  }
+  .map-placeholder {
+    height: 140px;
+    background: rgba(26,60,40,0.05);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px; color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .map-placeholder svg { width: 24px; height: 24px; opacity: 0.4; }
+  .map-placeholder span { font-size: 12px; }
+  .map-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; color: var(--forest);
+    text-decoration: none;
+  }
+  .map-link:hover { text-decoration: underline; }
+
+  /* ── Amenities grid ──────────────────────────────────────────── */
+  .amenity-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .amenity-item {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(26,60,40,0.05);
+    border-left: 2px solid rgba(26,60,40,0.5);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    font-size: 12px; font-weight: 500;
+    color: var(--forest);
+  }
+  .amenity-item svg { width: 13px; height: 13px; color: var(--forest-l); flex-shrink: 0; }
+
+  /* ── Description ─────────────────────────────────────────────── */
+  .desc-text {
+    font-size: 13px; color: rgba(26,60,40,0.7);
+    line-height: 1.7; white-space: pre-line;
+  }
+
+  /* ── Status banner ───────────────────────────────────────────── */
+  .status-banner {
+    border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600;
+  }
+  .status-banner.verified { background: rgba(5,150,105,0.07); border: 1px solid rgba(5,150,105,0.25); color: #065f46; }
+  .status-banner.pending  { background: rgba(180,131,9,0.07);  border: 1px solid rgba(180,131,9,0.25);  color: #854d0e; }
+  .status-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── SIDEBAR ─────────────────────────────────────────────────── */
+  .sidebar-col { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Listing Health Card (NEW enhancement) ───────────────────── */
+  .health-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .health-forest-band {
+    background: var(--forest);
+    padding: 16px 20px;
+    position: relative; overflow: hidden;
+  }
+  .health-forest-band::after {
+    content: '';
+    position: absolute; top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: var(--egreen); opacity: 0.06; border-radius: 50%;
+  }
+  .health-score-row {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .health-ring-wrap { position: relative; }
+  /* SVG ring */
+  .health-ring-svg { transform: rotate(-90deg); }
+  .health-score-num {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-serif);
+    font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .health-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--egreen); margin-bottom: 4px;
+  }
+  .health-title {
+    font-family: var(--font-serif);
+    font-size: 20px; font-weight: 700; color: #fff; line-height: 1;
+  }
+  .heat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; text-transform: uppercase;
+    letter-spacing: 0.04em; margin-top: 4px;
+  }
+  .heat-badge.hot  { background: #FEE2E2; color: #DC2626; }
+  .heat-badge.warm { background: #FEF3C7; color: #D97706; }
+  .heat-badge.slow { background: #DBEAFE; color: #2563EB; }
+  /* 4-cell metric strip inside health card */
+  .metric-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--border);
+  }
+  .metric-cell {
+    padding: 10px 0; text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .metric-cell:last-child { border-right: none; }
+  .metric-val {
+    font-family: var(--font-serif);
+    font-size: 18px; font-weight: 700; color: var(--forest); line-height: 1;
+  }
+  .metric-val.terra { color: var(--terra); }
+  .metric-lbl {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); margin-top: 2px;
+  }
+  /* Mandate progress */
+  .mandate-row {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .mandate-meta {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-muted); margin-bottom: 5px;
+  }
+  .mandate-meta .dom-val { color: #059669; font-weight: 600; }
+  .progress-track {
+    height: 4px; background: rgba(26,60,40,0.1);
+    border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: #22C55E; width: 28%;
+    transition: width 0.3s;
+  }
+
+  /* ── Enquiry Activity Card (NEW) ─────────────────────────────── */
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(26,60,40,0.06);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item:hover { background: rgba(26,60,40,0.02); border-radius: 6px; }
+  .activity-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #3B82F6; flex-shrink: 0; margin-top: 4px;
+  }
+  .activity-dot.purple { background: #8B5CF6; }
+  .activity-dot.green  { background: #10B981; }
+  .activity-text { font-size: 12px; color: var(--forest); font-weight: 500; line-height: 1.4; }
+  .activity-time {
+    margin-left: auto; flex-shrink: 0;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* ── Pending summary chips ───────────────────────────────────── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .chip.blue   { background: #EFF6FF; color: #1D4ED8; }
+  .chip.purple { background: #F5F3FF; color: #6D28D9; }
+  .chip.gray   { background: #F9FAFB; color: #4B5563; border: 1px solid #E5E7EB; }
+
+  /* ── Quick Actions ───────────────────────────────────────────── */
+  .qa-btn {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    background: rgba(26,60,40,0.04);
+    border: 1px solid var(--border);
+    color: var(--forest); margin-bottom: 7px;
+    transition: all 0.15s; text-align: left;
+  }
+  .qa-btn:last-child { margin-bottom: 0; }
+  .qa-btn:hover { background: rgba(26,60,40,0.08); }
+  .qa-btn svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--forest); }
+  .qa-btn.danger {
+    background: rgba(196,86,42,0.05);
+    border-color: rgba(196,86,42,0.2);
+    color: var(--terra);
+  }
+  .qa-btn.danger svg { color: var(--terra); }
+  .qa-btn.highlight {
+    background: var(--forest); color: var(--parchment); border-color: transparent;
+  }
+  .qa-btn.highlight svg { color: var(--egreen); }
+  .qa-chevron { margin-left: auto; opacity: 0.4; }
+  .qa-chevron svg { width: 13px; height: 13px; }
+
+  /* ── Price Intelligence (NEW enhancement) ────────────────────── */
+  .pi-band {
+    background: rgba(184,144,64,0.06);
+    border: 1px solid rgba(184,144,64,0.2);
+    border-radius: 10px;
+    overflow: hidden; margin-bottom: 0;
+  }
+  .pi-header {
+    display: flex; align-items: center; gap: 7px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(184,144,64,0.15);
+    background: rgba(184,144,64,0.07);
+  }
+  .pi-header-icon { color: var(--amber); }
+  .pi-header-icon svg { width: 14px; height: 14px; }
+  .pi-title {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--amber);
+  }
+  .pi-body { padding: 14px; }
+  .pi-current {
+    font-family: var(--font-serif);
+    font-size: 22px; font-weight: 700; color: var(--forest);
+    line-height: 1; margin-bottom: 2px;
+  }
+  .pi-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
+  .pi-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #DBEAFE, #D1FAE5, #FEF3C7, #FEE2E2);
+    position: relative; margin-bottom: 8px;
+  }
+  .pi-range-marker {
+    position: absolute; top: -3px;
+    width: 12px; height: 12px;
+    background: var(--forest); border: 2px solid #fff;
+    border-radius: 50%; left: 45%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .pi-range-labels {
+    display: flex; justify-content: space-between;
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-muted); margin-bottom: 10px;
+  }
+  .pi-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; padding: 5px 0;
+    border-bottom: 1px solid rgba(26,60,40,0.06);
+  }
+  .pi-row:last-child { border-bottom: none; }
+  .pi-row-label { color: var(--text-muted); font-weight: 500; }
+  .pi-row-val { font-weight: 700; color: var(--forest); }
+  .pi-row-val.up   { color: #059669; }
+  .pi-row-val.down { color: #DC2626; }
+
+  /* Animations */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.35s ease forwards; }
+
+  /* ── Viewings tab — shared utils ────────────────────────────── */
+  .sep-dot {
+    width: 3px; height: 3px;
+    background: var(--forest-30); border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* ── Action Inbox ────────────────────────────────────────────── */
+  .inbox-zone { margin-bottom: 28px; }
+  .inbox-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .inbox-header-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--forest-60);
+  }
+  .inbox-header-divider { flex: 1; height: 1px; background: var(--border); }
+  .inbox-count-badge {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    background: var(--amber); color: #fff; padding: 2px 8px; border-radius: 50px;
+  }
+  .urgent-banner {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(184,144,64,0.07);
+    border: 1.5px solid rgba(184,144,64,0.25);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+    animation: bannerSlide 0.4s ease;
+  }
+  @keyframes bannerSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .urgent-banner-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: rgba(184,144,64,0.15); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .urgent-banner-icon svg { width: 16px; height: 16px; color: var(--amber); }
+  .urgent-banner-body { flex: 1; min-width: 0; }
+  .urgent-banner-title { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 3px; }
+  .urgent-banner-sub {
+    font-family: var(--font-mono); font-size: 10px; color: var(--forest-60); letter-spacing: 0.03em;
+  }
+  .urgent-banner-sub strong { color: #9B6C00; font-weight: 600; }
+  .urgent-banner-cta {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 7px 13px; border-radius: 8px;
+    background: var(--amber); color: #fff; border: none;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .urgent-banner-cta:hover { opacity: 0.88; }
+  .request-stack { display: flex; flex-direction: column; gap: 10px; }
+  .request-card {
+    background: #fff; border: 1.5px solid rgba(184,144,64,0.30);
+    border-radius: 12px; overflow: hidden;
+    display: grid; grid-template-columns: 64px 1fr;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    animation: cardIn 0.35s ease both;
+  }
+  .request-card:nth-child(2) { animation-delay: 0.06s; }
+  .request-card:nth-child(3) { animation-delay: 0.12s; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .request-card:hover { box-shadow: 0 4px 18px rgba(184,144,64,0.15); border-color: var(--amber); }
+  .request-time-col {
+    background: rgba(184,144,64,0.06); border-right: 1px solid rgba(184,144,64,0.18);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 6px; gap: 2px;
+  }
+  .request-time-day {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--amber);
+  }
+  .request-time-date {
+    font-family: var(--font-serif); font-size: 22px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+  .request-time-month {
+    font-family: var(--font-mono); font-size: 9px; color: var(--forest-60);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .request-time-hr {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--forest); margin-top: 6px;
+  }
+  .request-body { padding: 14px 16px; min-width: 0; }
+  .request-meta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .request-buyer-name { font-size: 14px; font-weight: 700; color: var(--forest); }
+  .request-status-badge {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--amber-08); color: var(--amber); border: 1px solid var(--amber-15);
+  }
+  .request-buyer-sub {
+    font-size: 12px; color: var(--forest-60); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .request-context {
+    font-family: var(--font-mono); font-size: 10px; color: var(--forest-60);
+    letter-spacing: 0.03em; padding: 6px 10px;
+    background: var(--forest-05); border-radius: 7px;
+    border: 1px solid var(--forest-08); margin-bottom: 10px; line-height: 1.5;
+  }
+  .request-context strong { color: var(--forest); font-weight: 600; }
+  .request-actions { display: flex; gap: 8px; align-items: center; }
+  .req-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 8px;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.14s; border: none;
+  }
+  .req-btn svg { width: 12px; height: 12px; }
+  .req-btn-accept {
+    background: var(--egreen-10); color: #0D7039; border: 1.5px solid var(--egreen-20);
+  }
+  .req-btn-accept:hover { background: var(--egreen-20); }
+  .req-btn-decline {
+    background: var(--terra-06); color: var(--terra); border: 1.5px solid var(--terra-12);
+  }
+  .req-btn-decline:hover { background: var(--terra-20); }
+  .req-btn-reschedule {
+    background: var(--forest-05); color: var(--forest-60); border: 1.5px solid var(--forest-12);
+  }
+  .req-btn-reschedule:hover { background: var(--forest-08); color: var(--forest); }
+
+  /* ── Section separator ───────────────────────────────────────── */
+  .section-sep {
+    display: flex; align-items: center; gap: 10px; margin: 28px 0 16px;
+  }
+  .section-sep-label {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--forest-60); white-space: nowrap;
+  }
+  .section-sep-line { flex: 1; height: 1px; background: var(--border); }
+  .section-sep-count {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-30); white-space: nowrap;
+  }
+
+  /* ── Viewing cards — confirmed / past ────────────────────────── */
+  .viewing-stack { display: flex; flex-direction: column; gap: 8px; }
+  .viewing-card {
+    background: #fff; border: 1.5px solid var(--forest-12); border-radius: 12px;
+    display: grid; grid-template-columns: 5px 64px 1fr auto;
+    align-items: stretch; overflow: hidden; cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .viewing-card:hover { box-shadow: 0 4px 16px rgba(26,60,40,0.10); border-color: var(--forest-30); }
+  .accent-confirmed { background: var(--egreen); }
+  .accent-pending   { background: var(--amber); }
+  .accent-past      { background: var(--forest-30); }
+  .viewing-date-col {
+    border-right: 1px solid var(--forest-08);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 14px 6px; gap: 1px;
+    background: var(--forest-05);
+  }
+  .viewing-date-day {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--forest-60);
+  }
+  .viewing-date-num {
+    font-family: var(--font-serif); font-size: 22px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+  .viewing-date-time {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    color: var(--forest-60); margin-top: 4px;
+  }
+  .viewing-body { padding: 13px 16px; min-width: 0; }
+  .viewing-buyer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .viewing-buyer-name { font-size: 14px; font-weight: 700; color: var(--forest); }
+  .viewing-type-badge {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px; border: 1px solid;
+  }
+  .badge-confirmed { background: var(--egreen-10); color: #0D7039; border-color: var(--egreen-20); }
+  .badge-past      { background: var(--forest-05); color: var(--forest-60); border-color: var(--forest-12); }
+  .badge-cancelled { background: var(--terra-06);  color: var(--terra);     border-color: var(--terra-12); }
+  .viewing-sub {
+    font-size: 12px; color: var(--forest-60); margin-bottom: 7px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .viewing-notes {
+    font-family: var(--font-mono); font-size: 10px; color: var(--forest-60);
+    letter-spacing: 0.02em; line-height: 1.5; padding: 5px 9px;
+    background: var(--forest-05); border-radius: 6px; border: 1px solid var(--forest-08);
+    margin-bottom: 2px; display: inline-block;
+  }
+  .viewing-actions-col {
+    padding: 12px 14px 12px 8px;
+    display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: center; gap: 6px; flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px; border: 1px solid transparent;
+    background: transparent; cursor: pointer; color: var(--forest-60); transition: all 0.13s;
+  }
+  .icon-btn:hover { background: var(--forest-08); border-color: var(--forest-12); color: var(--forest); }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .v-action-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 7px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; white-space: nowrap; transition: all 0.13s; border: 1.5px solid;
+  }
+  .v-btn-outcome { background: var(--forest); color: var(--parchment); border-color: var(--forest); }
+  .v-btn-outcome:hover { opacity: 0.88; }
+  .viewing-card.is-past { opacity: 0.62; }
+  .viewing-card.is-past:hover { opacity: 0.88; }
+  .outcome-logged-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--egreen-10); color: #0D7039; border: 1px solid var(--egreen-20);
+  }
+  .outcome-missing-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--amber-08); color: var(--amber); border: 1px solid var(--amber-15);
+  }
+
+  /* ── Outcome nudge ────────────────────────────────────────────── */
+  .outcome-nudge {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--egreen-10); border: 1.5px dashed rgba(0,232,122,0.35);
+    border-radius: 12px; padding: 14px 18px; margin: 28px 0 16px;
+  }
+  .outcome-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: rgba(0,232,122,0.15); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .outcome-icon svg { width: 16px; height: 16px; color: #0D7039; }
+  .outcome-body { flex: 1; min-width: 0; }
+  .outcome-title { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 2px; }
+  .outcome-sub { font-size: 12px; color: var(--forest-60); }
+  .outcome-btn {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 7px 14px; border-radius: 8px;
+    background: var(--forest); color: var(--parchment); border: none;
+    cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: opacity 0.15s;
+  }
+  .outcome-btn:hover { opacity: 0.88; }
+
+  /* ── Viewings sidebar cards ───────────────────────────────────── */
+  .side-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .side-card-header {
+    padding: 14px 16px 12px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--forest-08);
+  }
+  .side-card-title {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--forest-60);
+  }
+  .side-card-header svg { width: 14px; height: 14px; color: var(--forest-60); }
+  .side-card-sup {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--forest-30);
+  }
+  .side-card-body { padding: 16px; }
+  .schedule-cta {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px 16px; border-radius: 10px;
+    background: var(--terra); color: #fff;
+    font-family: var(--font-body); font-size: 14px; font-weight: 700;
+    border: none; cursor: pointer; transition: opacity 0.15s;
+  }
+  .schedule-cta:hover { opacity: 0.9; }
+  .schedule-cta svg { width: 16px; height: 16px; }
+
+  /* ── Mini calendar ───────────────────────────────────────────── */
+  .mini-cal-nav {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+  }
+  .mini-cal-month {
+    font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--forest);
+  }
+  .cal-nav-btn {
+    width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--forest-12);
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--forest-60); transition: all 0.13s;
+  }
+  .cal-nav-btn:hover { background: var(--forest-08); color: var(--forest); }
+  .cal-nav-btn svg { width: 12px; height: 12px; }
+  .mini-cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 6px;
+  }
+  .cal-dow { text-align: center; padding: 4px 0; }
+  .cal-dow span {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--forest-30);
+  }
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-day {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 4px 2px; border-radius: 7px; cursor: pointer; transition: background 0.13s; min-height: 34px;
+  }
+  .cal-day:hover { background: var(--forest-08); }
+  .cal-day-num {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--forest-60); line-height: 1; margin-bottom: 3px;
+  }
+  .cal-day.is-today .cal-day-num {
+    background: var(--forest); color: #fff;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 10px;
+  }
+  .cal-day.is-today { background: rgba(26,60,40,0.04); }
+  .cal-day.out-month .cal-day-num { color: var(--forest-30); }
+  .cal-day.has-viewing { background: rgba(0,232,122,0.06); }
+  .cal-day.has-pending { background: rgba(184,144,64,0.06); }
+  .cal-dots { display: flex; gap: 2px; align-items: center; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .dot-confirmed { background: var(--egreen); }
+  .dot-pending   { background: var(--amber); }
+  .cal-legend {
+    display: flex; gap: 12px; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid var(--forest-08); flex-wrap: wrap;
+  }
+  .cal-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 9px; color: var(--forest-60); letter-spacing: 0.04em;
+  }
+  .cal-legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ── Viewing stats / funnel ──────────────────────────────────── */
+  .vw-stats-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; border-bottom: 1px solid var(--forest-08);
+  }
+  .vw-stats-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .vw-stats-label {
+    font-family: var(--font-mono); font-size: 10px; color: var(--forest-60); letter-spacing: 0.04em;
+  }
+  .vw-stats-val {
+    font-family: var(--font-serif); font-size: 16px; font-weight: 600;
+    color: var(--forest); letter-spacing: -0.3px;
+  }
+  .vw-stats-val.green { color: #0D7039; }
+  .vw-stats-val.amber { color: var(--amber); }
+  .vw-stats-delta { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-align: right; margin-top: 1px; }
+  .funnel-wrap { margin-top: 14px; }
+  .funnel-label {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--forest-30); margin-bottom: 10px;
+  }
+  .funnel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .funnel-step-label {
+    font-family: var(--font-mono); font-size: 10px; color: var(--forest-60);
+    letter-spacing: 0.03em; width: 72px; flex-shrink: 0;
+  }
+  .funnel-bar-wrap { flex: 1; height: 6px; background: var(--forest-08); border-radius: 4px; overflow: hidden; }
+  .funnel-bar-fill { height: 100%; border-radius: 4px; }
+  .funnel-bar-forest { background: var(--forest); }
+  .funnel-bar-green  { background: var(--egreen); }
+  .funnel-bar-amber  { background: var(--amber); }
+  .funnel-step-val {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    color: var(--forest); width: 24px; text-align: right; flex-shrink: 0;
+  }
+
+  /* ── Next viewing hero card ──────────────────────────────────── */
+  .next-viewing-card {
+    background: var(--forest); border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .next-card-eyebrow {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(242,232,213,0.40); margin-bottom: 2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .next-live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--egreen);
+    animation: livePulse 1.6s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+  @keyframes livePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0,232,122,0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(0,232,122,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,232,122,0); }
+  }
+  .next-card-name {
+    font-family: var(--font-serif); font-size: 17px; font-weight: 600;
+    color: var(--parchment); letter-spacing: -0.3px; line-height: 1.2;
+  }
+  .next-card-time {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    color: var(--egreen); letter-spacing: 0.04em;
+  }
+  .next-card-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    color: rgba(242,232,213,0.45); letter-spacing: 0.03em; line-height: 1.5;
+  }
+  .next-card-actions { display: flex; gap: 8px; }
+  .next-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px; border-radius: 8px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: all 0.14s;
+  }
+  .next-btn-confirm { background: var(--egreen); color: var(--forest); border: none; }
+  .next-btn-confirm:hover { background: #00cf6d; }
+  .next-btn-msg {
+    background: rgba(242,232,213,0.10); color: rgba(242,232,213,0.75);
+    border: 1px solid rgba(242,232,213,0.15);
+  }
+  .next-btn-msg:hover { background: rgba(242,232,213,0.16); }
+
+  /* ── Stale alert ─────────────────────────────────────────────── */
+  .stale-alert {
+    background: rgba(196,86,42,0.06);
+    border: 1px solid rgba(196,86,42,0.18);
+    border-radius: 6px; padding: 6px 10px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    color: var(--terra); margin-bottom: 12px;
+  }
+
+  /* ── Details triptych — Property + Financial + Location ─── */
+  .details-triptych {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: start;
+  }
+  .details-triptych .section-card { margin-bottom: 0; }
+  .details-triptych .section-body { padding: 14px; }
+
+  /* Spec grid: 4-wide → 2×2 in narrow column */
+  .details-triptych .spec-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .details-triptych .spec-tile { padding: 10px; }
+  .details-triptych .spec-value { font-size: 16px; }
+
+  /* Financial hero: trim size for column width */
+  .details-triptych .fin-hero { padding: 14px; margin-bottom: 10px; }
+  .details-triptych .fin-hero-price { font-size: 20px; letter-spacing: -0.5px; }
+  .details-triptych .fin-hero-sub { font-size: 11px; }
+  .details-triptych .fin-costs-grid { gap: 6px; margin-bottom: 10px; }
+  .details-triptych .fin-cost-tile { padding: 8px 10px; }
+  .details-triptych .fin-cost-label { font-size: 8px; }
+  .details-triptych .fin-cost-value { font-size: 13px; }
+
+  /* Location: 3-col loc-grid → 2-col */
+  .details-triptych .loc-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .details-triptych .map-placeholder { height: 100px; margin-bottom: 8px; }
+  .details-triptych .map-placeholder span { font-size: 11px; text-align: center; padding: 0 8px; }
+
+  /* Meta rows: tighter in narrow columns */
+  .details-triptych .meta-row { font-size: 12px; padding: 8px 0; }
+  .details-triptych .meta-value.mono { font-size: 11px; }
+
+  /* ── Status diptych — Amenities + Listing Status ─────────── */
+  .status-diptych {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: start;
+  }
+  .status-diptych .section-card { margin-bottom: 0; }
+
+  /* Amenities: 4-col in the wider diptych card */
+  .status-diptych .amenity-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* ── Responsive stacking ─────────────────────────────────── */
+  @media (max-width: 1280px) {
+    .details-triptych { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .details-triptych .section-card:last-child { grid-column: span 2; }
+    .details-triptych .section-card:last-child .loc-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 960px) {
+    .details-triptych { grid-template-columns: 1fr; }
+    .details-triptych .section-card:last-child { grid-column: span 1; }
+    .details-triptych .spec-grid { grid-template-columns: repeat(4, 1fr); }
+    .status-diptych { grid-template-columns: 1fr; }
+    .status-diptych .amenity-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ── Sidebar nav ─────────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-letter">P</span>
+    </div>
+
+    <!-- Home -->
+    <div class="nav-item">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <!-- Listings (active) -->
+    <div class="nav-item active" title="My Listings">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    </div>
+    <!-- Enquiries -->
+    <div class="nav-item" title="Enquiries">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <!-- Calendar -->
+    <div class="nav-item" title="Viewings">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <!-- Clients -->
+    <div class="nav-item" title="Leads">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <!-- Financials -->
+    <div class="nav-item" title="Financials">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+    </div>
+
+    <div style="flex:1"></div>
+    <!-- Settings -->
+    <div class="nav-item" title="Settings">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <!-- Avatar -->
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--terra);display:flex;align-items:center;justify-content:center;margin-top:8px;">
+      <span style="font-family:var(--font-serif);font-size:14px;font-weight:700;color:#fff;">JD</span>
+    </div>
+  </nav>
+
+  <!-- ── Main content ────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- ── Forest listing header ─────────────────────────────── -->
+    <div class="listing-header">
+      <div class="deco-circle-1"></div>
+      <div class="deco-circle-2"></div>
+
+      <div class="header-inner">
+        <!-- Breadcrumb eyebrow -->
+        <div class="header-eyebrow">
+          <a href="#">Agent Cockpit</a> ›
+          <a href="#">My Listings</a> ›
+          14 Baobab Ridge Drive
+        </div>
+
+        <!-- Title + actions -->
+        <div class="header-title-row">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span class="listing-type-badge for-sale">For Sale</span>
+              <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:3px 8px;border-radius:5px;background:#FEE2E2;color:#DC2626;">🔥 High Demand</span>
+            </div>
+            <h1 class="header-title">14 Baobab Ridge Drive</h1>
+            <div class="header-subtitle">
+              <span>Sandton, Gauteng</span>
+              <span class="header-subtitle-sep"></span>
+              <span>3 bed · 2 bath · 285 m²</span>
+              <span class="header-subtitle-sep"></span>
+              <span style="color:var(--egreen);font-weight:600;">Active</span>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button class="btn-ghost">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+            <button class="btn-primary">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Listing
+            </button>
+            <button class="btn-ai">
+              <div class="ai-pulse"></div>
+              AI Assistant
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4-cell KPI strip -->
+        <div class="header-stats">
+          <div class="stat-cell">
+            <div class="stat-label">Listing Price</div>
+            <div class="stat-value parchment" style="font-size:22px;">R 4.2M</div>
+            <div class="stat-delta up">asking price</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Days on Market</div>
+            <div class="stat-value amber">25</div>
+            <div class="stat-delta up">within mandate</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Total Views</div>
+            <div class="stat-value green">1,247</div>
+            <div class="stat-delta up">84 this week</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Enquiries</div>
+            <div class="stat-value rose">18</div>
+            <div class="stat-delta up">3 pending replies</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /listing-header -->
+
+    <!-- ── Tab Bar ── matches OverflowTabBar.tsx ─────────────── -->
+    <div class="tabbar">
+      <button class="tab-btn active" data-tab="details">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Details
+      </button>
+      <button class="tab-btn" data-tab="viewings">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Viewings
+        <span class="tab-badge">3</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Enquiries
+        <span class="tab-badge">18</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Open Houses
+        <span class="tab-badge">2</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Comms
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Documents
+        <span class="tab-badge">4</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Condition
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Selling
+      </button>
+      <button class="tab-more">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+        6
+      </button>
+    </div>
+
+    <!-- ── Body: main content + sidebar ─────────────────────── -->
+    <div id="panel-details" class="body-wrap fade-in">
+
+      <!-- ═══════════ LEFT COLUMN ═══════════ -->
+      <div>
+
+        <!-- 1. Photos -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span class="section-title">Property Photos</span>
+            <span class="section-subtitle">8 photos · tap to expand</span>
+          </div>
+          <div class="section-body" style="padding-bottom:16px;">
+            <!-- Main photo -->
+            <div class="gallery-main">
+              <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=80" alt="Main photo" />
+              <div class="gallery-badge mono">1 / 8</div>
+              <div class="gallery-nav">
+                <button class="gallery-nav-btn">
+                  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button class="gallery-nav-btn">
+                  <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- Thumbnail strip -->
+            <div class="gallery-thumbs">
+              <div class="thumb active"><img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1502005097973-6a7082348e28?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=200&q=70" alt="" /></div>
+              <div class="thumb"><img src="https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=200&q=70" alt="" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Description -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+            <span class="section-title">Description</span>
+          </div>
+          <div class="section-body">
+            <p class="desc-text">Nestled in the prestigious Fourways Gardens estate, this exceptional family home offers an unparalleled lifestyle in one of Johannesburg's most sought-after communities.
+
+The open-plan living areas flow seamlessly to the landscaped garden and heated pool — perfect for entertaining. The chef's kitchen features Miele appliances, quartz countertops, and a scullery. Upstairs, the master suite includes a walk-in dressing room and spa-inspired en-suite.
+
+Security is paramount with 24-hour guards, CCTV, and electric perimeter fencing. Three automated garages complete this executive offering.</p>
+          </div>
+        </div>
+
+        <!-- ── Details triptych: Property · Financial · Location ── -->
+        <div class="details-triptych">
+
+        <!-- 3. Property Details -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="section-title">Property Details</span>
+            <span class="section-subtitle">Ref: PRB-2024-007143</span>
+          </div>
+          <div class="section-body">
+            <!-- Spec tile grid -->
+            <div class="spec-grid">
+              <div class="spec-tile">
+                <div class="spec-icon">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+                </div>
+                <div class="spec-label">Bedrooms</div>
+                <div class="spec-value">3</div>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-icon terra">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h16"/></svg>
+                </div>
+                <div class="spec-label">Bathrooms</div>
+                <div class="spec-value">2</div>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-icon amber">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                </div>
+                <div class="spec-label">Floor Area</div>
+                <div class="spec-value">285<span style="font-size:12px;font-weight:500;">m²</span></div>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-icon">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+                </div>
+                <div class="spec-label">Erf Size</div>
+                <div class="spec-value">620<span style="font-size:12px;font-weight:500;">m²</span></div>
+              </div>
+            </div>
+
+            <!-- Meta rows -->
+            <div>
+              <div class="meta-row">
+                <span class="meta-label">Property Type</span>
+                <span class="meta-value">Residential House</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Year Built</span>
+                <span class="meta-value">2019</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Garages</span>
+                <span class="meta-value">3 automated</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Pool</span>
+                <span class="meta-value">Heated — yes</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Rates &amp; Taxes</span>
+                <span class="meta-value mono">R 2,850 / month</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Levy</span>
+                <span class="meta-value mono">R 4,200 / month</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Occupancy</span>
+                <span class="meta-value">Vacant occupation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Financial Details -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="section-title">Financial Details</span>
+          </div>
+          <div class="section-body">
+            <div class="fin-hero">
+              <div class="fin-hero-label">Asking Price</div>
+              <div class="fin-hero-price">R 4,200,000</div>
+              <div class="fin-hero-sub">R 14,737 / m² · Inclusive of VAT</div>
+            </div>
+
+            <div class="fin-costs-grid">
+              <div class="fin-cost-tile">
+                <div class="fin-cost-label">Bond Repayment</div>
+                <div class="fin-cost-value">R 38,200 /mo</div>
+              </div>
+              <div class="fin-cost-tile">
+                <div class="fin-cost-label">Transfer Duty</div>
+                <div class="fin-cost-value">R 249,600</div>
+              </div>
+              <div class="fin-cost-tile">
+                <div class="fin-cost-label">Transfer Costs</div>
+                <div class="fin-cost-value">R 68,400</div>
+              </div>
+              <div class="fin-cost-tile">
+                <div class="fin-cost-label">Total to Register</div>
+                <div class="fin-cost-value">R 4,518,000</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="meta-row">
+                <span class="meta-label">Commission</span>
+                <span class="meta-value mono">5% + VAT (R 241,500)</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Mandate Type</span>
+                <span class="meta-value">Sole Mandate — 90 days</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Mandate Expires</span>
+                <span class="meta-value">14 March 2025</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Rates &amp; Taxes / mo</span>
+                <span class="meta-value mono">R 2,850</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">HOA Levy / mo</span>
+                <span class="meta-value mono">R 4,200</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Location -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="section-title">Location</span>
+          </div>
+          <div class="section-body">
+            <div class="loc-grid">
+              <div class="loc-cell">
+                <div class="loc-cell-label">City</div>
+                <div class="loc-cell-value">Sandton</div>
+              </div>
+              <div class="loc-cell">
+                <div class="loc-cell-label">Province</div>
+                <div class="loc-cell-value">Gauteng</div>
+              </div>
+              <div class="loc-cell">
+                <div class="loc-cell-label">Postal Code</div>
+                <div class="loc-cell-value">2191</div>
+              </div>
+            </div>
+            <div class="map-placeholder">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              <span>14 Baobab Ridge Drive, Fourways Gardens, Sandton</span>
+            </div>
+            <a href="#" class="map-link">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open in Google Maps
+            </a>
+          </div>
+        </div>
+
+        </div><!-- /details-triptych -->
+
+        <!-- ── Status diptych: Amenities · Listing Status ── -->
+        <div class="status-diptych">
+
+        <!-- 6. Amenities & Features -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="section-title">Amenities &amp; Features</span>
+          </div>
+          <div class="section-body">
+            <div class="amenity-grid">
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Heated Pool</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>3 Garages</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>24hr Security</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Fibre Internet</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Solar + Backup</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Borehole</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Electric Fence</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>CCTV Surveillance</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Staff Quarters</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Garden / Landscaped</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Study / Office</div>
+              <div class="amenity-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pet-Friendly</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Listing Status -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="section-title">Listing Status</span>
+          </div>
+          <div class="section-body">
+            <div class="status-banner verified">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Listing verified — all documents approved and compliant
+            </div>
+            <div>
+              <div class="meta-row">
+                <span class="meta-label">Listed On</span>
+                <span class="meta-value mono">14 Jan 2025</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Last Updated</span>
+                <span class="meta-value mono">8 Feb 2025</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Mandate Expires</span>
+                <span class="meta-value mono">14 Mar 2025 · 34 days left</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Portal Syndication</span>
+                <span class="meta-value" style="color:#059669;">Active on 4 portals</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </div><!-- /status-diptych -->
+
+      </div><!-- /left column -->
+
+
+      <!-- ═══════════ RIGHT SIDEBAR ═══════════ -->
+      <div class="sidebar-col">
+
+        <!-- A. Listing Health Card (enhanced — matches card UX from listings page) -->
+        <div class="health-card">
+          <div class="health-forest-band">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <!-- Health Ring SVG (replicates HealthRing component) -->
+              <div class="health-ring-wrap" style="width:64px;height:64px;flex-shrink:0;position:relative;">
+                <svg width="64" height="64" viewBox="0 0 64 64" class="health-ring-svg">
+                  <circle cx="32" cy="32" r="26" fill="white" stroke="rgba(26,60,40,0.12)" stroke-width="8"/>
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="#22C55E" stroke-width="8"
+                    stroke-dasharray="122 163" stroke-dashoffset="0" stroke-linecap="round"/>
+                </svg>
+                <div class="health-score-num">78</div>
+              </div>
+              <div>
+                <div class="health-label">Listing Health</div>
+                <div class="health-title">78 / 100</div>
+                <span class="heat-badge hot">🔥 High Demand</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4-cell metric strip (matches card metrics strip) -->
+          <div class="metric-strip">
+            <div class="metric-cell">
+              <div class="metric-val">1,247</div>
+              <div class="metric-lbl">Views</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">18</div>
+              <div class="metric-lbl">Enquiries</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val terra">2</div>
+              <div class="metric-lbl">Offers</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-val">25</div>
+              <div class="metric-lbl">DOM</div>
+            </div>
+          </div>
+
+          <!-- Mandate progress -->
+          <div class="mandate-row">
+            <div class="mandate-meta">
+              <span>Listing age</span>
+              <span class="dom-val">25d on market</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:28%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B. Activity Feed (ActivitySummary component) -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="section-title">Recent Activity</span>
+            <span class="section-subtitle">Live</span>
+          </div>
+          <div class="section-body" style="padding-top:14px;padding-bottom:14px;">
+            <!-- Pending summary chips -->
+            <div class="chip-row">
+              <span class="chip blue">📅 6 viewings pending</span>
+              <span class="chip purple">💬 3 enquiries pending</span>
+              <span class="chip gray">👁 1,247 views · 25 days</span>
+            </div>
+            <!-- Activity feed -->
+            <div class="activity-item">
+              <div class="activity-dot"></div>
+              <div class="activity-text">New enquiry from James Mokoena about bond pre-approval</div>
+              <div class="activity-time">2h ago</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot purple"></div>
+              <div class="activity-text">Viewing confirmed — Sarah van der Berg, Saturday 10:00</div>
+              <div class="activity-time">5h ago</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot green"></div>
+              <div class="activity-text">Document uploaded — Electrical Compliance Certificate</div>
+              <div class="activity-time">1d ago</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot"></div>
+              <div class="activity-text">Verbal offer received — R 3.95M, subject to bond approval</div>
+              <div class="activity-time">2d ago</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot purple"></div>
+              <div class="activity-text">Portal listing updated — new photos uploaded</div>
+              <div class="activity-time">3d ago</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C. Price Intelligence (NEW enhancement) -->
+        <div class="pi-band section-card" style="margin-bottom:0;">
+          <div class="pi-header">
+            <div class="pi-header-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            </div>
+            <span class="pi-title">Price Intelligence</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;color:var(--amber);font-weight:600;">AI Powered</span>
+          </div>
+          <div class="pi-body">
+            <div class="pi-current">R 4,200,000</div>
+            <div class="pi-sub">Your asking price</div>
+            <!-- Price position range -->
+            <div class="pi-range-track">
+              <div class="pi-range-marker"></div>
+            </div>
+            <div class="pi-range-labels">
+              <span>R 3.6M</span>
+              <span>Area range</span>
+              <span>R 5.1M</span>
+            </div>
+            <div class="pi-row">
+              <span class="pi-row-label">Comparable avg.</span>
+              <span class="pi-row-val">R 4,050,000</span>
+            </div>
+            <div class="pi-row">
+              <span class="pi-row-label">vs. Comparable</span>
+              <span class="pi-row-val" style="color:#D97706;">+3.7% above avg.</span>
+            </div>
+            <div class="pi-row">
+              <span class="pi-row-label">Price / m²</span>
+              <span class="pi-row-val">R 14,737</span>
+            </div>
+            <div class="pi-row">
+              <span class="pi-row-label">AI suggested price</span>
+              <span class="pi-row-val up">R 4,100,000</span>
+            </div>
+            <div class="pi-row">
+              <span class="pi-row-label">Est. time to sell</span>
+              <span class="pi-row-val">35–50 days</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- D. Quick Actions -->
+        <div class="section-card">
+          <div class="section-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span class="section-title">Quick Actions</span>
+          </div>
+          <div class="section-body" style="padding-top:14px;padding-bottom:14px;">
+            <button class="qa-btn highlight">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Schedule a Viewing
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+            <button class="qa-btn">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Send to Buyer
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+            <button class="qa-btn">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Sync to Portals
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+            <button class="qa-btn">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              Adjust Price
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+            <button class="qa-btn">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Report
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+            <button class="qa-btn danger">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Withdraw Listing
+              <span class="qa-chevron"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /right sidebar -->
+
+    </div><!-- /panel-details -->
+
+    <!-- ═══════════════════════════════════════════════════════════
+         VIEWINGS TAB PANEL
+    ═══════════════════════════════════════════════════════════ -->
+    <div id="panel-viewings" class="body-wrap" style="display:none;">
+
+      <!-- Left column -->
+      <div class="main-col">
+
+        <!-- ── INBOX: Pending Requests ──────────────────────── -->
+        <div class="inbox-zone">
+          <div class="inbox-header">
+            <span class="inbox-header-label">Action Required</span>
+            <div class="inbox-header-divider"></div>
+            <span class="inbox-count-badge">3 pending</span>
+          </div>
+
+          <!-- Urgent banner -->
+          <div class="urgent-banner">
+            <div class="urgent-banner-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="urgent-banner-body">
+              <div class="urgent-banner-title">3 requests awaiting your response</div>
+              <div class="urgent-banner-sub">Oldest request <strong>2 days ago</strong> · Avg. response time: 4h 12m</div>
+            </div>
+            <button class="urgent-banner-cta">Review All</button>
+          </div>
+
+          <!-- Request cards -->
+          <div class="request-stack">
+
+            <!-- Request 1 -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Tue</div>
+                <div class="request-time-date">18</div>
+                <div class="request-time-month">Jun</div>
+                <div class="request-time-hr">10:00</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Kagiso Sithole</span>
+                  <span class="request-status-badge">New · 2h ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  <span>Pre-approved</span>
+                  <span class="sep-dot"></span>
+                  <span>R 2.8M budget</span>
+                  <span class="sep-dot"></span>
+                  <span>Cash buyer</span>
+                </div>
+                <div class="request-context">
+                  <strong>Preferred:</strong> Tuesday 18 Jun · 10:00 – 11:00 &nbsp;·&nbsp;
+                  <strong>Also available:</strong> Wed 19 Jun after 14:00
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                    Reschedule
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Request 2 -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Wed</div>
+                <div class="request-time-date">19</div>
+                <div class="request-time-month">Jun</div>
+                <div class="request-time-hr">14:30</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Nomsa Dlamini</span>
+                  <span class="request-status-badge">New · 18h ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  <span>Seeking bond</span>
+                  <span class="sep-dot"></span>
+                  <span>R 2.4M budget</span>
+                  <span class="sep-dot"></span>
+                  <span>First-time buyer</span>
+                </div>
+                <div class="request-context">
+                  <strong>Preferred:</strong> Wednesday 19 Jun · 14:30 – 15:30 &nbsp;·&nbsp;
+                  <strong>Also available:</strong> Sat 22 Jun, any time
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                    Reschedule
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Request 3 -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Sat</div>
+                <div class="request-time-date">22</div>
+                <div class="request-time-month">Jun</div>
+                <div class="request-time-hr">10:00</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Thabo Nkosi</span>
+                  <span class="request-status-badge">New · 2d ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  <span>Investor</span>
+                  <span class="sep-dot"></span>
+                  <span>R 3.5M budget</span>
+                  <span class="sep-dot"></span>
+                  <span>Multiple properties</span>
+                </div>
+                <div class="request-context">
+                  <strong>Preferred:</strong> Saturday 22 Jun · 10:00 – 11:00 &nbsp;·&nbsp;
+                  <strong>Flexible</strong> on time
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                    Reschedule
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /request-stack -->
+        </div><!-- /inbox-zone -->
+
+        <!-- ── SECTION SEP: Confirmed ──────────────────────── -->
+        <div class="section-sep">
+          <span class="section-sep-label">Confirmed Viewings</span>
+          <div class="section-sep-line"></div>
+          <span class="section-sep-count">4 upcoming</span>
+        </div>
+
+        <!-- Confirmed viewing cards -->
+        <div class="viewing-stack">
+
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Mon</div>
+              <div class="viewing-date-num">16</div>
+              <div class="viewing-date-time">09:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Sipho Mokoena</span>
+                <span class="viewing-type-badge badge-confirmed">In-Person</span>
+              </div>
+              <div class="viewing-sub">
+                <span>Pre-approved</span>
+                <span class="sep-dot"></span>
+                <span>R 2.9M budget</span>
+                <span class="sep-dot"></span>
+                <span>Agent: John Dlamini</span>
+              </div>
+              <div class="viewing-notes">Interested in garden size · Bring bond pre-approval</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button class="icon-btn" title="Reschedule">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Tue</div>
+              <div class="viewing-date-num">17</div>
+              <div class="viewing-date-time">11:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Zanele Khumalo</span>
+                <span class="viewing-type-badge badge-confirmed">Virtual</span>
+              </div>
+              <div class="viewing-sub">
+                <span>Cash buyer</span>
+                <span class="sep-dot"></span>
+                <span>R 3.1M budget</span>
+                <span class="sep-dot"></span>
+                <span>Diaspora client</span>
+              </div>
+              <div class="viewing-notes">Zoom link sent · Interested in security features</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button class="icon-btn" title="Reschedule">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Thu</div>
+              <div class="viewing-date-num">19</div>
+              <div class="viewing-date-time">14:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Marcus van der Berg</span>
+                <span class="viewing-type-badge badge-confirmed">In-Person</span>
+              </div>
+              <div class="viewing-sub">
+                <span>Seeking bond</span>
+                <span class="sep-dot"></span>
+                <span>R 2.6M budget</span>
+                <span class="sep-dot"></span>
+                <span>Repeat viewer</span>
+              </div>
+              <div class="viewing-notes">2nd viewing · Bring occupation certificate</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button class="icon-btn" title="Reschedule">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-pending"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Sat</div>
+              <div class="viewing-date-num">21</div>
+              <div class="viewing-date-time">10:30</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Aisha Patel</span>
+                <span class="viewing-type-badge badge-confirmed" style="background:var(--amber-08);color:var(--amber);border-color:var(--amber-15);">Pending confirm</span>
+              </div>
+              <div class="viewing-sub">
+                <span>Investor</span>
+                <span class="sep-dot"></span>
+                <span>R 4.0M budget</span>
+              </div>
+              <div class="viewing-notes">Awaiting buyer's agent confirmation</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /confirmed viewing-stack -->
+
+        <!-- ── OUTCOME NUDGE ─────────────────────────────────── -->
+        <div class="outcome-nudge">
+          <div class="outcome-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="outcome-body">
+            <div class="outcome-title">2 viewings need outcomes logged</div>
+            <div class="outcome-sub">Log buyer feedback to track interest and improve your conversion rate.</div>
+          </div>
+          <button class="outcome-btn">Log Now</button>
+        </div>
+
+        <!-- ── SECTION SEP: Past ─────────────────────────────── -->
+        <div class="section-sep">
+          <span class="section-sep-label">Past Viewings</span>
+          <div class="section-sep-line"></div>
+          <span class="section-sep-count">4 completed</span>
+        </div>
+
+        <!-- Past viewing cards -->
+        <div class="viewing-stack">
+
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Mon</div>
+              <div class="viewing-date-num">9</div>
+              <div class="viewing-date-time">10:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Lerato Molefe</span>
+                <span class="viewing-type-badge badge-past">In-Person</span>
+              </div>
+              <div class="viewing-sub">
+                <span>R 2.5M budget</span>
+                <span class="sep-dot"></span>
+                <span>Agent-accompanied</span>
+              </div>
+            </div>
+            <div class="viewing-actions-col">
+              <span class="outcome-logged-pill">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Outcome logged
+              </span>
+            </div>
+          </div>
+
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Wed</div>
+              <div class="viewing-date-num">11</div>
+              <div class="viewing-date-time">14:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Riaan Botha</span>
+                <span class="viewing-type-badge badge-past">Virtual</span>
+              </div>
+              <div class="viewing-sub">
+                <span>R 2.8M budget</span>
+                <span class="sep-dot"></span>
+                <span>Diaspora</span>
+              </div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="v-action-btn v-btn-outcome">Log Outcome</button>
+            </div>
+          </div>
+
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Fri</div>
+              <div class="viewing-date-num">13</div>
+              <div class="viewing-date-time">09:30</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Fatima Jardine</span>
+                <span class="viewing-type-badge badge-past">In-Person</span>
+              </div>
+              <div class="viewing-sub">
+                <span>R 3.0M budget</span>
+                <span class="sep-dot"></span>
+                <span>Co-buyer</span>
+              </div>
+            </div>
+            <div class="viewing-actions-col">
+              <span class="outcome-logged-pill">
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                Outcome logged
+              </span>
+            </div>
+          </div>
+
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Sun</div>
+              <div class="viewing-date-num">15</div>
+              <div class="viewing-date-time">11:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Blessing Okonkwo</span>
+                <span class="viewing-type-badge badge-cancelled">Cancelled</span>
+              </div>
+              <div class="viewing-sub">
+                <span>R 2.2M budget</span>
+                <span class="sep-dot"></span>
+                <span>No-show</span>
+              </div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="v-action-btn v-btn-outcome">Follow Up</button>
+            </div>
+          </div>
+
+        </div><!-- /past viewing-stack -->
+
+      </div><!-- /main-col -->
+
+      <!-- Right sidebar -->
+      <div class="sidebar-col">
+
+        <!-- Next Viewing Hero -->
+        <div class="next-viewing-card" style="margin-bottom:16px;">
+          <div class="next-card-eyebrow">
+            <span class="next-live-dot"></span>
+            NEXT VIEWING
+          </div>
+          <div class="next-card-name">Sipho Mokoena</div>
+          <div class="next-card-time">Mon 16 Jun &nbsp;·&nbsp; 09:00 – 10:00</div>
+          <div class="next-card-meta">In-Person &nbsp;·&nbsp; 14 Fynbos Crescent &nbsp;·&nbsp; Agent-accompanied<br>Pre-approved · R 2.9M budget</div>
+          <div class="next-card-actions">
+            <button class="next-btn next-btn-confirm">Confirm</button>
+            <button class="next-btn next-btn-msg">Message</button>
+          </div>
+        </div>
+
+        <!-- Schedule CTA -->
+        <button class="schedule-cta" style="margin-bottom:16px;">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Schedule New Viewing
+        </button>
+
+        <!-- Mini Calendar -->
+        <div class="side-card" style="margin-bottom:16px;">
+          <div class="side-card-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="side-card-title">Viewing Calendar</span>
+            <span class="side-card-sup">Jun 2025</span>
+          </div>
+          <div class="side-card-body">
+            <div class="mini-cal-nav">
+              <button class="cal-nav-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <span class="mini-cal-month">June 2025</span>
+              <button class="cal-nav-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+            <div class="mini-cal-dow">
+              <div class="cal-dow"><span>M</span></div>
+              <div class="cal-dow"><span>T</span></div>
+              <div class="cal-dow"><span>W</span></div>
+              <div class="cal-dow"><span>T</span></div>
+              <div class="cal-dow"><span>F</span></div>
+              <div class="cal-dow"><span>S</span></div>
+              <div class="cal-dow"><span>S</span></div>
+            </div>
+            <div class="mini-cal-grid">
+              <!-- Week 1 -->
+              <div class="cal-day out-month"><div class="cal-day-num">26</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">27</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">28</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">29</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">30</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">31</div></div>
+              <div class="cal-day"><div class="cal-day-num">1</div></div>
+              <!-- Week 2 -->
+              <div class="cal-day"><div class="cal-day-num">2</div></div>
+              <div class="cal-day"><div class="cal-day-num">3</div></div>
+              <div class="cal-day"><div class="cal-day-num">4</div></div>
+              <div class="cal-day"><div class="cal-day-num">5</div></div>
+              <div class="cal-day"><div class="cal-day-num">6</div></div>
+              <div class="cal-day"><div class="cal-day-num">7</div></div>
+              <div class="cal-day"><div class="cal-day-num">8</div></div>
+              <!-- Week 3 -->
+              <div class="cal-day has-viewing"><div class="cal-day-num">9</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><div class="cal-day-num">10</div></div>
+              <div class="cal-day has-viewing"><div class="cal-day-num">11</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><div class="cal-day-num">12</div></div>
+              <div class="cal-day has-viewing"><div class="cal-day-num">13</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><div class="cal-day-num">14</div></div>
+              <div class="cal-day has-viewing"><div class="cal-day-num">15</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <!-- Week 4 -->
+              <div class="cal-day is-today has-viewing"><div class="cal-day-num">16</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day has-viewing"><div class="cal-day-num">17</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day has-pending"><div class="cal-day-num">18</div><div class="cal-dots"><div class="cal-dot dot-pending"></div></div></div>
+              <div class="cal-day has-viewing has-pending"><div class="cal-day-num">19</div><div class="cal-dots"><div class="cal-dot dot-confirmed"></div><div class="cal-dot dot-pending"></div></div></div>
+              <div class="cal-day"><div class="cal-day-num">20</div></div>
+              <div class="cal-day has-pending"><div class="cal-day-num">21</div><div class="cal-dots"><div class="cal-dot dot-pending"></div></div></div>
+              <div class="cal-day has-pending"><div class="cal-day-num">22</div><div class="cal-dots"><div class="cal-dot dot-pending"></div></div></div>
+              <!-- Week 5 -->
+              <div class="cal-day"><div class="cal-day-num">23</div></div>
+              <div class="cal-day"><div class="cal-day-num">24</div></div>
+              <div class="cal-day"><div class="cal-day-num">25</div></div>
+              <div class="cal-day"><div class="cal-day-num">26</div></div>
+              <div class="cal-day"><div class="cal-day-num">27</div></div>
+              <div class="cal-day"><div class="cal-day-num">28</div></div>
+              <div class="cal-day"><div class="cal-day-num">29</div></div>
+              <!-- Week 6 -->
+              <div class="cal-day"><div class="cal-day-num">30</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">1</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">2</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">3</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">4</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">5</div></div>
+              <div class="cal-day out-month"><div class="cal-day-num">6</div></div>
+            </div>
+            <div class="cal-legend">
+              <div class="cal-legend-item"><div class="cal-legend-dot dot-confirmed"></div>Confirmed</div>
+              <div class="cal-legend-item"><div class="cal-legend-dot dot-pending"></div>Pending</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewing Stats -->
+        <div class="side-card" style="margin-bottom:16px;">
+          <div class="side-card-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="side-card-title">Viewing Stats</span>
+            <span class="side-card-sup">This month</span>
+          </div>
+          <div class="side-card-body">
+            <div class="vw-stats-row">
+              <span class="vw-stats-label">Total viewings</span>
+              <div style="text-align:right;">
+                <div class="vw-stats-val">11</div>
+              </div>
+            </div>
+            <div class="vw-stats-row">
+              <span class="vw-stats-label">Avg. viewer score</span>
+              <div style="text-align:right;">
+                <div class="vw-stats-val amber">7.4<span style="font-size:11px;color:var(--text-muted)">/10</span></div>
+              </div>
+            </div>
+            <div class="vw-stats-row">
+              <span class="vw-stats-label">Offers after viewing</span>
+              <div style="text-align:right;">
+                <div class="vw-stats-val green">2</div>
+                <div class="vw-stats-delta">18% conversion</div>
+              </div>
+            </div>
+            <div class="funnel-wrap">
+              <div class="funnel-label">Buyer interest funnel</div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Requests</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-forest" style="width:100%"></div></div>
+                <span class="funnel-step-val">11</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Completed</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-forest" style="width:73%"></div></div>
+                <span class="funnel-step-val">8</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Interested</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-amber" style="width:45%"></div></div>
+                <span class="funnel-step-val">5</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Offers</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-green" style="width:18%"></div></div>
+                <span class="funnel-step-val">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /right sidebar -->
+
+    </div><!-- /panel-viewings -->
+
+  </main><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.tab-btn[data-tab]');
+  var panels = document.querySelectorAll('[id^="panel-"]');
+
+  function showPanel(tabId) {
+    panels.forEach(function (p) { p.style.display = 'none'; });
+    var target = document.getElementById('panel-' + tabId);
+    if (target) { target.style.display = ''; }
+  }
+
+  tabs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      showPanel(this.getAttribute('data-tab'));
+    });
+  });
+})();
+</script>
+</body>
+</html>

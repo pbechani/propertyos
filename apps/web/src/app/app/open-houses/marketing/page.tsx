@@ -1,5 +1,5 @@
-import { MarketingView } from '@/views/open-houses/OHMarketingView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <MarketingView />;
+  redirect('/app/on-show?tab=marketing');
 }

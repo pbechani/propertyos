@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  MapPin, Bed, Bath, Maximize, ArrowLeft, Bot, FileText, PhoneCall, Loader2,
+  ArrowLeft, Bot, Loader2,
   Home, Calendar, MessageSquare, DoorOpen, MessagesSquare, FolderOpen,
   ClipboardCheck, Star, StickyNote, Eye, Users, Tag, ShoppingBag, CheckSquare,
+  Download, Pencil,
 } from 'lucide-react';
 import { OverflowTabBar, type TabItem } from '@/components/my-listings/OverflowTabBar';
 import { ScheduledViewings } from '@/components/my-listings/ScheduledViewings';
@@ -25,6 +26,7 @@ import { Documents } from '@/components/my-listings/Documents';
 import { CommunicationLog } from '@/components/my-listings/CommunicationLog';
 import { AIAssistant } from '@/components/my-listings/AIAssistant';
 import { ActivitySummary } from '@/components/my-listings/ActivitySummary';
+import { ListingDetailSidebar } from '@/components/my-listings/ListingDetailSidebar';
 import { propertiesApi, type PropertyListing, type PropertyStats } from '@/lib/api-client';
 import { getAccessToken, getStoredUser } from '@/lib/auth-session';
 import { formatMoney } from '@/lib/formatters';
@@ -45,10 +47,6 @@ const TAB_DEFS: Omit<TabItem, 'badge'>[] = [
   { value: 'sale',       label: 'Sale Details',       icon: ShoppingBag },
   { value: 'postsale',   label: 'Post-Sale',          icon: CheckSquare },
 ];
-
-function getInitials(firstName: string, lastName: string): string {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
-}
 
 export default function ListingDetailPage() {
   const router = useRouter();
@@ -81,17 +79,10 @@ export default function ListingDetailPage() {
       .finally(() => setIsLoading(false));
   }, [listingId, authToken]);
 
-  const primaryImage =
-    property?.media?.find((m) => m.is_primary)?.url ??
-    property?.media?.[0]?.url ??
-    'https://images.unsplash.com/photo-1706808849802-8f876ade0d1f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080';
-
   const address = property?.location?.address_line1 ?? property?.title ?? 'Address unavailable';
   const cityRegion = [property?.location?.city, property?.location?.region].filter(Boolean).join(', ');
 
   const agentName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Agent';
-  const agentInitials = user ? getInitials(user.firstName, user.lastName) : 'AG';
-  const agentCompany = user?.companyName ?? null;
 
   const daysOnMarket = property
     ? Math.max(0, Math.floor((Date.now() - new Date(property.created_at).getTime()) / 86_400_000))
@@ -130,41 +121,137 @@ export default function ListingDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F2E8D5]">
-      {/* Header */}
-      <div className="bg-[#F2E8D5]/95 backdrop-blur-sm border-b border-[#1A3C28]/[0.12] sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={() => router.push('/app/my-listings')} className="p-2 hover:bg-[#1A3C28]/[0.08] rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5 text-[#1A3C28]" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-[#1A3C28]" style={{ fontFamily: 'var(--font-fraunces)' }}>
-                  {property?.title ?? 'Listing Details'}
-                </h1>
-                <p className="text-sm text-[#1A3C28]/55">
-                  {property ? `Ref: ${property.listing_reference ?? listingId}` : 'Manage your property listing'}
-                </p>
+      {/* Forest dark header */}
+      <div className="relative overflow-hidden" style={{ background: '#1A3C28' }}>
+        {/* Decorative circles */}
+        <div className="absolute pointer-events-none" style={{ top: -60, right: -60, width: 220, height: 220, background: '#C4562A', opacity: 0.08, borderRadius: '50%' }} />
+        <div className="absolute pointer-events-none" style={{ bottom: 10, left: '40%', width: 160, height: 160, background: '#00E87A', opacity: 0.04, borderRadius: '50%' }} />
+
+        <div className="relative px-8 pt-6 pb-0" style={{ zIndex: 1 }}>
+          {/* Breadcrumb eyebrow */}
+          <div className="flex items-center gap-1 mb-4" style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#C4562A' }}>
+            <button onClick={() => router.push('/app/my-listings')} className="flex items-center gap-1 transition-opacity hover:opacity-100" style={{ opacity: 0.75, color: 'inherit', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <ArrowLeft className="w-3 h-3" />
+              My Listings
+            </button>
+            <span style={{ opacity: 0.5, margin: '0 4px' }}>›</span>
+            <span style={{ color: 'rgba(242,232,213,0.7)', fontWeight: 600 }}>{address}</span>
+          </div>
+
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              {/* Badges */}
+              <div className="flex items-center gap-2 mb-2">
+                {property?.listing_type && (
+                  <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: 5, background: '#1A3C28', color: '#F2E8D5', border: '1px solid rgba(242,232,213,0.2)' }}>
+                    {property.listing_type.replace(/_/g, ' ')}
+                  </span>
+                )}
+                {stats && stats.views > 50 && (
+                  <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '3px 8px', borderRadius: 5, background: '#FEE2E2', color: '#DC2626' }}>
+                    🔥 High Demand
+                  </span>
+                )}
+              </div>
+              <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 26, fontWeight: 700, color: '#F2E8D5', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
+                {property?.title ?? address}
+              </h1>
+              <div className="flex items-center gap-2 mt-1" style={{ fontSize: 13, color: 'rgba(242,232,213,0.55)', fontWeight: 400 }}>
+                {cityRegion && <span>{cityRegion}</span>}
+                {cityRegion && (property?.bedrooms != null || property?.area_sqm) && <span style={{ width: 3, height: 3, background: 'rgba(242,232,213,0.3)', borderRadius: '50%', display: 'inline-block' }} />}
+                {(property?.bedrooms != null || property?.bathrooms != null || property?.area_sqm) && (
+                  <span>
+                    {[
+                      property?.bedrooms != null ? `${property.bedrooms} bed` : null,
+                      property?.bathrooms != null ? `${property.bathrooms} bath` : null,
+                      property?.area_sqm ? `${Number(property.area_sqm).toLocaleString()} m²` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                {property?.status && (
+                  <>
+                    <span style={{ width: 3, height: 3, background: 'rgba(242,232,213,0.3)', borderRadius: '50%', display: 'inline-block' }} />
+                    <span style={{ color: '#00E87A', fontWeight: 600 }}>{property.status.replace(/_/g, ' ')}</span>
+                  </>
+                )}
               </div>
             </div>
-            <button
-              onClick={() => setIsAIOpen(!isAIOpen)}
-              className={`px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${
-                isAIOpen
-                  ? 'bg-[#1A3C28] text-[#00E87A]'
-                  : 'bg-[#1A3C28]/[0.08] text-[#1A3C28] border border-[#1A3C28]/20 hover:bg-[#1A3C28]/[0.12]'
-              }`}
-            >
-              <Bot className="w-5 h-5" />
-              <span className="text-sm font-medium">AI Assistant</span>
-              <span className={`w-2 h-2 rounded-full ${isAIOpen ? 'bg-green-300' : 'bg-green-500 animate-pulse'}`} />
-            </button>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'rgba(242,232,213,0.08)', color: 'rgba(242,232,213,0.8)', border: '1px solid rgba(242,232,213,0.14)' }}
+                className="transition-all hover:opacity-90"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+              <Link
+                href={`/app/my-listings/${listingId}/edit`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: '#C4562A', color: '#fff', border: 'none', textDecoration: 'none' }}
+                className="transition-all hover:opacity-90"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit Listing
+              </Link>
+              <button
+                onClick={() => setIsAIOpen(!isAIOpen)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: isAIOpen ? 'rgba(0,232,122,0.15)' : '#1A3C28', color: '#00E87A', border: '1px solid rgba(0,232,122,0.25)' }}
+                className="transition-all hover:opacity-90"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full bg-[#00E87A] ${!isAIOpen ? 'animate-pulse' : ''}`} />
+                <Bot className="w-3.5 h-3.5" />
+                AI Assistant
+              </button>
+            </div>
           </div>
+
+          {/* 4-cell KPI strip */}
+          {property && (
+            <div className="grid grid-cols-4 gap-2.5 pb-5">
+              {/* Listing Price */}
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(242,232,213,0.45)', marginBottom: 5 }}>Listing Price</div>
+                <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: '#F2E8D5', lineHeight: 1 }}>{formatMoney(property.price, property.currency)}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#00E87A', marginTop: 3 }}>asking price</div>
+              </div>
+              {/* Days on Market */}
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(242,232,213,0.45)', marginBottom: 5 }}>Days on Market</div>
+                <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: '#F5C87A', lineHeight: 1 }}>{daysOnMarket}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(242,232,213,0.45)', marginTop: 3 }}>days active</div>
+              </div>
+              {/* Total Views */}
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(242,232,213,0.45)', marginBottom: 5 }}>Total Views</div>
+                <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: '#00E87A', lineHeight: 1 }}>{stats?.views ?? property.view_count ?? 0}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#00E87A', marginTop: 3 }}>portal impressions</div>
+              </div>
+              {/* Enquiries */}
+              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(242,232,213,0.45)', marginBottom: 5 }}>Enquiries</div>
+                <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 20, fontWeight: 700, color: '#E8A080', lineHeight: 1 }}>{stats?.inquiries ?? 0}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(242,232,213,0.45)', marginTop: 3 }}>{(stats?.inquiries ?? 0) > 0 ? 'pending review' : 'no enquiries yet'}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Sticky tab bar */}
+      <div className="sticky top-0 z-40">
+        {isLoading ? (
+          <div className="bg-[#EAD9C4]/50 border-b border-[#1A3C28]/[0.08] px-4 py-3 flex items-center justify-center h-[52px]">
+            <Loader2 className="w-4 h-4 text-[#1A3C28] animate-spin" />
+          </div>
+        ) : (
+          <OverflowTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+        )}
+      </div>
+
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div>
         {isLoading && (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="w-8 h-8 text-[#1A3C28] animate-spin" />
@@ -172,166 +259,53 @@ export default function ListingDetailPage() {
         )}
 
         {!isLoading && error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center mb-6">
+          <div className="mx-6 mt-6 bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-700">{error}</p>
           </div>
         )}
 
         {!isLoading && property && (
           <>
-            <ActivitySummary propertyId={listingId} authToken={authToken} onTabChange={(tab) => setActiveTab(tab)} />
-
-            {/* Property Header */}
-            <div className="bg-white rounded-xl shadow-sm border border-[#1A3C28]/10 overflow-hidden mb-6">
-              <div className="grid md:grid-cols-2 gap-0">
-                {/* Property Image */}
-                <div className="relative h-80 md:h-auto">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={primaryImage} alt={property.title} className="w-full h-full object-cover" />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="px-3 py-1 bg-[#00E87A] text-[#0C0D10] rounded-full text-sm font-medium capitalize">
-                      {property.status.replace('_', ' ')}
-                    </span>
-                    {property.listing_type && (
-                      <span className="px-3 py-1 bg-[#C4562A] text-white rounded-full text-sm font-medium capitalize">
-                        {property.listing_type.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                    <Link
-                      href={`/app/my-listings/${listingId}/edit`}
-                      className="flex-1 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-white transition-colors flex items-center justify-center gap-2 shadow-sm"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Edit Listing
-                    </Link>
-                    <button className="flex-1 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-white transition-colors flex items-center justify-center gap-2 shadow-sm">
-                      <PhoneCall className="w-4 h-4" />
-                      Contact Seller
-                    </button>
-                  </div>
+            {/* Details tab — 2-col layout */}
+            {activeTab === 'details' && (
+              <div className="grid gap-5 px-8 py-6" style={{ gridTemplateColumns: '1fr 320px', alignItems: 'start' }}>
+                <div>
+                  <ListingDetails property={property} />
                 </div>
-
-                {/* Property Info */}
-                <div className="p-6">
-                  <div className="mb-4">
-                    <div className="text-3xl font-light text-[#1A3C28] mb-2" style={{ fontFamily: 'var(--font-fraunces)' }}>
-                      {formatMoney(property.price, property.currency)}
-                    </div>
-                    <div className="flex items-center gap-2 text-[#1A3C28]/60 mb-1">
-                      <MapPin className="w-4 h-4 text-[#C4562A]" />
-                      <span>{address}</span>
-                    </div>
-                    {cityRegion && <div className="text-sm text-[#1A3C28]/45">{cityRegion}</div>}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-[#1A3C28]/10 my-4">
-                    <div className="flex items-center gap-2">
-                      <Bed className="w-5 h-5 text-[#1A3C28]/50" />
-                      <div>
-                        <div className="font-semibold text-[#1A3C28]">{property.bedrooms ?? '—'}</div>
-                        <div className="text-xs text-[#1A3C28]/45">Bedrooms</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Bath className="w-5 h-5 text-[#1A3C28]/50" />
-                      <div>
-                        <div className="font-semibold text-[#1A3C28]">{property.bathrooms ?? '—'}</div>
-                        <div className="text-xs text-[#1A3C28]/45">Bathrooms</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Maximize className="w-5 h-5 text-[#1A3C28]/50" />
-                      <div>
-                        <div className="font-semibold text-[#1A3C28]">
-                          {property.area_sqm ? Number(property.area_sqm).toLocaleString() : '—'}
-                        </div>
-                        <div className="text-xs text-[#1A3C28]/45">m²</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {property.listing_reference && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#1A3C28]/55">Ref #:</span>
-                        <span className="font-medium text-[#1A3C28]">{property.listing_reference}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#1A3C28]/55">Listed:</span>
-                      <span className="font-medium text-[#1A3C28]">
-                        {new Date(property.created_at).toLocaleDateString('en-ZA', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#1A3C28]/55">Days on Market:</span>
-                      <span className="font-medium text-[#1A3C28]">{daysOnMarket} days</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#1A3C28]/55">Property Type:</span>
-                      <span className="font-medium text-[#1A3C28] capitalize">{property.property_type.replace(/_/g, ' ')}</span>
-                    </div>
-                    {property.view_count !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#1A3C28]/55">Total Views:</span>
-                        <span className="font-medium text-[#1A3C28]">{property.view_count}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-[#1A3C28]/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-[#1A3C28]/55 mb-2">Listed By</div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#B89040] text-white rounded-full flex items-center justify-center font-medium">
-                            {agentInitials}
-                          </div>
-                          <div>
-                            <div className="font-medium text-[#1A3C28]">{agentName}</div>
-                            {agentCompany && <div className="text-sm text-[#1A3C28]/45">{agentCompany}</div>}
-                          </div>
-                        </div>
-                      </div>
-                      {property.view_count !== undefined && (
-                        <div className="text-center">
-                          <div className="text-lg font-semibold text-[#1A3C28]">{property.view_count}</div>
-                          <div className="text-[10px] text-[#1A3C28]/45">Views</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-3.5">
+                  <ListingDetailSidebar
+                    property={property}
+                    stats={stats}
+                    daysOnMarket={daysOnMarket}
+                    listingId={listingId}
+                    authToken={authToken}
+                    onTabChange={setActiveTab}
+                  />
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Tabs Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-[#1A3C28]/10">
-              <OverflowTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-
-              <div className="p-6">
-                {activeTab === 'details'    && property && <ListingDetails property={property} />}
-                {activeTab === 'viewings'   && <ScheduledViewings propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'enquiries'  && <Enquiries propertyId={listingId} authToken={authToken} property={property} />}
-                {activeTab === 'openhouses' && <OpenHouses propertyId={listingId} authToken={authToken} propertyAddress={address} currentAgentName={agentName} />}
-                {activeTab === 'comms'      && <CommunicationLog propertyId={listingId} authToken={authToken} property={property} />}
-                {activeTab === 'documents'  && <Documents propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'condition'  && <PropertyCondition propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'selling'    && <SellingPoints propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'notes'      && <Notes propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'showings'   && <Showings propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'leads'      && <Leads propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'offers'     && <Offers propertyId={listingId} authToken={authToken} listPrice={property ? parseFloat(property.price) : undefined} />}
-                {activeTab === 'sale'       && <SaleDetails propertyId={listingId} authToken={authToken} />}
-                {activeTab === 'postsale'   && <PostSaleActivities propertyId={listingId} authToken={authToken} />}
+            {/* All other tabs — full width with ActivitySummary */}
+            {activeTab !== 'details' && (
+              <div className="px-8 py-6">
+                <ActivitySummary propertyId={listingId} authToken={authToken} onTabChange={(tab) => setActiveTab(tab)} />
+                <div className="bg-white rounded-xl shadow-sm border border-[#1A3C28]/10 p-6">
+                  {activeTab === 'viewings'   && <ScheduledViewings propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'enquiries'  && <Enquiries propertyId={listingId} authToken={authToken} property={property} />}
+                  {activeTab === 'openhouses' && <OpenHouses propertyId={listingId} authToken={authToken} propertyAddress={address} currentAgentName={agentName} />}
+                  {activeTab === 'comms'      && <CommunicationLog propertyId={listingId} authToken={authToken} property={property} />}
+                  {activeTab === 'documents'  && <Documents propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'condition'  && <PropertyCondition propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'selling'    && <SellingPoints propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'notes'      && <Notes propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'showings'   && <Showings propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'leads'      && <Leads propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'offers'     && <Offers propertyId={listingId} authToken={authToken} listPrice={property ? parseFloat(property.price) : undefined} />}
+                  {activeTab === 'sale'       && <SaleDetails propertyId={listingId} authToken={authToken} />}
+                  {activeTab === 'postsale'   && <PostSaleActivities propertyId={listingId} authToken={authToken} />}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

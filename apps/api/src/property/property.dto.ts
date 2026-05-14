@@ -196,18 +196,47 @@ export class UpdatePropertyDto {
   property_type?: PropertyType;
 
   @IsOptional()
+  @IsString()
+  property_subtype?: string;
+
+  @IsOptional()
   @IsIn(LISTING_TYPES)
   listingType?: ListingType;
 
   @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listing_type?: ListingType;
+
+  @IsOptional()
+  @IsString()
+  listing_reference?: string;
+
+  @IsOptional()
+  @IsString()
+  title_type?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   price?: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(3)
   currency?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_levy?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_rates?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_utilities?: string;
 
   @IsOptional()
   @IsNumber()
@@ -222,6 +251,14 @@ export class UpdatePropertyDto {
   area_sqm?: number;
 
   @IsOptional()
+  @IsString()
+  floor_area_sqm?: string;
+
+  @IsOptional()
+  @IsString()
+  erf_size_sqm?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   bedrooms?: number;
@@ -230,6 +267,18 @@ export class UpdatePropertyDto {
   @IsNumber()
   @Min(0)
   bathrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  garages?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  carports?: number;
 
   @IsOptional()
   @IsNumber()

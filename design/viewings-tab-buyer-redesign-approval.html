@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Buyer Viewings Tab — Design Approval</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest:      #1A3C28;
+  --forest-l:    #2D5A40;
+  --forest-ll:   #4A7C5A;
+  --parchment:   #F2E8D5;
+  --cream:       #EAD9C4;
+  --carbon:      #0C0D10;
+  --egreen:      #00E87A;
+  --amber:       #B89040;
+  --terra:       #C4562A;
+  --muted-text:  #5A7A68;
+  --border:      rgba(26,60,40,0.12);
+  --border-s:    rgba(26,60,40,0.22);
+
+  --font-serif:  'Fraunces', 'Georgia', serif;
+  --font-body:   'Plus Jakarta Sans', sans-serif;
+  --font-mono:   'IBM Plex Mono', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #E8DFC8;
+  color: var(--forest);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 32px 24px 48px;
+}
+
+/* ── Design approval label ── */
+.approval-label {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--carbon);
+  color: var(--egreen);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 6px 16px;
+  border-radius: 100px;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+/* ── App shell ── */
+.shell {
+  display: flex;
+  width: 100%;
+  max-width: 1140px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.4);
+  margin-top: 40px;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 64px;
+  background: var(--forest);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 0;
+  gap: 6px;
+  min-height: 720px;
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  background: var(--parchment);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  font-family: var(--font-serif);
+  font-size: 18px; font-weight: 700;
+  color: var(--forest);
+}
+.nav-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(242,232,213,0.35);
+  cursor: pointer;
+}
+.nav-icon.active {
+  background: rgba(242,232,213,0.12);
+  color: var(--parchment);
+}
+.nav-icon svg { width: 18px; height: 18px; }
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  background: var(--parchment);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Top bar ── */
+.topbar {
+  height: 56px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--forest);
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--forest-l), var(--forest));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--parchment);
+}
+
+/* ── Content wrapper ── */
+.content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* ── Dashboard tabs (frozen on viewings) ── */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.tab {
+  padding: 7px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted-text);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.12s;
+}
+.tab.active {
+  background: var(--forest);
+  color: var(--parchment);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.tab-badge {
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 100px;
+  padding: 1px 6px;
+}
+.tab.active .tab-badge { background: var(--egreen); color: var(--carbon); }
+.tab:not(.active) .tab-badge { background: var(--forest); color: var(--parchment); }
+
+/* ── Section header ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--forest);
+}
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--forest);
+  color: var(--parchment);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+.primary-btn svg { width: 14px; height: 14px; }
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.stat-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.stat-icon svg { width: 16px; height: 16px; }
+.stat-icon.upcoming  { background: rgba(0,232,122,0.12); color: #00A855; }
+.stat-icon.pending   { background: rgba(184,144,64,0.14); color: var(--amber); }
+.stat-icon.completed { background: rgba(26,60,40,0.10); color: var(--forest); }
+.stat-icon.cancelled { background: rgba(196,86,42,0.10); color: var(--terra); }
+.stat-num {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--forest);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--muted-text);
+  margin-top: 2px;
+}
+
+/* ── Filter pills ── */
+.filter-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-pill {
+  padding: 5px 13px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.12s;
+}
+.filter-pill.active {
+  background: var(--forest);
+  color: var(--parchment);
+}
+.filter-pill:not(.active) {
+  background: white;
+  color: var(--muted-text);
+  border-color: var(--border);
+}
+.filter-divider {
+  width: 1px; height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+.sort-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-text);
+  cursor: pointer;
+}
+.sort-btn svg { width: 12px; height: 12px; }
+
+/* ── Date group label ── */
+.date-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+.date-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  white-space: nowrap;
+}
+.date-group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Viewing card ── */
+.viewing-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+.viewing-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  transition: box-shadow 0.15s;
+  position: relative;
+}
+.viewing-card:hover {
+  box-shadow: 0 4px 20px rgba(26,60,40,0.10);
+}
+
+/* Status indicator stripe */
+.viewing-card::before {
+  content: '';
+  width: 3px;
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 16px 0 0 16px;
+}
+.viewing-card.confirmed::before  { background: var(--egreen); }
+.viewing-card.pending::before    { background: var(--amber); }
+.viewing-card.completed::before  { background: rgba(26,60,40,0.3); }
+.viewing-card.declined::before   { background: var(--terra); }
+.viewing-card.cancelled::before  { background: #CCC; }
+
+.card-image {
+  width: 92px;
+  flex-shrink: 0;
+  object-fit: cover;
+  display: block;
+  margin-left: 3px;
+}
+.card-image-placeholder {
+  width: 92px;
+  flex-shrink: 0;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+}
+.card-image-placeholder svg { width: 24px; height: 24px; color: rgba(26,60,40,0.25); }
+
+.card-body {
+  flex: 1;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.card-row1 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--forest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+.status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.status-confirmed  { background: rgba(0,232,122,0.12); color: #008844; }
+.status-pending    { background: rgba(184,144,64,0.15); color: #8B6A1E; }
+.status-completed  { background: rgba(26,60,40,0.08); color: var(--forest); }
+.status-declined   { background: rgba(196,86,42,0.12); color: #A83520; }
+.status-cancelled  { background: rgba(0,0,0,0.06); color: #666; }
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted-text);
+}
+.meta-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+.meta-chip.time { font-weight: 600; color: var(--forest); }
+
+.meta-dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.type-chip.virtual   { background: rgba(0,100,255,0.08); color: #0055CC; }
+.type-chip.in-person { background: rgba(26,60,40,0.08); color: var(--forest-l); }
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 14px 16px 14px 0;
+  flex-shrink: 0;
+}
+.action-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+.action-btn.outline {
+  background: white;
+  color: var(--forest);
+  border: 1.5px solid var(--border-s);
+}
+.action-btn.ghost {
+  background: transparent;
+  color: var(--muted-text);
+  border: 1.5px solid var(--border);
+}
+.action-btn.danger-ghost {
+  background: transparent;
+  color: var(--terra);
+  border: 1.5px solid rgba(196,86,42,0.2);
+}
+
+/* ── Empty state ── */
+.empty-state {
+  background: white;
+  border: 1.5px dashed var(--border-s);
+  border-radius: 16px;
+  padding: 52px 32px;
+  text-align: center;
+}
+.empty-icon {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: rgba(26,60,40,0.07);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.empty-icon svg { width: 28px; height: 28px; color: rgba(26,60,40,0.4); }
+.empty-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--forest);
+  margin-bottom: 6px;
+}
+.empty-sub {
+  font-size: 13px;
+  color: var(--muted-text);
+  max-width: 320px;
+  margin: 0 auto 20px;
+  line-height: 1.55;
+}
+
+/* ── Declined/rescheduled note ── */
+.card-note {
+  font-size: 11px;
+  color: var(--muted-text);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-note svg { width: 11px; height: 11px; flex-shrink: 0; }
+.card-note.warn { color: #A84A00; }
+.card-note.info { color: var(--forest-ll); }
+
+/* ── Feedback banner (post-completion) ── */
+.feedback-banner {
+  background: rgba(0,232,122,0.07);
+  border: 1px solid rgba(0,232,122,0.25);
+  border-radius: 10px;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--forest);
+  margin-top: 6px;
+}
+.feedback-banner svg { width: 14px; height: 14px; flex-shrink: 0; color: #008844; }
+.feedback-banner a {
+  color: var(--forest);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Section 2: past toggle ── */
+.toggle-past {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-text);
+  cursor: pointer;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.toggle-past svg { width: 14px; height: 14px; }
+
+/* ── Annotations (design review only) ── */
+.annotation-wrap {
+  position: relative;
+  display: inline-block;
+}
+.annotation {
+  position: absolute;
+  z-index: 20;
+  background: rgba(255, 220, 50, 0.96);
+  color: #222;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+.annotation::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 12px;
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(255,220,50,0.96);
+}
+
+/* ── No-op hover for card toggles ── */
+.viewing-card.past { opacity: 0.72; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(26,60,40,0.18); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="approval-label">DESIGN APPROVAL · BUYER VIEWINGS TAB · v1</div>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo-mark">P</div>
+
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="nav-icon active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </div>
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <div class="nav-icon" style="margin-top:auto;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 7.07-2.93"/></svg>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-title">My Dashboard</div>
+      <div class="topbar-right">
+        <div style="position:relative;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A7A68" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span style="position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--terra);border:1.5px solid white;"></span>
+        </div>
+        <div class="avatar">AB</div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <div class="tab">Overview</div>
+        <div class="tab">Active Purchases <span class="tab-badge">2</span></div>
+        <div class="tab">Construction</div>
+        <div class="tab">Saved Properties</div>
+        <div class="tab active">
+          Viewings
+          <span class="tab-badge">3</span>
+        </div>
+      </div>
+
+      <!-- Section header -->
+      <div class="section-header">
+        <div class="section-title">Property Viewings</div>
+        <a class="primary-btn" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Browse &amp; Book Viewing
+        </a>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row">
+
+        <div class="stat-card">
+          <div class="stat-icon upcoming">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="stat-num">3</div>
+            <div class="stat-label">Upcoming</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon pending">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="stat-num">1</div>
+            <div class="stat-label">Awaiting Confirmation</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="stat-num">8</div>
+            <div class="stat-label">Completed</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon cancelled">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div>
+            <div class="stat-num">2</div>
+            <div class="stat-label">Cancelled / Declined</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Filter + sort row -->
+      <div class="filter-row">
+        <div class="filter-pill active">All</div>
+        <div class="filter-pill">Upcoming</div>
+        <div class="filter-pill">Pending</div>
+        <div class="filter-pill">Completed</div>
+        <div class="filter-divider"></div>
+        <div class="filter-pill">In-Person</div>
+        <div class="filter-pill">Virtual</div>
+        <button class="sort-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+          Soonest first
+        </button>
+      </div>
+
+      <!-- ── Group: Today ─────────────────────────────────────────── -->
+      <div class="date-group">
+        <span class="date-group-label">Today — Wed 14 May</span>
+        <div class="date-group-line"></div>
+      </div>
+
+      <div class="viewing-cards">
+
+        <!-- Card 1: Confirmed, today, in-person -->
+        <div class="viewing-card confirmed">
+          <img class="card-image"
+            src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=140&h=100&fit=crop"
+            alt="Property"
+          />
+          <div class="card-body">
+            <div class="card-row1">
+              <div class="card-title">14 Rosebank Drive, Sandton</div>
+              <span class="status-badge status-confirmed">✓ Confirmed</span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-chip time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                14:30 – 15:00
+              </div>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Sandton, Gauteng
+              </div>
+              <div class="meta-dot"></div>
+              <span class="type-chip in-person">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                In-Person
+              </span>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">Agent: Sarah M.</div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn outline">
+              <svg style="display:inline;width:11px;height:11px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Reschedule
+            </button>
+            <button class="action-btn danger-ghost">Cancel</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Group: Tomorrow ─────────────────────────────────────── -->
+      <div class="date-group">
+        <span class="date-group-label">Tomorrow — Thu 15 May</span>
+        <div class="date-group-line"></div>
+      </div>
+
+      <div class="viewing-cards">
+
+        <!-- Card 2: Pending confirmation, virtual -->
+        <div class="viewing-card pending">
+          <img class="card-image"
+            src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=140&h=100&fit=crop"
+            alt="Property"
+          />
+          <div class="card-body">
+            <div class="card-row1">
+              <div class="card-title">Waterfall Estate — Unit 4B</div>
+              <span class="status-badge status-pending">⏳ Awaiting Confirmation</span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-chip time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                10:00 – 10:30
+              </div>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Midrand, Gauteng
+              </div>
+              <div class="meta-dot"></div>
+              <span class="type-chip virtual">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l4 4-4 4"/><path d="M8 3l-4 4 4 4"/></svg>
+                Virtual
+              </span>
+            </div>
+            <div class="card-note warn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Waiting for agent to confirm — typically responds within 2 hours
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn danger-ghost">Cancel Request</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Group: Next Week ─────────────────────────────────────── -->
+      <div class="date-group">
+        <span class="date-group-label">Next Week</span>
+        <div class="date-group-line"></div>
+      </div>
+
+      <div class="viewing-cards">
+
+        <!-- Card 3: Confirmed, in-person -->
+        <div class="viewing-card confirmed">
+          <img class="card-image"
+            src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=140&h=100&fit=crop"
+            alt="Property"
+          />
+          <div class="card-body">
+            <div class="card-row1">
+              <div class="card-title">Bryanston Grove — 4 Bed Cluster</div>
+              <span class="status-badge status-confirmed">✓ Confirmed</span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-chip time">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Mon 19 May · 11:00
+              </div>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Bryanston, Gauteng
+              </div>
+              <div class="meta-dot"></div>
+              <span class="type-chip in-person">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                In-Person
+              </span>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">Agent: James K.</div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn outline">Reschedule</button>
+            <button class="action-btn danger-ghost">Cancel</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Show past viewings toggle ───────────────────────────── -->
+      <div class="toggle-past">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        Show 8 completed viewings
+      </div>
+
+      <!-- ── Past viewings (collapsed by default) ─────────────────── -->
+      <!-- Card: Completed with feedback prompt -->
+      <div class="viewing-cards" style="margin-top:12px;">
+        <div class="viewing-card completed past">
+          <img class="card-image"
+            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=140&h=100&fit=crop"
+            alt="Property"
+          />
+          <div class="card-body">
+            <div class="card-row1">
+              <div class="card-title">Melrose Arch Penthouse</div>
+              <span class="status-badge status-completed">Completed</span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-chip">Fri 9 May · 14:00</div>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">Melrose, Gauteng</div>
+              <div class="meta-dot"></div>
+              <span class="type-chip in-person">In-Person</span>
+            </div>
+            <div class="feedback-banner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              How did this viewing go? Share your feedback.
+              <a href="#">Rate viewing →</a>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn outline">View Property</button>
+          </div>
+        </div>
+
+        <!-- Card: Declined by agent with alternatives -->
+        <div class="viewing-card declined past">
+          <div class="card-image-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-row1">
+              <div class="card-title">Parkmore Garden Cottage</div>
+              <span class="status-badge status-declined">Declined by Agent</span>
+            </div>
+            <div class="card-meta">
+              <div class="meta-chip">Wed 7 May · 09:00</div>
+              <div class="meta-dot"></div>
+              <div class="meta-chip">Parkmore, Gauteng</div>
+            </div>
+            <div class="card-note warn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Agent declined — agent no longer available on this date
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="action-btn outline">Re-request</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ── Design annotation callouts ── -->
+<div style="max-width:1140px;width:100%;margin:28px auto 0;padding-bottom:40px;">
+  <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:#444;letter-spacing:0.08em;margin-bottom:12px;">DESIGN NOTES</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;font-family:var(--font-body);font-size:12px;color:#333;">
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">① Live badge count</div>
+      The Viewings tab now shows a live count badge (3 = upcoming + pending). Fetched via <code style="background:#f3f3f3;padding:1px 5px;border-radius:4px;">viewingsApi.getMyViewings()</code> on mount.
+    </div>
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">② Timeline grouping</div>
+      Viewings are grouped by date proximity: Today, Tomorrow, This Week, Next Week, Later — with collapsible past section.
+    </div>
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">③ Status stripe + badge</div>
+      Left-edge colour stripe (green=confirmed, amber=pending, grey=past, red=declined) + text badge for clear scanning.
+    </div>
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">④ Buyer actions</div>
+      Confirmed → Reschedule + Cancel. Pending → Cancel Request only. Completed → View Property + Feedback prompt. Declined → Re-request.
+    </div>
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">⑤ Filter + sort bar</div>
+      Filter by status (All / Upcoming / Pending / Completed) and by type (In-Person / Virtual). Sort by soonest or latest.
+    </div>
+    <div style="background:white;border-radius:10px;padding:14px 16px;border:1px solid #ddd;">
+      <div style="font-weight:700;color:#1A3C28;margin-bottom:5px;">⑥ Feedback banner</div>
+      Completed viewings with no feedback show a subtle in-card prompt. Dismissed once feedback is submitted via existing <code style="background:#f3f3f3;padding:1px 5px;border-radius:4px;">agent-feedback</code> endpoint.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

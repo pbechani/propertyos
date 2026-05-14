@@ -14,6 +14,7 @@ import { ApiError, propertiesApi, salesApi, type AgentProfileResponse, type Feat
 import { buildMapViewport, buildViewportMapSource } from "@/lib/map-utils";
 import LeafletMapDynamic from "@/components/LeafletMapDynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMyOfferPropertyIds } from "@/hooks/useMyOfferPropertyIds";
 
 const getDefaultFilters = () => ({
   verifiedOnly: false,
@@ -676,10 +677,13 @@ export default function Listings() {
   const [savingPropertyIds, setSavingPropertyIds] = useState<Set<string>>(new Set());
   const [featuredAgents, setFeaturedAgents] = useState<FeaturedAgentCard[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+  const offerPropertyIds = useMyOfferPropertyIds();
 
   // ── Current user (for "Initiate Sale" button on own listings) ────────────
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
+  // SR-001: wider padding for anonymous visitors; defaults to true (SSR-safe)
+  const [isAnonymous, setIsAnonymous] = useState(true);
   // Map of propertyId → active Sale (populated for own listings once user loads)
   const [propertySaleMap, setPropertySaleMap] = useState<Record<string, Sale>>({});
   const [initiateCardProp, setInitiateCardProp] = useState<{ id: string; title: string; price: number; currency: string } | null>(null);
@@ -1100,6 +1104,7 @@ export default function Listings() {
     setCurrentUserId(user?.id ?? null);
     setCurrentCompanyId(getActiveCompanyIdFromToken());
     const token = getAccessToken();
+    setIsAnonymous(!token);
     if (!token) return;
     salesApi.getMySales(token).then((sales) => {
       const map: Record<string, Sale> = {};
@@ -1975,10 +1980,12 @@ export default function Listings() {
       <div>
         {/* ── Forest Command Zone ─────────────────────────────────────────── */}
         <div
-          style={{ background: '#1A3C28', padding: '32px 32px 0', position: 'relative', overflow: 'visible' }}
+          data-testid="forest-command-zone"
+          className=""
+          style={{ background: '#1A3C28', position: 'relative', overflow: 'visible' }}
         >
           {/* ── Page Header ── */}
-          <div className="relative pb-5 overflow-hidden" style={{ borderBottom: '1px solid rgba(242,232,213,0.1)' }}>
+          <div className={`relative pt-8 pb-5 overflow-hidden ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'}`} style={{ borderBottom: '1px solid rgba(242,232,213,0.1)' }}>
             <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(196,86,42,0.07)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: -20, right: 80, width: 100, height: 100, borderRadius: '50%', background: 'rgba(0,232,122,0.04)', pointerEvents: 'none' }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.18em', color: '#C4562A', textTransform: 'uppercase' }}>Marketplace · Property Search</span>
@@ -1986,7 +1993,7 @@ export default function Listings() {
             <p style={{ color: 'rgba(242,232,213,0.5)', fontSize: 14 }}>Verified listings across Southern Africa</p>
           </div>
           {/* ── Row 1: category · location · map · AI · Search ── */}
-          <div className="flex flex-col lg:flex-row gap-1.5 p-2">
+          <div className={`flex flex-col lg:flex-row gap-1.5 ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-2`}>
 
             {/* Listing Category */}
             <div className="relative shrink-0">
@@ -2140,13 +2147,13 @@ export default function Listings() {
           </div>
 
           {searchError && (
-            <div className="px-4 pb-2 flex items-center gap-1.5 text-sm font-medium text-red-400" role="alert">
+            <div className={`${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} pb-2 flex items-center gap-1.5 text-sm font-medium text-red-400`} role="alert">
               <span aria-hidden="true">⚠</span> {searchError}
             </div>
           )}
 
           {/* ── Row 2: Property Type · Min Price · Max Price · Bedrooms · More Filters ── */}
-          <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="flex flex-wrap items-stretch">
+          <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className={`flex flex-wrap items-stretch ${isAnonymous ? 'container mx-auto px-4 md:px-8' : ''}`}>
 
             {/* Property Type */}
             <div className="relative">
@@ -2312,12 +2319,17 @@ export default function Listings() {
             <div className="relative">
               <button
                 type="button"
-                style={{ color: pendingFilters.minBedrooms > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                style={{ color: 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
                 className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                 onClick={openBedroomsDropdown}
                 onBlur={() => setTimeout(() => setShowBedroomsDropdown(false), 120)}
               >
-                {bedroomsLabel}
+                Bedrooms
+                {pendingFilters.minBedrooms > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(0,232,122,0.15)', border: '1px solid rgba(0,232,122,0.45)', color: '#00E87A', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                    {bedroomsLabel}
+                  </span>
+                )}
                 {showBedroomsDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
               </button>
               {showBedroomsDropdown && (
@@ -2383,18 +2395,23 @@ export default function Listings() {
           {/* ── Row 3 (expanded): Bathrooms · Parking · Floor Size · Erf Size ── */}
           {showTopMoreFilters && (
             <>
-              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="flex flex-wrap items-stretch">
+              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className={`flex flex-wrap items-stretch ${isAnonymous ? 'container mx-auto px-4 md:px-8' : ''}`}>
 
                 {/* Bathrooms */}
                 <div className="relative">
                   <button
                     type="button"
-                    style={{ color: pendingFilters.minBathrooms > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    style={{ color: 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
                     className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openBathroomsDropdown}
                     onBlur={() => setTimeout(() => setShowBathroomsDropdown(false), 120)}
                   >
-                    {bathroomsLabel}
+                    Bathrooms
+                    {pendingFilters.minBathrooms > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(0,232,122,0.15)', border: '1px solid rgba(0,232,122,0.45)', color: '#00E87A', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                        {bathroomsLabel}
+                      </span>
+                    )}
                     {showBathroomsDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
                   {showBathroomsDropdown && (
@@ -2445,12 +2462,17 @@ export default function Listings() {
                 <div className="relative">
                   <button
                     type="button"
-                    style={{ color: pendingFilters.minGarage > 0 ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    style={{ color: 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
                     className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openParkingDropdown}
                     onBlur={() => setTimeout(() => setShowParkingDropdown(false), 120)}
                   >
-                    {parkingLabel}
+                    Parking / Garage
+                    {pendingFilters.minGarage > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(0,232,122,0.15)', border: '1px solid rgba(0,232,122,0.45)', color: '#00E87A', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                        {parkingLabel}
+                      </span>
+                    )}
                     {showParkingDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
                   {showParkingDropdown && (
@@ -2501,11 +2523,16 @@ export default function Listings() {
                 <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowFloorSizeDropdown(false), 120); }}>
                   <button
                     type="button"
-                    style={{ color: pendingFilters.minFloorSize ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    style={{ color: 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
                     className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openFloorSizeDropdown}
                   >
-                    {floorSizeLabel}
+                    Floor Size (m²)
+                    {!!pendingFilters.minFloorSize && Number(pendingFilters.minFloorSize) > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(0,232,122,0.15)', border: '1px solid rgba(0,232,122,0.45)', color: '#00E87A', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                        {floorSizeLabel}
+                      </span>
+                    )}
                     {showFloorSizeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
                   {showFloorSizeDropdown && (
@@ -2560,11 +2587,16 @@ export default function Listings() {
                 <div className="relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setTimeout(() => setShowErfSizeDropdown(false), 120); }}>
                   <button
                     type="button"
-                    style={{ color: pendingFilters.minErfSize ? '#00E87A' : 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
+                    style={{ color: 'rgba(242,232,213,0.75)', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'transparent', height: 44, padding: '0 18px', fontSize: 13, fontWeight: 500 }}
                     className="flex items-center gap-2 hover:bg-white/5 transition-colors"
                     onClick={openErfSizeDropdown}
                   >
-                    {erfSizeLabel}
+                    Erf Size (m²)
+                    {!!pendingFilters.minErfSize && Number(pendingFilters.minErfSize) > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(0,232,122,0.15)', border: '1px solid rgba(0,232,122,0.45)', color: '#00E87A', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 1.6, letterSpacing: '0.02em' }}>
+                        {erfSizeLabel}
+                      </span>
+                    )}
                     {showErfSizeDropdown ? <ChevronUp className="w-3.5 h-3.5 opacity-60" /> : <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </button>
                   {showErfSizeDropdown && (
@@ -2617,7 +2649,7 @@ export default function Listings() {
               </div>
 
               {/* ── Row 4: Feature + Other checkboxes ── */}
-              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className="px-4 py-3">
+              <div style={{ borderTop: '1px solid rgba(242,232,213,0.1)' }} className={`${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-3`}>
                 <div className="flex flex-wrap gap-x-7 gap-y-2.5">
                   <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: '0.14em', color: 'rgba(242,232,213,0.35)' }} className="uppercase w-full mb-0.5">Features &amp; Other</p>
                   {[
@@ -2654,7 +2686,7 @@ export default function Listings() {
           {/* ── Footer strip: count + clear ── */}
           <div
             style={{ borderTop: '1px solid rgba(242,232,213,0.1)', background: 'rgba(0,0,0,0.12)' }}
-            className="px-4 py-2.5 flex items-center justify-between gap-4"
+            className={`${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-2.5 flex items-center justify-between gap-4`}
           >
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: 'rgba(242,232,213,0.45)' }}>
               {hasSearched
@@ -2674,7 +2706,7 @@ export default function Listings() {
           </div>
         </div>
 
-        <div className="lg:flex lg:items-start lg:gap-6" style={{ padding: '24px 32px' }}>
+        <div className={`lg:flex lg:items-start lg:gap-6 ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-4 md:px-8'} py-6`}>
         <div className="bg-card border border-border rounded-lg overflow-hidden h-full flex flex-col lg:flex-row overflow-x-hidden flex-1">
       {/* Filters Sidebar — forest-green slide-in overlay */}
       {(showFilters || showDesktopFilters) && (
@@ -3090,7 +3122,7 @@ export default function Listings() {
 
         {/* Results Header */}
         {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && (
-        <div className="bg-card border-b border-border px-4 md:px-6 py-4">
+        <div className={`bg-card border-b border-border ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-4`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg md:text-xl font-semibold mb-1">
@@ -3193,7 +3225,7 @@ export default function Listings() {
 
         {/* Map View */}
         {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && viewMode === "map" && (
-          <div className="flex-1 overflow-auto p-4 md:p-6">
+          <div className={`flex-1 overflow-auto ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-4 md:py-6`}>
             <div className="relative bg-gray-100 rounded-lg h-full min-h-125 overflow-hidden">
               {mapSource ? (
                 mapSource.type === 'image' ? (
@@ -3249,7 +3281,7 @@ export default function Listings() {
 
         {/* Properties Grid */}
         {hasSearched && (listingCategory === 'For Sale' || listingCategory === 'To Rent') && viewMode !== "map" && (
-          <div className="flex-1 overflow-auto p-4 md:p-6">
+          <div className={`flex-1 overflow-auto ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-4 md:py-6`}>
                 {!isLoadingProperties && displayedProperties.length === 0 && !propertiesError && (
                   <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-gray-600">
                     {listingCategory === 'To Rent'
@@ -3269,6 +3301,7 @@ export default function Listings() {
                         onSave={(id) => { void handleAddToFavourites(id); }}
                         isSaved={savedPropertyIds.has(property.id)}
                         isSaving={savingPropertyIds.has(property.id)}
+                        offerMade={offerPropertyIds.has(property.id)}
                       />
                       {property.agentId && property.agentId === currentUserId && property.companyId === currentCompanyId && (() => {
                         const activeSale = propertySaleMap[property.id];
@@ -3346,7 +3379,7 @@ export default function Listings() {
 
         {/* Estate Agencies view */}
         {hasSearched && listingCategory === 'Estate Agencies' && (
-          <div className="flex-1 overflow-auto p-4 md:p-6">
+          <div className={`flex-1 overflow-auto ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-4 md:py-6`}>
             <div className="mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">
@@ -3395,7 +3428,7 @@ export default function Listings() {
 
         {/* News view */}
         {hasSearched && listingCategory === 'News' && (
-          <div className="flex-1 overflow-auto p-4 md:p-6">
+          <div className={`flex-1 overflow-auto ${isAnonymous ? 'container mx-auto px-4 md:px-8' : 'px-8'} py-4 md:py-6`}>
             <div className="mb-4 flex items-center gap-2">
               <Newspaper className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Property News &amp; Updates</h3>

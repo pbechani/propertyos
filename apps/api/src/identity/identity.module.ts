@@ -22,6 +22,7 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
 // Sprint 01-b: Companies
 import { CompaniesController } from './companies/companies.controller';
 import { OrphanedTasksController } from './companies/orphaned-tasks.controller';
+import { PublicCompaniesController } from './companies/public-companies.controller';
 import { InvitationsController } from './companies/invitations.controller';
 import { CompaniesService } from './companies/companies.service';
 import { CompanyMembersService } from './companies/company-members.service';
@@ -75,6 +76,7 @@ import { NotificationPreferencesService } from './notification-preferences/notif
     CompaniesController,
     OrphanedTasksController,
     InvitationsController,
+    PublicCompaniesController,
     // Sprint 02 Enhanced
     ProfessionalLicencesController,
     AdminProfessionalLicencesController,

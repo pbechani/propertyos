@@ -1,35 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Calendar, Clock, User, Phone, Mail, Users, MessageSquare, Video, Home } from 'lucide-react';
+import { X, Calendar, Clock, Users, MessageSquare, Video, Home, Loader2 } from 'lucide-react';
+import { viewingsApi, companiesApi, type CompanyMember } from '@/lib/api-client';
+import { getStoredUser, getActiveCompanyContext } from '@/lib/auth-session';
+import { ContactPersonSelector } from '@/components/shared/ContactPersonSelector';
+import type { ContactPerson } from '@/components/shared/ContactPersonSelector';
 
 interface ScheduleViewingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  propertyId: string;
+  authToken: string;
+  onSuccess?: () => void;
 }
 
-export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModalProps) {
+const VIEWING_TYPE_MAP: Record<string, 'physical' | 'virtual'> = {
+  'in-person': 'physical',
+  'virtual': 'virtual',
+  'open-house': 'physical',
+};
+
+export function ScheduleViewingModal({ open, onOpenChange, propertyId, authToken, onSuccess }: ScheduleViewingModalProps) {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [contactPerson, setContactPerson] = useState<ContactPerson | undefined>();
+  const [teamMembers, setTeamMembers] = useState<CompanyMember[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    // Client Info
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
     numberOfAttendees: '1',
-    
-    // Viewing Details
     viewingType: 'in-person',
     date: '',
     time: '',
     duration: '30',
-    
-    // Agent & Preferences
-    agent: 'you',
+    agent: '',
     specialRequests: '',
     sendReminder: true,
-    sendConfirmation: true
+    sendConfirmation: true,
   });
+
+  useEffect(() => {
+    const user = getStoredUser();
+    const company = getActiveCompanyContext();
+    if (user) {
+      setCurrentUserId(user.id);
+      setFormData(prev => ({ ...prev, agent: user.id }));
+    }
+    if (company && authToken) {
+      companiesApi.listMembers(authToken, company.id)
+        .then(members => setTeamMembers(members.filter(m => m.status === 'active')))
+        .catch(() => { /* silently fall back to empty list */ });
+    }
+  }, [authToken]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -40,32 +64,54 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
   };
 
   const handleBack = () => {
-    if (step > 1) setStep(step - 1);
+    if (step > 1) { setStep(step - 1); setSubmitError(''); }
   };
 
-  const handleSubmit = () => {
-    // Handle form submission
-    console.log('Scheduling viewing:', formData);
-    onOpenChange(false);
-    // Reset form
+  const resetForm = () => {
     setStep(1);
+    setSubmitError('');
+    setContactPerson(undefined);
     setFormData({
-      clientName: '',
-      clientEmail: '',
-      clientPhone: '',
       numberOfAttendees: '1',
       viewingType: 'in-person',
       date: '',
       time: '',
       duration: '30',
-      agent: 'you',
+      agent: currentUserId ?? '',
       specialRequests: '',
       sendReminder: true,
-      sendConfirmation: true
+      sendConfirmation: true,
     });
   };
 
-  const isStep1Valid = formData.clientName && formData.clientEmail && formData.clientPhone;
+  const handleSubmit = async () => {
+    if (!formData.date || !formData.time) return;
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const scheduledAt = new Date(`${formData.date}T${formData.time}`).toISOString();
+      await viewingsApi.bookForBuyer(authToken, propertyId, {
+        viewingType: VIEWING_TYPE_MAP[formData.viewingType] ?? 'physical',
+        scheduledAt,
+        durationMinutes: parseInt(formData.duration, 10),
+        buyerContactName: contactPerson?.name ?? '',
+        buyerContactEmail: contactPerson?.email || undefined,
+        buyerContactPhone: contactPerson?.phone || undefined,
+        notes: formData.specialRequests || undefined,
+        sendConfirmation: formData.sendConfirmation,
+        sendReminder: formData.sendReminder,
+      });
+      onSuccess?.();
+      onOpenChange(false);
+      resetForm();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to schedule viewing');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isStep1Valid = !!(contactPerson?.name && contactPerson.name.trim().length > 0);
   const isStep2Valid = formData.date && formData.time;
 
   return (
@@ -108,58 +154,16 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
 
           {/* Form Content */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-240px)]">
-            {/* Step 1: Client Information */}
+            {/* Step 1: Contact Person */}
             {step === 1 && (
               <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      Client Name *
-                    </div>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.clientName}
-                    onChange={(e) => handleInputChange('clientName', e.target.value)}
-                    placeholder="Enter full name"
-                    className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        Email Address *
-                      </div>
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.clientEmail}
-                      onChange={(e) => handleInputChange('clientEmail', e.target.value)}
-                      placeholder="email@example.com"
-                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        Phone Number *
-                      </div>
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.clientPhone}
-                      onChange={(e) => handleInputChange('clientPhone', e.target.value)}
-                      placeholder="(555) 000-0000"
-                      className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
-                    />
-                  </div>
-                </div>
+                <ContactPersonSelector
+                  value={contactPerson}
+                  onChange={setContactPerson}
+                  authToken={authToken}
+                  label="Who is attending?"
+                  required
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-[#1A3C28]/65 mb-2">
@@ -179,12 +183,6 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                     <option value="4">4 people</option>
                     <option value="5">5+ people</option>
                   </select>
-                </div>
-
-                <div className="bg-[#1A3C28]/[0.05] border border-[#1A3C28]/15 rounded-lg p-4">
-                  <p className="text-sm text-[#1A3C28]">
-                    💡 <strong>Tip:</strong> Make sure to verify contact information. Automated reminders will be sent to this email and phone number.
-                  </p>
                 </div>
               </div>
             )}
@@ -350,10 +348,21 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                     onChange={(e) => handleInputChange('agent', e.target.value)}
                     className="w-full px-4 py-2.5 border border-[#1A3C28]/20 rounded-lg focus:ring-2 focus:ring-[#1A3C28]/30 focus:border-[#1A3C28]/50 outline-none transition-colors"
                   >
-                    <option value="you">You (John Doe)</option>
-                    <option value="sarah">Sarah Kim</option>
-                    <option value="mike">Mike Davis</option>
-                    <option value="jennifer">Jennifer Walsh</option>
+                    {teamMembers.length === 0 ? (
+                      <option value={currentUserId ?? ''} disabled={!currentUserId}>
+                        {currentUserId ? 'You' : 'Loading...'}
+                      </option>
+                    ) : (
+                      teamMembers.map(member => {
+                        const name = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.email;
+                        const isCurrentUser = member.user_id === currentUserId;
+                        return (
+                          <option key={member.user_id} value={member.user_id}>
+                            {isCurrentUser ? `You (${name})` : name}
+                          </option>
+                        );
+                      })
+                    )}
                   </select>
                 </div>
 
@@ -415,7 +424,7 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-[#1A3C28]/55">Client:</span>
-                      <span className="font-medium">{formData.clientName || 'Not specified'}</span>
+                      <span className="font-medium">{contactPerson?.name || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#1A3C28]/55">Type:</span>
@@ -446,15 +455,20 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
 
           {/* Footer */}
           <div className="flex items-center justify-between p-6 border-t border-[#1A3C28]/10 bg-[#1A3C28]/[0.03]">
-            <div className="text-sm text-[#1A3C28]/50">
-              Step {step} of 3
+            <div className="flex-1">
+              {submitError ? (
+                <p className="text-sm text-[#C4562A]">{submitError}</p>
+              ) : (
+                <span className="text-sm text-[#1A3C28]/50">Step {step} of 3</span>
+              )}
             </div>
             <div className="flex gap-3">
               {step > 1 && (
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-white transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 border border-[#1A3C28]/20 rounded-lg hover:bg-white transition-colors font-medium disabled:opacity-50"
                 >
                   Back
                 </button>
@@ -472,9 +486,11 @@ export function ScheduleViewingModal({ open, onOpenChange }: ScheduleViewingModa
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-6 py-2.5 bg-[#1A3C28] text-[#00E87A] rounded-lg hover:bg-[#2D5A40] transition-colors font-medium"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-[#1A3C28] text-[#00E87A] rounded-lg hover:bg-[#2D5A40] transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
                 >
-                  Schedule Viewing
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmitting ? 'Scheduling...' : 'Schedule Viewing'}
                 </button>
               )}
             </div>

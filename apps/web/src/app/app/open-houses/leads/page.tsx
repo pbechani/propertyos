@@ -1,5 +1,5 @@
-import { LeadsView } from '@/views/open-houses/OHLeadsView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <LeadsView />;
+  redirect('/app/on-show?tab=leads');
 }

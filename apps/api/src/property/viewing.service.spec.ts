@@ -35,6 +35,7 @@ describe('ViewingService', () => {
     virtual_link: null,
     agent_notes: null,
     buyer_feedback: null,
+    agent_feedback: null,
     no_show_reason: null,
     cancel_reason: null,
     cancelled_by: null,
@@ -129,6 +130,34 @@ describe('ViewingService', () => {
 
       await expect(service.confirm(viewingId, stranger, 'agent')).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+
+    it('allows company admin (active_company_role=admin) to confirm any viewing', async () => {
+      // Regression: controller previously passed global roles[0] (e.g. 'buyer_seller')
+      // instead of active_company_role ('admin'), so admin bypass in assertAgentOwns
+      // never fired and the call was rejected with 403.
+      const otherId = '77777777-7777-7777-7777-777777777777';
+      const requestedViewing = { ...baseViewing, status: 'requested' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([requestedViewing]); // findViewingOrThrow
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        { ...requestedViewing, status: 'confirmed', confirmed_at: new Date() },
+      ]); // UPDATE
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ email: 'buyer@test.com', full_name: 'Buyer Name' }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ title: 'Test Property' }]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      // otherId is NOT the viewing's agent_id, but role is 'admin' → should succeed
+      const result = await service.confirm(viewingId, otherId, 'admin');
+      expect(result).toMatchObject({ status: 'confirmed' });
+    });
+
+    it('throws BadRequestException if viewing is not in requested state', async () => {
+      const confirmedViewing = { ...baseViewing, status: 'confirmed' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([confirmedViewing]);
+
+      await expect(service.confirm(viewingId, agentId, 'agent')).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -556,6 +585,100 @@ describe('ViewingService', () => {
       });
 
       expect(mockNotifications.sendEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── submitAgentCapture ────────────────────────────────────────────────────
+
+  describe('submitAgentCapture', () => {
+    const captureDto = { interestLevel: 'high' as const, intent: 'second_viewing' as const, objections: ['price_too_high' as const] };
+
+    it('submits feedback for a confirmed viewing and auto-completes it', async () => {
+      const confirmedViewing = { ...baseViewing, status: 'confirmed' };
+      const completedViewing = { ...confirmedViewing, status: 'completed', agent_feedback: captureDto };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([confirmedViewing]) // findViewingOrThrow
+        .mockResolvedValueOnce([completedViewing]); // UPDATE
+
+      const result = await service.submitAgentCapture(viewingId, agentId, 'agent', captureDto);
+
+      expect(result.status).toBe('completed');
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'viewing.agent_feedback_captured' }),
+      );
+    });
+
+    it('allows feedback on an already-completed viewing', async () => {
+      const completedViewing = { ...baseViewing, status: 'completed' };
+      const updated = { ...completedViewing, agent_feedback: captureDto };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([completedViewing])
+        .mockResolvedValueOnce([updated]);
+
+      const result = await service.submitAgentCapture(viewingId, agentId, 'agent', captureDto);
+
+      expect(result.agent_feedback).toEqual(captureDto);
+    });
+
+    it('throws NotFoundException if viewing does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(
+        service.submitAgentCapture('non-existent-id', agentId, 'agent', captureDto),
+      ).rejects.toThrow('Viewing not found');
+    });
+
+    it('throws ForbiddenException if a different agent tries to submit', async () => {
+      const confirmedViewing = { ...baseViewing, status: 'confirmed' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([confirmedViewing]);
+
+      await expect(
+        service.submitAgentCapture(viewingId, 'other-agent-uuid', 'agent', captureDto),
+      ).rejects.toThrow();
+    });
+
+    it('throws BadRequestException if viewing is not confirmed or completed', async () => {
+      const requestedViewing = { ...baseViewing, status: 'requested' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([requestedViewing]);
+
+      await expect(
+        service.submitAgentCapture(viewingId, agentId, 'agent', captureDto),
+      ).rejects.toThrow('Agent feedback can only be submitted for confirmed or completed viewings');
+    });
+  });
+
+  // ── getPropertyViewingAnalytics ───────────────────────────────────────────
+
+  describe('getPropertyViewingAnalytics', () => {
+    it('returns zeroed analytics when no viewings exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getPropertyViewingAnalytics(propertyId);
+
+      expect(result.total).toBe(0);
+      expect(result.conversionRate).toBe(0);
+      expect(result.topLikes).toEqual([]);
+      expect(result.topDislikes).toEqual([]);
+    });
+
+    it('aggregates feedback correctly from multiple viewings', async () => {
+      const rows = [
+        { ...baseViewing, status: 'completed', agent_feedback: { interestLevel: 'high', intent: 'ready_to_offer', objections: [], likes: ['Kitchen', 'Garden'], dislikes: [] } },
+        { ...baseViewing, id: 'v2', status: 'completed', agent_feedback: { interestLevel: 'low', intent: 'not_interested', objections: ['price_too_high'], likes: [], dislikes: ['Kitchen'] } },
+        { ...baseViewing, id: 'v3', status: 'declined', agent_feedback: null },
+      ];
+      mockPrisma.$queryRaw.mockResolvedValueOnce(rows);
+
+      const result = await service.getPropertyViewingAnalytics(propertyId);
+
+      expect(result.total).toBe(3);
+      expect(result.completed).toBe(2);
+      expect(result.declined).toBe(1);
+      expect(result.interestDistribution.high).toBe(1);
+      expect(result.interestDistribution.low).toBe(1);
+      expect(result.objectionBreakdown['price_too_high']).toBe(1);
+      expect(result.topLikes).toContain('Kitchen');
+      expect(result.topDislikes).toContain('Kitchen');
     });
   });
 });

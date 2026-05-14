@@ -832,6 +832,22 @@ model PropertyViewing {
   @@schema("property")
 }
 
+model ViewingMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  viewingId  String   @map("viewing_id") @db.Uuid
+  direction  String   @db.VarChar(10)
+  channel    String   @db.VarChar(10)
+  senderType String   @map("sender_type") @db.VarChar(10)
+  senderName String   @map("sender_name") @db.VarChar(200)
+  message    String
+  status     String   @default("sent") @db.VarChar(20)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([viewingId, createdAt], map: "idx_viewing_messages_viewing")
+  @@map("viewing_messages")
+  @@schema("property")
+}
+
 model OpenHouse {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   propertyId            String                  @map("property_id") @db.Uuid

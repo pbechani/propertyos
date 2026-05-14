@@ -12,6 +12,7 @@ import { NotificationService } from '../identity/notification.service';
 import { SELF_COMPANY_SLUG } from '../identity/identity.constants';
 import {
   AgentBookViewingDto,
+  AgentCaptureFeedbackDto,
   AgentDeclineViewingDto,
   CancelViewingDto,
   CreateViewingDto,
@@ -21,6 +22,7 @@ import {
   CreateOpenHouseDto,
   CancelOpenHouseDto,
   RescheduleOpenHouseDto,
+  SendViewingMessageDto,
 } from './mandate.dto';
 
 export type ViewingRecord = {
@@ -35,6 +37,7 @@ export type ViewingRecord = {
   virtual_link: string | null;
   agent_notes: string | null;
   buyer_feedback: unknown;
+  agent_feedback: unknown | null;
   no_show_reason: string | null;
   cancel_reason: string | null;
   cancelled_by: string | null;
@@ -51,6 +54,18 @@ export type ViewingWithBuyerRecord = ViewingRecord & {
   buyer_last_name: string | null;
   buyer_email: string | null;
   buyer_phone: string | null;
+};
+
+export type ViewingMessageRecord = {
+  id: string;
+  viewing_id: string;
+  direction: 'outbound' | 'inbound';
+  channel: 'email' | 'sms';
+  sender_type: 'agent' | 'client';
+  sender_name: string;
+  message: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  created_at: Date;
 };
 export type OpenHouseRecord = {
   id: string;
@@ -361,8 +376,279 @@ export class ViewingService {
   }
 
   // ──────────────────────────────────────────────────────────
+  // AGENT CAPTURE FEEDBACK
+  // ──────────────────────────────────────────────────────────
+
+  async submitAgentCapture(
+    viewingId: string,
+    agentId: string,
+    agentRole: string,
+    dto: AgentCaptureFeedbackDto,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<ViewingRecord> {
+    const viewing = await this.findViewingOrThrow(viewingId);
+    this.assertAgentOwns(viewing, agentId, agentRole);
+
+    if (!['confirmed', 'completed'].includes(viewing.status)) {
+      throw new BadRequestException(
+        'Agent feedback can only be submitted for confirmed or completed viewings',
+      );
+    }
+
+    const now = new Date();
+    // If still confirmed, auto-complete the viewing
+    const newStatus = viewing.status === 'confirmed' ? 'completed' : viewing.status;
+    const completedAt = viewing.status === 'confirmed' ? now : viewing.completed_at;
+
+    const rows = await this.prisma.$queryRaw<ViewingRecord[]>`
+      UPDATE property.viewings
+      SET agent_feedback = ${JSON.stringify(dto)}::jsonb,
+          status        = ${newStatus},
+          completed_at  = ${completedAt}::timestamptz
+      WHERE id = ${viewingId}::uuid
+      RETURNING *
+    `;
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: agentRole,
+      companyId: companyId ?? null,
+      action: 'viewing.agent_feedback_captured',
+      resourceType: 'viewing',
+      resourceId: viewingId,
+      payload: dto as unknown as Record<string, unknown>,
+      ipAddress,
+      userAgent,
+    });
+
+    return rows[0];
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // VIEWING ANALYTICS
+  // ──────────────────────────────────────────────────────────
+
+  async getPropertyViewingAnalytics(propertyId: string): Promise<{
+    total: number;
+    confirmed: number;
+    completed: number;
+    declined: number;
+    conversionRate: number;
+    objectionBreakdown: Record<string, number>;
+    interestDistribution: { low: number; medium: number; high: number };
+    intentBreakdown: Record<string, number>;
+    topLikes: string[];
+    topDislikes: string[];
+  }> {
+    const rows = await this.prisma.$queryRaw<ViewingRecord[]>`
+      SELECT * FROM property.viewings
+      WHERE property_id = ${propertyId}::uuid
+    `;
+
+    const total     = rows.length;
+    const confirmed = rows.filter((r) => r.status === 'confirmed').length;
+    const completed = rows.filter((r) => r.status === 'completed').length;
+    const declined  = rows.filter((r) => r.status === 'declined').length;
+    const conversionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const withFeedback = rows.filter((r) => r.agent_feedback != null);
+
+    const objectionBreakdown: Record<string, number> = {};
+    const intentBreakdown:    Record<string, number> = {};
+    const interestDistribution = { low: 0, medium: 0, high: 0 };
+    const likeCount:    Record<string, number> = {};
+    const dislikeCount: Record<string, number> = {};
+
+    for (const r of withFeedback) {
+      const fb = r.agent_feedback as {
+        objections?: string[];
+        intent?: string;
+        interestLevel?: 'low' | 'medium' | 'high';
+        likes?: string[];
+        dislikes?: string[];
+      };
+
+      for (const obj of fb.objections ?? []) {
+        objectionBreakdown[obj] = (objectionBreakdown[obj] ?? 0) + 1;
+      }
+      if (fb.intent) {
+        intentBreakdown[fb.intent] = (intentBreakdown[fb.intent] ?? 0) + 1;
+      }
+      if (fb.interestLevel && fb.interestLevel in interestDistribution) {
+        interestDistribution[fb.interestLevel]++;
+      }
+      for (const like of fb.likes ?? []) {
+        likeCount[like] = (likeCount[like] ?? 0) + 1;
+      }
+      for (const dislike of fb.dislikes ?? []) {
+        dislikeCount[dislike] = (dislikeCount[dislike] ?? 0) + 1;
+      }
+    }
+
+    const topLikes = Object.entries(likeCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([tag]) => tag);
+
+    const topDislikes = Object.entries(dislikeCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([tag]) => tag);
+
+    return {
+      total,
+      confirmed,
+      completed,
+      declined,
+      conversionRate,
+      objectionBreakdown,
+      interestDistribution,
+      intentBreakdown,
+      topLikes,
+      topDislikes,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // AGENT CALENDAR
   // ──────────────────────────────────────────────────────────
+
+  // ──────────────────────────────────────────────────────────
+  // MESSAGES
+  // ──────────────────────────────────────────────────────────
+
+  async getMessages(viewingId: string, agentId: string): Promise<ViewingMessageRecord[]> {
+    // Verify agent owns this viewing
+    const rows = await this.prisma.$queryRaw<{ agent_id: string }[]>`
+      SELECT agent_id::text FROM property.viewings WHERE id = ${viewingId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Viewing not found');
+    if (rows[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    return this.prisma.$queryRaw<ViewingMessageRecord[]>`
+      SELECT
+        id::text, viewing_id::text, direction, channel,
+        sender_type, sender_name, message, status, created_at
+      FROM property.viewing_messages
+      WHERE viewing_id = ${viewingId}::uuid
+      ORDER BY created_at ASC
+    `;
+  }
+
+  async sendMessageToClient(
+    viewingId: string,
+    agentId: string,
+    dto: SendViewingMessageDto,
+  ): Promise<ViewingMessageRecord> {
+    const rows = await this.prisma.$queryRaw<
+      { agent_id: string; buyer_id: string | null; agent_notes: string | null;
+        buyer_email: string | null; buyer_phone: string | null;
+        buyer_first_name: string | null; buyer_last_name: string | null;
+        agent_first_name: string | null; agent_last_name: string | null }[]
+    >`
+      SELECT
+        v.agent_id::text,
+        v.buyer_id::text,
+        v.agent_notes,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'email'
+          ELSE bu.email
+        END AS buyer_email,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'phone'
+          ELSE bu.phone
+        END AS buyer_phone,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'name'
+          ELSE bu.first_name
+        END AS buyer_first_name,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN NULL
+          ELSE bu.last_name
+        END AS buyer_last_name,
+        au.first_name AS agent_first_name,
+        au.last_name  AS agent_last_name
+      FROM property.viewings v
+      LEFT JOIN identity.users bu ON bu.id = v.buyer_id
+      LEFT JOIN identity.users au ON au.id = v.agent_id
+      WHERE v.id = ${viewingId}::uuid
+      LIMIT 1
+    `;
+
+    if (!rows.length) throw new NotFoundException('Viewing not found');
+    const viewing = rows[0];
+    if (viewing.agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const recipientName = [viewing.buyer_first_name, viewing.buyer_last_name]
+      .filter(Boolean).join(' ') || 'Client';
+    const agentName = [viewing.agent_first_name, viewing.agent_last_name]
+      .filter(Boolean).join(' ') || 'Agent';
+
+    let deliveryStatus: 'sent' | 'failed' = 'sent';
+    try {
+      if (dto.channel === 'email') {
+        if (!viewing.buyer_email) throw new BadRequestException('No email address on record for this client');
+        await this.notifications.sendEmail(
+          viewing.buyer_email,
+          'Message from your agent',
+          dto.message,
+          undefined,
+          `<p style="font-family:sans-serif;font-size:15px;color:#1A3C28;line-height:1.6">
+            Hi ${recipientName},<br/><br/>
+            ${dto.message.replace(/\n/g, '<br/>')}
+          </p>`,
+        );
+      } else {
+        if (!viewing.buyer_phone) throw new BadRequestException('No phone number on record for this client');
+        await this.notifications.sendSms(
+          viewing.buyer_phone,
+          `Hi ${recipientName}, ${dto.message}`,
+        );
+      }
+    } catch (err) {
+      deliveryStatus = 'failed';
+      throw err;
+    } finally {
+      // Persist regardless so failures are visible in the thread
+      const saved = await this.prisma.$queryRaw<ViewingMessageRecord[]>`
+        INSERT INTO property.viewing_messages
+          (viewing_id, direction, channel, sender_type, sender_name, message, status)
+        VALUES
+          (${viewingId}::uuid, 'outbound', ${dto.channel}, 'agent', ${agentName}, ${dto.message}, ${deliveryStatus})
+        RETURNING
+          id::text, viewing_id::text, direction, channel,
+          sender_type, sender_name, message, status, created_at
+      `;
+      if (deliveryStatus === 'sent') return saved[0];
+    }
+
+    // Unreachable — throw re-propagates from catch, but TS needs a return
+    throw new BadRequestException('Message delivery failed');
+  }
+
+  async receiveInboundMessage(
+    viewingId: string,
+    channel: 'email' | 'sms',
+    senderName: string,
+    message: string,
+  ): Promise<ViewingMessageRecord> {
+    const saved = await this.prisma.$queryRaw<ViewingMessageRecord[]>`
+      INSERT INTO property.viewing_messages
+        (viewing_id, direction, channel, sender_type, sender_name, message, status)
+      VALUES
+        (${viewingId}::uuid, 'inbound', ${channel}, 'client', ${senderName}, ${message}, 'read')
+      RETURNING
+        id::text, viewing_id::text, direction, channel,
+        sender_type, sender_name, message, status, created_at
+    `;
+    return saved[0];
+  }
 
   async agentCalendar(
     agentId: string,
@@ -974,6 +1260,11 @@ The PropertyOS Team
       });
       const duration = dto.durationMinutes ?? 30;
 
+      const frontendUrl =
+        process.env['FRONTEND_URL'] ?? 'https://pribec.co.za';
+      const listingUrl = `${frontendUrl}/app/property/${propertyId}`;
+
+      // Plain-text fallback
       const emailBody = [
         `Hi ${dto.buyerContactName},`,
         ``,
@@ -985,6 +1276,8 @@ The PropertyOS Team
         `Type:      ${dto.viewingType === 'virtual' ? 'Virtual' : 'In-person'}`,
         dto.virtualLink ? `Link:      ${dto.virtualLink}` : null,
         ``,
+        `View the listing: ${listingUrl}`,
+        ``,
         `If you have any questions, please contact the agent directly.`,
         ``,
         `Kind regards,`,
@@ -992,6 +1285,122 @@ The PropertyOS Team
       ]
         .filter((l): l is string => l !== null)
         .join('\n');
+
+      // HTML email
+      const virtualLinkRow = dto.virtualLink
+        ? `<tr>
+            <td style="padding:6px 0;color:#6B8F7A;font-size:13px;width:110px">Meeting link</td>
+            <td style="padding:6px 0;font-size:14px;font-weight:500">
+              <a href="${dto.virtualLink}" style="color:#1A3C28;text-decoration:underline">${dto.virtualLink}</a>
+            </td>
+          </tr>`
+        : '';
+      const agentRow =
+        agent.full_name || agent.email
+          ? `<tr>
+              <td style="padding:6px 0;color:#6B8F7A;font-size:13px;width:110px">Agent</td>
+              <td style="padding:6px 0;font-size:14px;font-weight:500">${agent.full_name ?? ''}${agent.email ? ` &lt;<a href="mailto:${agent.email}" style="color:#1A3C28">${agent.email}</a>&gt;` : ''}</td>
+            </tr>`
+          : '';
+
+      const emailHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Viewing Confirmed</title>
+</head>
+<body style="margin:0;padding:0;background:#F2E8D5;font-family:Georgia,serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2E8D5;padding:32px 0">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+          style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1A3C28;padding:28px 36px">
+              <p style="margin:0 0 4px;color:#00E87A;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:Arial,sans-serif">
+                VIEWING CONFIRMED
+              </p>
+              <h1 style="margin:0;color:#F2E8D5;font-size:24px;font-weight:700;font-family:Georgia,serif">
+                PriBeC
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 36px 28px">
+              <p style="margin:0 0 20px;font-size:16px;color:#1A3C28">
+                Hi <strong>${dto.buyerContactName}</strong>,
+              </p>
+              <p style="margin:0 0 24px;font-size:15px;color:#333;line-height:1.6">
+                Your property viewing has been confirmed. Here are the details:
+              </p>
+
+              <!-- Property link -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                style="background:#F2E8D5;border-radius:6px;margin-bottom:24px">
+                <tr>
+                  <td style="padding:16px 20px">
+                    <p style="margin:0 0 4px;font-size:11px;color:#6B8F7A;letter-spacing:1px;text-transform:uppercase;font-family:Arial,sans-serif">Property</p>
+                    <a href="${listingUrl}"
+                      style="font-size:17px;font-weight:700;color:#1A3C28;text-decoration:none;border-bottom:2px solid #00E87A;padding-bottom:1px">
+                      ${propertyTitle}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Details table -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                style="border-top:1px solid #e8e0d4;margin-bottom:28px">
+                <tr>
+                  <td style="padding:6px 0;color:#6B8F7A;font-size:13px;width:110px">Date &amp; time</td>
+                  <td style="padding:6px 0;font-size:14px;font-weight:500;color:#1A3C28">${scheduledStr}</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;color:#6B8F7A;font-size:13px">Duration</td>
+                  <td style="padding:6px 0;font-size:14px;font-weight:500;color:#1A3C28">${duration} minutes</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;color:#6B8F7A;font-size:13px">Type</td>
+                  <td style="padding:6px 0;font-size:14px;font-weight:500;color:#1A3C28">
+                    ${dto.viewingType === 'virtual' ? 'Virtual' : 'In-person'}
+                  </td>
+                </tr>
+                ${virtualLinkRow}
+                ${agentRow}
+              </table>
+
+              <p style="margin:0 0 28px;font-size:14px;color:#555;line-height:1.6">
+                If you have any questions, please contact your agent directly or
+                <a href="${listingUrl}" style="color:#1A3C28;font-weight:600">view the listing</a>.
+              </p>
+
+              <p style="margin:0;font-size:14px;color:#333">
+                Kind regards,<br />
+                <strong style="color:#1A3C28">The PriBeC Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#1A3C28;padding:16px 36px">
+              <p style="margin:0;font-size:11px;color:#6B8F7A;font-family:Arial,sans-serif">
+                &copy; ${new Date().getFullYear()} PriBeC &bull; Real Estate &amp; Construction Trust Platform
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
       const attachments = dto.addCalendarInvite
         ? [
@@ -1019,6 +1428,7 @@ The PropertyOS Team
         `Viewing confirmed — ${propertyTitle}`,
         emailBody,
         attachments,
+        emailHtml,
       );
     }
 
@@ -1285,11 +1695,30 @@ The PropertyOS Team
   // GET BUYER'S OWN VIEWINGS
   // ──────────────────────────────────────────────────────────
 
-  async getBuyerViewings(buyerId: string): Promise<(ViewingRecord & { property_title: string | null })[]> {
-    return this.prisma.$queryRaw<(ViewingRecord & { property_title: string | null })[]>`
-      SELECT v.*, p.title AS property_title
+  async getBuyerViewings(buyerId: string): Promise<(ViewingRecord & {
+    property_title: string | null;
+    property_city: string | null;
+    property_region: string | null;
+    agent_first_name: string | null;
+    agent_last_name: string | null;
+  })[]> {
+    return this.prisma.$queryRaw<(ViewingRecord & {
+      property_title: string | null;
+      property_city: string | null;
+      property_region: string | null;
+      agent_first_name: string | null;
+      agent_last_name: string | null;
+    })[]>`
+      SELECT v.*,
+             p.title    AS property_title,
+             pl.city    AS property_city,
+             pl.region  AS property_region,
+             u.first_name AS agent_first_name,
+             u.last_name  AS agent_last_name
       FROM   property.viewings v
-      LEFT JOIN property.properties p ON p.id = v.property_id
+      LEFT JOIN property.properties        p  ON p.id  = v.property_id
+      LEFT JOIN property.property_locations pl ON pl.property_id = v.property_id
+      LEFT JOIN identity.users             u  ON u.id  = v.agent_id
       WHERE  v.buyer_id = ${buyerId}::uuid
       ORDER  BY v.scheduled_at DESC
     `;

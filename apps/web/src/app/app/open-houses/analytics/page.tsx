@@ -1,5 +1,5 @@
-import { AnalyticsView } from '@/views/open-houses/OHAnalyticsView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <AnalyticsView />;
+  redirect('/app/on-show?tab=analytics');
 }

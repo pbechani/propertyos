@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>On Show — Dashboard Redesign v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ─── Reset & Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest:       #1A3C28;
+  --forest-light: #2D5A40;
+  --forest-mist:  rgba(26,60,40,0.06);
+  --parchment:    #F2E8D5;
+  --parchment-dk: #E8D9C0;
+  --cream:        #EAD9C4;
+  --terra:        #C4562A;
+  --terra-soft:   rgba(196,86,42,0.10);
+  --egreen:       #00E87A;
+  --egreen-soft:  rgba(0,232,122,0.10);
+  --amber:        #B89040;
+  --amber-soft:   rgba(184,144,64,0.12);
+  --carbon:       #0C0D10;
+  --carbon-soft:  #1A1B1F;
+  --gold:         #F5C87A;
+
+  --fraunces: 'Fraunces', Georgia, serif;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', system-ui, sans-serif;
+
+  --shadow-sm: 0 1px 3px rgba(26,60,40,0.08), 0 1px 2px rgba(26,60,40,0.06);
+  --shadow-md: 0 4px 12px rgba(26,60,40,0.10), 0 2px 6px rgba(26,60,40,0.06);
+  --shadow-lg: 0 8px 24px rgba(26,60,40,0.12), 0 4px 10px rgba(26,60,40,0.08);
+}
+
+body {
+  font-family: var(--sans);
+  background: #ECEAE4;
+  color: var(--forest);
+  min-height: 100vh;
+}
+
+/* ─── Layout Shell ────────────────────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--forest);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid rgba(242,232,213,0.06);
+}
+.sidebar-logo {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid rgba(242,232,213,0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--egreen);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 18px; height: 18px; }
+.logo-text {
+  font-family: var(--fraunces);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -0.01em;
+}
+.logo-text span { color: var(--egreen); }
+.sidebar-nav { padding: 14px 10px; flex: 1; overflow-y: auto; }
+.nav-section-label {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.28);
+  padding: 0 10px;
+  margin-bottom: 6px;
+  margin-top: 16px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: rgba(242,232,213,0.52);
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-decoration: none;
+}
+.nav-item:hover { background: rgba(242,232,213,0.07); color: rgba(242,232,213,0.75); }
+.nav-item.active {
+  background: rgba(242,232,213,0.1);
+  color: var(--parchment);
+  font-weight: 500;
+}
+.nav-item.active .nav-dot { background: var(--egreen); }
+.nav-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(242,232,213,0.2);
+  margin-left: auto;
+}
+.nav-icon { width: 15px; height: 15px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; color: var(--egreen); }
+.sidebar-bottom {
+  padding: 14px 10px 18px;
+  border-top: 1px solid rgba(242,232,213,0.08);
+}
+.user-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.user-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--forest-light), var(--forest));
+  border: 1.5px solid rgba(0,232,122,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fraunces);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--egreen);
+  flex-shrink: 0;
+}
+.user-info { flex: 1; overflow: hidden; }
+.user-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--parchment);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.user-role {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: rgba(242,232,213,0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ─── Main Area ───────────────────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--parchment);
+}
+
+/* ─── Forest Header ───────────────────────────────────────────────────── */
+.page-header {
+  background: var(--forest);
+  padding: 20px 28px 0;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+/* Decorative shapes */
+.deco-circle-1 {
+  position: absolute; top: -50px; right: -50px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: var(--terra); opacity: 0.07; pointer-events: none;
+}
+.deco-circle-2 {
+  position: absolute; bottom: -30px; left: 42%;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: var(--egreen); opacity: 0.04; pointer-events: none;
+}
+.deco-line {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.18), transparent);
+}
+.header-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--terra);
+  margin-bottom: 7px;
+}
+.header-title {
+  font-family: var(--fraunces);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1.05;
+  margin-bottom: 5px;
+}
+.header-sub {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(242,232,213,0.42);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.header-actions {
+  position: absolute;
+  top: 20px; right: 28px;
+  display: flex; gap: 8px;
+  z-index: 2;
+}
+.btn-primary {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: var(--terra);
+  color: #fff;
+  border: none; border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary:hover { background: #b34924; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(196,86,42,0.3); }
+
+.btn-ghost {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: rgba(242,232,213,0.07);
+  color: rgba(242,232,213,0.7);
+  border: 1px solid rgba(242,232,213,0.12); border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: rgba(242,232,213,0.12); color: var(--parchment); }
+
+/* KPI Strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 18px;
+}
+.kpi-cell {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(242,232,213,0.09);
+  border-radius: 8px;
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+.kpi-cell:hover { background: rgba(255,255,255,0.08); }
+.kpi-cell-label {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.38);
+  margin-bottom: 5px;
+}
+.kpi-cell-value {
+  font-family: var(--fraunces);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.kpi-cell-delta {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  margin-top: 4px;
+  opacity: 0.6;
+}
+/* Tiny sparkline inside KPI cell */
+.kpi-sparkline {
+  position: absolute;
+  bottom: 6px; right: 8px;
+  opacity: 0.35;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-top: 16px;
+  margin-left: -28px;
+  margin-right: -28px;
+  padding-left: 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-link {
+  padding: 8px 15px;
+  border-radius: 6px 6px 0 0;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  cursor: pointer;
+}
+.tab-link.active {
+  background: var(--terra);
+  color: #fff;
+  border-bottom-color: var(--terra);
+  font-weight: 600;
+}
+.tab-link:not(.active) {
+  color: rgba(242,232,213,0.45);
+  font-weight: 400;
+}
+.tab-link:not(.active):hover {
+  background: rgba(242,232,213,0.07);
+  color: rgba(242,232,213,0.75);
+}
+
+/* ─── Tab Content Area ────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: var(--parchment);
+}
+
+/* ─── Live Now Banner ─────────────────────────────────────────────────── */
+.live-banner {
+  background: linear-gradient(135deg, #1a0a04 0%, #2d1208 40%, #1a1206 100%);
+  border-bottom: 1px solid rgba(196,86,42,0.25);
+  padding: 11px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.live-banner::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(196,86,42,0.08), transparent 60%);
+  pointer-events: none;
+}
+.live-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  background: var(--terra);
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #fff;
+  animation: pulse-live 1.4s ease-in-out infinite;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+.live-pill-text {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.live-event-info { flex: 1; }
+.live-event-title {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--parchment);
+  margin-bottom: 1px;
+}
+.live-event-meta {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(242,232,213,0.45);
+  letter-spacing: 0.05em;
+}
+.live-event-meta span { color: var(--egreen); }
+.live-go-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  background: var(--terra);
+  color: #fff;
+  border: none; border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.live-progress-bar {
+  position: absolute; bottom: 0; left: 0;
+  height: 2px;
+  width: 68%;
+  background: linear-gradient(90deg, var(--terra), var(--gold));
+}
+
+/* ─── Dashboard Grid ──────────────────────────────────────────────────── */
+.dashboard {
+  padding: 24px 28px 40px;
+  display: grid;
+  gap: 24px;
+}
+
+/* ─── Section Label ───────────────────────────────────────────────────── */
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(26,60,40,0.35);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(26,60,40,0.08);
+}
+
+/* ─── Metric Cards Row ────────────────────────────────────────────────── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.metric-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(26,60,40,0.06);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.metric-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.metric-card.forest::before  { background: var(--forest); }
+.metric-card.egreen::before  { background: var(--egreen); }
+.metric-card.terra::before   { background: var(--terra); }
+.metric-card.amber::before   { background: var(--amber); }
+.metric-card-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.metric-card.forest .metric-card-icon  { background: var(--forest-mist); }
+.metric-card.egreen .metric-card-icon  { background: var(--egreen-soft); }
+.metric-card.terra  .metric-card-icon  { background: var(--terra-soft); }
+.metric-card.amber  .metric-card-icon  { background: var(--amber-soft); }
+.metric-card-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(26,60,40,0.45);
+  margin-bottom: 4px;
+}
+.metric-card-value {
+  font-family: var(--fraunces);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--forest);
+  margin-bottom: 8px;
+}
+.metric-card-delta {
+  display: flex; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+}
+.delta-up   { color: #1a9c52; }
+.delta-down { color: var(--terra); }
+.delta-text { color: rgba(26,60,40,0.4); margin-left: 2px; }
+.metric-sparkline { margin-top: 10px; }
+
+/* ─── Two-Column Section ──────────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ─── Event Cards ─────────────────────────────────────────────────────── */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.event-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(26,60,40,0.07);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+.event-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.event-card-thumb {
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+}
+/* Property image placeholder patterns */
+.thumb-pattern-1 { background: linear-gradient(135deg, #2D5A40 0%, #1A3C28 100%); }
+.thumb-pattern-2 { background: linear-gradient(135deg, #3d4a2e 0%, #2D5A40 100%); }
+.thumb-pattern-3 { background: linear-gradient(135deg, #1A3C28 0%, #0e2d1c 100%); }
+.thumb-pattern-4 { background: linear-gradient(135deg, #2D5A40 0%, #4a6e52 100%); }
+.thumb-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%);
+}
+.thumb-addr {
+  position: absolute; bottom: 8px; left: 10px; right: 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.thumb-status {
+  position: absolute; top: 8px; right: 8px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.status-today    { background: rgba(0,232,122,0.15); color: #00b85f; border: 1px solid rgba(0,232,122,0.25); }
+.status-upcoming { background: rgba(242,232,213,0.15); color: rgba(242,232,213,0.8); border: 1px solid rgba(242,232,213,0.2); }
+.status-live     { background: var(--terra); color: #fff; }
+
+.event-card-body { padding: 12px 14px 14px; }
+.event-datetime {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--terra);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.event-type-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26,60,40,0.38);
+}
+.event-stats {
+  display: flex; gap: 14px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(26,60,40,0.06);
+}
+.event-stat {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.72rem;
+  color: var(--forest);
+}
+.event-stat-icon {
+  width: 13px; height: 13px;
+  color: rgba(26,60,40,0.38);
+}
+.leads-badge {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 8px;
+  background: var(--egreen-soft);
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  color: #1a7a46;
+  font-weight: 600;
+}
+
+/* ─── Add Event Card ──────────────────────────────────────────────────── */
+.add-event-card {
+  background: transparent;
+  border: 2px dashed rgba(26,60,40,0.14);
+  border-radius: 12px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  min-height: 170px;
+}
+.add-event-card:hover {
+  border-color: var(--terra);
+  background: var(--terra-soft);
+}
+.add-event-card:hover .add-icon { color: var(--terra); background: var(--terra-soft); }
+.add-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(26,60,40,0.06);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+  color: rgba(26,60,40,0.3);
+  transition: all 0.15s;
+  font-size: 1.2rem;
+}
+.add-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(26,60,40,0.35);
+}
+
+/* ─── Timeline Panel ──────────────────────────────────────────────────── */
+.timeline-panel {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(26,60,40,0.07);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.timeline-header {
+  background: var(--forest);
+  padding: 14px 16px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.timeline-header-title {
+  font-family: var(--fraunces);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.timeline-date {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.4);
+}
+.timeline-body { padding: 16px; }
+.timeline-item {
+  display: flex; gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 9px; top: 22px;
+  width: 1px; height: calc(100% + 2px);
+  background: rgba(26,60,40,0.08);
+}
+.timeline-marker {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem;
+  margin-top: 1px;
+}
+.marker-live     { background: var(--terra); box-shadow: 0 0 0 3px rgba(196,86,42,0.2); }
+.marker-upcoming { background: rgba(26,60,40,0.1); }
+.marker-done     { background: rgba(26,60,40,0.07); }
+.timeline-content { flex: 1; }
+.timeline-time {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(26,60,40,0.38);
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+.timeline-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--forest);
+  margin-bottom: 2px;
+}
+.timeline-desc {
+  font-size: 0.7rem;
+  color: rgba(26,60,40,0.42);
+}
+.timeline-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(26,60,40,0.3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.next-event-countdown {
+  background: var(--forest);
+  margin: 0 16px 14px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.countdown-label {
+  font-family: var(--mono);
+  font-size: 0.53rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.45);
+  margin-bottom: 3px;
+}
+.countdown-value {
+  font-family: var(--fraunces);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--egreen);
+  line-height: 1;
+}
+.countdown-event {
+  font-size: 0.7rem;
+  color: rgba(242,232,213,0.55);
+  margin-top: 2px;
+}
+
+/* ─── Bottom Row ──────────────────────────────────────────────────────── */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 280px;
+  gap: 16px;
+}
+
+/* ─── Lead Source Panel ───────────────────────────────────────────────── */
+.panel {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(26,60,40,0.07);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(26,60,40,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title {
+  font-family: var(--fraunces);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--forest);
+}
+.panel-action {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terra);
+  cursor: pointer;
+  text-decoration: none;
+}
+.panel-body { padding: 14px 16px; }
+
+/* Lead source bars */
+.source-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.source-label {
+  font-size: 0.75rem;
+  color: rgba(26,60,40,0.7);
+  width: 90px; flex-shrink: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.source-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(26,60,40,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.source-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s;
+}
+.source-count {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(26,60,40,0.45);
+  width: 28px; text-align: right; flex-shrink: 0;
+}
+
+/* Donut chart */
+.donut-wrap {
+  display: flex; align-items: center; gap: 16px;
+}
+.donut-legend { flex: 1; }
+.legend-item {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 7px;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.legend-label { font-size: 0.72rem; color: var(--forest); flex: 1; }
+.legend-pct {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(26,60,40,0.45);
+}
+
+/* ─── Tasks Panel ─────────────────────────────────────────────────────── */
+.task-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(26,60,40,0.06);
+}
+.task-item:last-child { border-bottom: none; }
+.task-checkbox {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border-radius: 4px;
+  border: 1.5px solid rgba(26,60,40,0.2);
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+}
+.task-checkbox.done {
+  background: var(--egreen);
+  border-color: var(--egreen);
+}
+.task-check-icon { color: var(--carbon); width: 10px; height: 10px; }
+.task-content { flex: 1; }
+.task-title {
+  font-size: 0.78rem;
+  color: var(--forest);
+  margin-bottom: 2px;
+}
+.task-title.done-text {
+  text-decoration: line-through;
+  color: rgba(26,60,40,0.35);
+}
+.task-meta {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  color: rgba(26,60,40,0.35);
+  letter-spacing: 0.04em;
+}
+.task-priority {
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.priority-high   { background: var(--terra-soft); color: var(--terra); }
+.priority-med    { background: var(--amber-soft); color: var(--amber); }
+.priority-low    { background: var(--forest-mist); color: var(--forest-light); }
+
+/* ─── Attendance Rate Panel ───────────────────────────────────────────── */
+.attendance-wrap {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+}
+.big-number {
+  font-family: var(--fraunces);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--forest);
+  line-height: 1;
+}
+.big-number-unit {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: rgba(26,60,40,0.4);
+  margin-top: 4px;
+}
+.big-number-sub {
+  font-size: 0.72rem;
+  color: rgba(26,60,40,0.5);
+}
+
+/* Segment bar */
+.segment-bar {
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 10px;
+}
+.seg { transition: width 0.4s; }
+.seg-1 { background: var(--egreen); }
+.seg-2 { background: var(--amber); }
+.seg-3 { background: var(--terra); }
+.seg-4 { background: rgba(26,60,40,0.1); }
+
+.seg-legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg-label {
+  display: flex; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: rgba(26,60,40,0.5);
+  letter-spacing: 0.05em;
+}
+.seg-swatch {
+  width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* ─── Area Chart (SVG) ────────────────────────────────────────────────── */
+.chart-wrap { position: relative; width: 100%; }
+
+/* ─── Conversions Funnel ──────────────────────────────────────────────── */
+.funnel-step {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 9px;
+}
+.funnel-label {
+  font-size: 0.73rem;
+  color: var(--forest);
+  width: 110px; flex-shrink: 0;
+}
+.funnel-bar-track {
+  flex: 1; height: 20px;
+  border-radius: 4px;
+  background: rgba(26,60,40,0.05);
+  overflow: hidden;
+  position: relative;
+}
+.funnel-bar-fill {
+  height: 100%;
+  display: flex; align-items: center; padding-left: 8px;
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  font-weight: 600;
+  color: #fff;
+  transition: width 0.4s;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.funnel-pct {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(26,60,40,0.38);
+  width: 38px; text-align: right; flex-shrink: 0;
+}
+
+/* ─── Design annotations ──────────────────────────────────────────────── */
+.annotation-strip {
+  background: var(--carbon-soft);
+  border-top: 1px solid rgba(242,232,213,0.06);
+  padding: 14px 20px;
+  display: flex; gap: 24px; flex-wrap: wrap;
+}
+.annotation {
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.annotation-num {
+  width: 18px; height: 18px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--terra);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.annotation-text {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(242,232,213,0.45);
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+.annotation-text strong {
+  color: rgba(242,232,213,0.75);
+  font-weight: 600;
+}
+
+/* ─── Document wrapper ────────────────────────────────────────────────── */
+.doc-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+.doc-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--terra);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.doc-title {
+  font-family: var(--fraunces);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--forest);
+  margin-bottom: 6px;
+  line-height: 1.1;
+}
+.doc-sub {
+  font-size: 0.88rem;
+  color: rgba(26,60,40,0.55);
+  margin-bottom: 40px;
+  max-width: 560px;
+  line-height: 1.6;
+}
+
+.mockup-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(26,60,40,0.35);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.mockup-frame {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(26,60,40,0.1);
+  box-shadow: 0 20px 60px rgba(26,60,40,0.12), 0 8px 20px rgba(26,60,40,0.08);
+  margin-bottom: 40px;
+}
+.mockup-frame.dark-bg {
+  background: var(--carbon);
+  padding: 20px;
+}
+
+/* Gaps section */
+.gap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.gap-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  border: 1px solid rgba(26,60,40,0.08);
+  border-left: 3px solid var(--terra);
+}
+.gap-num {
+  font-family: var(--fraunces);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: rgba(26,60,40,0.12);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.gap-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--forest);
+  margin-bottom: 4px;
+}
+.gap-desc {
+  font-size: 0.72rem;
+  color: rgba(26,60,40,0.5);
+  line-height: 1.5;
+}
+.gap-card.resolved { border-left-color: var(--egreen); }
+.gap-card.resolved .gap-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1a7a46;
+  background: var(--egreen-soft);
+  padding: 2px 8px; border-radius: 20px;
+  margin-top: 6px;
+}
+.gap-badge { display: none; }
+
+/* SVG mini chart */
+svg.sparkline { display: block; }
+svg.area-chart { display: block; width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ─── Document Wrapper ──────────────────────────────────────────────────── -->
+<div class="doc-wrap">
+
+  <div class="doc-eyebrow">PRIBEC · On Show · Dashboard Redesign</div>
+  <div class="doc-title">Parchment Command</div>
+  <div class="doc-sub">
+    Approach B — Brand-consistent dashboard redesign. All slate/gray colors replaced with BuildTrust tokens.
+    11 gaps addressed: live banner, countdown, connected KPIs, event thumbnails, lead source breakdown,
+    attendance rate visual, trend chart, add-event CTA, brand-styled tasks, and more.
+  </div>
+
+  <!-- ─── Gaps Addressed ─────────────────────────────────────────────── -->
+  <div class="mockup-label">Gaps addressed in this redesign</div>
+  <div class="gap-grid">
+    <div class="gap-card resolved">
+      <div class="gap-num">01</div>
+      <div class="gap-title">No "Live Now" indicator</div>
+      <div class="gap-desc">New banner appears at the top of the content area when an on-show event is active right now.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">02</div>
+      <div class="gap-title">No countdown to next event</div>
+      <div class="gap-desc">Today's schedule panel now shows a "Next In" countdown chip above the timeline.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">03</div>
+      <div class="gap-title">Disconnected KPI strip</div>
+      <div class="gap-desc">Header KPI strip now pulls from the same data source as the dashboard. Duplicate metric row removed.</div>
+      <div class="gap-badge">✓ Fixed</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">04</div>
+      <div class="gap-title">Off-brand inner views</div>
+      <div class="gap-desc">All slate-*/gray Tailwind tokens replaced with brand tokens (forest, parchment, terra, egreen, amber).</div>
+      <div class="gap-badge">✓ Fixed</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">05</div>
+      <div class="gap-title">No event card thumbnails</div>
+      <div class="gap-desc">Event cards now have a property image/color block at the top with address overlay and status chip.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">06</div>
+      <div class="gap-title">No quick-add event CTA</div>
+      <div class="gap-desc">An "Add Event" dashed card appears in the events grid and a primary button in the header.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">07</div>
+      <div class="gap-title">No lead trend chart</div>
+      <div class="gap-desc">A compact leads-over-time area chart sits in the bottom row with 8-week sparkline data.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">08</div>
+      <div class="gap-title">Attendance rate unvisualised</div>
+      <div class="gap-desc">New segment bar shows attended / no-show / cancelled breakdown with Fraunces big-number treatment.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">09</div>
+      <div class="gap-title">No source breakdown on dashboard</div>
+      <div class="gap-desc">Lead source bar chart added to bottom row (no need to visit Analytics tab for this key signal).</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">10</div>
+      <div class="gap-title">Analytics: purple/blue clash</div>
+      <div class="gap-desc">All chart colors replaced with BuildTrust brand palette (egreen, terra, amber, forest, gold).</div>
+      <div class="gap-badge">✓ Fixed</div>
+    </div>
+    <div class="gap-card resolved">
+      <div class="gap-num">11</div>
+      <div class="gap-title">Unstyled loading/error states</div>
+      <div class="gap-desc">Global brand-styled loading skeleton + error card with terra border and retry action.</div>
+      <div class="gap-badge">✓ Added</div>
+    </div>
+  </div>
+
+  <!-- ─── MAIN MOCKUP ────────────────────────────────────────────────── -->
+  <div class="mockup-label">Full Dashboard — Redesigned</div>
+  <div class="mockup-frame" style="height:780px; display:flex; flex-direction:column;">
+
+    <!-- Shell -->
+    <div class="shell" style="height:100%; grid-template-rows:unset; flex:1; overflow:hidden;">
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0C0D10" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="logo-text">Build<span>Trust</span></div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Workspace</div>
+          <!-- Dashboard -->
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </a>
+          <!-- On Show — active -->
+          <a class="nav-item active" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            On Show
+            <div class="nav-dot"></div>
+          </a>
+          <!-- Listings -->
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Listings
+          </a>
+          <!-- Leads -->
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Leads
+          </a>
+          <div class="nav-section-label">Tools</div>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendar
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Analytics
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Messages
+          </a>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="user-chip">
+            <div class="user-avatar">TA</div>
+            <div class="user-info">
+              <div class="user-name">Thabo Agentson</div>
+              <div class="user-role">Senior Agent</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+
+        <!-- Forest Header -->
+        <div class="page-header">
+          <div class="deco-circle-1"></div>
+          <div class="deco-circle-2"></div>
+          <div class="deco-line"></div>
+
+          <div class="header-eyebrow">Agent Cockpit › On Show Headquarters</div>
+          <div class="header-title">On Show</div>
+          <div class="header-sub">Manage open houses, leads &amp; marketing from one hub</div>
+
+          <div class="header-actions">
+            <button class="btn-ghost">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Analytics
+            </button>
+            <button class="btn-primary">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Schedule On Show
+            </button>
+          </div>
+
+          <!-- KPI Strip — connected to data -->
+          <div class="kpi-strip">
+            <div class="kpi-cell">
+              <div class="kpi-cell-label">Active Properties</div>
+              <div class="kpi-cell-value" style="color: var(--egreen);">12</div>
+              <div class="kpi-cell-delta" style="color: var(--egreen);">↑ 3 this month</div>
+              <svg class="kpi-sparkline" width="40" height="18" viewBox="0 0 40 18" fill="none">
+                <polyline points="0,14 6,10 12,12 18,7 24,9 30,4 36,2 40,3" stroke="rgba(0,232,122,0.5)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-cell-label">Events This Week</div>
+              <div class="kpi-cell-value" style="color: var(--parchment);">7</div>
+              <div class="kpi-cell-delta" style="color: rgba(242,232,213,0.5);">2 today</div>
+              <svg class="kpi-sparkline" width="40" height="18" viewBox="0 0 40 18" fill="none">
+                <polyline points="0,12 6,10 12,14 18,8 24,10 30,6 36,8 40,5" stroke="rgba(242,232,213,0.3)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-cell-label">Leads Captured</div>
+              <div class="kpi-cell-value" style="color: var(--gold);">143</div>
+              <div class="kpi-cell-delta" style="color: var(--gold);">↑ 18% vs last wk</div>
+              <svg class="kpi-sparkline" width="40" height="18" viewBox="0 0 40 18" fill="none">
+                <polyline points="0,16 6,14 12,12 18,10 24,8 30,6 36,4 40,2" stroke="rgba(245,200,122,0.4)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-cell-label">Active Workflows</div>
+              <div class="kpi-cell-value" style="color: var(--parchment);">5</div>
+              <div class="kpi-cell-delta" style="color: rgba(242,232,213,0.5);">All running</div>
+            </div>
+            <div class="kpi-cell">
+              <div class="kpi-cell-label">Pending Tasks</div>
+              <div class="kpi-cell-value" style="color: var(--amber);">9</div>
+              <div class="kpi-cell-delta" style="color: var(--amber);">3 overdue</div>
+              <svg class="kpi-sparkline" width="40" height="18" viewBox="0 0 40 18" fill="none">
+                <polyline points="0,6 6,8 12,4 18,10 24,7 30,12 36,9 40,11" stroke="rgba(184,144,64,0.4)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Tab Bar -->
+          <div class="tab-bar">
+            <a class="tab-link active" href="#">Dashboard</a>
+            <a class="tab-link" href="#">On Show</a>
+            <a class="tab-link" href="#">Leads</a>
+            <a class="tab-link" href="#">Marketing</a>
+            <a class="tab-link" href="#">Workflows</a>
+            <a class="tab-link" href="#">Tasks</a>
+            <a class="tab-link" href="#">Analytics</a>
+            <a class="tab-link" href="#">Settings</a>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+          <!-- ── LIVE NOW BANNER ────────────────────────────────────────── -->
+          <div class="live-banner">
+            <div class="live-pill">
+              <div class="live-dot"></div>
+              <div class="live-pill-text">Live Now</div>
+            </div>
+            <div class="live-event-info">
+              <div class="live-event-title">47 Sunridge Ave, Sandton — On Show in progress</div>
+              <div class="live-event-meta">Started 2:00 PM · Ends 4:00 PM · <span>6 visitors checked in</span> · 1.5 hrs remaining</div>
+            </div>
+            <button class="live-go-btn">
+              View Event →
+            </button>
+            <div class="live-progress-bar"></div>
+          </div>
+
+          <!-- ── DASHBOARD GRID ─────────────────────────────────────────── -->
+          <div class="dashboard">
+
+            <!-- Metric Cards -->
+            <div>
+              <div class="section-eyebrow">Performance · This Month</div>
+              <div class="metrics-grid">
+
+                <div class="metric-card forest">
+                  <div class="metric-card-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <div class="metric-card-label">Scheduled</div>
+                  <div class="metric-card-value">14</div>
+                  <div class="metric-card-delta">
+                    <span class="delta-up">↑ 4</span>
+                    <span class="delta-text">vs last month</span>
+                  </div>
+                  <div class="metric-sparkline">
+                    <svg width="100%" height="28" viewBox="0 0 120 28" preserveAspectRatio="none" fill="none">
+                      <defs>
+                        <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#1A3C28" stop-opacity="0.2"/>
+                          <stop offset="100%" stop-color="#1A3C28" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,22 L15,18 L30,20 L45,14 L60,16 L75,10 L90,8 L105,5 L120,4" fill="none" stroke="#1A3C28" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M0,22 L15,18 L30,20 L45,14 L60,16 L75,10 L90,8 L105,5 L120,4 L120,28 L0,28 Z" fill="url(#sg1)"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="metric-card egreen">
+                  <div class="metric-card-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a7a46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="metric-card-label">Completed</div>
+                  <div class="metric-card-value">9</div>
+                  <div class="metric-card-delta">
+                    <span class="delta-up">64%</span>
+                    <span class="delta-text">completion rate</span>
+                  </div>
+                  <div class="metric-sparkline">
+                    <svg width="100%" height="28" viewBox="0 0 120 28" preserveAspectRatio="none" fill="none">
+                      <defs>
+                        <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#00E87A" stop-opacity="0.18"/>
+                          <stop offset="100%" stop-color="#00E87A" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,20 L15,22 L30,16 L45,18 L60,12 L75,14 L90,8 L105,6 L120,4" fill="none" stroke="#00E87A" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M0,20 L15,22 L30,16 L45,18 L60,12 L75,14 L90,8 L105,6 L120,4 L120,28 L0,28 Z" fill="url(#sg2)"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="metric-card terra">
+                  <div class="metric-card-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4562A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                  </div>
+                  <div class="metric-card-label">Leads Captured</div>
+                  <div class="metric-card-value">143</div>
+                  <div class="metric-card-delta">
+                    <span class="delta-up">↑ 18%</span>
+                    <span class="delta-text">vs last month</span>
+                  </div>
+                  <div class="metric-sparkline">
+                    <svg width="100%" height="28" viewBox="0 0 120 28" preserveAspectRatio="none" fill="none">
+                      <defs>
+                        <linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#C4562A" stop-opacity="0.15"/>
+                          <stop offset="100%" stop-color="#C4562A" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,24 L15,22 L30,20 L45,18 L60,16 L75,12 L90,9 L105,7 L120,4" fill="none" stroke="#C4562A" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M0,24 L15,22 L30,20 L45,18 L60,16 L75,12 L90,9 L105,7 L120,4 L120,28 L0,28 Z" fill="url(#sg3)"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="metric-card amber">
+                  <div class="metric-card-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B89040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="metric-card-label">Avg. Attendance</div>
+                  <div class="metric-card-value">8.4</div>
+                  <div class="metric-card-delta">
+                    <span class="delta-down">↓ 1.2</span>
+                    <span class="delta-text">per event</span>
+                  </div>
+                  <div class="metric-sparkline">
+                    <svg width="100%" height="28" viewBox="0 0 120 28" preserveAspectRatio="none" fill="none">
+                      <defs>
+                        <linearGradient id="sg4" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#B89040" stop-opacity="0.15"/>
+                          <stop offset="100%" stop-color="#B89040" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,8 L15,6 L30,10 L45,8 L60,14 L75,12 L90,16 L105,18 L120,20" fill="none" stroke="#B89040" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M0,8 L15,6 L30,10 L45,8 L60,14 L75,12 L90,16 L105,18 L120,20 L120,28 L0,28 Z" fill="url(#sg4)"/>
+                    </svg>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Two Column: Events + Schedule -->
+            <div class="two-col">
+
+              <!-- Events Grid -->
+              <div>
+                <div class="section-eyebrow">Upcoming On Show Events</div>
+                <div class="events-grid">
+
+                  <!-- Event 1 — Today -->
+                  <div class="event-card">
+                    <div class="event-card-thumb thumb-pattern-2">
+                      <div class="thumb-overlay"></div>
+                      <div class="thumb-addr">47 Sunridge Ave, Sandton</div>
+                      <div class="thumb-status status-live">● Live</div>
+                    </div>
+                    <div class="event-card-body">
+                      <div class="event-datetime">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Today · 2:00 PM – 4:00 PM
+                      </div>
+                      <div class="event-stats">
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                          12 max
+                        </div>
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          6 in
+                        </div>
+                        <div class="leads-badge">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                          4 leads
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Event 2 — Today later -->
+                  <div class="event-card">
+                    <div class="event-card-thumb thumb-pattern-1">
+                      <div class="thumb-overlay"></div>
+                      <div class="thumb-addr">12 Rosebank Rd, Johannesburg</div>
+                      <div class="thumb-status status-today">Today</div>
+                    </div>
+                    <div class="event-card-body">
+                      <div class="event-datetime">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Today · 5:00 PM – 7:00 PM
+                      </div>
+                      <div class="event-stats">
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                          20 max
+                        </div>
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          14 RSVP
+                        </div>
+                        <div class="leads-badge">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                          7 leads
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Event 3 — Upcoming -->
+                  <div class="event-card">
+                    <div class="event-card-thumb thumb-pattern-3">
+                      <div class="thumb-overlay"></div>
+                      <div class="thumb-addr">88 Clifton View, Cape Town</div>
+                      <div class="thumb-status status-upcoming">Thu</div>
+                    </div>
+                    <div class="event-card-body">
+                      <div class="event-datetime">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Thu 10 Apr · 10:00 AM – 1:00 PM
+                      </div>
+                      <div class="event-stats">
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                          25 max
+                        </div>
+                        <div class="event-stat">
+                          <svg class="event-stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                          8 RSVP
+                        </div>
+                        <div class="leads-badge" style="background:rgba(184,144,64,0.1); color:#856b2a;">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          Prep needed
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Add Event Placeholder -->
+                  <div class="add-event-card">
+                    <div class="add-icon">+</div>
+                    <div class="add-label">Schedule New<br/>On Show</div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Today's Schedule + Countdown -->
+              <div>
+                <div class="section-eyebrow">Today's Schedule</div>
+                <div class="timeline-panel">
+                  <div class="timeline-header">
+                    <div class="timeline-header-title">Today</div>
+                    <div class="timeline-date">Tue 7 Apr 2026</div>
+                  </div>
+                  <!-- Countdown chip -->
+                  <div style="padding: 12px 16px 0;">
+                    <div class="next-event-countdown">
+                      <div>
+                        <div class="countdown-label">Next Event In</div>
+                        <div class="countdown-value">2:58</div>
+                        <div class="countdown-event">12 Rosebank Rd · 5:00 PM</div>
+                      </div>
+                      <div style="margin-left:auto;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,232,122,0.5)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="timeline-body">
+
+                    <div class="timeline-item">
+                      <div class="timeline-marker marker-live">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="12" cy="12" r="5" fill="#fff"/></svg>
+                      </div>
+                      <div class="timeline-content">
+                        <div class="timeline-time">2:00 PM – 4:00 PM</div>
+                        <div class="timeline-title">47 Sunridge Ave</div>
+                        <div class="timeline-desc">● Live · 6 visitors</div>
+                      </div>
+                    </div>
+
+                    <div class="timeline-item">
+                      <div class="timeline-marker marker-upcoming">
+                        <div style="width:6px;height:6px;border-radius:50%;background:rgba(26,60,40,0.3);"></div>
+                      </div>
+                      <div class="timeline-content">
+                        <div class="timeline-time">5:00 PM – 7:00 PM</div>
+                        <div class="timeline-title">12 Rosebank Rd</div>
+                        <div class="timeline-desc">14 RSVPs · Ready</div>
+                      </div>
+                    </div>
+
+                    <div class="timeline-item">
+                      <div class="timeline-marker marker-done">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="rgba(26,60,40,0.4)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                      <div class="timeline-content">
+                        <div class="timeline-time">10:00 AM – 12:00 PM</div>
+                        <div class="timeline-title">5 Melrose Arch</div>
+                        <div class="timeline-desc" style="color:rgba(26,60,40,0.3);">Completed · 11 attended</div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bottom Row: Lead Sources + Attendance + Tasks -->
+            <div class="bottom-row">
+
+              <!-- Lead Sources -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div class="panel-title">Lead Sources</div>
+                  <a class="panel-action" href="#">See all →</a>
+                </div>
+                <div class="panel-body">
+                  <div class="source-row">
+                    <div class="source-label">Open House</div>
+                    <div class="source-bar-track">
+                      <div class="source-bar-fill" style="width:72%; background: var(--forest);"></div>
+                    </div>
+                    <div class="source-count">67</div>
+                  </div>
+                  <div class="source-row">
+                    <div class="source-label">Referral</div>
+                    <div class="source-bar-track">
+                      <div class="source-bar-fill" style="width:55%; background: var(--egreen);"></div>
+                    </div>
+                    <div class="source-count">51</div>
+                  </div>
+                  <div class="source-row">
+                    <div class="source-label">Website</div>
+                    <div class="source-bar-track">
+                      <div class="source-bar-fill" style="width:48%; background: var(--terra);"></div>
+                    </div>
+                    <div class="source-count">45</div>
+                  </div>
+                  <div class="source-row">
+                    <div class="source-label">Social Media</div>
+                    <div class="source-bar-track">
+                      <div class="source-bar-fill" style="width:32%; background: var(--amber);"></div>
+                    </div>
+                    <div class="source-count">30</div>
+                  </div>
+
+                  <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(26,60,40,0.07);">
+                    <div class="section-eyebrow" style="font-size:0.54rem; margin-bottom:8px;">Conversion Funnel</div>
+                    <div class="funnel-step">
+                      <div class="funnel-label">Visitors</div>
+                      <div class="funnel-bar-track">
+                        <div class="funnel-bar-fill" style="width:100%; background: var(--forest);">398</div>
+                      </div>
+                      <div class="funnel-pct">100%</div>
+                    </div>
+                    <div class="funnel-step">
+                      <div class="funnel-label">Qualified</div>
+                      <div class="funnel-bar-track">
+                        <div class="funnel-bar-fill" style="width:62%; background: var(--forest-light);">248</div>
+                      </div>
+                      <div class="funnel-pct">62%</div>
+                    </div>
+                    <div class="funnel-step">
+                      <div class="funnel-label">Showings</div>
+                      <div class="funnel-bar-track">
+                        <div class="funnel-bar-fill" style="width:39%; background: var(--terra);">156</div>
+                      </div>
+                      <div class="funnel-pct">39%</div>
+                    </div>
+                    <div class="funnel-step" style="margin-bottom:0">
+                      <div class="funnel-label">Offers</div>
+                      <div class="funnel-bar-track">
+                        <div class="funnel-bar-fill" style="width:17%; background: var(--amber);">67</div>
+                      </div>
+                      <div class="funnel-pct">17%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Attendance Rate -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div class="panel-title">Attendance Rate</div>
+                  <a class="panel-action" href="#">History →</a>
+                </div>
+                <div class="panel-body">
+                  <div class="attendance-wrap">
+                    <div>
+                      <div class="big-number">82<span style="font-size:1.2rem;color:rgba(26,60,40,0.4);">%</span></div>
+                      <div class="big-number-unit">of RSVPs attended</div>
+                    </div>
+                    <div style="flex:1; text-align:right;">
+                      <!-- Donut placeholder -->
+                      <svg width="64" height="64" viewBox="0 0 64 64">
+                        <circle cx="32" cy="32" r="24" fill="none" stroke="rgba(26,60,40,0.07)" stroke-width="10"/>
+                        <circle cx="32" cy="32" r="24" fill="none" stroke="#00E87A" stroke-width="10"
+                          stroke-dasharray="123.2 27.2"
+                          stroke-dashoffset="0"
+                          stroke-linecap="round"
+                          transform="rotate(-90 32 32)"/>
+                        <circle cx="32" cy="32" r="24" fill="none" stroke="#B89040" stroke-width="10"
+                          stroke-dasharray="20.8 129.6"
+                          stroke-dashoffset="-123.2"
+                          transform="rotate(-90 32 32)"/>
+                        <circle cx="32" cy="32" r="24" fill="none" stroke="#C4562A" stroke-width="10"
+                          stroke-dasharray="6.4 143.9"
+                          stroke-dashoffset="-144"
+                          transform="rotate(-90 32 32)"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div class="segment-bar">
+                    <div class="seg seg-1" style="width:65%;"></div>
+                    <div class="seg seg-2" style="width:17%;"></div>
+                    <div class="seg seg-3" style="width:6%;"></div>
+                    <div class="seg seg-4" style="width:12%;"></div>
+                  </div>
+                  <div class="seg-legend" style="margin-bottom:14px;">
+                    <div class="seg-label"><div class="seg-swatch" style="background:var(--egreen)"></div> Attended 65%</div>
+                    <div class="seg-label"><div class="seg-swatch" style="background:var(--amber)"></div> No-show 17%</div>
+                    <div class="seg-label"><div class="seg-swatch" style="background:var(--terra)"></div> Cancelled 6%</div>
+                    <div class="seg-label"><div class="seg-swatch" style="background:rgba(26,60,40,0.12)"></div> Pending 12%</div>
+                  </div>
+
+                  <!-- Mini 8-week leads trend -->
+                  <div style="padding-top:12px; border-top:1px solid rgba(26,60,40,0.07);">
+                    <div class="section-eyebrow" style="font-size:0.54rem; margin-bottom:6px;">Leads — 8 Week Trend</div>
+                    <svg width="100%" height="42" viewBox="0 0 220 42" preserveAspectRatio="none" fill="none">
+                      <defs>
+                        <linearGradient id="tg1" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#00E87A" stop-opacity="0.2"/>
+                          <stop offset="100%" stop-color="#00E87A" stop-opacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M0,36 L28,30 L56,32 L84,22 L112,26 L140,16 L168,12 L196,8 L220,5" fill="none" stroke="#00E87A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M0,36 L28,30 L56,32 L84,22 L112,26 L140,16 L168,12 L196,8 L220,5 L220,42 L0,42 Z" fill="url(#tg1)"/>
+                      <!-- Week labels -->
+                      <text x="0" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W1</text>
+                      <text x="28" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W2</text>
+                      <text x="56" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W3</text>
+                      <text x="84" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W4</text>
+                      <text x="112" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W5</text>
+                      <text x="140" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W6</text>
+                      <text x="168" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W7</text>
+                      <text x="196" y="42" font-family="IBM Plex Mono" font-size="6" fill="rgba(26,60,40,0.28)">W8</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tasks -->
+              <div class="panel">
+                <div class="panel-header">
+                  <div class="panel-title">Tasks</div>
+                  <a class="panel-action" href="#">All tasks →</a>
+                </div>
+                <div class="panel-body" style="padding-top:6px;">
+                  <div class="task-item">
+                    <div class="task-checkbox">
+                    </div>
+                    <div class="task-content">
+                      <div class="task-title">Print info packs for Sandton</div>
+                      <div class="task-meta">47 Sunridge Ave · Due today</div>
+                    </div>
+                    <div class="task-priority priority-high">High</div>
+                  </div>
+                  <div class="task-item">
+                    <div class="task-checkbox">
+                    </div>
+                    <div class="task-content">
+                      <div class="task-title">Confirm venue access with caretaker</div>
+                      <div class="task-meta">88 Clifton View · Due Thu</div>
+                    </div>
+                    <div class="task-priority priority-med">Med</div>
+                  </div>
+                  <div class="task-item">
+                    <div class="task-checkbox done">
+                      <svg class="task-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="task-content">
+                      <div class="task-title done-text">Set up sign boards</div>
+                      <div class="task-meta" style="text-decoration:none; opacity:0.5;">5 Melrose Arch · Done</div>
+                    </div>
+                    <div class="task-priority priority-low">Low</div>
+                  </div>
+                  <div class="task-item">
+                    <div class="task-checkbox">
+                    </div>
+                    <div class="task-content">
+                      <div class="task-title">Send post-show follow-up emails</div>
+                      <div class="task-meta">Leads from 5 Melrose · Overdue</div>
+                    </div>
+                    <div class="task-priority priority-high" style="background:rgba(196,86,42,0.18); color:#a03c1c;">!</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+          <!-- end .dashboard -->
+        </div>
+        <!-- end .content -->
+
+      </div>
+      <!-- end .main -->
+
+    </div>
+    <!-- end .shell -->
+
+  </div>
+  <!-- end .mockup-frame -->
+
+  <!-- ─── Design Decisions ─────────────────────────────────────────────── -->
+  <div class="mockup-label">Design rationale & key decisions</div>
+  <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.08); overflow:hidden; margin-bottom:40px;">
+    <div class="annotation-strip" style="background:var(--forest); display:grid; grid-template-columns:1fr 1fr; gap:0; padding:20px 24px;">
+      <div class="annotation" style="padding:0 16px 0 0; border-right:1px solid rgba(242,232,213,0.08);">
+        <div class="annotation-num">A</div>
+        <div class="annotation-text">
+          <strong>Live Now banner</strong> — terracotta-toned strip that appears when an event is in progress. Shows attendee count, property, and time remaining. Includes a progress bar for elapsed duration. Dismissible.
+        </div>
+      </div>
+      <div class="annotation" style="padding:0 0 0 16px;">
+        <div class="annotation-num">B</div>
+        <div class="annotation-text">
+          <strong>KPI strip unified</strong> — Header strip now connected to the same data hook as the dashboard metrics. The duplicate "Key Metrics" section below was removed to prevent data redundancy. Sparklines show 4-week trends.
+        </div>
+      </div>
+    </div>
+    <div class="annotation-strip" style="background:var(--forest); display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0 24px 20px; border-top:1px solid rgba(242,232,213,0.08);">
+      <div class="annotation" style="padding:0 16px 0 0; border-right:1px solid rgba(242,232,213,0.08);">
+        <div class="annotation-num">C</div>
+        <div class="annotation-text">
+          <strong>Event cards with thumb</strong> — Each card has a color-gradient property image block, an address overlay, a status badge (Live / Today / Thu), lead count badge, and attendee stats. Click navigates to event detail.
+        </div>
+      </div>
+      <div class="annotation" style="padding:0 0 0 16px;">
+        <div class="annotation-num">D</div>
+        <div class="annotation-text">
+          <strong>Countdown in timeline</strong> — Forest-green chip above the timeline shows "Next Event In" with live countdown. Urgency without noise — only appears if the next event is within 4 hours.
+        </div>
+      </div>
+    </div>
+    <div class="annotation-strip" style="background:var(--forest); display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0 24px 20px; border-top:1px solid rgba(242,232,213,0.08);">
+      <div class="annotation" style="padding:0 16px 0 0; border-right:1px solid rgba(242,232,213,0.08);">
+        <div class="annotation-num">E</div>
+        <div class="annotation-text">
+          <strong>Brand palette everywhere</strong> — Forest for primary, Terracotta for CTAs/alerts, Egreen for success/live, Amber for warnings, Parchment for surfaces. Slate/gray completely purged from this tab.
+        </div>
+      </div>
+      <div class="annotation" style="padding:0 0 0 16px;">
+        <div class="annotation-num">F</div>
+        <div class="annotation-text">
+          <strong>Typography</strong> — Fraunces for all metric numbers and section headings (already used in header, now extended to content area). IBM Plex Mono for all labels, eyebrows, meta text. IBM Plex Sans for body.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Loading State ──────────────────────────────────────────────────── -->
+  <div class="mockup-label">Loading state</div>
+  <div class="mockup-frame" style="max-width:600px;">
+    <div style="padding:24px; background:var(--parchment); display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-bottom:14px;">
+      <!-- Skeleton cards -->
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.06); padding:16px; border-left:3px solid rgba(26,60,40,0.1);">
+        <div style="width:40px;height:8px;background:rgba(26,60,40,0.07);border-radius:4px;margin-bottom:10px;"></div>
+        <div style="width:32px;height:24px;background:rgba(26,60,40,0.07);border-radius:4px;animation:shimmer 1.6s infinite;"></div>
+      </div>
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.06); padding:16px; border-left:3px solid rgba(26,60,40,0.1);">
+        <div style="width:40px;height:8px;background:rgba(26,60,40,0.07);border-radius:4px;margin-bottom:10px;"></div>
+        <div style="width:28px;height:24px;background:rgba(26,60,40,0.07);border-radius:4px;animation:shimmer 1.6s 0.2s infinite;"></div>
+      </div>
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.06); padding:16px; border-left:3px solid rgba(26,60,40,0.1);">
+        <div style="width:40px;height:8px;background:rgba(26,60,40,0.07);border-radius:4px;margin-bottom:10px;"></div>
+        <div style="width:44px;height:24px;background:rgba(26,60,40,0.07);border-radius:4px;animation:shimmer 1.6s 0.4s infinite;"></div>
+      </div>
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.06); padding:16px; border-left:3px solid rgba(26,60,40,0.1);">
+        <div style="width:40px;height:8px;background:rgba(26,60,40,0.07);border-radius:4px;margin-bottom:10px;"></div>
+        <div style="width:28px;height:24px;background:rgba(26,60,40,0.07);border-radius:4px;animation:shimmer 1.6s 0.6s infinite;"></div>
+      </div>
+    </div>
+    <style>
+      @keyframes shimmer {
+        0%   { opacity:0.5; }
+        50%  { opacity:1; }
+        100% { opacity:0.5; }
+      }
+    </style>
+    <div style="padding:0 24px 24px; background:var(--parchment);">
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(26,60,40,0.06); height:100px; margin-bottom:14px;
+        background: linear-gradient(90deg, #f5f4f1 25%, #eceae4 50%, #f5f4f1 75%);
+        background-size: 200% 100%;
+        animation: loading-sweep 1.6s infinite;
+      "></div>
+    </div>
+    <style>
+      @keyframes loading-sweep {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+    </style>
+  </div>
+
+  <!-- ─── Error State ─────────────────────────────────────────────────────── -->
+  <div class="mockup-label">Error state</div>
+  <div class="mockup-frame" style="max-width:500px;">
+    <div style="padding:32px 24px; background:var(--parchment);">
+      <div style="background:#fff; border-radius:12px; border:1px solid rgba(196,86,42,0.15); border-left:3px solid var(--terra); padding:20px;">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--terra-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-family:var(--fraunces);font-size:0.9rem;font-weight:600;color:var(--forest);margin-bottom:4px;">Failed to load on show events</div>
+            <div style="font-size:0.75rem;color:rgba(26,60,40,0.5);margin-bottom:12px;">Unable to reach the server. Check your connection or try again.</div>
+            <button style="padding:8px 16px;background:var(--terra);color:#fff;border:none;border-radius:8px;font-family:var(--mono);font-size:0.62rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- end .doc-wrap -->
+
+</body>
+</html>

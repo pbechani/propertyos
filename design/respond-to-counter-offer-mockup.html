@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Respond to Counter-Offer — Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:       #1A3C28;
+    --forest-light: #2D5A40;
+    --parchment:    #F2E8D5;
+    --cream:        #EAD9C4;
+    --carbon:       #0C0D10;
+    --egreen:       #00E87A;
+    --amber:        #B89040;
+    --amber-light:  #D4A83A;
+    --rust:         #C4562A;
+    --muted:        #5A7A68;
+    --border:       rgba(26,60,40,0.12);
+    --border-strong: rgba(26,60,40,0.24);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F4F0EA;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 24px;
+    gap: 48px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ─── Mock dashboard card showing the trigger ─────────────────── */
+
+  .context-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .purchase-card {
+    width: 740px;
+    background: white;
+    border-radius: 18px;
+    border: 1.5px solid rgba(184,144,64,0.4);
+    box-shadow: 0 8px 32px rgba(26,60,40,0.10), 0 0 0 4px rgba(184,144,64,0.08);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+  }
+
+  .card-img {
+    background: linear-gradient(135deg, #1A3C28 0%, #2D5A40 60%, #00E87A22 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    position: relative;
+  }
+
+  .card-img-inner {
+    font-size: 48px;
+    opacity: 0.4;
+  }
+
+  .card-img-label {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    font-family: 'Fraunces', serif;
+    font-size: 11px;
+    color: var(--parchment);
+    opacity: 0.7;
+    line-height: 1.3;
+  }
+
+  .card-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .card-price {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest);
+    letter-spacing: -0.4px;
+  }
+
+  .card-address {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .badge-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .badge-counter {
+    background: rgba(184,144,64,0.12);
+    color: var(--amber);
+    border: 1px solid rgba(184,144,64,0.35);
+  }
+
+  .badge-action {
+    background: rgba(196,86,42,0.1);
+    color: var(--rust);
+    border: 1px solid rgba(196,86,42,0.25);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: rgba(184,144,64,0.06);
+    border: 1px solid rgba(184,144,64,0.25);
+  }
+
+  .banner-icon { font-size: 16px; }
+
+  .banner-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--forest);
+  }
+
+  .banner-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .banner-cta {
+    margin-left: auto;
+    background: var(--amber);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+    box-shadow: 0 2px 8px rgba(184,144,64,0.3);
+  }
+
+  .banner-cta:hover { background: var(--amber-light); }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn-outline {
+    background: white;
+    color: var(--forest);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  /* ─── MODAL ──────────────────────────────────────────────────── */
+
+  .modal-scene {
+    width: 100%;
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .modal-wrapper {
+    width: 520px;
+    background: white;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 64px rgba(26,60,40,0.18), 0 4px 16px rgba(26,60,40,0.06);
+    overflow: hidden;
+  }
+
+  /* Modal header strip */
+  .modal-header-strip {
+    background: var(--forest);
+    padding: 20px 24px 18px;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .modal-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .modal-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--egreen);
+    opacity: 0.9;
+  }
+
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--parchment);
+    letter-spacing: -0.3px;
+  }
+
+  .modal-prop-line {
+    font-size: 12px;
+    color: rgba(242,232,213,0.55);
+    margin-top: 2px;
+  }
+
+  .modal-close-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--parchment);
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* Negotiation timeline */
+  .negotiation-track {
+    padding: 20px 24px 16px;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .track-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .track-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+  }
+
+  .track-node-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .track-node-circle.done {
+    background: var(--forest);
+    color: var(--parchment);
+  }
+
+  .track-node-circle.active {
+    background: var(--amber);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(184,144,64,0.2);
+  }
+
+  .track-node-circle.pending {
+    background: white;
+    border: 2px solid var(--border-strong);
+    color: var(--muted);
+  }
+
+  .track-node-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .track-node-label.done { color: var(--forest); }
+  .track-node-label.active { color: var(--amber); }
+  .track-node-label.pending { color: var(--muted); }
+
+  .track-node-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .track-node-amount.done { color: var(--muted); text-decoration: line-through; }
+  .track-node-amount.active { color: var(--amber); }
+  .track-node-amount.pending { color: var(--muted); }
+
+  .track-connector {
+    flex: 1;
+    height: 2px;
+    margin: 0;
+    margin-bottom: 22px; /* aligns with circle center */
+    background: linear-gradient(90deg, var(--forest) 0%, var(--amber) 100%);
+  }
+
+  .track-connector.pending {
+    background: var(--cream);
+  }
+
+  /* Offer summary row */
+  .offer-summary {
+    padding: 16px 24px;
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .offer-pill {
+    flex: 1;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .offer-pill.original {
+    background: rgba(26,60,40,0.04);
+    border: 1px solid rgba(26,60,40,0.1);
+  }
+
+  .offer-pill.counter {
+    background: rgba(184,144,64,0.07);
+    border: 1.5px solid rgba(184,144,64,0.3);
+  }
+
+  .offer-pill-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .offer-pill-label.original { color: var(--muted); }
+  .offer-pill-label.counter  { color: var(--amber); }
+
+  .offer-pill-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .offer-pill-amount.original { color: var(--forest); opacity: 0.5; }
+  .offer-pill-amount.counter  { color: var(--amber); }
+
+  .offer-pill-delta {
+    font-size: 11px;
+    color: var(--rust);
+    font-weight: 600;
+  }
+
+  .offer-pill-expires {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .offer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--amber);
+    font-size: 18px;
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Seller notes */
+  .seller-note-block {
+    margin: 0 24px 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: rgba(184,144,64,0.04);
+    border: 1px solid rgba(184,144,64,0.2);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .seller-note-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  .seller-note-text {
+    font-size: 12px;
+    color: var(--forest);
+    line-height: 1.5;
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  /* Decision section */
+  .decision-section {
+    padding: 16px 24px 0;
+  }
+
+  .decision-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .decision-options {
+    display: flex;
+    gap: 10px;
+  }
+
+  .decision-option {
+    flex: 1;
+    border-radius: 14px;
+    padding: 14px 12px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    text-align: center;
+  }
+
+  .decision-option.accept {
+    background: rgba(0,232,122,0.06);
+    border-color: rgba(0,232,122,0.25);
+  }
+
+  .decision-option.accept.selected,
+  .decision-option.accept:hover {
+    background: rgba(0,232,122,0.12);
+    border-color: var(--egreen);
+    box-shadow: 0 0 0 3px rgba(0,232,122,0.12);
+  }
+
+  .decision-option.counter-back {
+    background: rgba(184,144,64,0.06);
+    border-color: rgba(184,144,64,0.25);
+  }
+
+  .decision-option.counter-back.selected,
+  .decision-option.counter-back:hover {
+    background: rgba(184,144,64,0.12);
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(184,144,64,0.12);
+  }
+
+  .decision-option.decline {
+    background: rgba(196,86,42,0.04);
+    border-color: rgba(196,86,42,0.2);
+  }
+
+  .decision-option.decline:hover {
+    background: rgba(196,86,42,0.08);
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px rgba(196,86,42,0.08);
+  }
+
+  .decision-icon {
+    font-size: 22px;
+  }
+
+  .decision-option-label {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .decision-option.accept .decision-option-label { color: #1A7A40; }
+  .decision-option.counter-back .decision-option-label { color: var(--amber); }
+  .decision-option.decline .decision-option-label { color: var(--rust); }
+
+  .decision-option-sub {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+
+  /* Counter-back form */
+  .counter-form {
+    padding: 14px 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .form-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .amount-input-wrapper {
+    position: relative;
+  }
+
+  .amount-input {
+    width: 100%;
+    border: 1.5px solid var(--amber);
+    border-radius: 10px;
+    padding: 10px 14px 10px 42px;
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--forest);
+    background: rgba(184,144,64,0.04);
+    outline: none;
+    letter-spacing: -0.3px;
+  }
+
+  .amount-prefix {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .quick-picks {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  .quick-pick {
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    color: var(--forest);
+    border: 1.5px solid var(--border-strong);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.12s;
+  }
+
+  .quick-pick:hover,
+  .quick-pick.active {
+    background: var(--forest);
+    color: var(--parchment);
+    border-color: var(--forest);
+  }
+
+  .quick-pick-label {
+    font-size: 9px;
+    font-weight: 500;
+    display: block;
+    opacity: 0.6;
+    margin-top: 1px;
+  }
+
+  .notes-textarea {
+    width: 100%;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--forest);
+    background: white;
+    resize: none;
+    outline: none;
+    min-height: 70px;
+    line-height: 1.5;
+  }
+
+  .notes-textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  .expiry-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .expiry-label {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .expiry-input {
+    border: 1.5px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--forest);
+    background: white;
+    outline: none;
+    flex: 1;
+  }
+
+  /* Footer */
+  .modal-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    gap: 10px;
+  }
+
+  .footer-disclaimer {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 200px;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-cancel {
+    background: white;
+    color: var(--muted);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  .btn-submit {
+    background: var(--forest);
+    color: var(--parchment);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 12px rgba(26,60,40,0.2);
+  }
+
+  .btn-submit-icon { font-size: 14px; }
+
+  /* ─── STATE ANNOTATIONS ──────────────────────────────────────── */
+  .annotation-col {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-top: 60px;
+  }
+
+  .annotation {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .annotation-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  .annotation-text {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .annotation-arrow {
+    font-size: 18px;
+    color: rgba(184,144,64,0.4);
+  }
+
+  /* ─── STATE 2: ACCEPT ──────────────────────────────────────── */
+  .confirm-block {
+    margin: 0 24px;
+    border-radius: 14px;
+    padding: 16px;
+    background: rgba(0,232,122,0.06);
+    border: 1.5px solid rgba(0,232,122,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .confirm-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,232,122,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .confirm-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A7A40;
+  }
+
+  .confirm-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .confirm-terms {
+    font-size: 11px;
+    color: var(--forest);
+    background: white;
+    border-radius: 8px;
+    padding: 10px 12px;
+    line-height: 1.5;
+    border: 1px solid rgba(0,232,122,0.2);
+  }
+
+  .confirm-terms strong { color: #1A7A40; }
+
+  .btn-accept {
+    background: #1A7A40;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 12px rgba(0,120,64,0.25);
+    align-self: flex-end;
+  }
+
+  /* ─── SECTION DIVIDERS ─────────────────────────────────────── */
+  .section-divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .divider-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ─── PAGE SECTIONS ─────────────────────────────────────────── */
+  .page-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    background: rgba(184,144,64,0.1);
+    border: 1px solid rgba(184,144,64,0.25);
+    border-radius: 999px;
+    padding: 4px 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Respond to Counter-Offer · Design Mockup · Pribec</h1>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- CONTEXT: Trigger card -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="page-section">
+  <div class="section-title">CONTEXT — Active Purchase Card (counter-offer state)</div>
+  <div class="purchase-card">
+    <div class="card-img">
+      <div class="card-img-inner">🏡</div>
+      <div class="card-img-label">12 Morningside Drive<br/>Sandton, Johannesburg</div>
+    </div>
+    <div class="card-body">
+      <div class="card-top-row">
+        <div>
+          <div class="card-price">R 3,200,000</div>
+          <div class="card-address">12 Morningside Drive · Sandton, Johannesburg</div>
+        </div>
+        <div class="badge-group">
+          <span class="badge badge-counter">
+            <span class="dot" style="background: #B89040;"></span>
+            Counter-Offer
+          </span>
+          <span class="badge badge-action">⚡ Action Needed</span>
+        </div>
+      </div>
+      <div class="banner">
+        <span class="banner-icon">⚡</span>
+        <div>
+          <div class="banner-title">Counter-offer received — R 3,450,000</div>
+          <div class="banner-sub">Seller responded · Expires 18 May 2026 · Your offer: R 3,200,000</div>
+        </div>
+        <button class="banner-cta">Respond Now</button>
+      </div>
+      <div class="action-row">
+        <button class="btn-outline">View Offer</button>
+        <button class="btn-outline">▾ Details</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- STATE 1: Default — choose response -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="page-section">
+  <div class="section-title">STATE 1 — Default view (choose your response)</div>
+  <div class="modal-scene">
+    <div class="modal-wrapper">
+      <!-- Header -->
+      <div class="modal-header-strip">
+        <div class="modal-header-left">
+          <span class="modal-eyebrow">⚡ Counter-Offer Received</span>
+          <div class="modal-title">Respond to Counter-Offer</div>
+          <div class="modal-prop-line">12 Morningside Drive · Sandton</div>
+        </div>
+        <div class="modal-close-btn">✕</div>
+      </div>
+
+      <!-- Negotiation timeline -->
+      <div class="negotiation-track">
+        <div class="track-label">Negotiation History</div>
+        <div class="track-row">
+          <div class="track-node">
+            <div class="track-node-circle done">✓</div>
+            <div class="track-node-label done">Your Offer</div>
+            <div class="track-node-amount done">R 3,200,000</div>
+          </div>
+          <div class="track-connector"></div>
+          <div class="track-node">
+            <div class="track-node-circle active">⚡</div>
+            <div class="track-node-label active">Counter</div>
+            <div class="track-node-amount active">R 3,450,000</div>
+          </div>
+          <div class="track-connector pending"></div>
+          <div class="track-node">
+            <div class="track-node-circle pending">?</div>
+            <div class="track-node-label pending">Your Reply</div>
+            <div class="track-node-amount pending">Pending</div>
+          </div>
+          <div class="track-connector pending"></div>
+          <div class="track-node">
+            <div class="track-node-circle pending">🤝</div>
+            <div class="track-node-label pending">Agreed</div>
+            <div class="track-node-amount pending">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offer comparison pills -->
+      <div class="offer-summary">
+        <div class="offer-pill original">
+          <span class="offer-pill-label original">Your Offer</span>
+          <span class="offer-pill-amount original">R 3,200,000</span>
+          <span class="offer-pill-expires">Submitted 10 May 2026</span>
+        </div>
+        <div class="offer-arrow">→</div>
+        <div class="offer-pill counter">
+          <span class="offer-pill-label counter">Seller Countered</span>
+          <span class="offer-pill-amount counter">R 3,450,000</span>
+          <span class="offer-pill-delta">+R 250,000 above your offer</span>
+          <span class="offer-pill-expires">⏰ Expires 18 May 2026</span>
+        </div>
+      </div>
+
+      <!-- Seller note -->
+      <div style="padding: 12px 24px 0;">
+        <div class="seller-note-block">
+          <span class="seller-note-icon">💬</span>
+          <span class="seller-note-text">"We are firm on R 3,450,000 but are willing to include the garden furniture and cover transfer costs up to R 40,000."</span>
+        </div>
+      </div>
+
+      <!-- Decision options -->
+      <div class="decision-section">
+        <div class="decision-label">How do you want to respond?</div>
+        <div class="decision-options">
+          <div class="decision-option accept">
+            <div class="decision-icon">✅</div>
+            <div class="decision-option-label">Accept</div>
+            <div class="decision-option-sub">Accept R 3,450,000<br/>and move to agreement</div>
+          </div>
+          <div class="decision-option counter-back selected">
+            <div class="decision-icon">↕️</div>
+            <div class="decision-option-label">Counter Back</div>
+            <div class="decision-option-sub">Propose a different<br/>price to the seller</div>
+          </div>
+          <div class="decision-option decline">
+            <div class="decision-icon">✕</div>
+            <div class="decision-option-label">Decline</div>
+            <div class="decision-option-sub">Walk away from<br/>this negotiation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer (no action yet chosen) -->
+      <div class="modal-footer" style="margin-top: 20px;">
+        <div class="footer-disclaimer">Select a response above to continue. The seller will be notified.</div>
+        <div class="footer-actions">
+          <button class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- STATE 2: COUNTER BACK selected -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="page-section">
+  <div class="section-title">STATE 2 — "Counter Back" selected (counter-back form expanded)</div>
+  <div class="modal-scene">
+    <div class="modal-wrapper">
+      <!-- Header -->
+      <div class="modal-header-strip">
+        <div class="modal-header-left">
+          <span class="modal-eyebrow">↕️ Submit Counter-Offer</span>
+          <div class="modal-title">Your Counter to the Seller</div>
+          <div class="modal-prop-line">12 Morningside Drive · Sandton</div>
+        </div>
+        <div class="modal-close-btn">✕</div>
+      </div>
+
+      <!-- Negotiation timeline -->
+      <div class="negotiation-track">
+        <div class="track-label">Negotiation History</div>
+        <div class="track-row">
+          <div class="track-node">
+            <div class="track-node-circle done">✓</div>
+            <div class="track-node-label done">Your Offer</div>
+            <div class="track-node-amount done">R 3,200,000</div>
+          </div>
+          <div class="track-connector"></div>
+          <div class="track-node">
+            <div class="track-node-circle done">✓</div>
+            <div class="track-node-label done">Counter</div>
+            <div class="track-node-amount done">R 3,450,000</div>
+          </div>
+          <div class="track-connector"></div>
+          <div class="track-node">
+            <div class="track-node-circle active">✍️</div>
+            <div class="track-node-label active">Your Counter</div>
+            <div class="track-node-amount active">R 3,320,000</div>
+          </div>
+          <div class="track-connector pending"></div>
+          <div class="track-node">
+            <div class="track-node-circle pending">🤝</div>
+            <div class="track-node-label pending">Agreed</div>
+            <div class="track-node-amount pending">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offer comparison pills -->
+      <div class="offer-summary">
+        <div class="offer-pill original">
+          <span class="offer-pill-label original">Seller's Counter</span>
+          <span class="offer-pill-amount original">R 3,450,000</span>
+        </div>
+        <div class="offer-arrow">→</div>
+        <div class="offer-pill counter" style="background: rgba(26,60,40,0.06); border-color: rgba(26,60,40,0.2);">
+          <span class="offer-pill-label" style="color: var(--forest);">Your Counter</span>
+          <span class="offer-pill-amount" style="color: var(--forest);">R 3,320,000</span>
+          <span class="offer-pill-delta" style="color: #1A7A40;">−R 130,000 below counter</span>
+        </div>
+      </div>
+
+      <!-- Counter form -->
+      <div class="counter-form">
+        <div>
+          <div class="form-label">Your Counter-Offer Amount</div>
+          <div class="amount-input-wrapper">
+            <span class="amount-prefix">R</span>
+            <input class="amount-input" type="text" value="3,320,000" />
+          </div>
+        </div>
+
+        <div>
+          <div class="form-label">Quick Suggestions</div>
+          <div class="quick-picks">
+            <div class="quick-pick active">
+              R 3,320,000
+              <span class="quick-pick-label">Split diff</span>
+            </div>
+            <div class="quick-pick">
+              R 3,380,000
+              <span class="quick-pick-label">Small concede</span>
+            </div>
+            <div class="quick-pick">
+              R 3,450,000
+              <span class="quick-pick-label">Accept theirs</span>
+            </div>
+            <div class="quick-pick">
+              R 3,200,000
+              <span class="quick-pick-label">Hold firm</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="form-label">Message to Seller (optional)</div>
+          <textarea class="notes-textarea" placeholder="e.g. We can meet in the middle, but would appreciate keeping the garden furniture included…"></textarea>
+        </div>
+
+        <div class="expiry-row">
+          <span class="expiry-label">⏰ Your counter expires:</span>
+          <input class="expiry-input" type="date" value="2026-05-20" />
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <div class="footer-disclaimer">Submitting locks in your counter-offer. The seller will be notified immediately.</div>
+        <div class="footer-actions">
+          <button class="btn-cancel">Back</button>
+          <button class="btn-submit">
+            <span class="btn-submit-icon">↕️</span>
+            Send Counter-Offer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- STATE 3: ACCEPT selected -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="page-section">
+  <div class="section-title">STATE 3 — "Accept" selected (confirmation step)</div>
+  <div class="modal-scene">
+    <div class="modal-wrapper">
+      <!-- Header -->
+      <div class="modal-header-strip" style="background: #1A7A40;">
+        <div class="modal-header-left">
+          <span class="modal-eyebrow" style="color: #7DFFB0;">✅ Accepting Counter-Offer</span>
+          <div class="modal-title">Confirm Acceptance</div>
+          <div class="modal-prop-line">12 Morningside Drive · Sandton</div>
+        </div>
+        <div class="modal-close-btn">✕</div>
+      </div>
+
+      <!-- Negotiation timeline (completed) -->
+      <div class="negotiation-track">
+        <div class="track-label">Negotiation History</div>
+        <div class="track-row">
+          <div class="track-node">
+            <div class="track-node-circle done">✓</div>
+            <div class="track-node-label done">Your Offer</div>
+            <div class="track-node-amount done">R 3,200,000</div>
+          </div>
+          <div class="track-connector"></div>
+          <div class="track-node">
+            <div class="track-node-circle done">✓</div>
+            <div class="track-node-label done">Counter</div>
+            <div class="track-node-amount done">R 3,450,000</div>
+          </div>
+          <div class="track-connector"></div>
+          <div class="track-node">
+            <div class="track-node-circle" style="background: #1A7A40; color: white; box-shadow: 0 0 0 4px rgba(0,200,100,0.2);">✓</div>
+            <div class="track-node-label" style="color: #1A7A40;">Accepting</div>
+            <div class="track-node-amount" style="color: #1A7A40;">R 3,450,000</div>
+          </div>
+          <div class="track-connector" style="background: linear-gradient(90deg, var(--forest), #00E87A);"></div>
+          <div class="track-node">
+            <div class="track-node-circle" style="background: rgba(0,232,122,0.2); border: 2px solid #00E87A; color: #1A7A40;">🤝</div>
+            <div class="track-node-label" style="color: #1A7A40;">Agreed</div>
+            <div class="track-node-amount" style="color: #1A7A40;">Next →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decision options (accept selected) -->
+      <div class="decision-section" style="padding-bottom: 0;">
+        <div class="decision-label">How do you want to respond?</div>
+        <div class="decision-options">
+          <div class="decision-option accept selected">
+            <div class="decision-icon">✅</div>
+            <div class="decision-option-label">Accept</div>
+            <div class="decision-option-sub">Accept R 3,450,000<br/>and move to agreement</div>
+          </div>
+          <div class="decision-option counter-back">
+            <div class="decision-icon">↕️</div>
+            <div class="decision-option-label">Counter Back</div>
+            <div class="decision-option-sub">Propose a different<br/>price to the seller</div>
+          </div>
+          <div class="decision-option decline">
+            <div class="decision-icon">✕</div>
+            <div class="decision-option-label">Decline</div>
+            <div class="decision-option-sub">Walk away from<br/>this negotiation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm block -->
+      <div style="padding: 14px 24px 0;">
+        <div class="confirm-block">
+          <div class="confirm-header">
+            <div class="confirm-icon">✅</div>
+            <div>
+              <div class="confirm-title">Accept R 3,450,000</div>
+              <div class="confirm-sub">This will advance your purchase to Stage 4 — Sale Agreement</div>
+            </div>
+          </div>
+          <div class="confirm-terms">
+            By accepting, you agree to purchase <strong>12 Morningside Drive</strong> at <strong>R 3,450,000</strong>. A conveyancer will be assigned and you will be guided through the Offer to Purchase (OTP) signing process.
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <div class="footer-disclaimer">This action notifies the seller and moves to Stage 4.</div>
+        <div class="footer-actions">
+          <button class="btn-cancel">Back</button>
+          <button class="btn-submit" style="background: #1A7A40; box-shadow: 0 2px 12px rgba(0,120,64,0.25);">
+            <span>✅</span>
+            Confirm Acceptance
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SUCCESS STATE -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div class="page-section">
+  <div class="section-title">STATE 4 — Success (counter sent / offer accepted)</div>
+  <div class="modal-scene">
+    <div class="modal-wrapper" style="max-width: 480px;">
+      <div style="padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(0,232,122,0.1); border: 2px solid rgba(0,232,122,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px;">↕️</div>
+        <div style="font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; color: var(--forest); letter-spacing: -0.3px;">Counter-Offer Sent!</div>
+        <div style="font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 320px;">Your counter of <strong style="color: var(--forest);">R 3,320,000</strong> has been sent to the seller. You'll be notified as soon as they respond.</div>
+        <div style="background: var(--parchment); border-radius: 12px; padding: 14px 20px; border: 1px solid var(--border); width: 100%; margin-top: 8px;">
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">What Happens Next</div>
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--forest);">
+              <span style="color: var(--egreen);">✓</span> Counter-offer delivered to seller & agent
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--forest);">
+              <span style="color: var(--egreen);">✓</span> Offer expires 20 May 2026 if no reply
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--forest);">
+              <span style="color: var(--amber);">⏳</span> Awaiting seller response
+            </div>
+          </div>
+        </div>
+        <button class="btn-submit" style="align-self: stretch; justify-content: center; padding: 13px;">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="height: 40px;"></div>
+
+</body>
+</html>

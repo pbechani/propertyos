@@ -1,5 +1,5 @@
-import { TasksView } from '@/views/open-houses/OHTasksView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <TasksView />;
+  redirect('/app/on-show?tab=tasks');
 }

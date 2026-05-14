@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Viewings Tab · Design Approval — v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Design-system tokens — exactly matching my-listing-detail-rebrand-v2.html ─ */
+  :root {
+    --forest:      #1A3C28;
+    --forest-l:    #4A7C5A;
+    --parchment:   #F2E8D5;
+    --cream:       #EAD9C4;
+    --amber:       #B89040;
+    --terra:       #C4562A;
+    --egreen:      #00E87A;
+    --muted:       #E8F0EC;
+    --text-muted:  #6B8F7A;
+    --border:      rgba(26,60,40,0.12);
+
+    /* alpha helpers */
+    --forest-60:   rgba(26,60,40,0.60);
+    --forest-30:   rgba(26,60,40,0.30);
+    --forest-12:   rgba(26,60,40,0.12);
+    --forest-08:   rgba(26,60,40,0.08);
+    --forest-05:   rgba(26,60,40,0.05);
+    --amber-15:    rgba(184,144,64,0.15);
+    --amber-08:    rgba(184,144,64,0.08);
+    --terra-20:    rgba(196,86,42,0.20);
+    --terra-12:    rgba(196,86,42,0.12);
+    --terra-06:    rgba(196,86,42,0.06);
+    --egreen-20:   rgba(0,232,122,0.20);
+    --egreen-10:   rgba(0,232,122,0.10);
+
+    --font-serif:  'Fraunces', serif;
+    --font-body:   'Plus Jakarta Sans', sans-serif;
+    --font-mono:   'IBM Plex Mono', monospace;
+  }
+
+  body {
+    background: var(--parchment);
+    font-family: var(--font-body);
+    color: var(--forest);
+    min-height: 100vh;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     APP SHELL (replicates v2 exactly)
+  ──────────────────────────────────────────────────────────────────────── */
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 64px;
+    background: var(--forest);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar-logo {
+    width: 36px; height: 36px;
+    background: var(--parchment);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .sidebar-logo-letter {
+    font-family: var(--font-serif);
+    font-size: 18px; font-weight: 700;
+    color: var(--forest);
+  }
+  .nav-item {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: rgba(242,232,213,0.45);
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+  .nav-item.active {
+    background: rgba(242,232,213,0.12);
+    color: var(--parchment);
+  }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     LISTING HEADER — unchanged from v2
+  ──────────────────────────────────────────────────────────────────────── */
+  .listing-header {
+    background: var(--forest);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .deco-circle-1 {
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: var(--terra); opacity: 0.08;
+    border-radius: 50%; pointer-events: none;
+  }
+  .deco-circle-2 {
+    position: absolute; bottom: 10px; left: 40%;
+    width: 160px; height: 160px;
+    background: var(--egreen); opacity: 0.04;
+    border-radius: 50%; pointer-events: none;
+  }
+  .header-inner { padding: 24px 32px 0; position: relative; z-index: 1; }
+
+  .header-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terra);
+    margin-bottom: 6px;
+  }
+  .header-eyebrow a { color: inherit; text-decoration: none; opacity: 0.75; }
+  .header-eyebrow a:hover { opacity: 1; }
+
+  .header-title-row {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px; gap: 16px;
+  }
+  .header-title {
+    font-family: var(--font-serif);
+    font-size: 26px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.5px; line-height: 1.15;
+  }
+  .header-subtitle {
+    font-size: 13px; color: rgba(242,232,213,0.55);
+    margin-top: 4px; font-weight: 400;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header-subtitle-sep {
+    width: 3px; height: 3px;
+    background: rgba(242,232,213,0.3);
+    border-radius: 50%;
+  }
+  .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: rgba(242,232,213,0.08);
+    color: rgba(242,232,213,0.8);
+    border: 1px solid rgba(242,232,213,0.14);
+    transition: all 0.15s; font-family: var(--font-body);
+  }
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--terra); color: #fff;
+    border: none; transition: all 0.15s; font-family: var(--font-body);
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ai {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    background: var(--forest);
+    color: var(--egreen);
+    border: 1px solid rgba(0,232,122,0.25);
+    transition: all 0.15s; font-family: var(--font-body);
+  }
+  .ai-pulse {
+    width: 6px; height: 6px;
+    background: var(--egreen); border-radius: 50%;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .header-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding-bottom: 20px;
+  }
+  .stat-cell {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: rgba(242,232,213,0.45);
+    margin-bottom: 5px;
+  }
+  .stat-value {
+    font-family: var(--font-serif);
+    font-size: 20px; font-weight: 700; line-height: 1;
+  }
+  .stat-delta { font-size: 11px; font-weight: 500; margin-top: 3px; }
+  .stat-value.green  { color: var(--egreen); }
+  .stat-value.parchment { color: var(--parchment); }
+  .stat-value.amber  { color: #F5C87A; }
+  .stat-value.rose   { color: #E8A080; }
+  .stat-delta.up     { color: var(--egreen); }
+  .stat-delta.warn   { color: #F87171; }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     TAB BAR — v2-faithful; Viewings is now active
+  ──────────────────────────────────────────────────────────────────────── */
+  .tabbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(234,217,196,0.5);
+    overflow-x: auto;
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
+  }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+    background: transparent; border: none;
+    color: rgba(26,60,40,0.6);
+    flex-shrink: 0; font-family: var(--font-body);
+  }
+  .tab-btn:hover { background: rgba(26,60,40,0.07); color: var(--forest); }
+  .tab-btn.active { background: var(--forest); color: #fff; }
+  .tab-btn svg { width: 14px; height: 14px; color: rgba(26,60,40,0.4); }
+  .tab-btn.active svg { color: #fff; opacity: 1; }
+  .tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px;
+    padding: 0 4px; border-radius: 9px;
+    font-size: 10px; font-weight: 700;
+    background: var(--terra); color: #fff;
+  }
+  .tab-btn.active .tab-badge { background: #fff; color: var(--forest); }
+  .tab-more {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    background: #fff; color: rgba(26,60,40,0.5);
+    border: 1px solid rgba(26,60,40,0.15); flex-shrink: 0;
+    font-family: var(--font-body);
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     BODY LAYOUT — 2-col grid matching v2
+  ──────────────────────────────────────────────────────────────────────── */
+  .body-wrap {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    padding: 24px 32px 48px;
+    align-items: start;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ██  VIEWINGS TAB — LEFT COLUMN
+  ──────────────────────────────────────────────────────────────────────── */
+
+  /* ── 1. ACTION INBOX ─────────────────────────────────────────────────── */
+  .inbox-zone { margin-bottom: 28px; }
+
+  .inbox-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .inbox-header-label {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--forest-60);
+  }
+  .inbox-header-divider { flex: 1; height: 1px; background: var(--border); }
+  .inbox-count-badge {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    background: var(--amber); color: #fff;
+    padding: 2px 8px; border-radius: 50px;
+  }
+
+  /* Urgent banner */
+  .urgent-banner {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(184,144,64,0.07);
+    border: 1.5px solid rgba(184,144,64,0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    animation: bannerSlide 0.4s ease;
+  }
+  @keyframes bannerSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .urgent-banner-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: rgba(184,144,64,0.15);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .urgent-banner-icon svg { width: 16px; height: 16px; color: var(--amber); }
+  .urgent-banner-body { flex: 1; min-width: 0; }
+  .urgent-banner-title {
+    font-size: 13px; font-weight: 700; color: var(--forest);
+    margin-bottom: 3px;
+  }
+  .urgent-banner-sub {
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--forest-60); letter-spacing: 0.03em;
+  }
+  .urgent-banner-sub strong { color: #9B6C00; font-weight: 600; }
+  .urgent-banner-cta {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 13px; border-radius: 8px;
+    background: var(--amber); color: #fff; border: none;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .urgent-banner-cta:hover { opacity: 0.88; }
+
+  /* Request card */
+  .request-stack { display: flex; flex-direction: column; gap: 10px; }
+
+  .request-card {
+    background: #fff;
+    border: 1.5px solid rgba(184,144,64,0.30);
+    border-radius: 12px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    animation: cardIn 0.35s ease both;
+  }
+  .request-card:nth-child(2) { animation-delay: 0.06s; }
+  .request-card:nth-child(3) { animation-delay: 0.12s; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .request-card:hover { box-shadow: 0 4px 18px rgba(184,144,64,0.15); border-color: var(--amber); }
+
+  .request-time-col {
+    background: rgba(184,144,64,0.06);
+    border-right: 1px solid rgba(184,144,64,0.18);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 14px 6px; gap: 2px;
+  }
+  .request-time-day {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--amber);
+  }
+  .request-time-date {
+    font-family: var(--font-serif);
+    font-size: 22px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+  .request-time-month {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--forest-60);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .request-time-hr {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 600;
+    color: var(--forest); margin-top: 6px;
+  }
+
+  .request-body { padding: 14px 16px; min-width: 0; }
+  .request-meta-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .request-buyer-name {
+    font-size: 14px; font-weight: 700;
+    color: var(--forest);
+  }
+  .request-status-badge {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--amber-08); color: var(--amber);
+    border: 1px solid var(--amber-15);
+  }
+  .request-buyer-sub {
+    font-size: 12px; color: var(--forest-60);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .request-context {
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--forest-60);
+    letter-spacing: 0.03em;
+    padding: 6px 10px;
+    background: var(--forest-05);
+    border-radius: 7px;
+    border: 1px solid var(--forest-08);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .request-context strong { color: var(--forest); font-weight: 600; }
+  .request-actions { display: flex; gap: 8px; align-items: center; }
+  .req-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 8px;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.14s; border: none;
+  }
+  .req-btn svg { width: 12px; height: 12px; }
+  .req-btn-accept {
+    background: var(--egreen-10);
+    color: #0D7039;
+    border: 1.5px solid var(--egreen-20);
+  }
+  .req-btn-accept:hover { background: var(--egreen-20); }
+  .req-btn-decline {
+    background: var(--terra-06);
+    color: var(--terra);
+    border: 1.5px solid var(--terra-12);
+  }
+  .req-btn-decline:hover { background: var(--terra-20); }
+  .req-btn-reschedule {
+    background: var(--forest-05);
+    color: var(--forest-60);
+    border: 1.5px solid var(--forest-12);
+  }
+  .req-btn-reschedule:hover { background: var(--forest-08); color: var(--forest); }
+  .request-age {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--forest-30);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 2. SECTION DIVIDER ──────────────────────────────────────────────── */
+  .section-sep {
+    display: flex; align-items: center; gap: 10px;
+    margin: 28px 0 16px;
+  }
+  .section-sep-label {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--forest-60);
+    white-space: nowrap;
+  }
+  .section-sep-line { flex: 1; height: 1px; background: var(--border); }
+  .section-sep-count {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-30); white-space: nowrap;
+  }
+
+  /* ── 3. CONFIRMED / UPCOMING VIEWING CARDS ───────────────────────────── */
+  .viewing-stack { display: flex; flex-direction: column; gap: 8px; }
+
+  .viewing-card {
+    background: #fff;
+    border: 1.5px solid var(--forest-12);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 5px 64px 1fr auto;
+    align-items: stretch;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .viewing-card:hover { box-shadow: 0 4px 16px rgba(26,60,40,0.10); border-color: var(--forest-30); }
+
+  .viewing-card-accent { /* left status stripe */ }
+  .accent-confirmed { background: var(--egreen); }
+  .accent-pending   { background: var(--amber); }
+  .accent-past      { background: var(--forest-30); }
+
+  .viewing-date-col {
+    border-right: 1px solid var(--forest-08);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 14px 6px; gap: 1px;
+    background: var(--forest-05);
+  }
+  .viewing-date-day {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--forest-60);
+  }
+  .viewing-date-num {
+    font-family: var(--font-serif);
+    font-size: 22px; font-weight: 700;
+    color: var(--forest); line-height: 1;
+  }
+  .viewing-date-time {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600;
+    color: var(--forest-60); margin-top: 4px;
+  }
+
+  .viewing-body { padding: 13px 16px; min-width: 0; }
+  .viewing-buyer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .viewing-buyer-name { font-size: 14px; font-weight: 700; color: var(--forest); }
+  .viewing-type-badge {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    border: 1px solid;
+  }
+  .badge-confirmed { background: var(--egreen-10); color: #0D7039; border-color: var(--egreen-20); }
+  .badge-past      { background: var(--forest-05); color: var(--forest-60); border-color: var(--forest-12); }
+  .badge-cancelled { background: var(--terra-06);  color: var(--terra);     border-color: var(--terra-12); }
+
+  .viewing-sub {
+    font-size: 12px; color: var(--forest-60);
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .viewing-notes {
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--forest-60);
+    letter-spacing: 0.02em; line-height: 1.5;
+    padding: 5px 9px;
+    background: var(--forest-05);
+    border-radius: 6px;
+    border: 1px solid var(--forest-08);
+    margin-bottom: 2px;
+    display: inline-block;
+  }
+  .viewing-actions-col {
+    padding: 12px 14px 12px 8px;
+    display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px; border: 1px solid transparent;
+    background: transparent; cursor: pointer;
+    color: var(--forest-60); transition: all 0.13s;
+  }
+  .icon-btn:hover { background: var(--forest-08); border-color: var(--forest-12); color: var(--forest); }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .v-action-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 7px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; white-space: nowrap; transition: all 0.13s; border: 1.5px solid;
+  }
+  .v-btn-outcome {
+    background: var(--forest); color: var(--parchment); border-color: var(--forest);
+  }
+  .v-btn-outcome:hover { opacity: 0.88; }
+
+  /* ── 4. OUTCOME NUDGE ────────────────────────────────────────────────── */
+  .outcome-nudge {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--egreen-10);
+    border: 1.5px dashed rgba(0,232,122,0.35);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 28px 0 16px;
+  }
+  .outcome-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: rgba(0,232,122,0.15);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .outcome-icon svg { width: 16px; height: 16px; color: #0D7039; }
+  .outcome-body { flex: 1; min-width: 0; }
+  .outcome-title { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 2px; }
+  .outcome-sub { font-size: 12px; color: var(--forest-60); }
+  .outcome-btn {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 7px 14px; border-radius: 8px;
+    background: var(--forest); color: var(--parchment);
+    border: none; cursor: pointer; flex-shrink: 0; white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .outcome-btn:hover { opacity: 0.88; }
+
+  /* ── 5. PAST VIEWINGS — muted ────────────────────────────────────────── */
+  .viewing-card.is-past { opacity: 0.60; }
+  .viewing-card.is-past:hover { opacity: 0.85; }
+  .outcome-logged-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--egreen-10); color: #0D7039;
+    border: 1px solid var(--egreen-20);
+  }
+  .outcome-missing-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 50px;
+    background: var(--amber-08); color: var(--amber);
+    border: 1px solid var(--amber-15);
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ██  VIEWINGS TAB — RIGHT SIDEBAR (320px)
+  ──────────────────────────────────────────────────────────────────────── */
+  .sidebar-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Common card wrapper */
+  .side-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .side-card-header {
+    padding: 14px 16px 12px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--forest-08);
+  }
+  .side-card-title {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--forest-60);
+  }
+  .side-card-header svg { width: 14px; height: 14px; color: var(--forest-60); }
+  .side-card-sup {
+    margin-left: auto;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-30);
+  }
+  .side-card-body { padding: 16px; }
+
+  /* ── Schedule CTA ────────────────────────────────────────────────────── */
+  .schedule-cta {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    padding: 13px 16px; border-radius: 10px;
+    background: var(--terra); color: #fff;
+    font-family: var(--font-body); font-size: 14px; font-weight: 700;
+    border: none; cursor: pointer; transition: opacity 0.15s;
+  }
+  .schedule-cta:hover { opacity: 0.9; }
+  .schedule-cta svg { width: 16px; height: 16px; }
+
+  /* ── Mini calendar ───────────────────────────────────────────────────── */
+  .mini-cal { }
+  .mini-cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .mini-cal-month {
+    font-family: var(--font-serif);
+    font-size: 16px; font-weight: 600;
+    color: var(--forest);
+  }
+  .mini-cal-month-sub {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--forest-60);
+    letter-spacing: 0.06em; margin-top: 1px;
+  }
+  .cal-nav-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px; border: 1px solid var(--forest-12);
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--forest-60); transition: all 0.13s;
+  }
+  .cal-nav-btn:hover { background: var(--forest-08); color: var(--forest); }
+  .cal-nav-btn svg { width: 12px; height: 12px; }
+
+  .mini-cal-dow {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+  }
+  .cal-dow { text-align: center; padding: 4px 0; }
+  .cal-dow span {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--forest-30);
+  }
+
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-day {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 4px 2px;
+    border-radius: 7px;
+    cursor: pointer; transition: background 0.13s;
+    min-height: 34px;
+  }
+  .cal-day:hover { background: var(--forest-08); }
+  .cal-day-num {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--forest-60); line-height: 1; margin-bottom: 3px;
+  }
+  .cal-day.is-today .cal-day-num {
+    background: var(--forest); color: #fff;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+  .cal-day.is-today { background: rgba(26,60,40,0.04); }
+  .cal-day.out-month .cal-day-num { color: var(--forest-30); }
+  .cal-day.has-viewing { background: rgba(0,232,122,0.06); }
+  .cal-day.has-pending { background: rgba(184,144,64,0.06); }
+  .cal-dots { display: flex; gap: 2px; align-items: center; }
+  .cal-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .dot-confirmed { background: var(--egreen); }
+  .dot-pending   { background: var(--amber); }
+
+  .cal-legend {
+    display: flex; gap: 12px; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid var(--forest-08);
+    flex-wrap: wrap;
+  }
+  .cal-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--forest-60); letter-spacing: 0.04em;
+  }
+  .cal-legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ── Viewing stats card ─────────────────────────────────────────────── */
+  .stats-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--forest-08);
+  }
+  .stats-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .stats-label {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-60); letter-spacing: 0.04em;
+  }
+  .stats-val {
+    font-family: var(--font-serif); font-size: 16px; font-weight: 600;
+    color: var(--forest); letter-spacing: -0.3px;
+  }
+  .stats-val.green { color: #0D7039; }
+  .stats-val.amber { color: var(--amber); }
+  .stats-delta {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-muted); text-align: right; margin-top: 1px;
+  }
+
+  /* Funnel bar */
+  .funnel-wrap { margin-top: 14px; }
+  .funnel-label {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--forest-30); margin-bottom: 10px;
+  }
+  .funnel-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .funnel-step-label {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-60); letter-spacing: 0.03em;
+    width: 72px; flex-shrink: 0;
+  }
+  .funnel-bar-wrap { flex: 1; height: 6px; background: var(--forest-08); border-radius: 4px; overflow: hidden; }
+  .funnel-bar-fill { height: 100%; border-radius: 4px; }
+  .funnel-bar-forest { background: var(--forest); }
+  .funnel-bar-green  { background: var(--egreen); }
+  .funnel-bar-amber  { background: var(--amber); }
+  .funnel-step-val {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    color: var(--forest); width: 24px; text-align: right; flex-shrink: 0;
+  }
+
+  /* ── Next viewing countdown ─────────────────────────────────────────── */
+  .next-card {
+    background: var(--forest);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .next-card-eyebrow {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(242,232,213,0.40); margin-bottom: 2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .next-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--egreen);
+    animation: livePulse 1.6s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+  @keyframes livePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0,232,122,0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(0,232,122,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,232,122,0); }
+  }
+  .next-card-name {
+    font-family: var(--font-serif); font-size: 17px; font-weight: 600;
+    color: var(--parchment); letter-spacing: -0.3px; line-height: 1.2;
+  }
+  .next-card-time {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    color: var(--egreen); letter-spacing: 0.04em;
+  }
+  .next-card-meta {
+    font-family: var(--font-mono); font-size: 10px;
+    color: rgba(242,232,213,0.45); letter-spacing: 0.03em; line-height: 1.5;
+  }
+  .next-card-actions { display: flex; gap: 8px; }
+  .next-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px; border-radius: 8px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.14s;
+  }
+  .next-btn-confirm {
+    background: var(--egreen); color: var(--forest); border: none;
+  }
+  .next-btn-confirm:hover { background: #00cf6d; }
+  .next-btn-msg {
+    background: rgba(242,232,213,0.10); color: rgba(242,232,213,0.75);
+    border: 1px solid rgba(242,232,213,0.15);
+  }
+  .next-btn-msg:hover { background: rgba(242,232,213,0.16); }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ANNOTATION OVERLAY (design notes — remove in production)
+  ──────────────────────────────────────────────────────────────────────── */
+  .design-annotation {
+    position: relative;
+    border: 1.5px dashed rgba(196,86,42,0.35);
+    border-radius: 10px;
+    background: rgba(196,86,42,0.025);
+    padding: 8px 12px;
+    margin-top: 8px;
+  }
+  .design-annotation::before {
+    content: 'DESIGN NOTE';
+    position: absolute; top: -9px; left: 12px;
+    font-family: var(--font-mono); font-size: 8px; font-weight: 700;
+    letter-spacing: 0.12em; background: var(--terra); color: #fff;
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .design-annotation p {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--forest-60); line-height: 1.6; letter-spacing: 0.02em;
+  }
+
+  /* ─── misc utils ─────────────────────────────────────────────────────── */
+  .sep-dot { width: 3px; height: 3px; background: var(--forest-30); border-radius: 50%; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .fade-in { animation: fadeIn 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── Miniature sidebar (same as v2) ─────────────────────────────── -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-letter">P</span>
+    </div>
+    <!-- home -->
+    <div class="nav-item" title="Dashboard">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="nav-item active" title="My Listings">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="4"/><rect x="14" y="3" width="7" height="4"/><rect x="14" y="11" width="7" height="10"/><rect x="3" y="11" width="7" height="10"/></svg>
+    </div>
+    <div class="nav-item" title="Leads">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    </div>
+    <div class="nav-item" title="Calendar">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="nav-item" title="Documents">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="nav-item" title="Viewings">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    </div>
+  </div>
+
+  <!-- ── Main ──────────────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- ════════════════════════════════════════════════════════════════
+         LISTING HEADER — identical to v2, no changes
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="listing-header">
+      <div class="deco-circle-1"></div>
+      <div class="deco-circle-2"></div>
+      <div class="header-inner">
+        <!-- eyebrow breadcrumb -->
+        <div class="header-eyebrow">
+          <a href="#">My Listings</a>
+          &nbsp;/&nbsp; 14 Baobab Ridge Drive
+        </div>
+
+        <div class="header-title-row">
+          <div>
+            <div class="header-title">14 Baobab Ridge Drive</div>
+            <div class="header-subtitle">
+              <span class="listing-type-badge for-sale" style="font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:3px 8px;border-radius:5px;background:var(--forest);color:var(--parchment);border:1px solid rgba(242,232,213,0.2);">For Sale</span>
+              <span>Sandton, Gauteng</span>
+              <span class="header-subtitle-sep"></span>
+              <span>3 bed · 2 bath · 285 m²</span>
+              <span class="header-subtitle-sep"></span>
+              <span style="color:var(--egreen);font-weight:600;">Active</span>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="btn-ghost">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+            <button class="btn-primary">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Listing
+            </button>
+            <button class="btn-ai">
+              <div class="ai-pulse"></div>
+              AI Assistant
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="header-stats">
+          <div class="stat-cell">
+            <div class="stat-label">Listing Price</div>
+            <div class="stat-value parchment" style="font-size:22px;">R 4.2M</div>
+            <div class="stat-delta up">asking price</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Days on Market</div>
+            <div class="stat-value amber">25</div>
+            <div class="stat-delta up">within mandate</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Total Views</div>
+            <div class="stat-value green">1,247</div>
+            <div class="stat-delta up">84 this week</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Enquiries</div>
+            <div class="stat-value rose">18</div>
+            <div class="stat-delta up">3 pending replies</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         TAB BAR — Viewings is now active
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="tabbar">
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Details
+      </button>
+      <!-- ACTIVE TAB -->
+      <button class="tab-btn active">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Viewings
+        <span class="tab-badge">3</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Enquiries
+        <span class="tab-badge">18</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Open Houses
+        <span class="tab-badge">2</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 12a19.79 19.79 0 01-3.07-8.67A2 2 0 013.61 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.91 8.6a16 16 0 006 6l.96-.96a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Comms
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Documents
+        <span class="tab-badge">4</span>
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Condition
+      </button>
+      <button class="tab-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Selling
+      </button>
+      <button class="tab-more">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+        6
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ██  VIEWINGS TAB BODY
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="body-wrap fade-in">
+
+      <!-- ═══════════ LEFT COLUMN ═══════════ -->
+      <div>
+
+        <!-- ───────────────────────────────────────────────────────────
+             ZONE 1 — ACTION INBOX
+             Requests that need an explicit Accept / Decline response
+        ─────────────────────────────────────────────────────────────── -->
+        <div class="inbox-zone">
+
+          <div class="inbox-header">
+            <span class="inbox-header-label">Action Required</span>
+            <div class="inbox-header-divider"></div>
+            <span class="inbox-count-badge">3 requests</span>
+          </div>
+
+          <!-- Urgency banner -->
+          <div class="urgent-banner">
+            <div class="urgent-banner-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div class="urgent-banner-body">
+              <div class="urgent-banner-title">3 pending viewing requests need your response</div>
+              <div class="urgent-banner-sub">
+                Requests older than 24h may be auto-declined — oldest: <strong>Thabo Molefe · 9h ago</strong>
+              </div>
+            </div>
+            <button class="urgent-banner-cta">Review All</button>
+          </div>
+
+          <!-- Request cards -->
+          <div class="request-stack">
+
+            <!-- Request 1 — oldest, amber urgency -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Tue</div>
+                <div class="request-time-date">8</div>
+                <div class="request-time-month">Apr</div>
+                <div class="request-time-hr">14:00</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Thabo Molefe</span>
+                  <span class="request-status-badge">Pending</span>
+                  <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#9B6C00;font-weight:600;">9h ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.69 12"/></svg>
+                  +27 82 345 6789
+                  <span class="sep-dot"></span>
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  thabo.m@example.com
+                </div>
+                <div class="request-context">
+                  <strong>Note:</strong> Bond pre-approval confirmed — FNB R4M. Cash buyer, flexible on occupation date. First-time viewing of the property.
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Reschedule
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Request 2 -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Wed</div>
+                <div class="request-time-date">9</div>
+                <div class="request-time-month">Apr</div>
+                <div class="request-time-hr">10:30</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Priya Naidoo</span>
+                  <span class="request-status-badge">Pending</span>
+                  <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:#9B6C00;font-weight:600;">3h ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07"/></svg>
+                  +27 71 987 1234
+                  <span class="sep-dot"></span>
+                  priya.n@example.com
+                </div>
+                <div class="request-context">
+                  <strong>Note:</strong> Referred by buyer's agent — Lerato Dlamini (RE/MAX). Actively comparing 3 properties in the area. Prefers morning slots.
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Reschedule
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Request 3 -->
+            <div class="request-card">
+              <div class="request-time-col">
+                <div class="request-time-day">Sat</div>
+                <div class="request-time-date">12</div>
+                <div class="request-time-month">Apr</div>
+                <div class="request-time-hr">11:00</div>
+              </div>
+              <div class="request-body">
+                <div class="request-meta-row">
+                  <span class="request-buyer-name">Andrew & Melissa Clarke</span>
+                  <span class="request-status-badge">Pending</span>
+                  <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--forest-60);font-weight:600;">1h ago</span>
+                </div>
+                <div class="request-buyer-sub">
+                  +27 83 556 7890
+                  <span class="sep-dot"></span>
+                  andrew.c@example.com
+                </div>
+                <div class="request-context">
+                  <strong>Note:</strong> Relocating from Cape Town — SA Home Loans pre-approved R3.8M. Would like to bring architect for structural assessment if possible.
+                </div>
+                <div class="request-actions">
+                  <button class="req-btn req-btn-accept">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Accept
+                  </button>
+                  <button class="req-btn req-btn-reschedule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Reschedule
+                  </button>
+                  <button class="req-btn req-btn-decline">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /request-stack -->
+
+          <div class="design-annotation">
+            <p>Action inbox sits at top of the page — zero-scroll access to anything needing an agent response. Cards triage by request age (oldest first). Accept → immediately confirmed; Reschedule → opens date picker; Decline → asks for reason (shown to buyer).</p>
+          </div>
+
+        </div><!-- /inbox-zone -->
+
+        <!-- ───────────────────────────────────────────────────────────
+             ZONE 2 — CONFIRMED UPCOMING VIEWINGS
+        ─────────────────────────────────────────────────────────────── -->
+        <div class="section-sep">
+          <span class="section-sep-label">Upcoming Confirmed</span>
+          <div class="section-sep-line"></div>
+          <span class="section-sep-count">4 viewings</span>
+        </div>
+
+        <div class="viewing-stack">
+
+          <!-- Confirmed card 1 — Tomorrow -->
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Wed</div>
+              <div class="viewing-date-num">9</div>
+              <div class="viewing-date-time">09:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Sarah van der Berg</span>
+                <span class="viewing-type-badge badge-confirmed">Confirmed</span>
+              </div>
+              <div class="viewing-sub">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07"/></svg>
+                +27 72 111 2233
+                <span class="sep-dot"></span>
+                Absa pre-approval R4.5M
+              </div>
+              <span class="viewing-notes">Prefers en-suite inspection, travelling from Pretoria — allow 15min buffer</span>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message buyer">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </button>
+              <button class="icon-btn" title="Reschedule">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </button>
+              <button class="icon-btn" title="More options">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirmed card 2 -->
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Thu</div>
+              <div class="viewing-date-num">10</div>
+              <div class="viewing-date-time">14:30</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">James Mokoena</span>
+                <span class="viewing-type-badge badge-confirmed">Confirmed</span>
+              </div>
+              <div class="viewing-sub">
+                +27 83 987 5544
+                <span class="sep-dot"></span>
+                No pre-approval yet — FNB application in progress
+              </div>
+              <span class="viewing-notes">Enquired about roof condition & solar backup capacity</span>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+              <button class="icon-btn" title="Reschedule"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+              <button class="icon-btn" title="More"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Confirmed card 3 — Saturday -->
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Sat</div>
+              <div class="viewing-date-num">12</div>
+              <div class="viewing-date-time">10:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Dikeledi & Sipho Zwane</span>
+                <span class="viewing-type-badge badge-confirmed">Confirmed</span>
+              </div>
+              <div class="viewing-sub">
+                +27 79 445 6611
+                <span class="sep-dot"></span>
+                Nedbank bond pre-qualified R4.2M — joint application
+              </div>
+              <span class="viewing-notes">Second viewing — showed interest in loft space and pool area</span>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+              <button class="icon-btn" title="Reschedule"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+              <button class="icon-btn" title="More"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+            </div>
+          </div>
+
+          <!-- Confirmed card 4 -->
+          <div class="viewing-card">
+            <div class="viewing-card-accent accent-confirmed"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Mon</div>
+              <div class="viewing-date-num">14</div>
+              <div class="viewing-date-time">16:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Nomvula Khumalo</span>
+                <span class="viewing-type-badge badge-confirmed">Confirmed</span>
+              </div>
+              <div class="viewing-sub">
+                +27 61 770 3322
+                <span class="sep-dot"></span>
+                Cash buyer — attorney-confirmed fund availability
+              </div>
+              <span class="viewing-notes">Relocating from London — short decision window. Strong interest.</span>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="Message"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+              <button class="icon-btn" title="Reschedule"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+              <button class="icon-btn" title="More"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+            </div>
+          </div>
+
+        </div><!-- /viewing-stack -->
+
+        <!-- ───────────────────────────────────────────────────────────
+             OUTCOME LOGGING NUDGE (shown when past viewings have no outcome)
+        ─────────────────────────────────────────────────────────────── -->
+        <div class="outcome-nudge">
+          <div class="outcome-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <div class="outcome-body">
+            <div class="outcome-title">Log outcomes for 2 completed viewings</div>
+            <div class="outcome-sub">Record buyer interest level, offer intent, and follow-up actions</div>
+          </div>
+          <button class="outcome-btn">Log Now</button>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────────
+             ZONE 3 — PAST VIEWINGS (muted)
+        ─────────────────────────────────────────────────────────────── -->
+        <div class="section-sep">
+          <span class="section-sep-label">Past Viewings</span>
+          <div class="section-sep-line"></div>
+          <span class="section-sep-count">7 completed</span>
+        </div>
+
+        <div class="viewing-stack">
+
+          <!-- Past — outcome NOT logged -->
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Sat</div>
+              <div class="viewing-date-num">5</div>
+              <div class="viewing-date-time">11:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Marco Ferreira</span>
+                <span class="viewing-type-badge badge-past">Completed</span>
+                <span class="outcome-missing-pill" style="margin-left:auto;">
+                  <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                  No outcome
+                </span>
+              </div>
+              <div class="viewing-sub">+27 84 123 0099 · Was interested in bond calculation</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="v-action-btn v-btn-outcome">Log Outcome</button>
+            </div>
+          </div>
+
+          <!-- Past — outcome NOT logged -->
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Thu</div>
+              <div class="viewing-date-num">3</div>
+              <div class="viewing-date-time">14:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Lindiwe Dube</span>
+                <span class="viewing-type-badge badge-past">Completed</span>
+                <span class="outcome-missing-pill" style="margin-left:auto;">
+                  <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                  No outcome
+                </span>
+              </div>
+              <div class="viewing-sub">+27 66 009 1234 · Interested in occupation date</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="v-action-btn v-btn-outcome">Log Outcome</button>
+            </div>
+          </div>
+
+          <!-- Past — outcome logged -->
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent accent-past"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Mon</div>
+              <div class="viewing-date-num">31</div>
+              <div class="viewing-date-time">10:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">Zanele Khumalo</span>
+                <span class="viewing-type-badge badge-past">Completed</span>
+                <span class="outcome-logged-pill" style="margin-left:auto;">
+                  <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  Outcome logged
+                </span>
+              </div>
+              <div class="viewing-sub">
+                Strong interest · Verbal offer expected this week
+              </div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="View notes">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Past — cancelled -->
+          <div class="viewing-card is-past">
+            <div class="viewing-card-accent" style="background:var(--terra);"></div>
+            <div class="viewing-date-col">
+              <div class="viewing-date-day">Fri</div>
+              <div class="viewing-date-num">28</div>
+              <div class="viewing-date-time">13:00</div>
+            </div>
+            <div class="viewing-body">
+              <div class="viewing-buyer-row">
+                <span class="viewing-buyer-name">David Steyn</span>
+                <span class="viewing-type-badge badge-cancelled">Cancelled</span>
+              </div>
+              <div class="viewing-sub">Buyer withdrew — decided on Bryanston property</div>
+            </div>
+            <div class="viewing-actions-col">
+              <button class="icon-btn" title="View details">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /past viewing-stack -->
+
+      </div><!-- /left column -->
+
+
+      <!-- ═══════════ RIGHT SIDEBAR ═══════════ -->
+      <div class="sidebar-col">
+
+        <!-- A. Next Upcoming — forest hero card -->
+        <div class="next-card">
+          <div class="next-card-eyebrow">
+            <div class="next-live-dot"></div>
+            Next Viewing
+          </div>
+          <div class="next-card-name">Sarah van der Berg</div>
+          <div class="next-card-time">
+            Tomorrow · Wed 9 Apr · 09:00
+          </div>
+          <div class="next-card-meta">
+            +27 72 111 2233<br/>
+            Absa pre-approval: R 4.5M confirmed
+          </div>
+          <div class="next-card-actions">
+            <button class="next-btn next-btn-confirm">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Confirmed
+            </button>
+            <button class="next-btn next-btn-msg">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              Message
+            </button>
+          </div>
+        </div>
+
+        <!-- B. Schedule New Viewing CTA -->
+        <button class="schedule-cta">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Schedule New Viewing
+        </button>
+
+        <!-- C. Mini Calendar -->
+        <div class="side-card">
+          <div class="side-card-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="side-card-title">April 2026</span>
+            <div style="margin-left:auto;display:flex;gap:4px;">
+              <button class="cal-nav-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <button class="cal-nav-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+          <div class="side-card-body">
+            <div class="mini-cal-dow">
+              <div class="cal-dow"><span>M</span></div>
+              <div class="cal-dow"><span>T</span></div>
+              <div class="cal-dow"><span>W</span></div>
+              <div class="cal-dow"><span>T</span></div>
+              <div class="cal-dow"><span>F</span></div>
+              <div class="cal-dow"><span>S</span></div>
+              <div class="cal-dow"><span>S</span></div>
+            </div>
+            <div class="mini-cal-grid">
+              <!-- Row 1 (Mar 31 – Apr 6) -->
+              <div class="cal-day out-month"><span class="cal-day-num">31</span></div>
+              <div class="cal-day"><span class="cal-day-num">1</span></div>
+              <div class="cal-day"><span class="cal-day-num">2</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">3</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">4</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">5</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">6</span></div>
+              <!-- Row 2 (Apr 7–13) -->
+              <div class="cal-day"><span class="cal-day-num">7</span></div>
+              <div class="cal-day is-today"><span class="cal-day-num">8</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">9</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">10</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">11</span></div>
+              <div class="cal-day has-pending"><span class="cal-day-num">12</span><div class="cal-dots"><div class="cal-dot dot-pending"></div><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">13</span></div>
+              <!-- Row 3 (Apr 14–20) -->
+              <div class="cal-day has-viewing"><span class="cal-day-num">14</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">15</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">16</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">17</span></div>
+              <div class="cal-day"><span class="cal-day-num">18</span></div>
+              <div class="cal-day"><span class="cal-day-num">19</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">20</span><div class="cal-dots"><div class="cal-dot dot-pending"></div></div></div>
+              <!-- Row 4 (Apr 21–27) -->
+              <div class="cal-day"><span class="cal-day-num">21</span></div>
+              <div class="cal-day"><span class="cal-day-num">22</span></div>
+              <div class="cal-day"><span class="cal-day-num">23</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">24</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day"><span class="cal-day-num">25</span></div>
+              <div class="cal-day"><span class="cal-day-num">26</span></div>
+              <div class="cal-day"><span class="cal-day-num">27</span></div>
+              <!-- Row 5 (Apr 28–30 + May overflow) -->
+              <div class="cal-day"><span class="cal-day-num">28</span></div>
+              <div class="cal-day"><span class="cal-day-num">29</span></div>
+              <div class="cal-day has-viewing"><span class="cal-day-num">30</span><div class="cal-dots"><div class="cal-dot dot-confirmed"></div></div></div>
+              <div class="cal-day out-month"><span class="cal-day-num">1</span></div>
+              <div class="cal-day out-month"><span class="cal-day-num">2</span></div>
+              <div class="cal-day out-month"><span class="cal-day-num">3</span></div>
+              <div class="cal-day out-month"><span class="cal-day-num">4</span></div>
+            </div>
+            <div class="cal-legend">
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--egreen);"></div>Confirmed</div>
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--amber);"></div>Pending</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- D. Viewing Stats / Funnel -->
+        <div class="side-card">
+          <div class="side-card-header">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <span class="side-card-title">This Property</span>
+            <span class="side-card-sup">Apr 2026</span>
+          </div>
+          <div class="side-card-body">
+            <div class="stats-row">
+              <div>
+                <div class="stats-val">11</div>
+                <div class="stats-delta">Total viewings</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="stats-val green">73%</div>
+                <div class="stats-delta">Accept rate</div>
+              </div>
+            </div>
+            <div class="stats-row">
+              <div>
+                <div class="stats-val amber">3</div>
+                <div class="stats-delta">Pending</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="stats-val">4</div>
+                <div class="stats-delta">Confirmed</div>
+              </div>
+            </div>
+
+            <div class="funnel-wrap">
+              <div class="funnel-label">Engagement funnel</div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Portal views</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-forest" style="width:100%"></div></div>
+                <span class="funnel-step-val">1,247</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Enquiries</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-forest" style="width:55%;opacity:0.7;"></div></div>
+                <span class="funnel-step-val">18</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Viewings</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-green" style="width:35%"></div></div>
+                <span class="funnel-step-val">11</span>
+              </div>
+              <div class="funnel-row">
+                <span class="funnel-step-label">Offers</span>
+                <div class="funnel-bar-wrap"><div class="funnel-bar-fill funnel-bar-amber" style="width:6%"></div></div>
+                <span class="funnel-step-val">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /right sidebar -->
+
+    </div><!-- /body-wrap -->
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+</body>
+</html>

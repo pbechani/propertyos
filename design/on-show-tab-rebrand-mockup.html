@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>On Show Tab — Rebrand Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ─── Reset & Base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest:        #1A3C28;
+  --forest-60:     rgba(26,60,40,0.60);
+  --forest-30:     rgba(26,60,40,0.30);
+  --forest-12:     rgba(26,60,40,0.12);
+  --forest-06:     rgba(26,60,40,0.06);
+  --forest-03:     rgba(26,60,40,0.03);
+  --forest-light:  #2D5A40;
+  --parchment:     #F2E8D5;
+  --parchment-dk:  #E8D9C0;
+  --cream:         #EAD9C4;
+  --terra:         #C4562A;
+  --terra-10:      rgba(196,86,42,0.10);
+  --terra-20:      rgba(196,86,42,0.20);
+  --egreen:        #00E87A;
+  --egreen-10:     rgba(0,232,122,0.10);
+  --egreen-20:     rgba(0,232,122,0.20);
+  --amber:         #B89040;
+  --amber-10:      rgba(184,144,64,0.12);
+  --gold:          #F5C87A;
+
+  --fraunces: 'Fraunces', Georgia, serif;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--sans);
+  background: #ECEAE4;
+  color: var(--forest);
+  min-height: 100vh;
+}
+
+/* ─── Layout Shell (matches existing page.tsx) ───────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Sidebar stub ───────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--forest);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px;
+  gap: 8px;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(242,232,213,0.08);
+  margin-bottom: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px; background: var(--egreen);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+}
+.logo-text { font-family: var(--fraunces); font-size: 1.05rem; font-weight: 700; color: var(--parchment); }
+.logo-text span { color: var(--egreen); }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 0.8rem; color: rgba(242,232,213,0.55);
+  cursor: pointer;
+}
+.nav-item.active {
+  background: rgba(242,232,213,0.10);
+  color: var(--parchment);
+  font-weight: 500;
+}
+.nav-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(242,232,213,0.18); flex-shrink: 0;
+}
+.nav-dot.active-dot { background: var(--egreen); }
+
+/* ─── Main content area ──────────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex-direction: column;
+  background: var(--parchment);
+  overflow: hidden;
+}
+
+/* ─── Forest header (matches page.tsx) ──────────────────────────────── */
+.forest-header {
+  background: var(--forest);
+  padding: 24px 28px 0;
+  flex-shrink: 0;
+}
+.header-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.header-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.40);
+  margin-bottom: 4px;
+}
+.header-title {
+  font-family: var(--fraunces);
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--parchment);
+  letter-spacing: -0.01em;
+}
+.header-sub {
+  font-size: 0.78rem;
+  color: rgba(242,232,213,0.50);
+  margin-top: 2px;
+}
+
+/* KPI strip */
+.kpi-strip {
+  display: flex; gap: 0;
+  border-top: 1px solid rgba(242,232,213,0.08);
+  margin: 0 -28px;
+}
+.kpi-cell {
+  flex: 1; padding: 12px 20px;
+  border-right: 1px solid rgba(242,232,213,0.06);
+}
+.kpi-cell:last-child { border-right: none; }
+.kpi-val {
+  font-family: var(--fraunces);
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(242,232,213,0.38);
+  margin-top: 2px;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex; align-items: flex-end; gap: 2px;
+  margin: 0 -28px;
+  padding: 0 28px;
+  overflow-x: auto;
+}
+.tab-link {
+  padding: 8px 16px;
+  border-radius: 6px 6px 0 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  color: rgba(242,232,213,0.55);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-link.active {
+  background: var(--terra);
+  color: #fff;
+  font-weight: 600;
+  border-bottom: 2px solid var(--terra);
+}
+
+/* ─── Tab content scroll area ────────────────────────────────────────── */
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0 40px;
+}
+
+/* ─── ON SHOW TAB CONTENT ─────────────────────────────────────────────── */
+.on-show-wrap {
+  padding: 0 28px;
+}
+
+/* toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1; min-width: 200px;
+  position: relative;
+}
+.search-box input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  background: rgba(26,60,40,0.05);
+  border: 1.5px solid var(--forest-12);
+  border-radius: 9px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--forest);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-box input::placeholder { color: var(--forest-30); }
+.search-box input:focus { border-color: var(--forest-30); background: rgba(26,60,40,0.04); }
+.search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--forest-30);
+}
+
+/* filter chips */
+.filter-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  border: 1.5px solid var(--forest-12);
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--forest-60);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.14s;
+}
+.filter-chip:hover { border-color: var(--forest-30); color: var(--forest); }
+.filter-chip.active-chip {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--parchment);
+}
+.chip-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+
+/* view toggle */
+.view-toggle {
+  display: flex;
+  background: var(--forest-06);
+  border: 1.5px solid var(--forest-12);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+}
+.view-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--forest-30);
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.14s;
+}
+.view-btn.active-view {
+  background: var(--forest);
+  color: var(--parchment);
+}
+
+/* CTA button */
+.cta-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 16px;
+  background: var(--terra);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s;
+}
+.cta-btn:hover { background: #b34a23; }
+
+/* ─── Status summary strip ──────────────────────────────────────────── */
+.status-strip {
+  display: flex; gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.status-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all 0.14s;
+}
+.status-pill:hover { transform: translateY(-1px); }
+.status-num {
+  font-family: var(--fraunces);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.status-lbl {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pill-live    { background: var(--terra-10);  border-color: var(--terra-20);  color: var(--terra);  }
+.pill-live .status-num { color: var(--terra); }
+.pill-sched   { background: var(--forest-06); border-color: var(--forest-12); color: var(--forest); }
+.pill-week    { background: var(--amber-10);  border-color: rgba(184,144,64,0.25); color: var(--amber); }
+.pill-done    { background: var(--egreen-10); border-color: var(--egreen-20); color: #1a6640; }
+
+/* live pulse */
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--terra);
+  box-shadow: 0 0 0 0 var(--terra-20);
+  animation: pulse-ring 1.6s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(196,86,42,0.50); }
+  70%  { box-shadow: 0 0 0 7px rgba(196,86,42,0); }
+  100% { box-shadow: 0 0 0 0 rgba(196,86,42,0); }
+}
+
+/* ─── Section eyebrow ────────────────────────────────────────────────── */
+.section-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.eyebrow-text {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--forest-30);
+  white-space: nowrap;
+}
+.eyebrow-line {
+  height: 1px;
+  flex: 1;
+  background: var(--forest-12);
+}
+
+/* ─── Event row card ─────────────────────────────────────────────────── */
+.events-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+
+.event-card {
+  background: #fff;
+  border: 1.5px solid var(--forest-12);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+.event-card:hover {
+  box-shadow: 0 4px 16px rgba(26,60,40,0.10);
+  border-color: var(--forest-30);
+}
+.event-card.card-live {
+  border-color: var(--terra-20);
+  background: linear-gradient(to right, rgba(196,86,42,0.03) 0%, #fff 80px);
+}
+.event-card.card-live:hover {
+  border-color: var(--terra);
+  box-shadow: 0 4px 16px rgba(196,86,42,0.14);
+}
+
+/* time column */
+.event-time-col {
+  padding: 14px 0;
+  text-align: center;
+  border-right: 1px solid var(--forest-06);
+  flex-shrink: 0;
+}
+.event-time-h {
+  font-family: var(--fraunces);
+  font-size: 1.0rem;
+  font-weight: 600;
+  color: var(--forest);
+  line-height: 1;
+}
+.event-time-ampm {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  color: var(--forest-30);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* main column */
+.event-body {
+  padding: 12px 16px;
+  min-width: 0;
+}
+.event-address {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--forest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.event-meta {
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--forest-30);
+}
+.meta-icon { width: 11px; height: 11px; opacity: 0.6; }
+
+/* status badge */
+.status-badge {
+  padding: 3px 9px;
+  border-radius: 50px;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.badge-live      { background: var(--terra-10); color: var(--terra); border: 1px solid var(--terra-20); }
+.badge-scheduled { background: var(--forest-06); color: var(--forest); border: 1px solid var(--forest-12); }
+.badge-completed { background: var(--egreen-10); color: #1a6640; border: 1px solid var(--egreen-20); }
+.badge-cancelled { background: var(--amber-10); color: var(--amber); border: 1px solid rgba(184,144,64,0.20); }
+
+/* actions column */
+.event-actions {
+  display: flex; align-items: center; gap: 4px;
+  padding: 12px 14px 12px 8px;
+  flex-shrink: 0;
+}
+.icon-btn {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--forest-60);
+  transition: all 0.13s;
+}
+.icon-btn:hover { background: var(--forest-06); border-color: var(--forest-12); color: var(--forest); }
+.icon-btn svg { width: 14px; height: 14px; }
+
+/* ─── Capacity bar (inside card badge area) ──────────────────────────── */
+.cap-bar-wrap {
+  display: flex; align-items: center; gap: 6px;
+}
+.cap-bar-bg {
+  width: 44px; height: 4px;
+  background: var(--forest-06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cap-bar-fill {
+  height: 100%; border-radius: 4px;
+  background: var(--egreen);
+  transition: width 0.3s;
+}
+.cap-bar-fill.high-fill { background: var(--terra); }
+.cap-bar-fill.mid-fill  { background: var(--amber); }
+
+/* ─── Empty state ─────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 56px 24px;
+  background: rgba(26,60,40,0.03);
+  border: 1.5px dashed var(--forest-12);
+  border-radius: 16px;
+  margin-top: 8px;
+}
+.empty-icon {
+  width: 48px; height: 48px;
+  background: var(--forest-06);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+}
+.empty-icon svg { width: 22px; height: 22px; opacity: 0.4; }
+.empty-title {
+  font-family: var(--fraunces);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--forest);
+  margin-bottom: 6px;
+}
+.empty-sub {
+  font-size: 0.78rem;
+  color: var(--forest-60);
+  margin-bottom: 18px;
+}
+.empty-cta {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px;
+  background: var(--terra);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ─── Spacing helper ─────────────────────────────────────────────────── */
+.space-section { margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar stub -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2.2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="logo-text">Property<span>OS</span></div>
+    </div>
+    <div class="nav-item"><div class="nav-dot"></div>Dashboard</div>
+    <div class="nav-item active"><div class="nav-dot active-dot"></div>On Show</div>
+    <div class="nav-item"><div class="nav-dot"></div>Properties</div>
+    <div class="nav-item"><div class="nav-dot"></div>Sales Pipeline</div>
+    <div class="nav-item"><div class="nav-dot"></div>Leads</div>
+    <div class="nav-item"><div class="nav-dot"></div>Escrow</div>
+    <div class="nav-item"><div class="nav-dot"></div>Reports</div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Forest header -->
+    <div class="forest-header">
+      <div class="header-row">
+        <div>
+          <div class="header-eyebrow">Agent Portal · On Show</div>
+          <div class="header-title">On Show</div>
+          <div class="header-sub">Tue 7 Apr 2026 · Cape Town</div>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:var(--egreen)">2</div>
+          <div class="kpi-label">Active Properties</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:var(--parchment)">5</div>
+          <div class="kpi-label">Events This Week</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:var(--gold)">34</div>
+          <div class="kpi-label">Leads Captured</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:var(--parchment)">—</div>
+          <div class="kpi-label">Active Workflows</div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-val" style="color:var(--gold)">3</div>
+          <div class="kpi-label">Pending Tasks</div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <a class="tab-link" href="#">Dashboard</a>
+        <a class="tab-link active" href="#">On Show</a>
+        <a class="tab-link" href="#">Leads</a>
+        <a class="tab-link" href="#">Marketing</a>
+        <a class="tab-link" href="#">Workflows</a>
+        <a class="tab-link" href="#">Tasks</a>
+        <a class="tab-link" href="#">Analytics</a>
+        <a class="tab-link" href="#">Settings</a>
+      </div>
+    </div>
+
+    <!-- Tab content scroll area -->
+    <div class="tab-content">
+      <div class="on-show-wrap">
+
+        <!-- ── Toolbar ─────────────────────────────────────────────── -->
+        <div class="toolbar">
+
+          <div class="search-box">
+            <span class="search-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+            </span>
+            <input type="text" placeholder="Search address, suburb…" />
+          </div>
+
+          <button class="filter-chip active-chip">
+            <span class="chip-dot" style="background:var(--terra)"></span>
+            All
+          </button>
+          <button class="filter-chip">
+            <span class="chip-dot" style="background:var(--terra); animation: pulse-ring 1.6s ease infinite;"></span>
+            Live
+          </button>
+          <button class="filter-chip">
+            <span class="chip-dot" style="background:var(--forest)"></span>
+            Scheduled
+          </button>
+          <button class="filter-chip">
+            <span class="chip-dot" style="background:#1a6640"></span>
+            Completed
+          </button>
+
+          <!-- spacer -->
+          <div style="flex:1"></div>
+
+          <!-- View toggle: Timeline / Grid -->
+          <div class="view-toggle">
+            <button class="view-btn active-view">Timeline</button>
+            <button class="view-btn">Grid</button>
+          </div>
+
+          <!-- CTA -->
+          <button class="cta-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Schedule Event
+          </button>
+        </div>
+
+        <!-- ── Status summary pills ───────────────────────────────── -->
+        <div class="status-strip">
+          <div class="status-pill pill-live">
+            <div class="live-dot"></div>
+            <div class="status-num">1</div>
+            <div class="status-lbl">Live Now</div>
+          </div>
+          <div class="status-pill pill-sched">
+            <div class="status-num">2</div>
+            <div class="status-lbl">Today</div>
+          </div>
+          <div class="status-pill pill-week">
+            <div class="status-num">5</div>
+            <div class="status-lbl">This Week</div>
+          </div>
+          <div class="status-pill pill-done">
+            <div class="status-num">18</div>
+            <div class="status-lbl">Completed</div>
+          </div>
+        </div>
+
+        <!-- ── LIVE NOW section ───────────────────────────────────── -->
+        <div class="space-section">
+          <div class="section-eyebrow">
+            <div class="live-dot"></div>
+            <span class="eyebrow-text" style="color:var(--terra)">Live Now</span>
+            <div class="eyebrow-line"></div>
+          </div>
+          <div class="events-list">
+
+            <div class="event-card card-live">
+              <div class="event-time-col">
+                <div class="event-time-h" style="color:var(--terra)">10</div>
+                <div class="event-time-ampm" style="color:var(--terra)">AM</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">14 Kloof Street, Gardens, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-live">
+                    <span style="margin-right:4px;display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--terra);vertical-align:middle"></span>
+                    Live Now
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    10:00 AM – 12:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    7 / 20 attending
+                  </span>
+                  <!-- capacity bar -->
+                  <span class="cap-bar-wrap">
+                    <div class="cap-bar-bg">
+                      <div class="cap-bar-fill mid-fill" style="width:35%"></div>
+                    </div>
+                    <span class="meta-chip" style="margin-left:0">35%</span>
+                  </span>
+                  <span class="meta-chip" style="color:var(--amber)">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    R 4,200,000
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn" title="View event">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="icon-btn" title="Edit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="icon-btn" title="More options">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── TODAY section ──────────────────────────────────────── -->
+        <div class="space-section">
+          <div class="section-eyebrow">
+            <span class="eyebrow-text">Today — Tue 7 Apr</span>
+            <div class="eyebrow-line"></div>
+          </div>
+          <div class="events-list">
+
+            <div class="event-card">
+              <div class="event-time-col">
+                <div class="event-time-h">2</div>
+                <div class="event-time-ampm">PM</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">32 Buitenkant St, De Waterkant, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-scheduled">Scheduled</span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    2:00 PM – 4:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    12 / 25 registered
+                  </span>
+                  <span class="cap-bar-wrap">
+                    <div class="cap-bar-bg">
+                      <div class="cap-bar-fill mid-fill" style="width:48%"></div>
+                    </div>
+                    <span class="meta-chip" style="margin-left:0">48%</span>
+                  </span>
+                  <span class="meta-chip" style="color:var(--amber)">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    R 2,850,000
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── THIS WEEK section ──────────────────────────────────── -->
+        <div class="space-section">
+          <div class="section-eyebrow">
+            <span class="eyebrow-text">This Week — 7–13 Apr</span>
+            <div class="eyebrow-line"></div>
+          </div>
+          <div class="events-list">
+
+            <!-- Event 1 -->
+            <div class="event-card">
+              <div class="event-time-col">
+                <div class="event-time-h" style="font-size:0.7rem;color:var(--forest-60);font-family:var(--mono);letter-spacing:0.04em;font-weight:500;text-transform:uppercase">Wed</div>
+                <div class="event-time-ampm" style="font-size:0.55rem">9 Apr</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">88 Main Rd, Sea Point, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-scheduled">Scheduled</span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    10:00 AM – 12:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    4 / 20 registered
+                  </span>
+                  <span class="cap-bar-wrap">
+                    <div class="cap-bar-bg">
+                      <div class="cap-bar-fill" style="width:20%"></div>
+                    </div>
+                    <span class="meta-chip" style="margin-left:0">20%</span>
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+              </div>
+            </div>
+
+            <!-- Event 2 -->
+            <div class="event-card">
+              <div class="event-time-col">
+                <div class="event-time-h" style="font-size:0.7rem;color:var(--forest-60);font-family:var(--mono);letter-spacing:0.04em;font-weight:500;text-transform:uppercase">Thu</div>
+                <div class="event-time-ampm" style="font-size:0.55rem">10 Apr</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">5 Constantia Valley Rd, Constantia, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-scheduled">Scheduled</span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    2:00 PM – 5:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    0 / 30 registered
+                  </span>
+                  <span class="cap-bar-wrap">
+                    <div class="cap-bar-bg">
+                      <div class="cap-bar-fill" style="width:0%"></div>
+                    </div>
+                    <span class="meta-chip" style="margin-left:0;color:var(--terra)">0%</span>
+                  </span>
+                  <span class="meta-chip" style="color:var(--amber)">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    R 9,500,000
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+              </div>
+            </div>
+
+            <!-- Event 3 -->
+            <div class="event-card">
+              <div class="event-time-col">
+                <div class="event-time-h" style="font-size:0.7rem;color:var(--forest-60);font-family:var(--mono);letter-spacing:0.04em;font-weight:500;text-transform:uppercase">Sat</div>
+                <div class="event-time-ampm" style="font-size:0.55rem">12 Apr</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">14 Kloof Street, Gardens, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-scheduled">Scheduled</span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    10:00 AM – 1:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    18 / 20 registered
+                  </span>
+                  <span class="cap-bar-wrap">
+                    <div class="cap-bar-bg">
+                      <div class="cap-bar-fill high-fill" style="width:90%"></div>
+                    </div>
+                    <span class="meta-chip" style="margin-left:0;color:var(--terra)">90%</span>
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── COMPLETED section ──────────────────────────────────── -->
+        <div class="space-section">
+          <div class="section-eyebrow">
+            <span class="eyebrow-text">Recently Completed</span>
+            <div class="eyebrow-line"></div>
+          </div>
+          <div class="events-list">
+
+            <div class="event-card" style="opacity:0.65">
+              <div class="event-time-col">
+                <div class="event-time-h" style="font-size:0.7rem;color:var(--forest-60);font-family:var(--mono);letter-spacing:0.04em;font-weight:500;text-transform:uppercase">Mon</div>
+                <div class="event-time-ampm" style="font-size:0.55rem">6 Apr</div>
+              </div>
+              <div class="event-body">
+                <div class="event-address">12 Napier Street, Bo-Kaap, Cape Town</div>
+                <div class="event-meta">
+                  <span class="status-badge badge-completed">Completed</span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    2:00 PM – 4:00 PM
+                  </span>
+                  <span class="meta-chip">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    11 attended
+                  </span>
+                  <span class="meta-chip" style="color:#1a6640">
+                    <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    3 new leads
+                  </span>
+                </div>
+              </div>
+              <div class="event-actions">
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-content -->
+
+  </div><!-- /main -->
+
+</div><!-- /shell -->
+
+</body>
+</html>

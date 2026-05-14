@@ -3,5 +3,9 @@
 import { KanbanBoard } from '@/components/open-houses/KanbanBoard';
 
 export function TasksView() {
-  return <KanbanBoard />;
+  return (
+    <div className="px-7">
+      <KanbanBoard />
+    </div>
+  );
 }

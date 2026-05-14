@@ -1,5 +1,5 @@
-import { PropertiesView } from '@/views/open-houses/OHPropertiesView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <PropertiesView />;
+  redirect('/app/on-show?tab=properties');
 }

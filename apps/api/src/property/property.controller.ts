@@ -287,6 +287,28 @@ export class PropertyController {
   }
 
   /**
+   * POST /api/v1/properties/:id/duplicate
+   * Duplicate a listing as a new inactive draft. [owner, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
+  @Post(':id/duplicate')
+  async duplicate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
+    return this.propertyService.duplicateProperty(
+      id,
+      req.user.sub,
+      agentRole,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  /**
    * POST /api/v1/properties/:id/media
    * Upload photo/video to a listing. [owner, admin]
    */
@@ -348,6 +370,31 @@ export class PropertyController {
       req.user.active_company_id,
     );
     return { message: 'Media deleted successfully' };
+  }
+
+  /**
+   * PATCH /api/v1/properties/:id/media/:mediaId/primary
+   * Set a media item as the primary photo. [owner, admin]
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin', 'buyer_seller', 'investor')
+  @Patch(':id/media/:mediaId/primary')
+  async setPrimaryMedia(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('mediaId', ParseUUIDPipe) mediaId: string,
+    @Request() req: AuthRequest,
+  ) {
+    const agentRole = resolvePropertyActorRole(req.user.roles, 'agent');
+    await this.propertyService.setPrimaryMedia(
+      id,
+      mediaId,
+      req.user.sub,
+      agentRole,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+    return { message: 'Primary media updated' };
   }
 
   /**

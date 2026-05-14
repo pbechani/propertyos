@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../database';
 import { PropertyAuditService } from './property-audit.service';
@@ -14,6 +15,7 @@ import {
   CancelMandateDto,
   MandateSigningParty,
 } from './mandate.dto';
+import { EsignService } from '../esign/esign.service';
 
 export type MandateRecord = {
   id: string;
@@ -37,6 +39,7 @@ export type MandateRecord = {
   seller_phone: string | null;
   seller_is_platform_user: boolean;
   agreement_document_url: string | null;
+  esign_submission_id: string | null;
 };
 
 @Injectable()
@@ -44,6 +47,7 @@ export class MandateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: PropertyAuditService,
+    @Optional() private readonly esign: EsignService | null = null,
   ) {}
 
   // ──────────────────────────────────────────────────────────
@@ -325,6 +329,103 @@ export class MandateService {
     });
 
     return finalMandate;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // E-SIGNATURE — DocuSeal integration
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Create a DocuSeal submission for both parties (seller + agent).
+   * Returns the per-signer sign_page_urls so the controller can redirect each
+   * party.  Persists the submission ID on the mandate row.
+   */
+  async initiateEsign(
+    propertyId: string,
+    mandateId: string,
+    agentName: string,
+    agentEmail: string,
+    templateId: number,
+  ): Promise<{ sellerSignUrl: string | null; agentSignUrl: string | null; submissionId: string }> {
+    const mandate = await this.findMandateOrThrow(mandateId, propertyId);
+
+    if (mandate.status !== 'pending_signature') {
+      throw new BadRequestException('Mandate is not pending signature');
+    }
+    if (!this.esign) {
+      throw new BadRequestException('E-signature provider not configured');
+    }
+
+    const submission = await this.esign.createSubmission({
+      templateId,
+      submitters: [
+        {
+          name: mandate.seller_name ?? 'Seller',
+          email: mandate.seller_email ?? '',
+          role: 'Seller',
+        },
+        {
+          name: agentName,
+          email: agentEmail,
+          role: 'Agent',
+        },
+      ],
+      metadata: { flow: 'mandate', mandateId, propertyId },
+    });
+
+    const submissionId = String(submission.id);
+
+    // Persist submission ID
+    await this.prisma.$queryRaw`
+      UPDATE property.mandates
+      SET esign_submission_id = ${submissionId}
+      WHERE id = ${mandateId}::uuid
+    `;
+
+    return {
+      sellerSignUrl: this.esign.getSignerUrl(submission, 'Seller'),
+      agentSignUrl: this.esign.getSignerUrl(submission, 'Agent'),
+      submissionId,
+    };
+  }
+
+  /**
+   * Called by the DocuSeal webhook dispatcher when the mandate submission
+   * completes for one or both parties.  Mirrors the logic in `sign()` and
+   * `markSellerSignedOffline()` but is driven server-side.
+   */
+  async onEsignCompleted(
+    submissionId: string,
+    mandateId: string,
+    propertyId: string,
+  ): Promise<void> {
+    const mandate = await this.findMandateOrThrow(mandateId, propertyId);
+
+    if (mandate.esign_submission_id !== submissionId) return; // stale event
+
+    const now = new Date();
+
+    // Mark both parties signed since submission.completed fires when ALL signers are done
+    const updated = await this.prisma.$queryRaw<MandateRecord[]>`
+      UPDATE property.mandates
+      SET signed_by_seller_at = COALESCE(signed_by_seller_at, ${now}),
+          signed_by_agent_at  = COALESCE(signed_by_agent_at, ${now}),
+          status              = 'active'
+      WHERE id = ${mandateId}::uuid
+      RETURNING *
+    `;
+
+    await this.audit.log({
+      actorId: mandateId,
+      actorRole: 'system',
+      companyId: null,
+      action: 'mandate.esign_completed',
+      resourceType: 'mandate',
+      resourceId: mandateId,
+      payload: { submissionId, activatedAt: now },
+    });
+
+    void updated; // suppress unused-var warning
   }
 
   // ──────────────────────────────────────────────────────────

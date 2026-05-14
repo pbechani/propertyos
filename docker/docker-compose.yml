@@ -284,6 +284,28 @@ services:
       - pribec-network
     restart: unless-stopped
 
+  # DocuSeal — Self-hosted e-signature platform
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: pribec-docuseal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SECRET_KEY_BASE: change_me_in_production_use_64_char_random_hex
+      FORCE_SSL: 'false'
+      HOST: 'localhost:3010'
+      SMTP_ADDRESS: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@pribec.local
+    ports:
+      - '3010:3000'
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
@@ -296,6 +318,7 @@ volumes:
   vault_data:
   mailpit_data:
   mindsdb_data:
+  docuseal_data:
 
 networks:
   pribec-network:

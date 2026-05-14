@@ -38,12 +38,14 @@ const DEFAULT_GET_CACHE_TTL_MS = 15_000;
 const RATE_LIMIT_COOLDOWN_MS = 3_000;
 let inFlightTokenRefresh: Promise<string | null> | null = null;
 
-function canAttemptTokenRefresh(path: string, authToken: string | null | undefined): boolean {
-  if (!authToken) {
-    return false;
-  }
-
-  return !path.startsWith('/auth/login') && !path.startsWith('/auth/register') && !path.startsWith('/auth/refresh');
+function canAttemptTokenRefresh(path: string): boolean {
+  // Attempt refresh whenever a refresh token exists and we're not already on an auth route.
+  return (
+    Boolean(getRefreshToken()) &&
+    !path.startsWith('/auth/login') &&
+    !path.startsWith('/auth/register') &&
+    !path.startsWith('/auth/refresh')
+  );
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -157,7 +159,7 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
 
     let response = await send(authToken);
 
-    if (response.status === 401 && canAttemptTokenRefresh(path, authToken)) {
+    if (response.status === 401 && canAttemptTokenRefresh(path)) {
       const refreshedToken = await refreshAccessToken();
       if (refreshedToken) {
         response = await send(refreshedToken);
@@ -993,6 +995,7 @@ export type AgentListingPerformanceRow = {
   saves: number;
   inquiries: number;
   completed_viewings: number;
+  offer_count: number;
   city: string | null;
   region: string | null;
 };
@@ -1207,6 +1210,14 @@ export const propertiesApi = {
       body: JSON.stringify(payload),
     }),
 
+  duplicate: (authToken: string, id: string) =>
+    apiRequest<PropertyListing>(`/properties/${id}/duplicate`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
+
   addMedia: (authToken: string, id: string, formData: FormData) =>
     apiRequest<{ id: string; url: string; mediaType: string } | { items: Array<{ id: string; url: string; mediaType: string }> }>(
       `/properties/${id}/media`,
@@ -1217,6 +1228,20 @@ export const propertiesApi = {
         // NOTE: do NOT set Content-Type — browser sets it with multipart boundary
       },
     ),
+
+  deleteMedia: (authToken: string, id: string, mediaId: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}/media/${mediaId}`, {
+      method: 'DELETE',
+      authToken,
+    }),
+
+  setPrimaryMedia: (authToken: string, id: string, mediaId: string) =>
+    apiRequest<{ message: string }>(`/properties/${id}/media/${mediaId}/primary`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }),
 
   uploadDocument: (authToken: string, id: string, formData: FormData) =>
     apiRequest<{
@@ -1666,6 +1691,9 @@ export const propertiesApi = {
   getPropertyViewings: (authToken: string, propertyId: string) =>
     apiRequest<ListingViewingRecord[]>(`/properties/${propertyId}/viewings`, { method: 'GET', authToken }),
 
+  getViewingAnalytics: (authToken: string, propertyId: string) =>
+    apiRequest<ViewingAnalytics>(`/properties/${propertyId}/viewings/analytics`, { method: 'GET', authToken }),
+
   getPropertyInquiries: (authToken: string, propertyId: string, limit = 50) =>
     apiRequest<{ data: PropertyInquiryRecord[]; total: number }>(
       `/properties/${propertyId}/inquiries?limit=${limit}`,
@@ -1894,6 +1922,7 @@ export type ListingViewingRecord = {
   viewing_type: string;
   duration_minutes: number | null;
   buyer_feedback: string | null;
+  agent_feedback: Record<string, unknown> | null;
   cancel_reason: string | null;
   declined_at: string | null;
   rescheduled_at: string | null;
@@ -2502,6 +2531,29 @@ export type CompanyDetail = {
   } | null;
   created_at: string;
   updated_at: string;
+  /** Aggregate counts returned by the public endpoint */
+  members_count?: number | null;
+  active_listings_count?: number | null;
+};
+
+export type PublicCompanyMember = {
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+  is_admin: boolean;
+  avatar_url: string | null;
+};
+
+export type PublicCompanyListing = {
+  id: string;
+  title: string;
+  listing_type: string | null;
+  property_type: string;
+  price: string;
+  currency: string;
+  city: string | null;
+  region: string | null;
+  thumbnail_url: string | null;
 };
 
 export type CompanyDashboardActivityEntry = {
@@ -2568,6 +2620,24 @@ export const companiesApi = {
     apiRequest<UserCompany[]>('/users/me/companies', {
       method: 'GET',
       authToken,
+    }),
+
+  /** Public endpoint — no auth required. Returns safe subset of company fields + aggregate stats. */
+  getCompanyPublic: (id: string) =>
+    apiRequest<CompanyDetail>(`/public/companies/${id}`, {
+      method: 'GET',
+    }),
+
+  /** Public: basic member list (name, role, avatar). No auth required. */
+  getPublicMembers: (id: string) =>
+    apiRequest<PublicCompanyMember[]>(`/public/companies/${id}/members`, {
+      method: 'GET',
+    }),
+
+  /** Public: first 6 active listings for a company. No auth required. */
+  getPublicListings: (id: string) =>
+    apiRequest<PublicCompanyListing[]>(`/public/companies/${id}/listings`, {
+      method: 'GET',
     }),
 
   getCompany: (authToken: string, id: string) =>
@@ -3013,6 +3083,112 @@ export const agentOffersApi = {
     }),
 };
 
+// ─── Buyer Offers ─────────────────────────────────────────────────────────────
+
+export type BuyerOfferPayload = {
+  // Buyer identity
+  buyerFirstName: string;
+  buyerLastName: string;
+  buyerIdNumber: string;
+  buyerNationality: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  buyerWhatsapp?: string;
+  buyerPreferredContact?: string;
+  buyerAddress?: string;
+  buyingEntity: 'individual' | 'company' | 'trust' | 'joint';
+  agentRepresented?: boolean;
+  agentName?: string;
+  // Financial
+  preQualStatus: 'pre_approved' | 'pre_qualified' | 'cash' | 'not_applied';
+  preQualBank?: string;
+  preQualReference?: string;
+  // Offer
+  amount: number;
+  currency?: string;
+  depositAmount: number;
+  depositDueDays: number;
+  depositHeldBy?: string;
+  financing: 'cash' | 'bond' | 'part_cash_bond' | 'subject_to_bond';
+  bondAmount?: number;
+  bondLender?: string;
+  bondDeadline?: string;
+  // Conditions
+  conditionBuildingInspection?: boolean;
+  conditionBondApproval?: boolean;
+  conditionSubjectToSale?: boolean;
+  conditionVacantOccupation?: boolean;
+  conditionElectricalCoc?: boolean;
+  inclusions?: string[];
+  customConditions?: string;
+  // Escalation
+  escalationEnabled?: boolean;
+  escalationIncrement?: number;
+  escalationCap?: number;
+  // Dates
+  expiresAt: string;
+  preferredOccupationDate?: string;
+  preferredTransferDate?: string;
+  // Personal
+  messageToSeller?: string;
+};
+
+export type BuyerOfferResponse = {
+  id: string;
+  property_id: string;
+  buyer_id: string;
+  amount: string;
+  deposit_amount: string;
+  financing: string;
+  status: 'submitted' | 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn';
+  expires_at: string;
+  submitted_at: string;
+  created_at: string;
+  // Counter-offer fields (populated when status = 'countered')
+  counter_amount: string | null;
+  counter_notes: string | null;
+  counter_closing_date: string | null;
+  countered_at: string | null;
+  // Joined fields
+  property_title: string | null;
+  property_price: string | null;
+  property_currency: string | null;
+};
+
+export const buyerOffersApi = {
+  submit: (authToken: string, propertyId: string, payload: BuyerOfferPayload) =>
+    apiRequest<BuyerOfferResponse>(`/properties/${propertyId}/offers`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  list: (authToken: string) =>
+    apiRequest<BuyerOfferResponse[]>('/buyer/offers', {
+      method: 'GET',
+      authToken,
+    }),
+
+  withdraw: (authToken: string, offerId: string) =>
+    apiRequest<BuyerOfferResponse>(`/buyer/offers/${offerId}/withdraw`, {
+      method: 'POST',
+      authToken,
+    }),
+
+  respond: (
+    authToken: string,
+    offerId: string,
+    payload: { action: 'accept' | 'decline' | 'counter'; counterAmount?: number; counterNotes?: string; counterExpiresAt?: string },
+  ) =>
+    apiRequest<BuyerOfferResponse>(`/buyer/offers/${offerId}/respond`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+};
+
 // ─── Viewings ────────────────────────────────────────────────────────────────
 
 export type CreateViewingPayload = {
@@ -3053,8 +3229,37 @@ export type ViewingResponse = {
   rescheduled_reason: string | null;
   declined_at: string | null;
   created_at: string;
+  agent_feedback: Record<string, unknown> | null;
   // Enriched by backend JOIN queries
   property_title?: string | null;
+  property_city?: string | null;
+  property_region?: string | null;
+  agent_first_name?: string | null;
+  agent_last_name?: string | null;
+};
+
+export type AgentCaptureFeedbackPayload = {
+  likes?: string[];
+  dislikes?: string[];
+  objections?: string[];
+  intent?: 'not_interested' | 'considering' | 'second_viewing' | 'ready_to_offer';
+  interestLevel?: 'low' | 'medium' | 'high';
+  emotionalState?: 'positive' | 'neutral' | 'negative';
+  agentNotes?: string;
+  actualDurationMinutes?: number;
+};
+
+export type ViewingAnalytics = {
+  total: number;
+  confirmed: number;
+  completed: number;
+  declined: number;
+  conversionRate: number;
+  objectionBreakdown: Record<string, number>;
+  interestDistribution: { low: number; medium: number; high: number };
+  intentBreakdown: Record<string, number>;
+  topLikes: string[];
+  topDislikes: string[];
 };
 
 export type AgentDeclineViewingPayload = {
@@ -3065,6 +3270,23 @@ export type AgentDeclineViewingPayload = {
 
 export type CancelViewingPayload = {
   reason: string;
+};
+
+export type SendViewingMessagePayload = {
+  channel: 'email' | 'sms';
+  message: string;
+};
+
+export type ViewingMessage = {
+  id: string;
+  viewing_id: string;
+  direction: 'outbound' | 'inbound';
+  channel: 'email' | 'sms';
+  sender_type: 'agent' | 'client';
+  sender_name: string;
+  message: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  created_at: string;
 };
 
 export type RescheduleViewingPayload = {
@@ -3146,6 +3368,28 @@ export const viewingsApi = {
 
   getMyViewings: (authToken: string) =>
     apiRequest<ViewingResponse[]>(`/buyer/viewings`, {
+      method: 'GET',
+      authToken,
+    }),
+
+  submitAgentCapture: (authToken: string, viewingId: string, payload: AgentCaptureFeedbackPayload) =>
+    apiRequest<ViewingResponse>(`/viewings/${viewingId}/agent-feedback`, {
+      method: 'PATCH',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  sendMessage: (authToken: string, viewingId: string, payload: SendViewingMessagePayload) =>
+    apiRequest<ViewingMessage>(`/viewings/${viewingId}/message`, {
+      method: 'POST',
+      authToken,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  getMessages: (authToken: string, viewingId: string) =>
+    apiRequest<ViewingMessage[]>(`/viewings/${viewingId}/messages`, {
       method: 'GET',
       authToken,
     }),

@@ -1,5 +1,5 @@
-import { WorkflowsView } from '@/views/open-houses/OHWorkflowsView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <WorkflowsView />;
+  redirect('/app/on-show?tab=workflows');
 }

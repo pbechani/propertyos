@@ -348,83 +348,285 @@ export default function AgentCalendarPage() {
         overflow: 'hidden',
       }}
     >
-      {/* ── Top bar ───────────────────────────────────────────────────────── */}
+      {/* ── Forest header ───────────────────────────────────────────────── */}
       <div
         style={{
-          borderBottom: '1px solid rgba(26,60,40,0.1)',
-          paddingTop: '1rem',
-          paddingBottom: '0.875rem',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
+          background: C.forest,
+          marginLeft: '-1.75rem',
+          marginRight: '-1.75rem',
+          position: 'relative',
+          overflow: 'hidden',
+          padding: '24px 28px 0',
         }}
       >
-        <div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
-              fontSize: '1.75rem',
-              color: C.forest,
-              fontWeight: 400,
-              lineHeight: 1.15,
-              margin: 0,
-            }}
-          >
-            My Calendar
-          </h1>
-          <p
-            style={{
-              fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
-              fontSize: '0.68rem',
-              color: 'rgba(26,60,40,0.45)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              marginTop: '0.2rem',
-              marginBottom: 0,
-            }}
-          >
-            Agent Cockpit &middot;{' '}
-            {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </p>
+        {/* Decorative circle — terra */}
+        <div
+          style={{
+            position: 'absolute',
+            top: -60,
+            right: -60,
+            width: 220,
+            height: 220,
+            borderRadius: '50%',
+            background: C.terra,
+            opacity: 0.07,
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Decorative circle — egreen */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -40,
+            left: '38%',
+            width: 160,
+            height: 160,
+            borderRadius: '50%',
+            background: C.egreen,
+            opacity: 0.04,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Title row */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            position: 'relative',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+                fontSize: '0.63rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: C.terra,
+                marginBottom: 8,
+              }}
+            >
+              Agent Cockpit &rsaquo; Schedule Headquarters
+            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
+                fontSize: '1.75rem',
+                color: C.parchment,
+                fontWeight: 700,
+                lineHeight: 1.1,
+                margin: '0 0 6px',
+              }}
+            >
+              My Calendar
+            </h1>
+            <p
+              style={{
+                fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+                fontSize: '0.67rem',
+                color: 'rgba(242,232,213,0.5)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                margin: 0,
+              }}
+            >
+              {viewingCount} viewings &middot; {ohCount} open houses &middot;{' '}
+              {todayEvents.length} event{todayEvents.length !== 1 ? 's' : ''} today
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              style={{
+                padding: '7px 13px',
+                borderRadius: 8,
+                border: '1px solid rgba(242,232,213,0.2)',
+                background: 'rgba(242,232,213,0.06)',
+                fontSize: '0.78rem',
+                color: 'rgba(242,232,213,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                cursor: 'pointer',
+              }}
+            >
+              <SlidersHorizontal size={13} />
+              Filter
+            </button>
+            <button
+              onClick={() => handleNewEvent()}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                background: C.terra,
+                color: '#fff',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+                border: 'none',
+              }}
+            >
+              <Plus size={14} />
+              New Event
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button
-            style={{
-              padding: '7px 12px',
-              borderRadius: 8,
-              border: '1px solid rgba(26,60,40,0.15)',
-              background: 'transparent',
-              fontSize: '0.78rem',
-              color: 'rgba(26,60,40,0.55)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              cursor: 'pointer',
-            }}
-          >
-            <SlidersHorizontal size={13} />
-            Filter
-          </button>
-          <button
-            onClick={() => handleNewEvent()}
-            style={{
-              padding: '7px 14px',
-              borderRadius: 8,
-              background: C.forest,
-              color: C.egreen,
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              cursor: 'pointer',
-              border: 'none',
-            }}
-          >
-            <Plus size={14} />
-            New Event
-          </button>
+        {/* KPI strip */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 10,
+            marginTop: 20,
+            position: 'relative',
+          }}
+        >
+          {[
+            { label: 'Viewings This Month', value: viewingCount, color: C.egreen },
+            { label: 'Open Houses', value: ohCount, color: C.parchment },
+            { label: 'Events Today', value: todayEvents.length, color: '#F5C87A' },
+            { label: 'Avg Per Week', value: Math.round((viewingCount + ohCount) / 4), color: C.parchment },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(242,232,213,0.1)',
+                borderRadius: 10,
+                padding: '12px 14px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
+                  fontSize: '1.6rem',
+                  fontWeight: 300,
+                  color,
+                  lineHeight: 1,
+                  marginBottom: 4,
+                }}
+              >
+                {value}
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono, "IBM Plex Mono", monospace)',
+                  fontSize: '0.6rem',
+                  color: 'rgba(242,232,213,0.45)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                {label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Month nav bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 16,
+            marginLeft: -28,
+            marginRight: -28,
+            padding: '10px 28px',
+            borderTop: '1px solid rgba(242,232,213,0.08)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={prevMonth}
+              style={{
+                width: 29,
+                height: 29,
+                borderRadius: 7,
+                background: 'rgba(242,232,213,0.08)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ChevronLeft size={14} color={C.parchment} />
+            </button>
+            <span
+              style={{
+                fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
+                fontSize: '1rem',
+                color: C.parchment,
+                fontWeight: 300,
+                minWidth: 160,
+              }}
+            >
+              {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </span>
+            <button
+              onClick={nextMonth}
+              style={{
+                width: 29,
+                height: 29,
+                borderRadius: 7,
+                background: 'rgba(242,232,213,0.08)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ChevronRight size={14} color={C.parchment} />
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), 1))}
+              style={{
+                padding: '3px 10px',
+                borderRadius: 5,
+                border: '1px solid rgba(242,232,213,0.2)',
+                background: 'transparent',
+                fontSize: '0.72rem',
+                color: 'rgba(242,232,213,0.55)',
+                cursor: 'pointer',
+                marginLeft: 4,
+              }}
+            >
+              Today
+            </button>
+          </div>
+
+          {/* View toggle */}
+          <div style={{ display: 'flex', gap: 3 }}>
+            {(['month', 'week', 'day'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: '4px 11px',
+                  borderRadius: 6,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.73rem',
+                  fontWeight: 500,
+                  background: view === v ? C.terra : 'rgba(242,232,213,0.08)',
+                  color: view === v ? '#fff' : 'rgba(242,232,213,0.45)',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -437,92 +639,13 @@ export default function AgentCalendarPage() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            paddingTop: '0.75rem',
             paddingRight: '1.25rem',
             paddingBottom: '1.5rem',
             overflowY: 'auto',
             minHeight: 0,
           }}
         >
-          {/* Month nav row */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '0.75rem',
-              paddingBottom: '0.625rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={prevMonth}
-                style={{
-                  width: 29,
-                  height: 29,
-                  borderRadius: 7,
-                  background: 'rgba(26,60,40,0.07)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ChevronLeft size={14} color={C.forest} />
-              </button>
-              <span
-                style={{
-                  fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)',
-                  fontSize: '1.1rem',
-                  color: C.forest,
-                  fontWeight: 300,
-                  minWidth: 170,
-                }}
-              >
-                {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </span>
-              <button
-                onClick={nextMonth}
-                style={{
-                  width: 29,
-                  height: 29,
-                  borderRadius: 7,
-                  background: 'rgba(26,60,40,0.07)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ChevronRight size={14} color={C.forest} />
-              </button>
-            </div>
-
-            {/* View toggle */}
-            <div style={{ display: 'flex', gap: 3 }}>
-              {(['month', 'week', 'day'] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  style={{
-                    padding: '4px 11px',
-                    borderRadius: 6,
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.73rem',
-                    fontWeight: 500,
-                    background: view === v ? C.forest : 'transparent',
-                    color: view === v ? C.egreen : 'rgba(26,60,40,0.45)',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  {v.charAt(0).toUpperCase() + v.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Error banner */}
           {error && (
             <div

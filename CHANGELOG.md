@@ -12,7 +12,68 @@ Related docs:
 
 ## [Unreleased]
 
+### Fixed
+
+- **My Listings cards show hardcoded offer count instead of real data** (`/app/my-listings`)
+  - The Offers cell in each listing card's 4-cell metrics strip was hardcoded as `'2'` when `status === 'under-contract'` and `'0'` otherwise — not reflecting actual offers
+  - `getAgentListingsPerformance` backend query (`property.service.ts`) now includes `offer_count` — a subquery counting active `sales.property_offers` rows (excluding `withdrawn` and `expired` statuses) per property
+  - `AgentListingPerformanceRow` type in `api-client.ts` updated to include `offer_count: number`
+  - My Listings page builds an `offersMap` from the performance data and passes the real count to the card; the Offers cell now highlights in terracotta whenever `offerCount > 0`
+
+- **Sales Pipeline shows 0 items despite accepted offers** (`property.service.ts`)
+  - `updatePropertyOfferStatus` now auto-creates a `sales.property_sales` record and initialises all stage-progress rows when an agent accepts a buyer offer (`status === 'accepted'` and `buyer_id` is present)
+  - The new sale is populated with: property's `owner_id` as `seller_id`, offer's `buyer_id`, offer `amount` as `agreed_price`, `deposit_amount`, `currency` and `company_id` from the listing
+  - Stage progress rows (1 → `TOTAL_STAGES`) are inserted with `ON CONFLICT DO NOTHING` to avoid duplicates
+  - Added 6 regression tests in `property.service.spec.ts` covering: auto-create on accept, no-create on reject, no-create without `buyer_id`, property-not-found (404), agent-forbidden (403), and offer-not-found (404)
+  - Added `sendEmail` mock to `mockNotifications` in the property service test suite
+
 ### Changed
+
+- **Sales Pipeline (`/app/sales`) — full brand redesign**
+  - Rewrote `SalesDashboard.tsx` to match My Listings brand system (forest/parchment/terracotta/amber/egreen tokens, Fraunces + IBM Plex Mono + Jakarta fonts)
+  - Added forest hero header with decorative circles, eyebrow label, and title/subtitle row
+  - Replaced plain stat cards with 5-cell KPI strip (Active, Pipeline Value, Completed, Avg Stage, Disputes)
+  - Added 6-tab status bar (`All / Active / Awaiting Docs / Completed / Disputed / Cancelled`) with live counts
+  - Added smart pipeline alerts bar for document-heavy stages (dismissible, icon-coded)
+  - Sale cards now feature left accent bar, Fraunces property title + TXN ref, stage progress bar (Stage X / 14), and status badge
+  - Fixed stage count: was incorrectly shown as "Stage X / 15"; corrected to "Stage X / 14" per PRD
+  - Initiate Sale modal updated with matching forest header and branded form inputs
+  - Removed unused `Clock`, `CheckCircle2`, `Card`, `Button`, `Badge`, `Filter`, `Building2` imports
+
+### Added
+
+- **Buyer Dashboard — Viewings tab full implementation**
+  - Replaced `ComingSoonCard` placeholder with fully functional viewings tab in `BuyerDashboardEnhanced.tsx`
+  - Wires `viewingsApi.getMyViewings()` via existing `useEffect`; optimistic cancel via `viewingsApi.cancel()`
+  - Date-grouped timeline sections (TODAY / TOMORROW / THIS WEEK / NEXT WEEK / LATER)
+  - `ViewingCard` component with status stripe, property thumbnail, status badge, time/type chips, and per-status action buttons (cancel with inline confirmation)
+  - KPI stats grid: Upcoming, Awaiting Confirmation, Completed, Cancelled/Declined
+  - Filter bar: status pills (All / Upcoming / Pending / Completed) + type pills (All / In-Person / Virtual)
+  - Collapsible past viewings section (completed, cancelled, declined)
+  - Loading skeleton (3 placeholder cards) and empty state with Browse CTA
+  - Tab badge count wired to confirmed + pending future viewings
+
+- **DocuSeal self-hosted e-signature integration (2026-04-17)**
+  - New `apps/api/src/esign/` NestJS module with `EsignService` (native `fetch` client), `EsignWebhookController` (HMAC-SHA256 verified), `EsignWebhookDispatcher` (routes events by flow)
+  - `MandateService.initiateEsign()` + `onEsignCompleted()` — Seller + Agent signing for listing mandates
+  - `OtpService.initiateEsign()` + `onEsignCompleted()` — Buyer + Seller signing for offer to purchase
+  - `DocumentWorkflowService.onEsignCompleted()` — conveyancing document fully-signed state
+  - DB migration `202604170051_esign_submission_columns`: adds `esign_submission_id` to `property.mandates` and `sales.offer_to_purchase`
+  - DocuSeal service added to `docker/docker-compose.yml` (port 3010)
+  - Circular dependencies resolved via `forwardRef()` on both module sides
+  - `@Optional()` injection guard — app boots normally when DocuSeal not configured
+  - `.env.example` updated with all DocuSeal variables
+  - Implementation docs: `docs/docusign/docusign-implementation.md`
+
+### Changed
+
+- **UI — Anonymous listings page now uses homepage-aligned horizontal padding (Spec 001, 2026-04-14)**
+  - **`apps/web/src/views/Listings.tsx`** — anonymous visitors to `/listings` (no auth token) now see wider, homepage-consistent horizontal padding:
+    - Added `isAnonymous` state (`useState(true)` — SSR-safe default) and `setIsAnonymous(!token)` in the existing auth `useEffect`
+    - Forest Command Zone wrapper: `container mx-auto px-6 lg:px-12 pt-8` (anonymous) vs `px-4 md:px-8 pt-8` (authenticated)
+    - Results Header container: `px-6 lg:px-12` (anonymous) vs `px-4 md:px-6` (authenticated)
+    - All 4 results area wrappers (Map, Properties Grid, Estate Agencies, News): `px-6 lg:px-12 py-4 md:py-6` (anonymous) vs `p-4 md:p-6` (authenticated)
+  - **`apps/web/src/__tests__/Listings.anon-padding.test.tsx`** *(new)* — 3 tests covering anonymous padding, authenticated padding (SC-003), and snapshot regression guard (FR-005)
 
 - **UI — Agent Dashboard: removed Analytics & AI Intelligence tabs (2026-04-07)**
   - **`apps/web/src/views/AgentDashboardEnhanced.tsx`** — removed the two non-essential tabs to slim the dashboard:

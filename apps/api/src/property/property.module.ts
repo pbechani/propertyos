@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { EsignModule } from '../esign/esign.module';
 import { PropertyService } from './property.service';
 import { PropertyController, AgentDashboardController, SellerDashboardController } from './property.controller';
 import { VerificationService } from './verification.service';
@@ -6,7 +7,8 @@ import { VerificationController, AdminVerificationController } from './verificat
 import { InquiryService } from './inquiry.service';
 import { FraudService } from './fraud.service';
 import { FraudController, AdminFraudController } from './fraud.controller';
-import { BuyerController, InquiryResponseController, SavedPropertiesController } from './buyer.controller';
+import { BuyerController, InquiryResponseController, SavedPropertiesController, BuyerOffersController } from './buyer.controller';
+import { OfferService } from './offer.service';
 import { SavedPropertiesService } from './saved-properties.service';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
@@ -47,6 +49,7 @@ import { WorkflowEngineService } from './workflow-engine.service';
 import { WorkflowSchedulerService } from './workflow-scheduler.service';
 
 @Module({
+  imports: [forwardRef(() => EsignModule)],
   controllers: [
     // Static-route controllers must be registered BEFORE parameterised-route
     // controllers to avoid route interception (e.g. GET /properties/compare
@@ -54,6 +57,7 @@ import { WorkflowSchedulerService } from './workflow-scheduler.service';
     BuyerController,
     InquiryResponseController,
     SavedPropertiesController,
+    BuyerOffersController,
     NotificationsController,
     BuyerViewingController,
     BuyerOpenHouseController,
@@ -105,7 +109,8 @@ import { WorkflowSchedulerService } from './workflow-scheduler.service';
     CommunicationLogService,
     WorkflowEngineService,
     WorkflowSchedulerService,
+    OfferService,
   ],
-  exports: [PropertyService, PropertyAuditService, WorkflowEngineService],
+  exports: [PropertyService, PropertyAuditService, WorkflowEngineService, MandateService],
 })
 export class PropertyModule {}

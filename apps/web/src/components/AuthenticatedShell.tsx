@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Layout } from '@/components/Layout';
-import { getAccessToken, getSessionUpdatedEventName } from '@/lib/auth-session';
+import { getRefreshToken, getSessionUpdatedEventName } from '@/lib/auth-session';
 import { isAuthExemptRoute, isPublicShellRoute, shouldUseAuthenticatedShell } from '@/lib/route-policy';
 
 interface AuthenticatedShellProps {
@@ -18,7 +18,9 @@ export default function AuthenticatedShell({ children }: AuthenticatedShellProps
 
   useEffect(() => {
     const sessionUpdatedEventName = getSessionUpdatedEventName();
-    const syncAuth = () => setIsAuthenticated(Boolean(getAccessToken()));
+    // Use refresh token as the "session alive" signal. The access token may be expired
+    // and awaiting rotation — that's handled by the API layer, not here.
+    const syncAuth = () => setIsAuthenticated(Boolean(getRefreshToken()));
     syncAuth();
     window.addEventListener('storage', syncAuth);
     window.addEventListener(sessionUpdatedEventName, syncAuth);

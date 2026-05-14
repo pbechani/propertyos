@@ -27,6 +27,7 @@ export class NotificationService {
     subject: string,
     body: string,
     attachments?: import('./notifications/types').EmailAttachment[],
+    html?: string,
   ): Promise<void> {
     const maskedRecipient = this.maskRecipient(to);
 
@@ -39,7 +40,7 @@ export class NotificationService {
     }
 
     try {
-      await this.emailProvider.send({ to, subject, body, attachments });
+      await this.emailProvider.send({ to, subject, body, html, attachments });
       this.logger.log(`Email notification sent -> ${maskedRecipient}`);
       this.logger.debug(`Email payload length: ${body.length}`);
     } catch (error) {

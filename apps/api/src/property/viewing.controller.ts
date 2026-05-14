@@ -16,6 +16,7 @@ import { Roles } from '../identity/rbac/roles.decorator';
 import { ViewingService } from './viewing.service';
 import {
   AgentBookViewingDto,
+  AgentCaptureFeedbackDto,
   AgentDeclineViewingDto,
   AgentViewingUpdateDto,
   CancelOpenHouseDto,
@@ -26,6 +27,7 @@ import {
   RegisterGuestDto,
   RescheduleOpenHouseDto,
   RescheduleViewingDto,
+  SendViewingMessageDto,
   ViewingFeedbackDto,
 } from './mandate.dto';
 import { AuthRequest } from '../common/types';
@@ -105,6 +107,13 @@ export class ViewingController {
       req.user.active_company_id,
     );
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Get('viewings/analytics')
+  async viewingAnalytics(@Param('id', ParseUUIDPipe) id: string) {
+    return this.viewingService.getPropertyViewingAnalytics(id);
+  }
 }
 
 /**
@@ -126,7 +135,7 @@ export class ViewingActionController {
     return this.viewingService.confirm(
       id,
       req.user.sub,
-      req.user.roles[0] ?? 'agent',
+      req.user.active_company_role ?? req.user.roles[0] ?? 'agent',
       req.ip,
       req.headers['user-agent'],
       req.user.active_company_id,
@@ -144,7 +153,7 @@ export class ViewingActionController {
     return this.viewingService.complete(
       id,
       req.user.sub,
-      req.user.roles[0] ?? 'agent',
+      req.user.active_company_role ?? req.user.roles[0] ?? 'agent',
       dto,
       req.ip,
       req.headers['user-agent'],
@@ -181,7 +190,7 @@ export class ViewingActionController {
     return this.viewingService.decline(
       id,
       req.user.sub,
-      req.user.roles[0] ?? 'agent',
+      req.user.active_company_role ?? req.user.roles[0] ?? 'agent',
       dto,
       req.ip,
       req.headers['user-agent'],
@@ -200,7 +209,7 @@ export class ViewingActionController {
     return this.viewingService.cancel(
       id,
       req.user.sub,
-      req.user.roles[0] ?? 'buyer_seller',
+      req.user.active_company_role ?? req.user.roles[0] ?? 'buyer_seller',
       dto,
       req.ip,
       req.headers['user-agent'],
@@ -219,11 +228,55 @@ export class ViewingActionController {
     return this.viewingService.reschedule(
       id,
       req.user.sub,
-      req.user.roles[0] ?? 'agent',
+      req.user.active_company_role ?? req.user.roles[0] ?? 'agent',
       dto,
       req.ip,
       req.headers['user-agent'],
       req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Patch(':id/agent-feedback')
+  async agentFeedback(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AgentCaptureFeedbackDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.submitAgentCapture(
+      id,
+      req.user.sub,
+      req.user.active_company_role ?? req.user.roles[0] ?? 'agent',
+      dto,
+      req.ip,
+      req.headers['user-agent'],
+      req.user.active_company_id,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Get(':id/messages')
+  async getMessages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.getMessages(id, req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('agent', 'admin')
+  @Post(':id/message')
+  async sendMessage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SendViewingMessageDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.viewingService.sendMessageToClient(
+      id,
+      req.user.sub,
+      dto,
     );
   }
 }

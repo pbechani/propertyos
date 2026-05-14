@@ -34,6 +34,7 @@ import PriceHistoryChart from "@/components/property/PriceHistoryChart";
 import PrintButton from "@/components/property/PrintButton";
 import ContactPreferences from "@/components/property/ContactPreferences";
 import FutureFeaturesCard from "@/components/property/FutureFeaturesCard";
+import { useMyOfferPropertyIds } from "@/hooks/useMyOfferPropertyIds";
 import "@/styles/print.css";
 
 
@@ -423,7 +424,7 @@ export default function PropertyDetailEnhanced() {
   const [specialRequests, setSpecialRequests] = useState("");
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
-  const [carouselOffset, setCarouselOffset] = useState(0);
+  const [_carouselOffset, setCarouselOffset] = useState(0);
   const [isLoadingProperty, setIsLoadingProperty] = useState(false);
   const [propertyError, setPropertyError] = useState("");
   const [rawListingCurrency, setRawListingCurrency] = useState('ZAR');
@@ -861,6 +862,8 @@ export default function PropertyDetailEnhanced() {
     !!property.agent.id &&
     currentUser.id === property.agent.id &&
     property.companyId === activeCompanyId;
+  const offerPropertyIds = useMyOfferPropertyIds();
+  const hasOffer = offerPropertyIds.has(property.id);
   const statusBadge = getListingStatusBadge(property.listingStatus || 'draft');
   const verificationBadge = getVerificationBadge(property.verificationStatus);
   const hasLocationCoordinates = property.latitude != null && property.longitude != null;
@@ -1630,13 +1633,13 @@ export default function PropertyDetailEnhanced() {
   return (
     <div className="min-h-screen" style={{ background: '#F2E8D5' }}>
       {/* Breadcrumb + Back */}
-      <div className="bg-white border-b border-gray-200">
+      <div style={{ background: '#1A3C28' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
-          <button onClick={() => window.history.back()} className="flex items-center gap-1 text-gray-500 hover:text-gray-900 shrink-0">
+          <button onClick={() => window.history.back()} className="flex items-center gap-1 shrink-0" style={{ color: 'rgba(242,232,213,.75)' }}>
             <ChevronLeft className="w-4 h-4" />
             <span className="text-sm">Back</span>
           </button>
-          <div className="h-4 w-px bg-gray-300" />
+          <div className="h-4 w-px" style={{ background: 'rgba(242,232,213,.25)' }} />
           <PropertyBreadcrumb
             propertyType={property.propertyType}
             city={property.city}
@@ -1648,13 +1651,13 @@ export default function PropertyDetailEnhanced() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         {isLoadingProperty && (
-          <Card className="mb-6 p-4 text-sm text-blue-700 bg-blue-50 border-blue-200">
+          <Card className="mb-6 p-4 text-sm" style={{ background: 'rgba(26,60,40,.06)', border: '1px solid rgba(26,60,40,.25)', color: '#1A3C28' }}>
             Loading property details from database...
           </Card>
         )}
 
         {!isLoadingProperty && propertyError && (
-          <Card className="mb-6 p-4 text-sm text-red-700 bg-red-50 border-red-200">
+          <Card className="mb-6 p-4 text-sm" style={{ background: '#fff8f5', border: '1px solid #C4562A', color: '#C4562A' }}>
             {propertyError}
           </Card>
         )}
@@ -1677,10 +1680,10 @@ export default function PropertyDetailEnhanced() {
               {/* Stat cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-5">
                 {/* Views */}
-                <div className="bg-slate-700/60 rounded-xl p-4">
+                <div className="rounded-xl p-4" style={{ background: 'rgba(0,0,0,.2)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Eye className="w-4 h-4 text-blue-400" />
-                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Views</span>
+                    <Eye className="w-4 h-4" style={{ color: 'rgba(242,232,213,.7)' }} />
+                    <span className="text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(242,232,213,.55)' }}>Views</span>
                   </div>
                   <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.views ?? 0)}
@@ -1688,10 +1691,10 @@ export default function PropertyDetailEnhanced() {
                 </div>
 
                 {/* Saves */}
-                <div className="bg-slate-700/60 rounded-xl p-4">
+                <div className="rounded-xl p-4" style={{ background: 'rgba(0,0,0,.2)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Heart className="w-4 h-4 text-rose-400" />
-                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Saves</span>
+                    <Heart className="w-4 h-4" style={{ color: 'rgba(242,232,213,.7)' }} />
+                    <span className="text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(242,232,213,.55)' }}>Saves</span>
                   </div>
                   <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.saves ?? 0)}
@@ -1699,10 +1702,10 @@ export default function PropertyDetailEnhanced() {
                 </div>
 
                 {/* Enquiries */}
-                <div className="bg-slate-700/60 rounded-xl p-4">
+                <div className="rounded-xl p-4" style={{ background: 'rgba(0,0,0,.2)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <MessageCircle className="w-4 h-4 text-orange-400" />
-                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Enquiries</span>
+                    <MessageCircle className="w-4 h-4" style={{ color: 'rgba(242,232,213,.7)' }} />
+                    <span className="text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(242,232,213,.55)' }}>Enquiries</span>
                   </div>
                   <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
                     {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.inquiries ?? 0)}
@@ -1710,13 +1713,13 @@ export default function PropertyDetailEnhanced() {
                 </div>
 
                 {/* Viewings */}
-                <div className="bg-slate-700/60 rounded-xl p-4">
+                <div className="rounded-xl p-4" style={{ background: 'rgba(0,0,0,.2)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-emerald-400" />
-                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Viewings</span>
+                    <Users className="w-4 h-4" style={{ color: 'rgba(242,232,213,.7)' }} />
+                    <span className="text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(242,232,213,.55)' }}>Viewings</span>
                   </div>
                   <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
-                    {isLoadingStats ? <span className="text-slate-500">…</span> : (
+                    {isLoadingStats ? <span style={{ color: 'rgba(242,232,213,.3)' }}>…</span> : (
                       (listingStats?.viewings_requested ?? 0) +
                       (listingStats?.viewings_confirmed ?? 0) +
                       (listingStats?.viewings_completed ?? 0)
@@ -1724,45 +1727,42 @@ export default function PropertyDetailEnhanced() {
                   </div>
                   {listingStats && (
                     <div className="mt-1 flex gap-2 flex-wrap">
-                      {listingStats.viewings_requested > 0 && <span className="text-xs text-amber-300">{listingStats.viewings_requested} pending</span>}
-                      {listingStats.viewings_confirmed > 0 && <span className="text-xs text-blue-300">{listingStats.viewings_confirmed} confirmed</span>}
-                      {listingStats.viewings_completed > 0 && <span className="text-xs text-emerald-300">{listingStats.viewings_completed} done</span>}
+                      {listingStats.viewings_requested > 0 && <span className="text-xs" style={{ color: 'rgba(242,232,213,.7)' }}>{listingStats.viewings_requested} pending</span>}
+                      {listingStats.viewings_confirmed > 0 && <span className="text-xs" style={{ color: '#00E87A' }}>{listingStats.viewings_confirmed} confirmed</span>}
+                      {listingStats.viewings_completed > 0 && <span className="text-xs" style={{ color: '#00E87A' }}>{listingStats.viewings_completed} done</span>}
                     </div>
                   )}
                 </div>
 
                 {/* Days on market */}
-                <div className="bg-slate-700/60 rounded-xl p-4">
+                <div className="rounded-xl p-4" style={{ background: 'rgba(0,0,0,.2)' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-purple-400" />
-                    <span className="text-slate-400 text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)' }}>Days Listed</span>
+                    <TrendingUp className="w-4 h-4" style={{ color: 'rgba(242,232,213,.7)' }} />
+                    <span className="text-xs uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono)', color: 'rgba(242,232,213,.55)' }}>Days Listed</span>
                   </div>
                   <div className="text-2xl font-medium" style={{ fontFamily: 'var(--font-mono)', color: '#00E87A' }}>
-                    {isLoadingStats ? <span className="text-slate-500">…</span> : (listingStats?.days_on_market ?? 0)}
+                    {isLoadingStats ? <span style={{ color: 'rgba(242,232,213,.3)' }}>…</span> : (listingStats?.days_on_market ?? 0)}
                   </div>
                   {listingStats && listingStats.open_houses_scheduled > 0 && (
-                    <div className="mt-1 text-xs text-purple-300">{listingStats.open_houses_scheduled} open house{listingStats.open_houses_scheduled !== 1 ? 's' : ''} scheduled</div>
+                    <div className="mt-1 text-xs" style={{ color: 'rgba(242,232,213,.6)' }}>{listingStats.open_houses_scheduled} open house{listingStats.open_houses_scheduled !== 1 ? 's' : ''} scheduled</div>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 overflow-x-auto">
+            <div className="px-6 py-3 overflow-x-auto" style={{ background: '#F8F4ED', borderBottom: '1px solid rgba(26,60,40,.12)' }}>
               <div className="flex gap-2 min-w-max">
                 {/* Viewings tab */}
                 <button
                   onClick={() => setOwnerTab('viewings')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                    ownerTab === 'viewings'
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'viewings' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Calendar className={`w-4 h-4 ${ownerTab === 'viewings' ? 'text-blue-200' : 'text-blue-400'}`} />
+                  <Calendar className="w-4 h-4" style={{ color: ownerTab === 'viewings' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Scheduled Viewings</span>
                   {listingViewings.length > 0 && (
-                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'viewings' ? 'bg-blue-500 text-blue-100' : 'bg-blue-100 text-blue-600'}`}>
+                    <span className="text-xs rounded-full px-2 py-0.5 font-bold" style={ownerTab === 'viewings' ? { background: 'rgba(0,232,122,.2)', color: '#00E87A' } : { background: 'rgba(26,60,40,.08)', color: '#6B8A76' }}>
                       {listingViewings.length}
                     </span>
                   )}
@@ -1771,16 +1771,13 @@ export default function PropertyDetailEnhanced() {
                 {/* Enquiries tab */}
                 <button
                   onClick={() => setOwnerTab('inquiries')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                    ownerTab === 'inquiries'
-                      ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-orange-300 hover:text-orange-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'inquiries' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <MessageCircle className={`w-4 h-4 ${ownerTab === 'inquiries' ? 'text-orange-200' : 'text-orange-400'}`} />
+                  <MessageCircle className="w-4 h-4" style={{ color: ownerTab === 'inquiries' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Enquiries</span>
                   {listingInquiries.length > 0 && (
-                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'inquiries' ? 'bg-orange-400 text-orange-100' : 'bg-orange-100 text-orange-600'}`}>
+                    <span className="text-xs rounded-full px-2 py-0.5 font-bold" style={ownerTab === 'inquiries' ? { background: 'rgba(0,232,122,.2)', color: '#00E87A' } : { background: 'rgba(26,60,40,.08)', color: '#6B8A76' }}>
                       {listingInquiries.length}
                     </span>
                   )}
@@ -1789,16 +1786,13 @@ export default function PropertyDetailEnhanced() {
                 {/* Open Houses tab */}
                 <button
                   onClick={() => setOwnerTab('open_houses')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                    ownerTab === 'open_houses'
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-purple-300 hover:text-purple-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'open_houses' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Home className={`w-4 h-4 ${ownerTab === 'open_houses' ? 'text-purple-200' : 'text-purple-400'}`} />
+                  <Home className="w-4 h-4" style={{ color: ownerTab === 'open_houses' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Open Houses</span>
                   {allPropertyOpenHouses.length > 0 && (
-                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${ownerTab === 'open_houses' ? 'bg-purple-500 text-purple-100' : 'bg-purple-100 text-purple-600'}`}>
+                    <span className="text-xs rounded-full px-2 py-0.5 font-bold" style={ownerTab === 'open_houses' ? { background: 'rgba(0,232,122,.2)', color: '#00E87A' } : { background: 'rgba(26,60,40,.08)', color: '#6B8A76' }}>
                       {allPropertyOpenHouses.length}
                     </span>
                   )}
@@ -1807,104 +1801,80 @@ export default function PropertyDetailEnhanced() {
                 {/* Property Condition tab */}
                 <button
                   onClick={() => setOwnerTab('property_condition')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'property_condition'
-                      ? 'bg-teal-600 text-white shadow-md shadow-teal-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300 hover:text-teal-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'property_condition' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <ClipboardCheck className={`w-4 h-4 ${ownerTab === 'property_condition' ? 'text-teal-200' : 'text-teal-400'}`} />
+                  <ClipboardCheck className="w-4 h-4" style={{ color: ownerTab === 'property_condition' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Property Condition</span>
                 </button>
 
                 {/* Selling Points tab */}
                 <button
                   onClick={() => setOwnerTab('selling_points')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'selling_points'
-                      ? 'bg-amber-500 text-white shadow-md shadow-amber-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-amber-300 hover:text-amber-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'selling_points' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Star className={`w-4 h-4 ${ownerTab === 'selling_points' ? 'text-amber-200' : 'text-amber-400'}`} />
+                  <Star className="w-4 h-4" style={{ color: ownerTab === 'selling_points' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Selling Points</span>
                 </button>
 
                 {/* Notes tab */}
                 <button
                   onClick={() => setOwnerTab('notes')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'notes'
-                      ? 'bg-slate-600 text-white shadow-md shadow-slate-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-400 hover:text-slate-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'notes' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <FileText className={`w-4 h-4 ${ownerTab === 'notes' ? 'text-slate-300' : 'text-slate-400'}`} />
+                  <FileText className="w-4 h-4" style={{ color: ownerTab === 'notes' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Notes</span>
                 </button>
 
                 {/* Showings tab */}
                 <button
                   onClick={() => setOwnerTab('showings')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'showings'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'showings' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Eye className={`w-4 h-4 ${ownerTab === 'showings' ? 'text-indigo-200' : 'text-indigo-400'}`} />
+                  <Eye className="w-4 h-4" style={{ color: ownerTab === 'showings' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Showings</span>
                 </button>
 
                 {/* Leads tab */}
                 <button
                   onClick={() => setOwnerTab('leads')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'leads'
-                      ? 'bg-cyan-600 text-white shadow-md shadow-cyan-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-cyan-300 hover:text-cyan-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'leads' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Users className={`w-4 h-4 ${ownerTab === 'leads' ? 'text-cyan-200' : 'text-cyan-400'}`} />
+                  <Users className="w-4 h-4" style={{ color: ownerTab === 'leads' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Leads</span>
                 </button>
 
                 {/* Offers tab */}
                 <button
                   onClick={() => setOwnerTab('offers')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'offers'
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'offers' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <DollarSign className={`w-4 h-4 ${ownerTab === 'offers' ? 'text-emerald-200' : 'text-emerald-400'}`} />
+                  <DollarSign className="w-4 h-4" style={{ color: ownerTab === 'offers' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Offers</span>
                 </button>
 
                 {/* Sale Details tab */}
                 <button
                   onClick={() => setOwnerTab('sale_details')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'sale_details'
-                      ? 'bg-rose-600 text-white shadow-md shadow-rose-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-rose-300 hover:text-rose-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'sale_details' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <Handshake className={`w-4 h-4 ${ownerTab === 'sale_details' ? 'text-rose-200' : 'text-rose-400'}`} />
+                  <Handshake className="w-4 h-4" style={{ color: ownerTab === 'sale_details' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Sale Details</span>
                 </button>
 
                 {/* Post-Sale Activities tab */}
                 <button
                   onClick={() => setOwnerTab('post_sale')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap ${
-                    ownerTab === 'post_sale'
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-200'
-                      : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-300 hover:text-violet-600'
-                  }`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+                  style={ownerTab === 'post_sale' ? { background: '#1A3C28', color: '#F2E8D5' } : { background: '#fff', color: '#6B8A76', border: '1px solid rgba(26,60,40,.18)' }}
                 >
-                  <CheckSquare className={`w-4 h-4 ${ownerTab === 'post_sale' ? 'text-violet-200' : 'text-violet-400'}`} />
+                  <CheckSquare className="w-4 h-4" style={{ color: ownerTab === 'post_sale' ? 'rgba(242,232,213,.7)' : '#9AAFA4' }} />
                   <span>Post-Sale Activities</span>
                 </button>
               </div>
@@ -2086,7 +2056,7 @@ export default function PropertyDetailEnhanced() {
                                 {replyingInquiryId !== inq.id ? (
                                   <button
                                     onClick={() => { setReplyingInquiryId(inq.id); setReplyText(''); }}
-                                    className="text-xs px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                    className="text-xs px-3 py-1.5 rounded-md text-white transition-colors" style={{ background: '#1A3C28' }}
                                   >
                                     Reply
                                   </button>
@@ -2097,13 +2067,13 @@ export default function PropertyDetailEnhanced() {
                                       placeholder="Write your response…"
                                       value={replyText}
                                       onChange={(e) => setReplyText(e.target.value)}
-                                      className="w-full text-xs border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-400 resize-none"
+                                      className="w-full text-xs border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-400 resize-none"
                                     />
                                     <div className="flex gap-2">
                                       <button
                                         onClick={() => { void handleReplyInquiry(inq.id); }}
                                         disabled={isSubmittingReply || !replyText.trim()}
-                                        className="text-xs px-3 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                                        className="text-xs px-3 py-1.5 rounded-md text-white disabled:opacity-50 transition-colors" style={{ background: '#1A3C28' }}
                                       >
                                         {isSubmittingReply ? 'Sending…' : 'Send Reply'}
                                       </button>
@@ -2134,13 +2104,13 @@ export default function PropertyDetailEnhanced() {
                     {!showCreateOpenHouseForm ? (
                       <button
                         onClick={() => { setShowCreateOpenHouseForm(true); setOpenHouseFormError(''); }}
-                        className="text-sm px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
+                        className="text-sm px-4 py-2 rounded-lg text-white transition-colors font-medium" style={{ background: '#1A3C28' }}
                       >
                         + Schedule Open House
                       </button>
                     ) : (
-                      <div className="border border-purple-100 rounded-xl bg-purple-50 p-4 space-y-3">
-                        <p className="text-sm font-medium text-purple-900">Schedule Open House</p>
+                      <div className="rounded-xl p-4 space-y-3" style={{ border: '1px solid rgba(26,60,40,.2)', background: 'rgba(26,60,40,.04)' }}>
+                        <p className="text-sm font-medium" style={{ color: '#1A3C28' }}>Schedule Open House</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs text-gray-500 mb-1">Start date &amp; time <span className="text-red-500">*</span></label>
@@ -2148,7 +2118,7 @@ export default function PropertyDetailEnhanced() {
                               type="datetime-local"
                               value={openHouseForm.scheduledAt}
                               onChange={(e) => setOpenHouseForm((f) => ({ ...f, scheduledAt: e.target.value }))}
-                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                             />
                           </div>
                           <div>
@@ -2157,7 +2127,7 @@ export default function PropertyDetailEnhanced() {
                               type="datetime-local"
                               value={openHouseForm.endAt}
                               onChange={(e) => setOpenHouseForm((f) => ({ ...f, endAt: e.target.value }))}
-                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                             />
                           </div>
                           <div>
@@ -2168,7 +2138,7 @@ export default function PropertyDetailEnhanced() {
                               placeholder="e.g. 20"
                               value={openHouseForm.maxAttendees ?? ''}
                               onChange={(e) => setOpenHouseForm((f) => ({ ...f, maxAttendees: e.target.value ? Number(e.target.value) : undefined }))}
-                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                             />
                           </div>
                           <div>
@@ -2178,7 +2148,7 @@ export default function PropertyDetailEnhanced() {
                               placeholder="e.g. Refreshments provided"
                               value={openHouseForm.description ?? ''}
                               onChange={(e) => setOpenHouseForm((f) => ({ ...f, description: e.target.value }))}
-                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400 bg-white"
+                              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                             />
                           </div>
                         </div>
@@ -2189,7 +2159,7 @@ export default function PropertyDetailEnhanced() {
                           <button
                             onClick={() => { void handleCreateOpenHouse(); }}
                             disabled={isSubmittingOpenHouse}
-                            className="text-xs px-4 py-1.5 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium"
+                            className="text-xs px-4 py-1.5 rounded-md text-white disabled:opacity-50 transition-colors font-medium" style={{ background: '#1A3C28' }}
                           >
                             {isSubmittingOpenHouse ? 'Scheduling…' : 'Schedule'}
                           </button>
@@ -2414,128 +2384,143 @@ export default function PropertyDetailEnhanced() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
-            <div ref={heroRef} className="bg-white rounded-lg overflow-hidden">
-              <div className="relative group">
-                <img
-                  src={property.images[selectedImage]}
-                  alt="Main"
-                  className="w-full h-64 md:h-125 object-cover cursor-pointer"
-                  onClick={() => {
-                    setLightboxImage(selectedImage);
-                    setShowLightbox(true);
-                  }}
-                />
-                {/* Zoom Icon */}
-                <div className="absolute bottom-4 right-4 bg-white/90 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <ZoomIn className="w-5 h-5 text-gray-700" />
-                </div>
-                {/* Verification Badge Overlay */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  <Badge className={`${verificationBadge.className} flex items-center gap-2 px-4 py-2`} style={verificationBadge.style}>
-                    <Shield className="w-4 h-4" />
-                    {verificationBadge.label}
-                  </Badge>
-                  <Badge className={`${statusBadge.className} px-4 py-2`} style={statusBadge.style}>
-                    {statusBadge.label}
-                  </Badge>
-                  {property.isPrivateListing && (
-                    <Badge className="bg-purple-600 text-white px-4 py-2">🔒 Privately Listed</Badge>
-                  )}
-                </div>
-                {/* Actions */}
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <button
-                    className={`p-3 rounded-full shadow-md transition-colors ${
-                      isSaved ? 'bg-red-50 hover:bg-red-100' : 'bg-white hover:bg-red-50'
-                    }`}
-                    onClick={() => { void handleAddToFavourites(); }}
-                    disabled={isSavingProperty}
-                    aria-label={isSaved ? 'Remove from saved' : 'Save property'}
-                    title={isSaved ? 'Remove from saved' : 'Save property'}
-                  >
-                    {isSaved
-                      ? <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-                      : <Heart className="w-5 h-5 text-gray-400" />}
-                  </button>
-                  <PropertyShareButton title={property.title} />
-                  <PrintButton />
-                </div>
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
-                  {selectedImage + 1} / {property.images.length}
-                </div>
-              </div>
-              
-              {/* Thumbnail Carousel */}
-              <div className="p-4 bg-gray-50 relative">
-                <div className="flex items-center gap-2">
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => setCarouselOffset(Math.max(0, carouselOffset - 1))}
-                    disabled={carouselOffset === 0}
-                    aria-label="Previous thumbnails"
-                    title="Previous thumbnails"
-                    className={`shrink-0 p-2 rounded-lg transition-all ${
-                      carouselOffset === 0
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
-                    }`}
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-
-                  {/* Thumbnails Container */}
-                  <div className="flex-1 overflow-hidden">
-                    <div className="grid grid-cols-4 gap-2">
-                      {property.images.slice(carouselOffset, carouselOffset + 4).map((image, idx) => {
-                        const actualIdx = carouselOffset + idx;
-                        return (
-                        <div
-                          key={`${image}-${actualIdx}`}
-                          className="shrink-0"
-                        >
-                          <div className="relative group/thumb">
-                            <img
-                              src={image}
-                              alt={`View ${actualIdx + 1}`}
-                              className={`w-full h-16 md:h-20 object-cover rounded cursor-pointer border-2 transition-all ${
-                                selectedImage === actualIdx 
-                                  ? "border-blue-500 ring-2 ring-blue-300" 
-                                  : "border-transparent hover:border-gray-300"
-                              }`}
-                              onClick={() => setSelectedImage(actualIdx)}
-                            />
-                            {/* Hover overlay with zoom icon */}
-                            <div 
-                              className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center rounded cursor-pointer"
-                              onClick={() => {
-                                setLightboxImage(actualIdx);
-                                setShowLightbox(true);
-                              }}
-                            >
-                              <ZoomIn className="w-5 h-5 text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      )})}
+            {/* Image Gallery — Editorial Mosaic */}
+            <div ref={heroRef} style={{ background: '#0C0D10', borderRadius: '12px', overflow: 'hidden' }}>
+              {/* ─ Desktop mosaic (md+): hero left 2/4 cols × 2 rows + 4 thumbs right ─ */}
+              <div
+                className="hidden md:grid"
+                style={{ gridTemplateColumns: 'repeat(4, 1fr)', gridTemplateRows: '260px 180px', gap: '3px' }}
+              >
+                {/* Hero: spans left 2 cols × 2 rows */}
+                <div
+                  className="relative group cursor-pointer"
+                  style={{ gridColumn: '1/3', gridRow: '1/3', overflow: 'hidden', background: '#2D5A40' }}
+                  onClick={() => { setLightboxImage(selectedImage); setShowLightbox(true); }}
+                >
+                  <img src={property.images[selectedImage]} alt="Main view" className="w-full h-full object-cover" />
+                  {/* Gradient overlay */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 40%, rgba(0,0,0,.55) 100%)', pointerEvents: 'none' }} />
+                  {/* Top: badges (left) + actions (right) */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div className="flex flex-col gap-2">
+                      <Badge className={`${verificationBadge.className} flex items-center gap-2 px-4 py-2`} style={verificationBadge.style}>
+                        <Shield className="w-4 h-4" />{verificationBadge.label}
+                      </Badge>
+                      <Badge className={`${statusBadge.className} px-4 py-2`} style={statusBadge.style}>{statusBadge.label}</Badge>
+                      {property.isPrivateListing && (
+                        <Badge className="px-4 py-2" style={{ background: '#1A3C28', color: '#F2E8D5' }}>🔒 Privately Listed</Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="p-2.5 rounded-full transition-colors"
+                        style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.25)' }}
+                        onClick={() => { void handleAddToFavourites(); }}
+                        disabled={isSavingProperty}
+                        aria-label={isSaved ? 'Remove from saved' : 'Save property'}
+                        title={isSaved ? 'Remove from saved' : 'Save property'}
+                      >
+                        {isSaved ? <Heart className="w-4 h-4 text-red-400 fill-red-400" /> : <Heart className="w-4 h-4" style={{ color: 'rgba(255,255,255,.9)' }} />}
+                      </button>
+                      <PropertyShareButton title={property.title} />
+                      <PrintButton />
                     </div>
                   </div>
+                  {/* Bottom: price + counter */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', pointerEvents: 'none' }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '28px', fontWeight: 700, color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,.5)' }}>{property.price}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '.15em', color: 'rgba(255,255,255,.6)', marginTop: '2px' }}>ASKING PRICE</div>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(255,255,255,.7)', background: 'rgba(0,0,0,.4)', padding: '4px 8px', borderRadius: '4px' }}>
+                      {selectedImage + 1} / {property.images.length}
+                    </div>
+                  </div>
+                  {/* Zoom on hover */}
+                  <div className="absolute bottom-4 right-4 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)' }}>
+                    <ZoomIn className="w-5 h-5" style={{ color: '#fff' }} />
+                  </div>
+                </div>
 
-                  {/* Next Button */}
-                  <button
-                    onClick={() => setCarouselOffset(Math.min(property.images.length - 4, carouselOffset + 1))}
-                    disabled={carouselOffset >= property.images.length - 4}
-                    aria-label="Next thumbnails"
-                    title="Next thumbnails"
-                    className={`shrink-0 p-2 rounded-lg transition-all ${
-                      carouselOffset >= property.images.length - 4
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
-                    }`}
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                {/* 4 thumbnail cells (right 2 cols × 2 rows) */}
+                {[1, 2, 3, 4].map((offset) => {
+                  const imgIdx = offset;
+                  const hasImg = imgIdx < property.images.length;
+                  const isLast = offset === 4;
+                  const remaining = property.images.length - 5;
+                  return (
+                    <div
+                      key={offset}
+                      className="relative overflow-hidden cursor-pointer group"
+                      style={{ background: '#4A6A55' }}
+                      onClick={() => {
+                        if (isLast && remaining > 0) { setLightboxImage(4); setShowLightbox(true); }
+                        else if (hasImg) setSelectedImage(imgIdx);
+                      }}
+                    >
+                      {hasImg && (
+                        <img
+                          src={property.images[imgIdx]}
+                          alt={`View ${imgIdx + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          style={{ outline: selectedImage === imgIdx ? '3px solid #00E87A' : 'none', outlineOffset: '-3px' }}
+                        />
+                      )}
+                      {isLast && remaining > 0 && (
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(12,13,16,.55)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(255,255,255,.7)', letterSpacing: '.1em' }}>ALL PHOTOS</span>
+                          <span style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', color: '#00E87A' }}>+{remaining}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ─ Mobile fallback: single hero + 4 thumbnail chips ─ */}
+              <div className="block md:hidden">
+                <div className="relative" style={{ height: '256px' }}>
+                  <img
+                    src={property.images[selectedImage]}
+                    alt="Main view"
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => { setLightboxImage(selectedImage); setShowLightbox(true); }}
+                  />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,.3) 0%, transparent 40%, rgba(0,0,0,.5) 100%)', pointerEvents: 'none' }} />
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                    <Badge className={`${verificationBadge.className} flex items-center gap-1.5 px-3 py-1.5 text-xs`} style={verificationBadge.style}>
+                      <Shield className="w-3 h-3" />{verificationBadge.label}
+                    </Badge>
+                    <Badge className={`${statusBadge.className} px-3 py-1.5 text-xs`} style={statusBadge.style}>{statusBadge.label}</Badge>
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-1.5">
+                    <button
+                      className="p-2 rounded-full"
+                      style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.25)' }}
+                      onClick={() => { void handleAddToFavourites(); }}
+                      disabled={isSavingProperty}
+                      aria-label={isSaved ? 'Remove from saved' : 'Save property'}
+                    >
+                      {isSaved ? <Heart className="w-4 h-4 text-red-400 fill-red-400" /> : <Heart className="w-4 h-4" style={{ color: 'rgba(255,255,255,.9)' }} />}
+                    </button>
+                    <PropertyShareButton title={property.title} />
+                    <PrintButton />
+                  </div>
+                  <div className="absolute bottom-3 left-3">
+                    <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: '20px', fontWeight: 700, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,.5)' }}>{property.price}</div>
+                  </div>
+                  <div className="absolute bottom-3 right-3" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(255,255,255,.7)', background: 'rgba(0,0,0,.4)', padding: '3px 7px', borderRadius: '4px' }}>
+                    {selectedImage + 1} / {property.images.length}
+                  </div>
+                </div>
+                {/* Mobile thumbnail chips */}
+                <div style={{ display: 'flex', gap: '2px', background: '#0C0D10', padding: '2px' }}>
+                  {property.images.slice(0, 4).map((img, idx) => (
+                    <div key={idx} style={{ flex: 1, height: '56px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }} onClick={() => setSelectedImage(idx)}>
+                      <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                      {selectedImage === idx && <div style={{ position: 'absolute', inset: 0, border: '2px solid #00E87A', pointerEvents: 'none' }} />}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -2640,7 +2625,7 @@ export default function PropertyDetailEnhanced() {
                 {property.isPrivateListing && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Listing Type</span>
-                    <Badge className="bg-purple-600 text-white">🔒 Privately Listed</Badge>
+                    <Badge style={{ background: '#1A3C28', color: '#F2E8D5' }}>🔒 Privately Listed</Badge>
                   </div>
                 )}
               </div>
@@ -2721,7 +2706,7 @@ export default function PropertyDetailEnhanced() {
             )}
 
             {/* Fraud Report Section */}
-            <Card className="p-6 border-2 border-red-100">
+            <Card className="p-6" style={{ border: '2px solid rgba(196,86,42,.25)' }}>
               <div className="flex items-start gap-3">
                 <Flag className="w-5 h-5 text-red-600 shrink-0 mt-1" />
                 <div className="flex-1">
@@ -2837,7 +2822,7 @@ export default function PropertyDetailEnhanced() {
                     const isRegistered = openHouseRegisterSuccess === oh.id;
                     const isRegistering = registeringOpenHouseId === oh.id;
                     return (
-                      <div key={oh.id} className="border border-purple-100 bg-purple-50 rounded-lg p-3">
+                      <div key={oh.id} className="rounded-lg p-3" style={{ border: '1px solid rgba(26,60,40,.15)', background: 'rgba(26,60,40,.04)' }}>
                         <p className="font-medium text-sm text-gray-900">
                           {new Date(oh.scheduled_at).toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
@@ -2852,7 +2837,8 @@ export default function PropertyDetailEnhanced() {
                         )}
                         <Button
                           size="sm"
-                          className={`mt-2 w-full text-xs h-8 ${isRegistered ? 'bg-green-500 hover:bg-green-500 text-white' : isOwnListing ? 'opacity-50 cursor-not-allowed bg-purple-300 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
+                          className="mt-2 w-full text-xs h-8 text-white"
+                          style={isRegistered ? { background: '#00994D' } : isOwnListing ? { background: '#9AAFA4', cursor: 'not-allowed' } : { background: '#1A3C28' }}
                           disabled={isRegistered || isRegistering || isOwnListing}
                           title={isOwnListing ? 'You cannot register for your own listing' : undefined}
                           onClick={() => void handleRegisterOpenHouse(oh.id)}
@@ -3098,7 +3084,8 @@ export default function PropertyDetailEnhanced() {
                     )}
                     <Button
                       size="sm"
-                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                      className="w-full text-white"
+                      style={{ background: '#1A3C28' }}
                       disabled={isSubmittingMandate || !mandateForm.startDate || !mandateForm.endDate}
                       onClick={() => void handleCreateMandate()}
                     >
@@ -3252,20 +3239,44 @@ export default function PropertyDetailEnhanced() {
 
             {!property.isPrivateListing && (
               <Card className="p-5 text-center">
-                <div className="flex justify-center mb-2">
-                  {property.agent.companyLogoUrl ? (
-                    <img
-                      src={property.agent.companyLogoUrl}
-                      alt={`${property.agent.companyName} logo`}
-                      className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500">
-                      {property.agent.companyName.charAt(0).toUpperCase() || "C"}
+                {property.companyId ? (
+                  <Link
+                    to={`/company/${property.companyId}`}
+                    className="block group"
+                  >
+                    <div className="flex justify-center mb-2">
+                      {property.agent.companyLogoUrl ? (
+                        <img
+                          src={property.agent.companyLogoUrl}
+                          alt={`${property.agent.companyName} logo`}
+                          className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2 transition-opacity group-hover:opacity-80"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500 transition-opacity group-hover:opacity-80">
+                          {property.agent.companyName.charAt(0).toUpperCase() || "C"}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <p className="text-sm font-medium text-gray-800">{property.agent.companyName}</p>
+                    <p className="text-sm font-medium text-gray-800 group-hover:underline">{property.agent.companyName}</p>
+                  </Link>
+                ) : (
+                  <>
+                    <div className="flex justify-center mb-2">
+                      {property.agent.companyLogoUrl ? (
+                        <img
+                          src={property.agent.companyLogoUrl}
+                          alt={`${property.agent.companyName} logo`}
+                          className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-white p-2"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-xl font-semibold text-gray-500">
+                          {property.agent.companyName.charAt(0).toUpperCase() || "C"}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium text-gray-800">{property.agent.companyName}</p>
+                  </>
+                )}
               </Card>
             )}
 
@@ -3402,6 +3413,39 @@ export default function PropertyDetailEnhanced() {
                 </div>
                 {!agentPhone && (
                   <p className="text-xs text-gray-400 text-center">Agent contact number not available</p>
+                )}
+
+                {/* Make Offer CTA */}
+                {!isSoldListing && (
+                  hasOffer ? (
+                    <div
+                      className="flex items-center justify-between rounded-lg px-4 py-3"
+                      style={{ background: 'rgba(184,144,64,0.1)', border: '1px solid rgba(184,144,64,0.35)' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 shrink-0" style={{ color: '#B89040' }} />
+                        <span className="text-sm font-semibold" style={{ color: '#B89040', fontFamily: 'var(--font-mono)', letterSpacing: '.04em' }}>Offer Submitted</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { window.location.href = `/app/make-offer/${property.id}`; }}
+                        className="text-xs"
+                        style={{ borderColor: '#B89040', color: '#B89040', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.04em' }}
+                      >
+                        View / Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={() => { window.location.href = `/app/make-offer/${property.id}`; }}
+                      style={{ background: '#B89040', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px', letterSpacing: '.06em' }}
+                    >
+                      <FileText className="w-4 h-4" />
+                      Make Offer
+                    </Button>
+                  )
                 )}
               </div>
               )}
@@ -3544,6 +3588,8 @@ export default function PropertyDetailEnhanced() {
           onScheduleViewing={() => setShowScheduleModal(true)}
           onToggleSave={() => { void handleAddToFavourites(); }}
           disabled={isSoldListing}
+          offerMade={hasOffer}
+          onMakeOffer={() => { window.location.href = `/app/make-offer/${property.id}`; }}
         />
       )}
 
@@ -3903,7 +3949,7 @@ export default function PropertyDetailEnhanced() {
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setShowInitiateSaleModal(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600" disabled={submittingInitiateSale}>
+                <Button type="submit" className="flex-1 text-white" style={{ background: '#1A3C28' }} disabled={submittingInitiateSale}>
                   {submittingInitiateSale ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
                   {submittingInitiateSale ? 'Creating…' : 'Initiate Sale'}
                 </Button>
@@ -4404,7 +4450,8 @@ export default function PropertyDetailEnhanced() {
                 {scheduleStep < 4 && (
                   <Button 
                     onClick={() => setScheduleStep(scheduleStep + 1)} 
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                    className="flex-1 text-white"
+                    style={{ background: '#1A3C28' }}
                   >
                     Continue
                     <ChevronRight className="w-4 h-4 ml-2" />

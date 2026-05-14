@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '../database';
 import { ConveyancingAuditService } from './conveyancing-audit.service';
 import { GenerateDocumentDto, RequestSignatureDto } from './conveyancing.dto';
 import { DOCUMENT_STATUSES } from './conveyancing.constants';
+import { EsignService } from '../esign/esign.service';
 
 export type GeneratedDocumentRow = {
   id: string;
@@ -33,6 +35,7 @@ export class DocumentWorkflowService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: ConveyancingAuditService,
+    @Optional() private readonly esign: EsignService | null = null,
   ) {}
 
   async listTemplates(country = 'ZA', caseType = 'transfer'): Promise<unknown[]> {
@@ -204,5 +207,54 @@ export class DocumentWorkflowService {
     });
 
     return updated[0];
+  }
+
+  // ── E-SIGNATURE — DocuSeal webhook callback ───────────────────────────────
+
+  /**
+   * Called by EsignWebhookDispatcher when submission.completed fires.
+   * Marks all signers as signed and promotes the document to fully_signed.
+   */
+  async onEsignCompleted(
+    submissionId: string,
+    documentId: string,
+    caseId: string,
+  ): Promise<void> {
+    const rows = await this.prisma.$queryRaw<GeneratedDocumentRow[]>`
+      SELECT * FROM conveyancing.generated_documents
+      WHERE id = ${documentId}::uuid
+        AND case_id = ${caseId}::uuid
+      LIMIT 1
+    `;
+    if (!rows.length) return;
+    const doc = rows[0];
+
+    if (doc.esign_envelope_id !== submissionId) return; // stale
+
+    const sigs: { signer_id: string; status: string; signed_at?: string }[] =
+      Array.isArray(doc.signatures) ? (doc.signatures as { signer_id: string; status: string; signed_at?: string }[]) : [];
+
+    const now = new Date().toISOString();
+    const updatedSigs = sigs.map((s) => ({ ...s, status: 'signed', signed_at: s.signed_at ?? now }));
+
+    await this.prisma.$queryRaw`
+      UPDATE conveyancing.generated_documents
+      SET
+        signatures      = ${JSON.stringify(updatedSigs)}::jsonb,
+        status          = 'fully_signed',
+        fully_signed_at = NOW(),
+        updated_at      = NOW()
+      WHERE id = ${documentId}::uuid
+    `;
+
+    await this.audit.log({
+      actorId: documentId,
+      actorRole: 'system',
+      firmId: '',
+      action: 'document.esign_completed',
+      resourceType: 'generated_document',
+      resourceId: documentId,
+      payload: { submissionId, caseId },
+    });
   }
 }

@@ -22,6 +22,7 @@ const C = {
 
 interface ListingCard {
   id: string;
+  title: string;
   address: string;
   city: string;
   region: string;
@@ -62,6 +63,7 @@ function mapToCard(p: PropertyListing): ListingCard {
   const daysOnMarket = Math.max(0, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86_400_000));
   return {
     id: p.id,
+    title: p.title,
     address: p.location?.address_line1 ?? p.title,
     city: p.location?.city ?? '',
     region: p.location?.region ?? '',
@@ -109,6 +111,15 @@ function getListingTypeBadge(listingType: string): { label: string; bg: string; 
   }
 }
 
+function getStatusBadge(status: ListingCard['status']): { label: string; bg: string; color: string } {
+  switch (status) {
+    case 'active':         return { label: 'Active',         bg: '#DCFCE7', color: '#15803D' };
+    case 'under-contract': return { label: 'Under Offer',    bg: '#EDE9FE', color: '#6D28D9' };
+    case 'sold':           return { label: 'Sold',           bg: '#F1F5F9', color: '#475569' };
+    default:               return { label: 'Pending',        bg: '#FEF9C3', color: '#A16207' };
+  }
+}
+
 function HealthRing({ score }: { score: number }) {
   const radius    = 11;
   const circ      = 2 * Math.PI * radius;
@@ -148,6 +159,8 @@ export default function MyListingsPage() {
   const [performance, setPerformance]         = useState<AgentListingPerformanceRow[]>([]);
   const [isLoading, setIsLoading]             = useState(true);
   const [error, setError]                     = useState('');
+  const [duplicating, setDuplicating]         = useState<Set<string>>(new Set());
+  const [dupeToast, setDupeToast]             = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -168,9 +181,46 @@ export default function MyListingsPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
+  async function handleDuplicate(listing: ListingCard) {
+    const token = getAccessToken();
+    if (!token) return;
+    setDuplicating((prev) => new Set(prev).add(listing.id));
+    try {
+      const newListing = await propertiesApi.duplicate(token, listing.id);
+      // Refresh the listings grid
+      const refreshed = await propertiesApi.getMyListings(token);
+      setAllListings(refreshed.data.map(mapToCard));
+      setDupeToast({ id: (newListing as { id: string }).id, title: (newListing as { title: string }).title });
+      setTimeout(() => setDupeToast(null), 4500);
+    } catch {
+      // silently fail — could add an error toast here if needed
+    } finally {
+      setDuplicating((prev) => {
+        const s = new Set(prev);
+        s.delete(listing.id);
+        return s;
+      });
+    }
+  }
+
   // Per-listing enquiries map keyed by performance row id (= listing id)
   const enquiriesMap = performance.reduce<Record<string, number>>((acc, r) => {
     acc[r.id] = (acc[r.id] ?? 0) + (r.inquiries ?? 0);
+    return acc;
+  }, {});
+
+  const offersMap = performance.reduce<Record<string, number>>((acc, r) => {
+    acc[r.id] = r.offer_count ?? 0;
+    return acc;
+  }, {});
+
+  const viewingsMap = performance.reduce<Record<string, number>>((acc, r) => {
+    acc[r.id] = r.completed_viewings ?? 0;
+    return acc;
+  }, {});
+
+  const savesMap = performance.reduce<Record<string, number>>((acc, r) => {
+    acc[r.id] = r.saves ?? 0;
     return acc;
   }, {});
 
@@ -184,7 +234,9 @@ export default function MyListingsPage() {
   const activeListings   = allListings.filter((l) => l.status === 'active');
   const portfolioValue   = allListings.reduce((s, l) => s + Number(l.price ?? 0), 0);
   const avgDOM           = Math.round(activeListings.reduce((s, l) => s + l.daysOnMarket, 0) / Math.max(1, activeListings.length));
-  const totalEnquiries   = performance.reduce((s, r) => s + (r.inquiries ?? 0), 0);
+  const totalEnquiries       = performance.reduce((s, r) => s + (r.inquiries ?? 0), 0);
+  const totalActiveOffers     = performance.reduce((s, r) => s + (r.offer_count ?? 0), 0);
+  const totalCompletedViewings = performance.reduce((s, r) => s + (r.completed_viewings ?? 0), 0);
 
   // Derived filters
   const hotListings   = allListings.filter((l) => listingHeat(scoreMap[l.id] ?? 0) === 'hot');
@@ -195,7 +247,7 @@ export default function MyListingsPage() {
     { key: 'all',         label: 'All Listings', count: allListings.length,                                                     icon: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></> },
     { key: 'hot',         label: '🔥 Hot',       count: hotListings.length,                                                      icon: null },
     { key: 'active',      label: 'Active',        count: activeListings.filter((l) => listingCategory(l) === 'active').length,  icon: <><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></> },
-    { key: 'under_offer', label: 'Under Offer',   count: allListings.filter((l) => listingCategory(l) === 'under_offer').length, icon: <><path d="M9 11l3 3L22 4"/></> },
+    { key: 'under_offer', label: 'Under Offer',   count: allListings.filter((l) => listingCategory(l) === 'under_offer' || (offersMap[l.id] ?? 0) > 0).length, icon: <><path d="M9 11l3 3L22 4"/></> },
     { key: 'stale',       label: 'Stale 30d+',    count: staleListings.length,                                                   icon: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></> },
     { key: 'draft',       label: 'Draft',         count: allListings.filter((l) => listingCategory(l) === 'draft').length,      icon: null },
     { key: 'sold',        label: 'Sold',          count: allListings.filter((l) => listingCategory(l) === 'sold').length,       icon: null },
@@ -207,6 +259,7 @@ export default function MyListingsPage() {
     const heat  = listingHeat(score);
     const cat   = listingCategory(l);
     const matchesSearch = !searchQuery ||
+      l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       l.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       l.city.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType =
@@ -218,7 +271,7 @@ export default function MyListingsPage() {
       listingsFilter === 'all' ||
       (listingsFilter === 'hot' && heat === 'hot') ||
       (listingsFilter === 'active' && cat === 'active') ||
-      (listingsFilter === 'under_offer' && cat === 'under_offer') ||
+      (listingsFilter === 'under_offer' && (cat === 'under_offer' || (offersMap[l.id] ?? 0) > 0)) ||
       (listingsFilter === 'stale' && cat === 'stale') ||
       (listingsFilter === 'draft' && cat === 'draft') ||
       (listingsFilter === 'sold' && cat === 'sold');
@@ -229,8 +282,19 @@ export default function MyListingsPage() {
   return (
     <div>
 
+      {/* ── Duplicate success toast ───────────────────────────────────────── */}
+      {dupeToast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: '#1A3C28', color: '#F2E8D5', borderRadius: 12, padding: '14px 20px', fontFamily: 'var(--font-jakarta)', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 24px rgba(26,60,40,0.35)', display: 'flex', alignItems: 'center', gap: 12, maxWidth: 380 }}>
+          <span style={{ fontSize: 20, lineHeight: 1 }}>✓</span>
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>Listing duplicated!</div>
+            <div style={{ color: 'rgba(242,232,213,0.7)', fontSize: 12 }}>"{dupeToast.title}" has been saved as a draft.</div>
+          </div>
+        </div>
+      )}
+
       {/* ── Sub-page Header (dark forest) ────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ background: C.forest, borderRadius: '12px 12px 0 0' }}>
+      <div className="relative overflow-hidden" style={{ background: C.forest }}>
         {/* decorative circles */}
         <div className="absolute" style={{ top: -60, right: -60, width: 220, height: 220, background: C.terracotta, opacity: 0.08, borderRadius: '50%', pointerEvents: 'none' }} />
         <div className="absolute" style={{ bottom: 10, left: '40%', width: 160, height: 160, background: C.egreen, opacity: 0.04, borderRadius: '50%', pointerEvents: 'none' }} />
@@ -275,7 +339,7 @@ export default function MyListingsPage() {
               { label: 'Portfolio Value',   value: formatCompactCurrency(portfolioValue),            valueColor: C.parchment, delta: 'combined value',                       down: false },
               { label: 'Avg. Days on Mkt',  value: avgDOM.toString(),                               valueColor: '#F5C87A',   delta: 'days on market',                       down: avgDOM > 30 },
               { label: 'Inquiries',         value: totalEnquiries.toString(),                       valueColor: '#E8A080',   delta: 'this month',                           down: false },
-              { label: 'Active Offers',     value: allListings.filter((l) => l.status === 'under-contract').length.toString(), valueColor: C.egreen, delta: 'in pipeline',  down: false },
+              { label: 'Active Offers',     value: totalActiveOffers.toString(),                                               valueColor: C.egreen, delta: `${totalCompletedViewings} viewings done`,  down: false },
               { label: 'Hot Listings',      value: hotListings.length.toString(),                   valueColor: C.parchment, delta: `${staleListings.length} stale`,        down: staleListings.length > 0 },
             ] as { label: string; value: string; valueColor: string; delta: string; down: boolean }[]).map((kpi, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(242,232,213,0.1)', borderRadius: 10, padding: '14px 16px' }}>
@@ -295,7 +359,7 @@ export default function MyListingsPage() {
       </div>
 
       {/* ── Status Tabs Bar ───────────────────────────────────────────────── */}
-      <div className="flex overflow-x-auto px-8" style={{ background: C.forest, borderTop: '1px solid rgba(242,232,213,0.08)', borderRadius: '0 0 12px 12px', marginBottom: 0 }}>
+      <div className="flex overflow-x-auto px-8" style={{ background: C.forest, borderTop: '1px solid rgba(242,232,213,0.08)', marginBottom: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
         {statusTabs.map((tab) => {
           const isActive = listingsFilter === tab.key;
           return (
@@ -446,10 +510,13 @@ export default function MyListingsPage() {
             {viewMode === 'grid' && filteredListings.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14, marginBottom: 28 }}>
                 {filteredListings.map((listing) => {
-                  const enquiries = enquiriesMap[listing.id] ?? 0;
-                  const score     = scoreMap[listing.id] ?? 0;
-                  const heat      = listingHeat(score);
-                  const typeBadge = getListingTypeBadge(listing.listingType);
+                  const enquiries  = enquiriesMap[listing.id] ?? 0;
+                  const offerCount = offersMap[listing.id] ?? 0;
+                  const saves      = savesMap[listing.id] ?? 0;
+                  const score      = scoreMap[listing.id] ?? 0;
+                  const heat       = listingHeat(score);
+                  const typeBadge    = getListingTypeBadge(listing.listingType);
+                  const statusBadge  = getStatusBadge(listing.status);
                   const isStale   = listing.daysOnMarket >= 30;
                   const borderColor =
                     heat === 'hot' ? 'rgba(220,38,38,0.28)' :
@@ -480,9 +547,15 @@ export default function MyListingsPage() {
                             <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '2px 7px', borderRadius: 4, background: typeBadge.bg, color: typeBadge.color }}>
                               {typeBadge.label}
                             </span>
+                            <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '2px 7px', borderRadius: 4, background: statusBadge.bg, color: statusBadge.color }}>
+                              {statusBadge.label}
+                            </span>
                             <HeatBadge heat={heat} />
                           </div>
                           <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 14, fontWeight: 700, color: C.forest, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {listing.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
                             {listing.address}{listing.city ? `, ${listing.city}` : ''}
                           </div>
                           <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: C.textMuted, marginTop: 2 }}>
@@ -502,8 +575,8 @@ export default function MyListingsPage() {
                         {[
                           { val: listing.viewCount.toLocaleString(), lbl: 'Views' },
                           { val: enquiries.toString(),               lbl: 'Inquiries' },
-                          { val: listing.status === 'under-contract' ? '2' : '0', lbl: 'Offers', highlight: listing.status === 'under-contract' },
-                          { val: listing.daysOnMarket.toString(),   lbl: 'DOM' },
+                          { val: offerCount.toString(),              lbl: 'Offers', highlight: offerCount > 0 },
+                          { val: saves.toString(),                   lbl: 'Saves' },
                         ].map((m, i) => (
                           <div key={i} style={{ padding: '8px 0', textAlign: 'center', borderRight: i < 3 ? `1px solid ${C.border}` : 'none' }}>
                             <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 16, fontWeight: 700, color: m.highlight ? C.terracotta : C.forest, lineHeight: 1 }}>{m.val}</div>
@@ -549,9 +622,10 @@ export default function MyListingsPage() {
                           style={{ flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'transparent', color: C.forest, border: `1px solid ${C.border}`, fontFamily: 'inherit' }}
                         >Edit</button>
                         <button
-                          onClick={() => router.push(`/app/my-listings/new?duplicate=${listing.id}`)}
-                          style={{ flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'transparent', color: C.forest, border: `1px solid ${C.border}`, fontFamily: 'inherit' }}
-                        >Dupe</button>
+                          onClick={() => handleDuplicate(listing)}
+                          disabled={duplicating.has(listing.id)}
+                          style={{ flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: duplicating.has(listing.id) ? 'not-allowed' : 'pointer', background: 'transparent', color: C.forest, border: `1px solid ${C.border}`, fontFamily: 'inherit', opacity: duplicating.has(listing.id) ? 0.5 : 1 }}
+                        >{duplicating.has(listing.id) ? '…' : 'Dupe'}</button>
                         <button
                           style={{ flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'transparent', color: C.forest, border: `1px solid ${C.border}`, fontFamily: 'inherit' }}
                         >Sync</button>
@@ -568,16 +642,19 @@ export default function MyListingsPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'rgba(26,60,40,0.03)', borderBottom: `1px solid ${C.border}` }}>
-                      {['Property', 'Heat', 'Price', 'Specs', 'Performance', 'Health', 'Actions'].map((h) => (
+                      {['Property', 'Status', 'Heat', 'Price', 'Specs', 'Performance', 'Health', 'Actions'].map((h) => (
                         <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: C.textMuted }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredListings.map((listing, idx) => {
-                      const enquiries = enquiriesMap[listing.id] ?? 0;
-                      const score     = scoreMap[listing.id] ?? 0;
-                      const heat      = listingHeat(score);
+                      const enquiries  = enquiriesMap[listing.id] ?? 0;
+                      const offerCount = offersMap[listing.id] ?? 0;
+                      const viewings   = viewingsMap[listing.id] ?? 0;
+                      const saves      = savesMap[listing.id] ?? 0;
+                      const score      = scoreMap[listing.id] ?? 0;
+                      const heat       = listingHeat(score);
                       return (
                         <tr
                           key={listing.id}
@@ -591,15 +668,27 @@ export default function MyListingsPage() {
                                 <ImageWithFallback src={listing.imageUrl} alt={listing.address} className="w-full h-full object-cover" />
                               </div>
                               <div>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: listing.daysOnMarket >= 45 ? '#DC2626' : C.forest }}>{listing.address}</div>
+                                <div style={{ fontFamily: 'var(--font-fraunces)', fontSize: 13, fontWeight: 700, color: listing.daysOnMarket >= 45 ? '#DC2626' : C.forest }}>{listing.title}</div>
+                                <div style={{ fontSize: 11, color: listing.daysOnMarket >= 45 ? '#DC2626' : C.textMuted, marginTop: 1 }}>{listing.address}{listing.city ? `, ${listing.city}` : ''}</div>
                                 <div style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, color: listing.daysOnMarket >= 45 ? '#DC2626' : C.textMuted, marginTop: 1 }}>{listing.daysOnMarket}d on market{listing.daysOnMarket >= 45 ? ' ⚠' : ''}</div>
                               </div>
                             </div>
                           </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {(() => { const sb = getStatusBadge(listing.status); return <span style={{ fontFamily: 'var(--font-ibm-plex-mono)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '3px 8px', borderRadius: 5, background: sb.bg, color: sb.color }}>{sb.label}</span>; })()}
+                          </td>
                           <td style={{ padding: '12px 16px' }}><HeatBadge heat={heat} /></td>
                           <td style={{ padding: '12px 16px' }}><span style={{ fontFamily: 'var(--font-fraunces)', fontSize: 13, fontWeight: 700, color: C.forest }}>{formatMoney(listing.price, listing.currency)}</span></td>
                           <td style={{ padding: '12px 16px', fontSize: 11, color: C.textMuted }}>{listing.beds}b · {listing.baths}ba · {listing.sqm.toLocaleString()}m²</td>
-                          <td style={{ padding: '12px 16px', fontSize: 11, color: C.textMuted }}>{listing.viewCount} views · {enquiries} inq</td>
+                          <td style={{ padding: '12px 16px', fontSize: 11, color: C.textMuted }}>
+                            <span>{listing.viewCount} views</span>
+                            <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
+                            <span>{saves} saves</span>
+                            <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
+                            <span>{enquiries} inq</span>
+                            {offerCount > 0 && <><span style={{ margin: '0 4px', opacity: 0.4 }}>·</span><span style={{ color: C.terracotta, fontWeight: 600 }}>{offerCount} {offerCount === 1 ? 'offer' : 'offers'}</span></>}
+                            {viewings > 0 && <><span style={{ margin: '0 4px', opacity: 0.4 }}>·</span><span style={{ color: C.forestLight }}>{viewings} viewed</span></>}
+                          </td>
                           <td style={{ padding: '12px 16px' }}>
                             <HealthRing score={score} />
                           </td>

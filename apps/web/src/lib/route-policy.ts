@@ -86,6 +86,7 @@ export const PUBLIC_SHELL_ROUTES = [
   '/app/listings',
   '/app/property',
   '/agent-profile',
+  '/company',
   '/listings',
 ] as const;
 

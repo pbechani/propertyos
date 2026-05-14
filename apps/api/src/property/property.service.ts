@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { PrismaService } from '../database';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
@@ -20,6 +21,7 @@ import {
   MAX_MEDIA_PER_PROPERTY,
 } from './property.constants';
 import { SELF_COMPANY_SLUG } from '../identity/identity.constants';
+import { generateSaleReference, TOTAL_STAGES } from '../sales/sales.constants';
 
 export type PropertyRecord = {
   id: string;
@@ -63,7 +65,9 @@ export type PropertyRecord = {
   verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
-  /** Running count of authenticated non-owner page views. See migration 202603060017. */
+  /** Running count of non-owner page views (authenticated + anonymous). Anonymous views are
+   *  deduplicated per IP per hour via property.anonymous_view_logs. See migrations
+   *  202603060017 and 202604160050. */
   view_count: number;
   /** True when the listing's agent has been platform-suspended. Non-self-company listings remain
    * visible but have interactions disabled; self-company listings are also set to 'inactive'. */
@@ -237,6 +241,114 @@ export class PropertyService {
     return created;
   }
 
+  async duplicateProperty(
+    id: string,
+    actorId: string,
+    actorRole: string,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<PropertyRecord> {
+    // Fetch source property
+    const sources = await this.prisma.$queryRaw<PropertyRecord[]>`
+      SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
+    `;
+    if (!sources[0]) {
+      throw new NotFoundException('Property not found');
+    }
+    const src = sources[0];
+
+    // Non-admins can only duplicate their own listings
+    if (actorRole !== 'admin' && src.agent_id !== actorId && src.owner_id !== actorId) {
+      throw new ForbiddenException('You do not have permission to duplicate this listing');
+    }
+
+    // Resolve company (same pattern as create)
+    let resolvedCompanyId = companyId ?? src.company_id ?? null;
+    if (!resolvedCompanyId) {
+      const selfRows = await this.prisma.$queryRaw<Array<{ company_id: string }>>`
+        SELECT cm.company_id
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = ${actorId}::uuid
+          AND c.is_system = true
+          AND c.slug = ${SELF_COMPANY_SLUG}
+          AND cm.status = 'active'
+        LIMIT 1
+      `;
+      resolvedCompanyId = selfRows[0]?.company_id ?? null;
+    }
+
+    const newTitle = `${src.title} (Copy)`;
+
+    const newProperty = await this.prisma.$queryRaw<PropertyRecord[]>`
+      INSERT INTO property.properties (
+        title, description, property_type, property_subtype, listing_type, listing_reference,
+        title_type, price, currency, area_sqm, floor_area_sqm, erf_size_sqm,
+        bedrooms, bathrooms, parking_spaces, garages, carports,
+        monthly_levy, monthly_rates, monthly_utilities,
+        features, agent_id, owner_id, company_id, status
+      ) VALUES (
+        ${newTitle},
+        ${src.description ?? null},
+        ${src.property_type},
+        ${(src as any).property_subtype ?? null},
+        ${src.listing_type ?? null},
+        ${null},
+        ${(src as any).title_type ?? null},
+        ${src.price},
+        ${src.currency ?? 'ZAR'},
+        ${src.area_sqm ?? null},
+        ${(src as any).floor_area_sqm ?? null},
+        ${(src as any).erf_size_sqm ?? null},
+        ${src.bedrooms ?? null},
+        ${src.bathrooms ?? null},
+        ${src.parking_spaces ?? null},
+        ${(src as any).garages ?? null},
+        ${(src as any).carports ?? null},
+        ${(src as any).monthly_levy ?? null},
+        ${(src as any).monthly_rates ?? null},
+        ${(src as any).monthly_utilities ?? null},
+        ${JSON.stringify(src.features ?? [])}::jsonb,
+        ${actorId}::uuid,
+        ${actorId}::uuid,
+        ${resolvedCompanyId}::uuid,
+        'draft'
+      )
+      RETURNING *
+    `;
+
+    const created = newProperty[0];
+
+    // Copy location if it exists
+    const srcLocation = await this.getLocation(id);
+    if (srcLocation) {
+      await this.upsertLocation(created.id, {
+        addressLine1: srcLocation.address_line1 ?? undefined,
+        city: srcLocation.city ?? undefined,
+        region: srcLocation.region ?? undefined,
+        country: srcLocation.country ?? 'ZA',
+        postalCode: srcLocation.postal_code ?? undefined,
+        latitude: srcLocation.latitude ? Number(srcLocation.latitude) : undefined,
+        longitude: srcLocation.longitude ? Number(srcLocation.longitude) : undefined,
+      });
+    }
+
+    await this.audit.log({
+      actorId,
+      actorRole,
+      companyId: resolvedCompanyId,
+      action: 'property.duplicated',
+      resourceType: 'property',
+      resourceId: created.id,
+      payload: { sourceId: id, title: created.title },
+      ipAddress,
+      userAgent,
+    });
+
+    return created;
+  }
+
   async findById(
     id: string,
     viewContext?: {
@@ -261,24 +373,53 @@ export class PropertyService {
     const location = await this.getLocation(id);
     const media = await this.getMedia(id);
 
-    // Increment the mutable view counter only when:
-    //  - the request carries an authenticated actor ID (skips SSR anonymous calls), AND
-    //  - that actor is NOT the property owner or the listing agent.
-    // Using a dedicated counter column rather than counting audit_logs rows avoids:
-    //  a) historical null-actor audit rows inflating the count, and
-    //  b) Next.js SSR calls (no auth token → null actor) always triggering a log.
+    // Increment the mutable view counter when the visitor is NOT the owner/agent.
+    //
+    // Authenticated visitors: counted immediately (actorId present, not owner).
+    //
+    // Anonymous visitors: counted once per IP per property per hour using the
+    //   property.anonymous_view_logs table.  The IP is stored as a SHA-256 hash
+    //   so no PII is persisted.  This deduplication prevents:
+    //     a) Next.js SSR calls firing multiple increments for the same page load.
+    //     b) Rapid page refreshes inflating the counter.
+    //   Views from different IP addresses (real unique anonymous visitors) are each counted.
     const actorId = viewContext?.actorId;
     const isOwnerView =
       actorId &&
       (actorId === property.agent_id || actorId === property.owner_id);
 
-    if (actorId && !isOwnerView) {
+    if (!isOwnerView) {
       try {
-        await this.prisma.$executeRaw`
-          UPDATE property.properties
-             SET view_count = view_count + 1
-           WHERE id = ${id}::uuid
-        `;
+        if (actorId) {
+          // Authenticated non-owner: always count.
+          await this.prisma.$executeRaw`
+            UPDATE property.properties
+               SET view_count = view_count + 1
+             WHERE id = ${id}::uuid
+          `;
+        } else if (viewContext?.ipAddress) {
+          // Anonymous visitor: deduplicate by IP hash within a 1-hour window.
+          const ipHash = createHash('sha256').update(viewContext.ipAddress).digest('hex');
+          const existing = await this.prisma.$queryRaw<[{ cnt: string }]>`
+            SELECT COUNT(*)::text AS cnt
+              FROM property.anonymous_view_logs
+             WHERE property_id = ${id}::uuid
+               AND ip_hash     = ${ipHash}
+               AND viewed_at   > NOW() - INTERVAL '1 hour'
+          `;
+          const alreadyCounted = BigInt(existing[0]?.cnt ?? '0') > 0n;
+          if (!alreadyCounted) {
+            await this.prisma.$executeRaw`
+              INSERT INTO property.anonymous_view_logs (property_id, ip_hash)
+              VALUES (${id}::uuid, ${ipHash})
+            `;
+            await this.prisma.$executeRaw`
+              UPDATE property.properties
+                 SET view_count = view_count + 1
+               WHERE id = ${id}::uuid
+            `;
+          }
+        }
       } catch {
         // View counting must never block property reads.
       }
@@ -335,12 +476,22 @@ export class PropertyService {
       description: 'description',
       status: 'status',
       propertyType: 'property_type',
+      property_subtype: 'property_subtype',
       listingType: 'listing_type',
+      listing_reference: 'listing_reference',
+      title_type: 'title_type',
       price: 'price',
       currency: 'currency',
+      monthly_levy: 'monthly_levy',
+      monthly_rates: 'monthly_rates',
+      monthly_utilities: 'monthly_utilities',
       areaSqm: 'area_sqm',
+      floor_area_sqm: 'floor_area_sqm',
+      erf_size_sqm: 'erf_size_sqm',
       bedrooms: 'bedrooms',
       bathrooms: 'bathrooms',
+      garages: 'garages',
+      carports: 'carports',
       parkingSpaces: 'parking_spaces',
     };
 
@@ -884,6 +1035,8 @@ export class PropertyService {
          WHERE i.property_id = p.id)::int AS inquiries,
         (SELECT COUNT(*) FROM property.viewings v
          WHERE v.property_id = p.id AND v.status = 'completed')::int AS completed_viewings,
+        (SELECT COUNT(*) FROM sales.property_offers po
+         WHERE po.property_id = p.id AND po.status NOT IN ('withdrawn', 'expired'))::int AS offer_count,
         pl.city, pl.region
       FROM property.properties p
       LEFT JOIN property.property_locations pl ON pl.property_id = p.id
@@ -984,8 +1137,26 @@ export class PropertyService {
       SELECT
         v.id, v.scheduled_at, v.status, v.viewing_type, v.duration_minutes,
         v.buyer_feedback, v.cancel_reason, v.declined_at, v.rescheduled_at, v.created_at,
-        bu.first_name AS buyer_first_name, bu.last_name AS buyer_last_name,
-        bu.email AS buyer_email, bu.phone AS buyer_phone
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'name'
+          ELSE bu.first_name
+        END AS buyer_first_name,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN NULL
+          ELSE bu.last_name
+        END AS buyer_last_name,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'email'
+          ELSE bu.email
+        END AS buyer_email,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'phone'
+          ELSE bu.phone
+        END AS buyer_phone
       FROM property.viewings v
       LEFT JOIN identity.users bu ON bu.id = v.buyer_id
       WHERE v.property_id = ${propertyId}::uuid
@@ -1524,6 +1695,44 @@ export class PropertyService {
     });
   }
 
+  async setPrimaryMedia(
+    propertyId: string,
+    mediaId: string,
+    agentId: string,
+    agentRole: string,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<void> {
+    await this.assertAgentOwns(propertyId, agentId, agentRole);
+
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM property.property_media
+      WHERE id = ${mediaId}::uuid AND property_id = ${propertyId}::uuid
+    `;
+    if (!rows[0]) throw new NotFoundException('Media not found');
+
+    // Clear existing primary then set the new one — two raw statements
+    await this.prisma.$executeRaw`
+      UPDATE property.property_media SET is_primary = false WHERE property_id = ${propertyId}::uuid
+    `;
+    await this.prisma.$executeRaw`
+      UPDATE property.property_media SET is_primary = true WHERE id = ${mediaId}::uuid
+    `;
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: agentRole,
+      companyId,
+      action: 'property.media.primary_set',
+      resourceType: 'property',
+      resourceId: propertyId,
+      payload: { mediaId },
+      ipAddress,
+      userAgent,
+    });
+  }
+
   // ──────────────────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────────────────
@@ -1607,6 +1816,7 @@ export class PropertyService {
     return {
       ...dto,
       propertyType: dto.propertyType ?? dto.property_type,
+      listingType: dto.listingType ?? dto.listing_type,
       areaSqm: dto.areaSqm ?? dto.area_sqm,
       parkingSpaces: dto.parkingSpaces ?? dto.parking_spaces,
       location: this.normalizeLocation(dto.location),
@@ -1804,21 +2014,78 @@ export class PropertyService {
     offerId: string,
     status: string,
   ) {
-    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
-      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    const props = await this.prisma.$queryRaw<{
+      agent_id: string;
+      title: string;
+      owner_id: string | null;
+      company_id: string | null;
+      currency: string | null;
+    }[]>`
+      SELECT agent_id, title, owner_id, company_id, currency
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid
+      LIMIT 1
     `;
     if (!props[0]) throw new NotFoundException('Property not found');
     if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
 
-    const rows = await this.prisma.$queryRaw<{ buyer_name: string; buyer_email: string | null; amount: number }[]>`
+    const rows = await this.prisma.$queryRaw<{
+      buyer_name: string;
+      buyer_email: string | null;
+      buyer_id: string | null;
+      amount: number;
+      deposit_amount: number | null;
+    }[]>`
       UPDATE sales.property_offers
       SET status = ${status}, updated_at = NOW()
       WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
-      RETURNING *
+      RETURNING id, buyer_id, buyer_name, buyer_email, amount, deposit_amount
     `;
     if (!rows.length) throw new NotFoundException('Offer not found');
 
     const offer = rows[0];
+
+    // Auto-create a sale pipeline record when an offer is accepted
+    if (status === 'accepted' && offer.buyer_id) {
+      const property = props[0];
+      const ref = generateSaleReference();
+      const sellerId = property.owner_id ?? agentId;
+      const currency = property.currency ?? 'ZAR';
+
+      const saleRows = await this.prisma.$queryRaw<{ id: string }[]>`
+        INSERT INTO sales.property_sales (
+          property_id, sale_reference, seller_id, buyer_id, agent_id,
+          agreed_price, currency, deposit_amount, country, company_id
+        ) VALUES (
+          ${propertyId}::uuid,
+          ${ref},
+          ${sellerId}::uuid,
+          ${offer.buyer_id}::uuid,
+          ${agentId}::uuid,
+          ${offer.amount},
+          ${currency},
+          ${offer.deposit_amount ?? null},
+          'ZA',
+          ${property.company_id ?? null}::uuid
+        )
+        ON CONFLICT DO NOTHING
+        RETURNING id
+      `;
+
+      if (saleRows.length) {
+        const saleId = saleRows[0].id;
+        await this.prisma.$executeRaw`
+          INSERT INTO sales.sale_stage_progress (sale_id, stage_number, status)
+          SELECT ${saleId}::uuid, gs.n, 'not_started'
+          FROM generate_series(1, ${TOTAL_STAGES}) AS gs(n)
+          ON CONFLICT (sale_id, stage_number) DO NOTHING
+        `;
+        this.logger.log(
+          `Auto-created sale ${ref} (id: ${saleId}) from accepted offer ${offerId} on property ${propertyId}`,
+        );
+      }
+    }
+
     if (offer.buyer_email) {
       const label = status === 'accepted' ? 'Accepted 🎉' : status === 'rejected' ? 'Declined' : status;
       const subject = `Your offer on ${props[0].title} has been ${label}`;

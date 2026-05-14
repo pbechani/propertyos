@@ -1,6 +1,6 @@
 'use client';
 
-import { BedDouble, Bath, CarFront, Maximize, Heart, Camera, Eye, MapPin, Shield, Flame, Warehouse, DollarSign, Clock, Home, Landmark } from 'lucide-react';
+import { BedDouble, Bath, CarFront, Maximize, Heart, Camera, Eye, MapPin, Shield, Flame, Warehouse, DollarSign, Clock, Home, Landmark, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import PropertyCardHeader from '@/components/property/PropertyCardHeader';
@@ -39,9 +39,10 @@ interface Props {
   onSave: (id: string) => void;
   isSaved: boolean;
   isSaving: boolean;
+  offerMade?: boolean;
 }
 
-export default function ListingCardOptA({ property, onSave, isSaved, isSaving }: Props) {
+export default function ListingCardOptA({ property, onSave, isSaved, isSaving, offerMade = false }: Props) {
   const statusBadge = getListingStatusBadge(property.status);
   const verificationBadge = property.fraudFlagged
     ? { label: 'FLAGGED', style: { background: '#ef4444', color: '#fff' } }
@@ -120,9 +121,20 @@ export default function ListingCardOptA({ property, onSave, isSaved, isSaving }:
             : <Heart className="w-4 h-4 text-gray-400" />}
         </button>
 
-        {/* Photo count bottom-left */}
+        {/* Offer Made badge bottom-left */}
+        {offerMade && (
+          <div
+            className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2.5 py-1"
+            style={{ background: '#B89040', color: '#fff', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, fontWeight: 700, letterSpacing: '0.05em' }}
+          >
+            <FileText className="w-3 h-3" />
+            OFFER MADE
+          </div>
+        )}
+
+        {/* Photo count bottom-left (shifted right when offer badge shown) */}
         {property.mediaCount > 1 && (
-          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1">
+          <div className={`absolute bottom-2 bg-black/60 text-white text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-1 ${offerMade ? 'left-28' : 'left-2'}`}>
             <Camera className="w-3 h-3" />{property.mediaCount}
           </div>
         )}

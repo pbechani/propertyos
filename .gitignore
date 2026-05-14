@@ -76,3 +76,10 @@ temp/
 .expo/
 
 sample_ui/
+
+# Agent Folder Security
+.github/
+
+# Tool-generated artifacts
+.playwright-mcp/
+.specify/

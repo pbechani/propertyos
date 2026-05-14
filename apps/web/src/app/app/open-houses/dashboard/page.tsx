@@ -1,5 +1,5 @@
-import { DashboardView } from '@/views/open-houses/OHDashboardView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <DashboardView />;
+  redirect('/app/on-show?tab=dashboard');
 }

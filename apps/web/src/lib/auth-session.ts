@@ -146,8 +146,14 @@ export function getAccessToken(): string | null {
   }
 
   if (payload.exp !== undefined && Math.floor(Date.now() / 1000) > payload.exp) {
-    // Token has expired — clear the stale session.
-    clearAuthSession();
+    // Access token is expired. If a refresh token exists, return the expired token
+    // so the API layer can send it, receive a 401, and silently rotate credentials —
+    // without bouncing the user to the login page mid-session.
+    // Only return null (which causes redirect guards to fire) when there is no
+    // refresh token to recover with, i.e. the session is truly gone.
+    if (getRefreshToken()) {
+      return token;
+    }
     return null;
   }
 
@@ -167,8 +173,9 @@ export function getStoredUser(): AuthUser | null {
     return null;
   }
 
-  // If the access token is absent or invalid, the session is expired — no user.
-  if (!getAccessToken()) {
+  // Session is alive as long as a refresh token exists; the access token may be expired
+  // and awaiting rotation, so don't gate on getAccessToken() here.
+  if (!getRefreshToken()) {
     return null;
   }
 

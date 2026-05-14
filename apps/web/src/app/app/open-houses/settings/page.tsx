@@ -1,5 +1,5 @@
-import { SettingsView } from '@/views/open-houses/OHSettingsView';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <SettingsView />;
+  redirect('/app/on-show?tab=settings');
 }

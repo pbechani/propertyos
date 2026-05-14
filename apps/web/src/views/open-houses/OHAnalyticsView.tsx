@@ -60,11 +60,11 @@ const propertyPerformanceData = [
 ];
 
 const leadSourceData = [
-  { name: 'Website', value: 145, color: '#3b82f6' },
-  { name: 'Referral', value: 89, color: '#10b981' },
-  { name: 'Open House', value: 67, color: '#8b5cf6' },
-  { name: 'Social Media', value: 54, color: '#f59e0b' },
-  { name: 'Email Campaign', value: 43, color: '#ec4899' },
+  { name: 'Website', value: 145, color: '#1A3C28' },
+  { name: 'Referral', value: 89, color: '#00E87A' },
+  { name: 'Open House', value: 67, color: '#C4562A' },
+  { name: 'Social Media', value: 54, color: '#B89040' },
+  { name: 'Email Campaign', value: 43, color: '#F5C87A' },
 ];
 
 const marketingCampaignData = [
@@ -75,12 +75,12 @@ const marketingCampaignData = [
 ];
 
 const conversionFunnelData = [
-  { stage: 'Website Visitors', count: 5420, percentage: 100, color: '#3b82f6' },
-  { stage: 'Leads Generated', count: 398, percentage: 7.3, color: '#8b5cf6' },
-  { stage: 'Qualified Leads', count: 248, percentage: 4.6, color: '#10b981' },
-  { stage: 'Showings Scheduled', count: 156, percentage: 2.9, color: '#f59e0b' },
-  { stage: 'Offers Made', count: 67, percentage: 1.2, color: '#ec4899' },
-  { stage: 'Deals Closed', count: 31, percentage: 0.6, color: '#14b8a6' },
+  { stage: 'Website Visitors', count: 5420, percentage: 100, color: '#1A3C28' },
+  { stage: 'Leads Generated', count: 398, percentage: 7.3, color: '#2D5A40' },
+  { stage: 'Qualified Leads', count: 248, percentage: 4.6, color: '#00E87A' },
+  { stage: 'Showings Scheduled', count: 156, percentage: 2.9, color: '#B89040' },
+  { stage: 'Offers Made', count: 67, percentage: 1.2, color: '#C4562A' },
+  { stage: 'Deals Closed', count: 31, percentage: 0.6, color: '#F5C87A' },
 ];
 
 export function AnalyticsView() {
@@ -123,14 +123,14 @@ export function AnalyticsView() {
 
   const leadSourceData = useMemo(() => {
     const fallback = [
-      { name: 'Website', value: 145, color: '#3b82f6' },
-      { name: 'Referral', value: 89, color: '#10b981' },
-      { name: 'Open House', value: 67, color: '#8b5cf6' },
-      { name: 'Social Media', value: 54, color: '#f59e0b' },
-      { name: 'Email Campaign', value: 43, color: '#ec4899' },
+      { name: 'Website', value: 145, color: '#1A3C28' },
+      { name: 'Referral', value: 89, color: '#00E87A' },
+      { name: 'Open House', value: 67, color: '#C4562A' },
+      { name: 'Social Media', value: 54, color: '#B89040' },
+      { name: 'Email Campaign', value: 43, color: '#F5C87A' },
     ];
     if (!analytics?.sourceBreakdown?.length) return fallback;
-    const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6'];
+    const colors = ['#1A3C28', '#00E87A', '#C4562A', '#B89040', '#F5C87A', '#2D5A40'];
     return analytics.sourceBreakdown.map((s, i) => ({
       name: s.source === 'app' ? 'App' : s.source === 'walk-in' ? 'Walk-in' : s.source,
       value: Number(s.count),
@@ -166,7 +166,7 @@ export function AnalyticsView() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setActiveTab('standard')}
-            className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-white transition-colors"
+            className="px-4 py-2 border border-[rgba(26,60,40,0.15)] text-[rgba(26,60,40,0.7)] rounded-lg font-medium hover:bg-[rgba(26,60,40,0.04)] transition-colors"
           >
             ← Back to Standard Analytics
           </button>
@@ -177,17 +177,22 @@ export function AnalyticsView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-7">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Analytics</h2>
-          <p className="text-slate-600">Track your performance and insights</p>
+          <p className="text-[0.65rem] font-mono tracking-[0.12em] uppercase text-[#C4562A] mb-1">On Show Command</p>
+          <h2
+            className="text-2xl font-semibold text-[#1A3C28]"
+            style={{ fontFamily: 'var(--font-fraunces, "Fraunces", Georgia, serif)' }}
+          >
+            Analytics
+          </h2>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActiveTab('advanced')}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-[#C4562A] text-white rounded-lg font-medium hover:bg-[#b34a23] transition-all flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
             AI Analytics
@@ -195,7 +200,7 @@ export function AnalyticsView() {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+            className="px-4 py-2 border border-[rgba(26,60,40,0.15)] rounded-lg text-sm text-[#1A3C28] bg-white focus:outline-none focus:ring-2 focus:ring-[#1A3C28]"
           >
             <option value="last7days">Last 7 days</option>
             <option value="last30days">Last 30 days</option>
@@ -203,7 +208,7 @@ export function AnalyticsView() {
             <option value="last12months">Last 12 months</option>
             <option value="thisyear">This year</option>
           </select>
-          <button className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-white transition-colors flex items-center gap-2">
+          <button className="px-4 py-2 border border-[rgba(26,60,40,0.15)] text-[rgba(26,60,40,0.7)] rounded-lg font-medium hover:bg-[rgba(26,60,40,0.04)] transition-colors flex items-center gap-2">
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -218,15 +223,15 @@ export function AnalyticsView() {
           change={12.5}
           trend="up"
           icon={Users}
-          color="blue"
+          color="forest"
         />
         <KPICard
-          title="Open Houses"
+          title="On Show"
           value={String(kpi.totalOpenHouses)}
           change={8.7}
           trend="up"
           icon={Calendar}
-          color="purple"
+          color="terra"
         />
         <KPICard
           title="Total Attended"
@@ -234,7 +239,7 @@ export function AnalyticsView() {
           change={5.2}
           trend="up"
           icon={Home}
-          color="emerald"
+          color="egreen"
         />
         <KPICard
           title="Attendance Rate"
@@ -247,15 +252,15 @@ export function AnalyticsView() {
       </div>
 
       {/* Conversion Funnel */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Conversion Funnel</h3>
-            <p className="text-sm text-slate-600">Lead to close conversion rates</p>
+            <h3 className="text-lg font-semibold text-[#1A3C28]">Conversion Funnel</h3>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Lead to close conversion rates</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-slate-900">0.6%</p>
-            <p className="text-sm text-slate-600">Overall conversion rate</p>
+            <p className="text-2xl font-bold text-[#1A3C28]">0.6%</p>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Overall conversion rate</p>
           </div>
         </div>
         <ConversionFunnel data={conversionFunnelData} />
@@ -264,34 +269,34 @@ export function AnalyticsView() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Leads Over Time */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Leads Over Time</h3>
-            <p className="text-sm text-slate-600">Monthly lead generation trends</p>
+            <h3 className="text-lg font-semibold text-[#1A3C28]">Leads Over Time</h3>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Monthly lead generation trends</p>
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={leadsOverTimeData}>
               <defs>
                 <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#1A3C28" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#1A3C28" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorQualified" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#00E87A" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#00E87A" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorConverted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#C4562A" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#C4562A" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,60,40,0.08)" />
+              <XAxis dataKey="month" stroke="rgba(26,60,40,0.4)" fontSize={12} />
+              <YAxis stroke="rgba(26,60,40,0.4)" fontSize={12} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid rgba(26,60,40,0.1)',
                   borderRadius: '8px',
                 }}
               />
@@ -299,7 +304,7 @@ export function AnalyticsView() {
               <Area
                 type="monotone"
                 dataKey="leads"
-                stroke="#3b82f6"
+                stroke="#1A3C28"
                 strokeWidth={2}
                 fill="url(#colorLeads)"
                 name="Total Leads"
@@ -307,7 +312,7 @@ export function AnalyticsView() {
               <Area
                 type="monotone"
                 dataKey="qualified"
-                stroke="#10b981"
+                stroke="#00E87A"
                 strokeWidth={2}
                 fill="url(#colorQualified)"
                 name="Qualified"
@@ -315,7 +320,7 @@ export function AnalyticsView() {
               <Area
                 type="monotone"
                 dataKey="converted"
-                stroke="#8b5cf6"
+                stroke="#C4562A"
                 strokeWidth={2}
                 fill="url(#colorConverted)"
                 name="Converted"
@@ -325,10 +330,10 @@ export function AnalyticsView() {
         </div>
 
         {/* Lead Sources */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Lead Sources</h3>
-            <p className="text-sm text-slate-600">Distribution by acquisition channel</p>
+            <h3 className="text-lg font-semibold text-[#1A3C28]">Lead Sources</h3>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Distribution by acquisition channel</p>
           </div>
           <div className="flex items-center gap-6">
             <ResponsiveContainer width="60%" height={250}>
@@ -357,9 +362,9 @@ export function AnalyticsView() {
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: source.color }}
                     />
-                    <span className="text-sm text-slate-700">{source.name}</span>
+                    <span className="text-sm text-[rgba(26,60,40,0.7)]">{source.name}</span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-900">{source.value}</span>
+                  <span className="text-sm font-semibold text-[#1A3C28]">{source.value}</span>
                 </div>
               ))}
             </div>
@@ -370,83 +375,83 @@ export function AnalyticsView() {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Property Performance */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Property Performance</h3>
-            <p className="text-sm text-slate-600">Views, inquiries, and showings</p>
+            <h3 className="text-lg font-semibold text-[#1A3C28]">Property Performance</h3>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Views, inquiries, and showings</p>
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={propertyPerformanceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" stroke="#64748b" fontSize={11} angle={-15} textAnchor="end" height={80} />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(26,60,40,0.08)" />
+              <XAxis dataKey="name" stroke="rgba(26,60,40,0.4)" fontSize={11} angle={-15} textAnchor="end" height={80} />
+              <YAxis stroke="rgba(26,60,40,0.4)" fontSize={12} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid rgba(26,60,40,0.1)',
                   borderRadius: '8px',
                 }}
               />
               <Legend />
-              <Bar dataKey="views" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Views" />
-              <Bar dataKey="inquiries" fill="#10b981" radius={[4, 4, 0, 0]} name="Inquiries" />
-              <Bar dataKey="showings" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Showings" />
+              <Bar dataKey="views" fill="#1A3C28" radius={[4, 4, 0, 0]} name="Views" />
+              <Bar dataKey="inquiries" fill="#00E87A" radius={[4, 4, 0, 0]} name="Inquiries" />
+              <Bar dataKey="showings" fill="#C4562A" radius={[4, 4, 0, 0]} name="Showings" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Marketing Campaign Performance */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Campaign Performance</h3>
-            <p className="text-sm text-slate-600">Email marketing metrics</p>
+            <h3 className="text-lg font-semibold text-[#1A3C28]">Campaign Performance</h3>
+            <p className="text-sm text-[rgba(26,60,40,0.55)]">Email marketing metrics</p>
           </div>
           <div className="space-y-4">
             {marketingCampaignData.map((campaign, index) => (
-              <div key={index} className="pb-4 border-b border-slate-100 last:border-0">
+              <div key={index} className="pb-4 border-b border-[rgba(26,60,40,0.07)] last:border-0">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-slate-900">{campaign.campaign}</h4>
-                  <span className="text-sm text-slate-600">{campaign.sent} sent</span>
+                  <h4 className="font-medium text-[#1A3C28]">{campaign.campaign}</h4>
+                  <span className="text-sm text-[rgba(26,60,40,0.55)]">{campaign.sent} sent</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <p className="text-xs text-slate-600 mb-1">Open Rate</p>
+                    <p className="text-xs text-[rgba(26,60,40,0.55)] mb-1">Open Rate</p>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[rgba(26,60,40,0.06)] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full"
+                          className="h-full bg-[#1A3C28] rounded-full"
                           style={{ width: `${(campaign.opened / campaign.sent) * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold text-slate-900">
+                      <span className="text-xs font-semibold text-[#1A3C28]">
                         {Math.round((campaign.opened / campaign.sent) * 100)}%
                       </span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-600 mb-1">Click Rate</p>
+                    <p className="text-xs text-[rgba(26,60,40,0.55)] mb-1">Click Rate</p>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[rgba(26,60,40,0.06)] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-emerald-500 rounded-full"
+                          className="h-full bg-[#00E87A] rounded-full"
                           style={{ width: `${(campaign.clicked / campaign.sent) * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold text-slate-900">
+                      <span className="text-xs font-semibold text-[#1A3C28]">
                         {Math.round((campaign.clicked / campaign.sent) * 100)}%
                       </span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-600 mb-1">Conversion</p>
+                    <p className="text-xs text-[rgba(26,60,40,0.55)] mb-1">Conversion</p>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-[rgba(26,60,40,0.06)] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-purple-500 rounded-full"
+                          className="h-full bg-[#C4562A] rounded-full"
                           style={{ width: `${(campaign.converted / campaign.sent) * 100}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold text-slate-900">
+                      <span className="text-xs font-semibold text-[#1A3C28]">
                         {Math.round((campaign.converted / campaign.sent) * 100)}%
                       </span>
                     </div>
@@ -502,33 +507,34 @@ function KPICard({
   change: number;
   trend: 'up' | 'down';
   icon: any;
-  color: 'blue' | 'emerald' | 'purple' | 'amber';
+  color: 'forest' | 'egreen' | 'terra' | 'amber';
 }) {
   const colorClasses = {
-    blue: 'text-blue-600 bg-blue-50',
-    emerald: 'text-emerald-600 bg-emerald-50',
-    purple: 'text-purple-600 bg-purple-50',
-    amber: 'text-amber-600 bg-amber-50',
+    forest: 'text-[#1A3C28] bg-[rgba(26,60,40,0.08)]',
+    egreen: 'text-[#00A854] bg-[rgba(0,232,122,0.1)]',
+    terra:  'text-[#C4562A] bg-[rgba(196,86,42,0.08)]',
+    amber:  'text-[#B89040] bg-[rgba(184,144,64,0.1)]',
   };
 
-  const trendColor = trend === 'up' ? 'text-emerald-600' : 'text-rose-600';
+  const trendColor = trend === 'up' ? 'text-[#00A854]' : 'text-[#C4562A]';
+  const trendBg   = trend === 'up' ? 'bg-[rgba(0,232,122,0.1)]' : 'bg-[rgba(196,86,42,0.08)]';
   const TrendIcon = trend === 'up' ? ArrowUpRight : ArrowDownRight;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center`}>
           <Icon className="w-6 h-6" />
         </div>
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${trend === 'up' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+        <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${trendBg}`}>
           <TrendIcon className={`w-3.5 h-3.5 ${trendColor}`} />
           <span className={`text-xs font-semibold ${trendColor}`}>
             {Math.abs(change)}%
           </span>
         </div>
       </div>
-      <p className="text-3xl font-bold text-slate-900 mb-1">{value}</p>
-      <p className="text-sm text-slate-600">{title}</p>
+      <p className="text-3xl font-bold text-[#1A3C28] mb-1">{value}</p>
+      <p className="text-sm text-[rgba(26,60,40,0.55)]">{title}</p>
     </div>
   );
 }
@@ -548,19 +554,19 @@ function MetricCard({
   icon: any;
   trend: 'up' | 'down';
 }) {
-  const trendColor = trend === 'up' ? 'text-emerald-600' : 'text-rose-600';
+  const trendColor = trend === 'up' ? 'text-[#00A854]' : 'text-[#C4562A]';
   const TrendIcon = trend === 'up' ? TrendingUp : TrendingDown;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
+    <div className="bg-white rounded-xl border border-[rgba(26,60,40,0.1)] p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Icon className="w-4 h-4 text-slate-500" />
-        <span className="text-sm text-slate-600">{title}</span>
+        <Icon className="w-4 h-4 text-[rgba(26,60,40,0.45)]" />
+        <span className="text-sm text-[rgba(26,60,40,0.55)]">{title}</span>
       </div>
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          <p className="text-xs text-slate-500">{subtitle}</p>
+          <p className="text-2xl font-bold text-[#1A3C28]">{value}</p>
+          <p className="text-xs text-[rgba(26,60,40,0.45)]">{subtitle}</p>
         </div>
         <div className={`flex items-center gap-1 ${trendColor}`}>
           <TrendIcon className="w-4 h-4" />
@@ -583,7 +589,7 @@ function ConversionFunnel({ data }: { data: typeof conversionFunnelData }) {
           <div key={stage.stage} className="relative">
             <div className="flex items-center gap-4">
               <div className="w-24 text-right">
-                <span className="text-sm font-semibold text-slate-900">{stage.count.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-[#1A3C28]">{stage.count.toLocaleString()}</span>
               </div>
               <div className="flex-1">
                 <div className="relative">

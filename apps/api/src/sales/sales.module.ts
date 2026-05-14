@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { EsignModule } from '../esign/esign.module';
 import { SalesService } from './sales.service';
 import { StageService } from './stage.service';
 import { StageDocumentService } from './stage-document.service';
@@ -22,6 +23,7 @@ import { PostSaleChecklistService } from './post-sale-checklist.service';
 import { SalesEnhancedController } from './sales-enhanced.controller';
 
 @Module({
+  imports: [forwardRef(() => EsignModule)],
   controllers: [
     // Dashboard controllers registered first to avoid route ambiguity
     AgentSalesDashboardController,
@@ -46,6 +48,6 @@ import { SalesEnhancedController } from './sales-enhanced.controller';
     SellerDisclosureService,
     PostSaleChecklistService,
   ],
-  exports: [SalesService, SalesAuditService],
+  exports: [SalesService, SalesAuditService, OtpService],
 })
 export class SalesModule {}

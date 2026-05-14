@@ -57,10 +57,10 @@ export function PropertiesView() {
   }, [router]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-7">
       <div>
-        <h2 className="text-2xl font-semibold text-slate-900">Properties</h2>
-        <p className="text-slate-600">Manage all your open house listings</p>
+        <h2 className="text-2xl font-semibold text-[#1A3C28]">Properties</h2>
+        <p className="text-[rgba(26,60,40,0.55)]">Manage all your open house listings</p>
       </div>
       <PropertyListView properties={properties} loading={loading} error={error} />
     </div>

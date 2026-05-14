@@ -4,13 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useParams, Link } from "@/lib/router-compat";
 import {
-  ChevronLeft, Shield, CheckCircle2, Star, MapPin, Phone, Mail,
+  ChevronLeft, Shield, Star, MapPin, Phone, Mail,
   MessageSquare, Award, TrendingUp, Home, Calendar,
   Clock, Eye, ThumbsUp, X, Loader2, CheckCircle, Quote
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { UserAvatarContent } from "@/components/UserAvatarContent";
 import {
   propertiesApi,
@@ -25,6 +23,22 @@ import { formatMoney } from "@/lib/formatters";
 
 const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=300&h=200&fit=crop";
 
+// ─── Brand constants ───────────────────────────────────────────────────────────
+const FRAUNCES = 'var(--font-fraunces, "Fraunces", Georgia, serif)';
+const MONO     = 'var(--font-mono, "IBM Plex Mono", monospace)';
+const C = {
+  forest:      '#1A3C28',
+  forestLight: '#2D5A40',
+  parchment:   '#F2E8D5',
+  cream:       '#EAD9C4',
+  carbon:      '#0C0D10',
+  egreen:      '#00E87A',
+  amber:       '#B89040',
+  muted:       '#6B8A76',
+  faint:       '#9AAFA4',
+  border:      'rgba(26,60,40,0.12)',
+};
+
 function formatDate(value: string | Date): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
@@ -36,18 +50,33 @@ function formatDate(value: string | Date): string {
 // ─── Modal base ───────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" style={{ border: `1px solid ${C.border}` }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
+          <h2 className="text-lg font-semibold" style={{ fontFamily: FRAUNCES, color: C.forest }}>{title}</h2>
+          <button
+            onClick={onClose}
+            className="transition-colors"
+            style={{ color: `${C.forest}60` }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.forest; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = `${C.forest}60`; }}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
+}
+
+// ─── Shared form field styles ─────────────────────────────────────────────────
+const inputCls = "w-full rounded-lg px-3 py-2 text-sm outline-none transition-shadow"
+  + " bg-white border focus:ring-2";
+const inputStyle = { borderColor: C.border, color: C.forest };
+
+function FormLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: C.muted }}>{children}</label>;
 }
 
 // ─── Contact Agent Modal ──────────────────────────────────────────────────────
@@ -94,12 +123,13 @@ function ContactAgentModal({
     return (
       <Modal title="Message Sent" onClose={onClose}>
         <div className="text-center py-4">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+            style={{ background: `${C.egreen}20` }}>
+            <CheckCircle className="w-8 h-8" style={{ color: C.forestLight }} />
           </div>
-          <p className="font-semibold text-gray-800 mb-1">Message sent to {agentName}</p>
-          <p className="text-sm text-gray-500 mb-4">The agent will get back to you shortly.</p>
-          <Button onClick={onClose} className="bg-blue-500 hover:bg-blue-600 text-white w-full">Close</Button>
+          <p className="font-semibold mb-1" style={{ color: C.forest }}>Message sent to {agentName}</p>
+          <p className="text-sm mb-4" style={{ color: C.muted }}>The agent will get back to you shortly.</p>
+          <Button onClick={onClose} className="w-full font-bold" style={{ background: C.egreen, color: C.carbon }}>Close</Button>
         </div>
       </Modal>
     );
@@ -111,19 +141,21 @@ function ContactAgentModal({
         {!storedUser && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+              <FormLabel>Your Name</FormLabel>
               <input
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={inputCls}
+                style={inputStyle}
                 placeholder="Full name"
                 value={form.requesterName}
                 onChange={(e) => setForm({ ...form, requesterName: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <FormLabel>Email</FormLabel>
               <input
                 type="email"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={inputCls}
+                style={inputStyle}
                 placeholder="your@email.com"
                 value={form.requesterEmail}
                 onChange={(e) => setForm({ ...form, requesterEmail: e.target.value })}
@@ -132,34 +164,37 @@ function ContactAgentModal({
           </>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+          <FormLabel>Phone (optional)</FormLabel>
           <input
             type="tel"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className={inputCls}
+            style={inputStyle}
             placeholder="+27 xxx xxx xxxx"
             value={form.requesterPhone}
             onChange={(e) => setForm({ ...form, requesterPhone: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+          <FormLabel>Message</FormLabel>
           <textarea
             rows={4}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            className={`${inputCls} resize-none`}
+            style={inputStyle}
             placeholder="I'm interested in your listings. Please get in touch..."
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
           />
         </div>
         {status === "error" && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{errorMsg}</p>
+          <p className="text-sm rounded-lg p-3" style={{ color: '#B91C1C', background: '#FEF2F2' }}>{errorMsg}</p>
         )}
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button
             type="submit"
             disabled={status === "submitting"}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+            className="flex-1 font-bold"
+            style={{ background: C.egreen, color: C.carbon }}
           >
             {status === "submitting" ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</>
@@ -229,15 +264,16 @@ function ScheduleCallModal({
     return (
       <Modal title="Call Scheduled" onClose={onClose}>
         <div className="text-center py-4">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+            style={{ background: `${C.egreen}20` }}>
+            <CheckCircle className="w-8 h-8" style={{ color: C.forestLight }} />
           </div>
-          <p className="font-semibold text-gray-800 mb-1">Call scheduled with {agentName}</p>
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="font-semibold mb-1" style={{ color: C.forest }}>Call scheduled with {agentName}</p>
+          <p className="text-sm mb-1" style={{ color: C.muted }}>
             Preferred time: <span className="font-medium">{form.preferredDate ? new Date(form.preferredDate).toLocaleString() : "—"}</span>
           </p>
-          <p className="text-sm text-gray-500 mb-4">The agent will confirm your appointment shortly.</p>
-          <Button onClick={onClose} className="bg-blue-500 hover:bg-blue-600 text-white w-full">Close</Button>
+          <p className="text-sm mb-4" style={{ color: C.muted }}>The agent will confirm your appointment shortly.</p>
+          <Button onClick={onClose} className="w-full font-bold" style={{ background: C.egreen, color: C.carbon }}>Close</Button>
         </div>
       </Modal>
     );
@@ -253,19 +289,21 @@ function ScheduleCallModal({
         {!storedUser && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+              <FormLabel>Your Name</FormLabel>
               <input
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={inputCls}
+                style={inputStyle}
                 placeholder="Full name"
                 value={form.requesterName}
                 onChange={(e) => setForm({ ...form, requesterName: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <FormLabel>Email</FormLabel>
               <input
                 type="email"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={inputCls}
+                style={inputStyle}
                 placeholder="your@email.com"
                 value={form.requesterEmail}
                 onChange={(e) => setForm({ ...form, requesterEmail: e.target.value })}
@@ -274,45 +312,49 @@ function ScheduleCallModal({
           </>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Date &amp; Time <span className="text-red-500">*</span></label>
+          <FormLabel>Preferred Date &amp; Time <span style={{ color: '#B91C1C' }}>*</span></FormLabel>
           <input
             type="datetime-local"
             min={minDateTimeStr}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className={inputCls}
+            style={inputStyle}
             value={form.preferredDate}
             onChange={(e) => setForm({ ...form, preferredDate: e.target.value })}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+          <FormLabel>Phone (optional)</FormLabel>
           <input
             type="tel"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className={inputCls}
+            style={inputStyle}
             placeholder="+27 xxx xxx xxxx"
             value={form.requesterPhone}
             onChange={(e) => setForm({ ...form, requesterPhone: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+          <FormLabel>Notes (optional)</FormLabel>
           <textarea
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+            className={`${inputCls} resize-none`}
+            style={inputStyle}
             placeholder="Topics you'd like to discuss..."
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
           />
         </div>
         {status === "error" && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{errorMsg}</p>
+          <p className="text-sm rounded-lg p-3" style={{ color: '#B91C1C', background: '#FEF2F2' }}>{errorMsg}</p>
         )}
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button
             type="submit"
             disabled={status === "submitting"}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+            className="flex-1 font-bold"
+            style={{ background: C.egreen, color: C.carbon }}
           >
             {status === "submitting" ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scheduling…</>
@@ -333,32 +375,39 @@ function ReviewCard({ review }: { review: AgentReview }) {
     : '?';
   const displayName = review.reviewerName ?? 'Anonymous';
   return (
-    <div className="rounded-lg border border-gray-200 p-4 bg-white dark:bg-gray-800">
+    <div className="py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
       <div className="flex items-start gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-700 font-semibold text-sm">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+          style={{ background: C.cream, color: C.forestLight }}>
           {initials}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold text-sm truncate">{displayName}</p>
-            <span className="text-xs text-gray-400 shrink-0">{formatDate(review.createdAt)}</span>
+            <p className="font-semibold text-sm" style={{ color: C.forest }}>{displayName}</p>
+            <span className="text-xs shrink-0" style={{ color: C.faint }}>{formatDate(review.createdAt)}</span>
           </div>
-          <div className="flex items-center gap-1 mt-0.5">
+          <div className="flex items-center gap-0.5 mt-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
-                className={`w-3.5 h-3.5 ${i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                className="w-3.5 h-3.5"
+                style={i < review.rating
+                  ? { color: C.amber, fill: C.amber }
+                  : { color: C.cream, fill: C.cream }}
               />
             ))}
             {review.propertyType && (
-              <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{review.propertyType}</Badge>
+              <span className="ml-2 text-xs px-2 py-0.5 rounded-full"
+                style={{ background: `${C.forest}0D`, color: C.muted }}>
+                {review.propertyType}
+              </span>
             )}
           </div>
         </div>
       </div>
       <div className="relative pl-4">
-        <Quote className="w-3.5 h-3.5 text-blue-200 absolute left-0 top-0" />
-        <p className="text-sm text-gray-600 leading-relaxed">{review.comment ?? ''}</p>
+        <Quote className="w-3 h-3 absolute left-0 top-0.5" style={{ color: `${C.forest}30` }} />
+        <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{review.comment ?? ''}</p>
       </div>
     </div>
   );
@@ -471,369 +520,505 @@ export default function AgentProfile() {
           onClose={() => setShowScheduleModal(false)}
         />
       )}
-    <div className="bg-gray-50 min-h-screen">
-      {/* Back Button */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
-        </div>
+
+    {/* ── Page shell ─────────────────────────────────────────────────────── */}
+    <div className="min-h-screen" style={{ background: C.parchment }}>
+
+      {/* ── Topbar / breadcrumb ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-10 py-3.5" style={{ background: C.forest }}>
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-100"
+          style={{ color: `${C.parchment}A6` }}
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back to Listings
+        </button>
+        {profileName && (
+          <>
+            <span className="text-xs" style={{ color: `${C.parchment}4D` }}>›</span>
+            <span className="text-sm font-semibold" style={{ color: C.parchment }}>{profileName}</span>
+          </>
+        )}
       </div>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {isLoading && (
-          <Card className="p-6 mb-6 flex items-center gap-3 text-sm text-blue-700 bg-blue-50 border-blue-200">
-            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-            Loading agent profile…
-          </Card>
-        )}
+      {/* ── Loading / error states ──────────────────────────────────────── */}
+      {isLoading && (
+        <div className="max-w-5xl mx-auto px-10 py-12 flex items-center gap-3 text-sm" style={{ color: C.muted }}>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading agent profile…
+        </div>
+      )}
+      {!isLoading && error && (
+        <div className="max-w-5xl mx-auto px-10 py-8 text-sm rounded-xl mt-8"
+          style={{ color: '#B91C1C', background: '#FEF2F2', border: '1px solid #FECACA' }}>
+          {error}
+        </div>
+      )}
 
-        {!isLoading && error && (
-          <Card className="p-6 mb-6 text-sm text-red-700 bg-red-50 border-red-200">
-            {error}
-          </Card>
-        )}
+      {!isLoading && !error && agentProfile && (
+        <>
+          {/* ── Hero ─────────────────────────────────────────────────────── */}
+          <div className="relative overflow-hidden pb-24"
+            style={{ background: 'linear-gradient(135deg, #1A3C28 0%, #2D5A40 60%, #3A7050 100%)' }}>
+            {/* subtle texture overlay */}
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
 
-        {!isLoading && !error && agentProfile && (
-          <>
-        {/* Agent Header */}
-        <Card className="p-6 md:p-8 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Agent Image */}
-            <div className="shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-100 bg-blue-50 flex items-center justify-center text-3xl font-semibold text-blue-700">
-                <UserAvatarContent
-                  avatarUrl={agentProfile.avatarUrl}
-                  initials={profileInitials}
-                  alt={profileName}
-                />
+            <div className="max-w-5xl mx-auto px-10 pt-12 relative z-10">
+              <div className="flex gap-8 items-start">
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <div className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold"
+                    style={{
+                      border: `4px solid ${C.egreen}`,
+                      background: C.forestLight,
+                      color: C.egreen,
+                      fontFamily: FRAUNCES,
+                    }}>
+                    <UserAvatarContent
+                      avatarUrl={agentProfile.avatarUrl}
+                      initials={profileInitials}
+                      alt={profileName}
+                    />
+                  </div>
+                  {agentProfile.status === 'active' && (
+                    <div className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{ background: C.egreen, border: `3px solid ${C.forest}` }}>
+                      <CheckCircle className="w-3.5 h-3.5" style={{ color: C.carbon }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Agent info */}
+                <div className="flex-1 min-w-0">
+                  {/* Role pill */}
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3"
+                    style={{
+                      background: `${C.egreen}26`,
+                      border: `1px solid ${C.egreen}4D`,
+                      color: C.egreen,
+                    }}>
+                    <Shield className="w-3 h-3" />
+                    {isPrivateIndividual ? 'Private Owner' : 'Verified Agent'}
+                  </div>
+
+                  {/* Name */}
+                  <h1 className="text-4xl font-bold leading-none tracking-tight mb-1.5"
+                    style={{ fontFamily: FRAUNCES, color: C.parchment }}>
+                    {profileName}
+                  </h1>
+
+                  {/* City */}
+                  {agentProfile.primaryCity && (
+                    <p className="flex items-center gap-1.5 text-sm mb-5"
+                      style={{ color: `${C.parchment}99` }}>
+                      <MapPin className="w-3.5 h-3.5" />
+                      {agentProfile.primaryCity}
+                    </p>
+                  )}
+
+                  {/* Trust pill + stars */}
+                  <div className="flex items-center gap-5 flex-wrap mb-6">
+                    <div className="flex items-center gap-2.5 rounded-lg px-4 py-2"
+                      style={{ background: `${C.egreen}1F`, border: `1px solid ${C.egreen}40` }}>
+                      <span className="text-xl font-bold leading-none"
+                        style={{ fontFamily: MONO, color: C.egreen }}>
+                        {trustScore}%
+                      </span>
+                      <span className="text-xs" style={{ color: `${C.parchment}99` }}>Trust Score</span>
+                    </div>
+                    {reviewAvg > 0 && (
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="w-4 h-4"
+                            style={i < Math.round(reviewAvg)
+                              ? { color: C.amber, fill: C.amber }
+                              : { color: `${C.parchment}33`, fill: `${C.parchment}33` }} />
+                        ))}
+                        <span className="text-sm ml-1.5" style={{ color: `${C.parchment}CC` }}>
+                          {reviewAvg.toFixed(1)}
+                          <span className="ml-1 text-xs" style={{ color: `${C.parchment}66` }}>
+                            ({reviewTotal} review{reviewTotal !== 1 ? 's' : ''})
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CTA buttons */}
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => setShowContactModal(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-opacity hover:opacity-90"
+                      style={{ background: C.egreen, color: C.carbon }}>
+                      <MessageSquare className="w-4 h-4" />
+                      {isPrivateIndividual ? 'Contact Owner' : 'Contact Agent'}
+                    </button>
+                    <button
+                      onClick={() => setShowScheduleModal(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:opacity-80"
+                      style={{
+                        background: 'transparent',
+                        border: `1.5px solid ${C.parchment}59`,
+                        color: C.parchment,
+                      }}>
+                      <Calendar className="w-4 h-4" />
+                      Schedule Call
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── KPI Strip (floats out of hero) ──────────────────────────── */}
+          <div className="max-w-5xl mx-auto px-10">
+            <div className="-mt-10 relative z-10 grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden"
+              style={{
+                boxShadow: '0 4px 32px rgba(26,60,40,0.18)',
+                gap: '1px',
+                background: C.border,
+              }}>
+              {[
+                { icon: Home,       label: 'Total Listings',  value: agentProfile.totalListings,  iconBg: `${C.forest}1A`, iconColor: C.forest },
+                { icon: TrendingUp, label: 'Active Listings', value: agentProfile.activeListings, iconBg: `${C.egreen}20`, iconColor: '#00994D' },
+                { icon: Award,      label: 'Member Since',
+                  value: agentProfile.createdAt ? new Date(agentProfile.createdAt).getFullYear() : '—',
+                  iconBg: `${C.amber}26`, iconColor: C.amber },
+                { icon: Shield,     label: 'Verified Rate',
+                  value: agentProfile.totalListings > 0
+                    ? `${Math.round((agentProfile.verifiedListings / agentProfile.totalListings) * 100)}%`
+                    : '—',
+                  iconBg: `${C.forest}1A`, iconColor: C.forestLight },
+              ].map(({ icon: Icon, label, value, iconBg, iconColor }) => (
+                <div key={label} className="bg-white flex items-center gap-4 p-5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: iconBg }}>
+                    <Icon className="w-5 h-5" style={{ color: iconColor }} />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold leading-none"
+                      style={{ fontFamily: FRAUNCES, color: C.forest }}>
+                      {value}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: C.muted }}>{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Body grid ────────────────────────────────────────────────── */}
+          <div className="max-w-5xl mx-auto px-10 mt-12 mb-16"
+            style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2rem' }}>
+
+            {/* ── Main content column ─────────────────────────────────── */}
+            <div>
+
+              {/* Bio */}
+              <div className="bg-white rounded-2xl p-7 mb-5"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2.5 pb-3.5"
+                  style={{ fontFamily: FRAUNCES, color: C.forest, borderBottom: `1px solid ${C.border}` }}>
+                  <Award className="w-5 h-5 shrink-0" style={{ color: C.amber }} />
+                  About {profileName.split(' ')[0]}
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: C.muted }}>
+                  {profileName} is {isPrivateIndividual ? 'a private property owner' : 'an active property agent'}
+                  {agentProfile.primaryCity ? ` based in ${agentProfile.primaryCity}` : ''} on BuildTrust,
+                  with {agentProfile.totalListings} total listing{agentProfile.totalListings !== 1 ? 's' : ''} and{' '}
+                  {agentProfile.verifiedListings} verified propert{agentProfile.verifiedListings !== 1 ? 'ies' : 'y'}.
+                  {!isPrivateIndividual && ' Known for providing transparent, trust-verified property transactions to both local and diaspora buyers.'}
+                </p>
+              </div>
+
+              {/* Recent Listings */}
+              <div className="bg-white rounded-2xl p-7 mb-5"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2.5 pb-3.5"
+                  style={{ fontFamily: FRAUNCES, color: C.forest, borderBottom: `1px solid ${C.border}` }}>
+                  <TrendingUp className="w-5 h-5 shrink-0" style={{ color: C.forestLight }} />
+                  Recent Listings
+                </h2>
+                <div>
+                  {recentListings.map((property) => (
+                    <div key={property.id} className="flex gap-4 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <div className="w-24 h-18 rounded-xl overflow-hidden shrink-0"
+                        style={{ background: C.cream, minHeight: 68 }}>
+                        <img
+                          src={property.media_url || DEFAULT_LISTING_IMAGE}
+                          alt={property.title}
+                          className="w-24 h-full object-cover"
+                          style={{ minHeight: 68 }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm mb-0.5" style={{ color: C.forest }}>{property.title}</h3>
+                        <p className="flex items-center gap-1 text-xs mb-2" style={{ color: C.muted }}>
+                          <MapPin className="w-3 h-3" />{property.location}
+                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-base" style={{ fontFamily: FRAUNCES, color: C.forest }}>
+                            {formatMoney(property.price, property.currency)}
+                          </span>
+                          <span className="text-xs" style={{ color: C.faint }}>
+                            Listed {formatDate(property.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {recentListings.length === 0 && (
+                    <p className="text-sm py-4" style={{ color: C.faint }}>No listings yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Listings */}
+              <div className="bg-white rounded-2xl p-7 mb-5"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2.5 pb-3.5"
+                  style={{ fontFamily: FRAUNCES, color: C.forest, borderBottom: `1px solid ${C.border}` }}>
+                  <Home className="w-5 h-5 shrink-0" style={{ color: C.forestLight }} />
+                  Active Listings
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {activeListings.map((property) => (
+                    <Link
+                      key={property.id}
+                      to={`/app/property/${property.id}`}
+                      className="group rounded-xl overflow-hidden transition-shadow hover:shadow-lg"
+                      style={{ border: `1px solid ${C.border}` }}
+                    >
+                      <img
+                        src={property.media_url || DEFAULT_LISTING_IMAGE}
+                        alt={property.title}
+                        className="w-full h-36 object-cover"
+                      />
+                      <div className="p-4">
+                        <h3 className="font-semibold text-sm mb-0.5 transition-colors"
+                          style={{ color: C.forest }}>
+                          {property.title}
+                        </h3>
+                        <p className="text-xs flex items-center gap-1 mb-2" style={{ color: C.muted }}>
+                          <MapPin className="w-3 h-3" />{property.location}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold" style={{ fontFamily: FRAUNCES, color: C.forest, fontSize: '1.05rem' }}>
+                            {formatMoney(property.price, property.currency)}
+                          </span>
+                          <span className="text-xs" style={{ color: C.faint }}>
+                            {property.bedrooms ?? 0} bed · {property.bathrooms ?? 0} bath
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {activeListings.length === 0 && (
+                    <p className="text-sm col-span-2" style={{ color: C.faint }}>No active listings.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Reviews */}
+              <div className="bg-white rounded-2xl p-7"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <div className="flex items-center justify-between pb-3.5 mb-4"
+                  style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <h2 className="text-xl font-semibold flex items-center gap-2.5"
+                    style={{ fontFamily: FRAUNCES, color: C.forest }}>
+                    <ThumbsUp className="w-5 h-5 shrink-0" style={{ color: C.forestLight }} />
+                    Client Reviews
+                  </h2>
+                  {reviewAvg > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5"
+                            style={i < Math.round(reviewAvg)
+                              ? { color: C.amber, fill: C.amber }
+                              : { color: C.cream, fill: C.cream }} />
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold" style={{ color: C.forest }}>
+                        {reviewAvg.toFixed(1)}
+                      </span>
+                      <span className="text-xs" style={{ color: C.faint }}>
+                        ({reviewTotal})
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {reviewsLoading && (
+                  <p className="text-sm flex items-center gap-2 py-4" style={{ color: C.faint }}>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading reviews…
+                  </p>
+                )}
+                {!reviewsLoading && reviews.length === 0 && (
+                  <p className="text-sm py-4" style={{ color: C.faint }}>No reviews yet.</p>
+                )}
+                {!reviewsLoading && reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+                {!reviewsLoading && reviewTotal > reviews.length && (
+                  <button
+                    className="flex items-center justify-center gap-2 w-full mt-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                    style={{
+                      border: `1px solid ${C.border}`,
+                      color: C.forest,
+                      background: 'transparent',
+                    }}>
+                    <Eye className="w-4 h-4" />
+                    View All {reviewTotal} Reviews
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Agent Info */}
-            <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold">{profileName}</h1>
-                    {agentProfile.status === 'active' && (
-                      <Badge className="bg-blue-500 text-white flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-lg text-gray-600 mb-1">{isPrivateIndividual ? 'Private Individual' : 'Property Agent'}</p>
-                  <p className="text-blue-600 font-medium mb-3">{agentProfile.primaryCity}</p>
-                  
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-green-600" />
-                      <span className="font-semibold text-green-600">Trust Score: {trustScore}%</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                      <span className="font-semibold">{agentProfile.verifiedListings}</span>
-                      <span className="text-gray-600 text-sm">verified listings</span>
-                    </div>
-                  </div>
-                </div>
+            {/* ── Sidebar ─────────────────────────────────────────────── */}
+            <div>
 
-                {/* Quick Actions */}
-                <div className="flex flex-col gap-2 md:min-w-50">
-                  <Button
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                    onClick={() => setShowContactModal(true)}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    {isPrivateIndividual ? 'Contact Property Owner' : 'Contact Agent'}
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule Call
-                  </Button>
+              {/* Contact */}
+              <div className="bg-white rounded-2xl p-6 mb-4"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: C.muted }}>
+                  Contact
+                </p>
+                {[
+                  { Icon: Phone, label: 'Phone', value: agentProfile.phone || 'Not provided', href: callHref },
+                  { Icon: Mail,  label: 'Email', value: agentProfile.email, href: emailHref },
+                  { Icon: MessageSquare, label: 'WhatsApp', value: agentProfile.phone || 'Not provided', href: agentProfile.phone ? `https://wa.me/${agentProfile.phone.replace(/\D/g, '')}` : undefined },
+                ].map(({ Icon, label, value, href }) => (
+                  <div key={label} className="flex items-center gap-3 py-2.5"
+                    style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: `${C.forest}14` }}>
+                      <Icon className="w-4 h-4" style={{ color: C.forest }} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs" style={{ color: C.faint }}>{label}</div>
+                      {href ? (
+                        <a href={href} className="font-semibold text-sm truncate hover:underline block"
+                          style={{ color: C.forest }}>
+                          {value}
+                        </a>
+                      ) : (
+                        <div className="font-semibold text-sm truncate" style={{ color: value === 'Not provided' ? C.faint : C.forest }}>
+                          {value}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {/* Direct action buttons */}
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  {callHref ? (
+                    <a href={callHref}>
+                      <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold"
+                        style={{ background: C.egreen, color: C.carbon }}>
+                        <Phone className="w-3.5 h-3.5" /> Call
+                      </button>
+                    </a>
+                  ) : (
+                    <button disabled className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold opacity-40 cursor-not-allowed"
+                      style={{ border: `1px solid ${C.border}`, color: C.muted }}>
+                      <Phone className="w-3.5 h-3.5" /> Call
+                    </button>
+                  )}
+                  {emailHref ? (
+                    <a href={emailHref}>
+                      <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold"
+                        style={{ border: `1.5px solid ${C.forest}`, color: C.forest }}>
+                        <Mail className="w-3.5 h-3.5" /> Email
+                      </button>
+                    </a>
+                  ) : (
+                    <button disabled className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold opacity-40 cursor-not-allowed"
+                      style={{ border: `1px solid ${C.border}`, color: C.muted }}>
+                      <Mail className="w-3.5 h-3.5" /> Email
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Trust Breakdown */}
+              <div className="bg-white rounded-2xl p-6 mb-4"
+                style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: C.muted }}>
+                  Trust Breakdown
+                </p>
+                {[
+                  { label: 'Verified Listings', pct: trustScore },
+                  { label: 'Active Listings',   pct: agentProfile.totalListings > 0 ? Math.round((agentProfile.activeListings / agentProfile.totalListings) * 100) : 0 },
+                  { label: 'Review Score',       pct: reviewAvg > 0 ? Math.round((reviewAvg / 5) * 100) : 0 },
+                ].map(({ label, pct }) => (
+                  <div key={label} className="mb-4">
+                    <div className="flex justify-between text-xs mb-1.5" style={{ color: C.forest }}>
+                      <span>{label}</span>
+                      <span className="font-semibold" style={{ fontFamily: MONO }}>{pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: C.cream }}>
+                      <div className="h-full rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: `linear-gradient(90deg, ${C.forestLight}, ${C.egreen})`,
+                        }} />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-3 mt-1" style={{ borderTop: `1px solid ${C.border}` }}>
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-4 h-4" style={{ color: C.forestLight }} />
+                    <span className="text-xs font-semibold" style={{ color: C.forest }}>
+                      {isPrivateIndividual ? 'Verified Owner' : 'Verified Agent'}
+                    </span>
+                  </div>
+                  <span className="text-lg font-bold" style={{ fontFamily: FRAUNCES, color: C.forest }}>
+                    {trustScore}%
+                  </span>
                 </div>
               </div>
 
               {/* Specializations */}
               {!isPrivateIndividual && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-2">SPECIALIZATIONS</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Property Listings</Badge>
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Verified Transactions</Badge>
-                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">Client Advisory</Badge>
+                <div className="bg-white rounded-2xl p-6 mb-4"
+                  style={{ border: `1px solid ${C.border}`, boxShadow: `0 1px 4px ${C.border}` }}>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: C.muted }}>
+                    Specializations
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Property Listings', 'Verified Transactions', 'Client Advisory', 'Due Diligence'].map((s) => (
+                      <span key={s} className="text-xs font-medium px-3 py-1.5 rounded-full"
+                        style={{ background: `${C.forest}0F`, color: C.forestLight }}>
+                        {s}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Bio */}
-              <p className="text-gray-700 leading-relaxed">
-                {profileName} is a {isPrivateIndividual ? 'private individual' : 'active agent'} on PropertyOS with {agentProfile.totalListings} total listings and {agentProfile.verifiedListings} verified properties.
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Home className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{agentProfile.totalListings}</div>
-                <div className="text-xs text-gray-600">Total Listings</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{agentProfile.activeListings}</div>
-                <div className="text-xs text-gray-600">Active Listings</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Award className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {agentProfile.createdAt
-                    ? new Date(agentProfile.createdAt).getFullYear()
-                    : '—'}
-                </div>
-                <div className="text-xs text-gray-600">Member Since</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Clock className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <div className="text-xl font-bold">
-                  {agentProfile.totalListings > 0
-                    ? `${Math.round((agentProfile.verifiedListings / agentProfile.totalListings) * 100)}%`
-                    : '—'}
-                </div>
-                <div className="text-xs text-gray-600">Verified Rate</div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Recent Sales */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                Recent Listings
-              </h2>
-              <div className="space-y-4">
-                {recentListings.map((property) => (
-                  <div key={property.id} className="flex gap-4 pb-4 border-b border-gray-200 last:border-0">
-                    <img
-                      src={property.media_url || DEFAULT_LISTING_IMAGE}
-                      alt={property.title}
-                      className="w-24 h-20 md:w-32 md:h-24 object-cover rounded-lg"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold mb-1">{property.title}</h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">
-                        <MapPin className="w-3 h-3" />
-                        {property.location}
-                      </p>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-lg font-bold text-green-600">{formatMoney(property.price, property.currency)}</span>
-                        <span className="text-xs text-gray-500">Listed: {formatDate(property.created_at)}</span>
+              {/* Member since card */}
+              {agentProfile.createdAt && (
+                <div className="rounded-2xl p-6"
+                  style={{ background: C.forest, border: `1px solid ${C.forestLight}` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${C.egreen}1F` }}>
+                      <Clock className="w-5 h-5" style={{ color: C.egreen }} />
+                    </div>
+                    <div>
+                      <div className="text-xs mb-0.5" style={{ color: `${C.parchment}80` }}>Member since</div>
+                      <div className="font-bold text-lg leading-none"
+                        style={{ fontFamily: FRAUNCES, color: C.parchment }}>
+                        {new Date(agentProfile.createdAt).getFullYear()}
                       </div>
                     </div>
                   </div>
-                ))}
-                {recentListings.length === 0 && (
-                  <p className="text-sm text-gray-500">No listings yet.</p>
-                )}
-              </div>
-            </Card>
-
-            {/* Active Listings */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Home className="w-5 h-5 text-blue-600" />
-                Active Listings
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {activeListings.map((property) => (
-                  <Link
-                    key={property.id}
-                    to={`/app/property/${property.id}`}
-                    className="group border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                  >
-                    <img
-                      src={property.media_url || DEFAULT_LISTING_IMAGE}
-                      alt={property.title}
-                      className="w-full h-40 object-cover"
-                    />
-                    <div className="p-4">
-                      <h3 className="font-semibold mb-1 group-hover:text-blue-600 transition-colors">
-                        {property.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">
-                        <MapPin className="w-3 h-3" />
-                        {property.location}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-blue-600">{formatMoney(property.price, property.currency)}</span>
-                        <span className="text-xs text-gray-500">
-                          {property.bedrooms ?? 0} bed • {property.bathrooms ?? 0} bath
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-                {activeListings.length === 0 && (
-                  <p className="text-sm text-gray-500">No active listings.</p>
-                )}
-              </div>
-            </Card>
-
-            {/* Client Reviews */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <ThumbsUp className="w-5 h-5 text-purple-600" />
-                  Client Reviews
-                </h2>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    ))}
-                  </div>
-                  <span className="text-sm font-semibold">{reviewAvg > 0 ? reviewAvg.toFixed(1) : '–'}</span>
-                  <span className="text-xs text-gray-500">({reviewTotal} review{reviewTotal !== 1 ? 's' : ''})</span>
                 </div>
-              </div>
-              <div className="space-y-3">
-                {reviewsLoading && (
-                  <p className="text-sm text-gray-400 flex items-center gap-2">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading reviews…
-                  </p>
-                )}
-                {!reviewsLoading && reviews.length === 0 && (
-                  <p className="text-sm text-gray-500">No reviews yet.</p>
-                )}
-                {!reviewsLoading && reviews.map((r) => (
-                  <ReviewCard key={r.id} review={r} />
-                ))}
-              </div>
-              <Button variant="outline" className="w-full mt-4">
-                <Eye className="w-4 h-4 mr-2" />
-                View All Reviews
-              </Button>
-            </Card>
+              )}
+            </div>
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Contact Card */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Contact Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-xs text-gray-600">Phone</div>
-                    <div className="font-medium">{agentProfile.phone || 'Not provided'}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-xs text-gray-600">Email</div>
-                    <div className="font-medium text-sm">{agentProfile.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-xs text-gray-600">WhatsApp</div>
-                    <div className="font-medium">{agentProfile.phone || 'Not provided'}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                {callHref ? (
-                  <a href={callHref}>
-                    <Button className="bg-green-500 hover:bg-green-600 text-white text-sm w-full">
-                      <Phone className="w-4 h-4 mr-1" />
-                      Call
-                    </Button>
-                  </a>
-                ) : (
-                  <Button disabled className="text-sm" variant="outline">
-                    <Phone className="w-4 h-4 mr-1" />
-                    Call
-                  </Button>
-                )}
-                {emailHref ? (
-                  <a href={emailHref}>
-                    <Button variant="outline" className="text-sm w-full">
-                      <Mail className="w-4 h-4 mr-1" />
-                      Email
-                    </Button>
-                  </a>
-                ) : (
-                  <Button disabled variant="outline" className="text-sm">
-                    <Mail className="w-4 h-4 mr-1" />
-                    Email
-                  </Button>
-                )}
-              </div>
-            </Card>
-
-            {/* Trust Badge */}
-            <Card className="p-6 bg-linear-to-br from-green-50 to-blue-50 border-green-200">
-              <div className="text-center">
-                <Shield className="w-16 h-16 text-green-600 mx-auto mb-3" />
-                <h3 className="font-bold text-lg mb-2">{isPrivateIndividual ? 'Verified Owner' : 'Verified Agent'}</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  {isPrivateIndividual
-                    ? 'This private individual has been verified by PropertyOS as the registered property owner.'
-                    : 'This agent has been verified by PropertyOS and meets our strict trust and safety standards.'}
-                </p>
-                <Badge className="bg-green-500 text-white">
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                  Trust Score: {trustScore}%
-                </Badge>
-              </div>
-            </Card>
-
-
-          </div>
-        </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
     </div>
     </>
   );

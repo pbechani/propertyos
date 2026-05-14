@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Property Detail — 3 Redesign Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── Brand tokens ───────────────────────────────────────────── */
+  :root {
+    --forest:      #1A3C28;
+    --forest-lt:   #2D5A40;
+    --forest-3a:   #3A7050;
+    --parchment:   #F2E8D5;
+    --cream:       #EAD9C4;
+    --carbon:      #0C0D10;
+    --egreen:      #00E87A;
+    --amber:       #B89040;
+    --rust:        #C4562A;
+    --muted:       #6B8A76;
+    --faint:       #9AAFA4;
+    --border:      rgba(26,60,40,.12);
+    --border-md:   rgba(26,60,40,.2);
+    --ff:          'Fraunces', Georgia, serif;
+    --fm:          'IBM Plex Mono', monospace;
+    --fb:          'Plus Jakarta Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--fb); background: #0C0D10; color: #e0e0e0; }
+
+  /* ── Switcher UI ────────────────────────────────────────────── */
+  .switcher {
+    position: sticky; top: 0; z-index: 999;
+    background: rgba(12,13,16,.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    padding: 14px 32px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .switcher-label {
+    font-family: var(--fm); font-size: 10px; letter-spacing: .15em;
+    color: rgba(255,255,255,.4); text-transform: uppercase; margin-right: 8px;
+  }
+  .tab-btn {
+    font-family: var(--fm); font-size: 11px; letter-spacing: .08em;
+    padding: 8px 20px; border-radius: 100px; border: 1px solid rgba(255,255,255,.12);
+    background: transparent; color: rgba(255,255,255,.5); cursor: pointer;
+    transition: all .2s;
+  }
+  .tab-btn.active { background: var(--egreen); color: var(--carbon); border-color: var(--egreen); }
+  .tab-btn:hover:not(.active) { border-color: rgba(255,255,255,.3); color: #fff; }
+
+  .option { display: none; }
+  .option.visible { display: block; }
+
+  /* ── Shared atoms ───────────────────────────────────────────── */
+  .topbar {
+    background: var(--forest); padding: 12px 32px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-family: var(--fm);
+  }
+  .topbar-back { color: rgba(242,232,213,.6); display: flex; align-items: center; gap: 4px; }
+  .topbar-sep  { color: rgba(242,232,213,.2); }
+  .topbar-title { color: var(--parchment); font-weight: 600; }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--fm); font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 4px;
+  }
+  .pill-active  { background: var(--forest); color: var(--egreen); }
+  .pill-verified { background: var(--egreen); color: var(--carbon); }
+  .pill-amber { background: var(--amber); color: #fff; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 1 — "Editorial Spread"
+     Magazine-style: hero full-width mosaic grid, two-column below
+  ═══════════════════════════════════════════════════════════════ */
+  #opt1 { background: var(--parchment); }
+
+  /* Gallery mosaic */
+  .a-mosaic {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 260px 180px;
+    gap: 3px;
+    background: var(--carbon);
+  }
+  .a-mosaic-hero {
+    grid-column: 1 / 3; grid-row: 1 / 3;
+    background: #3a5a4a; position: relative; overflow: hidden;
+  }
+  .a-mosaic-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .a-cell { background: #4a6a55; overflow: hidden; }
+  .a-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Photo overlay badges */
+  .a-photo-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.3) 0%, transparent 40%, rgba(0,0,0,.5) 100%);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 16px;
+  }
+  .a-photo-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .a-photo-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+  .a-photo-price {
+    font-family: var(--ff); font-size: 28px; font-weight: 700;
+    color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.5);
+  }
+  .a-photo-count {
+    font-family: var(--fm); font-size: 10px; color: rgba(255,255,255,.7);
+    background: rgba(0,0,0,.4); padding: 4px 8px; border-radius: 4px;
+  }
+  .a-heart-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.15); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  /* Also show "more photos" on last thumb */
+  .a-more-overlay {
+    position: absolute; inset: 0;
+    background: rgba(12,13,16,.55); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 4px; cursor: pointer;
+  }
+  .a-more-overlay span { font-family: var(--fm); font-size: 11px; color: #fff; letter-spacing: .1em; }
+  .a-more-overlay strong { font-family: var(--ff); font-size: 18px; color: var(--egreen); }
+
+  /* Body */
+  .a-body {
+    max-width: 1200px; margin: 0 auto; padding: 36px 40px 60px;
+    display: grid; grid-template-columns: 1fr 340px; gap: 32px;
+  }
+
+  /* Section headers (option 1) */
+  .a-section { background: #fff; border-radius: 16px; padding: 28px 28px; margin-bottom: 16px;
+    border: 1px solid var(--border); }
+  .a-section-title {
+    font-family: var(--ff); font-size: 18px; font-weight: 600; color: var(--forest);
+    padding-bottom: 14px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .a-section-title svg { opacity: .7; }
+
+  /* Title block */
+  .a-title-block { margin-bottom: 20px; }
+  .a-property-type-tag {
+    font-family: var(--fm); font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 8px; display: block;
+  }
+  .a-title { font-family: var(--ff); font-size: 30px; font-weight: 700; color: var(--forest);
+    line-height: 1.1; margin-bottom: 8px; }
+  .a-address { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .a-address svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Stats strip */
+  .a-stats-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-radius: 12px; overflow: hidden; margin-top: 20px;
+    border: 1px solid var(--border);
+  }
+  .a-stat {
+    padding: 16px 14px; background: var(--parchment);
+    border-right: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .a-stat:last-child { border-right: 0; }
+  .a-stat-icon { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(26,60,40,.1);
+    display: flex; align-items: center; justify-content: center; }
+  .a-stat-icon svg { width: 16px; height: 16px; color: var(--forest); }
+  .a-stat-label { font-family: var(--fm); font-size: 8px; text-transform: uppercase;
+    letter-spacing: .15em; color: var(--amber); }
+  .a-stat-value { font-family: var(--ff); font-size: 20px; color: var(--forest); line-height: 1; }
+
+  /* Description */
+  .a-description { font-size: 13px; line-height: 1.8; color: #3a4a40; }
+
+  /* Features grid */
+  .a-features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .a-feature-tag {
+    font-size: 12px; padding: 8px 12px; border-radius: 8px;
+    background: rgba(26,60,40,.06); color: var(--forest-lt);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .a-feature-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--egreen); flex-shrink: 0; }
+
+  /* Sidebar card */
+  .a-sidebar-card {
+    background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    overflow: hidden; position: sticky; top: 72px;
+  }
+  .a-sidebar-head {
+    background: var(--forest); padding: 20px 20px 16px;
+  }
+  .a-sidebar-price { font-family: var(--ff); font-size: 32px; font-weight: 700; color: var(--parchment); margin-bottom: 4px; }
+  .a-sidebar-price-label { font-family: var(--fm); font-size: 9px; letter-spacing: .15em;
+    text-transform: uppercase; color: rgba(242,232,213,.5); }
+  .a-sidebar-body { padding: 20px; }
+  .a-cta-primary {
+    width: 100%; padding: 13px; border-radius: 10px; font-weight: 700; font-size: 13px;
+    background: var(--egreen); color: var(--carbon); border: none; cursor: pointer; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .a-cta-outline {
+    width: 100%; padding: 11px; border-radius: 10px; font-size: 13px;
+    background: transparent; color: var(--forest); border: 1.5px solid var(--forest);
+    cursor: pointer; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .a-cta-ghost {
+    width: 100%; padding: 11px; border-radius: 10px; font-size: 13px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .a-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* Agent mini-card in sidebar */
+  .a-agent-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  .a-agent-avatar {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: var(--cream); border: 2px solid var(--egreen);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff); font-size: 16px; font-weight: 700; color: var(--forest-lt);
+    overflow: hidden;
+  }
+  .a-agent-name { font-size: 13px; font-weight: 600; color: var(--forest); }
+  .a-agent-co { font-size: 11px; color: var(--muted); }
+  .a-trust-pill {
+    margin-left: auto; font-family: var(--fm); font-size: 10px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(0,232,122,.1); color: #00994D; border: 1px solid rgba(0,232,122,.25);
+  }
+
+  /* Monthly costs mini-row */
+  .a-costs-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .a-cost-chip {
+    flex: 1; min-width: 80px; padding: 10px 10px; border-radius: 10px;
+    background: rgba(26,60,40,.06); text-align: center;
+  }
+  .a-cost-label { font-family: var(--fm); font-size: 8px; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--amber); }
+  .a-cost-value { font-family: var(--ff); font-size: 15px; color: var(--forest); margin-top: 2px; }
+
+  /* Map placeholder */
+  .a-map { border-radius: 12px; overflow: hidden; height: 160px;
+    background: linear-gradient(135deg, #2D5A40 0%, #3A7050 50%, #4A8060 100%);
+    position: relative; display: flex; align-items: center; justify-content: center; margin-top: 16px; }
+  .a-map-label { font-family: var(--fm); font-size: 10px; letter-spacing: .12em; color: rgba(242,232,213,.6); }
+  .a-map-pin { position: absolute; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--egreen); display: flex; align-items: center; justify-content: center; }
+
+  /* Open houses mini */
+  .a-oh { background: rgba(0,232,122,.07); border: 1px solid rgba(0,232,122,.2);
+    border-radius: 12px; padding: 14px; margin-top: 16px; }
+  .a-oh-heading { font-family: var(--fm); font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--egreen); margin-bottom: 10px; }
+  .a-oh-row { display: flex; justify-content: space-between; align-items: center; }
+  .a-oh-date { font-size: 12px; font-weight: 600; color: var(--forest); }
+  .a-oh-time { font-family: var(--fm); font-size: 11px; color: var(--muted); }
+  .a-oh-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 6px;
+    background: var(--egreen); color: var(--carbon); border: none; cursor: pointer; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 2 — "Immersive Showcase"
+     Full-viewport hero with gradient overlay, floating KPI bar
+     that slides out of the hero; sticky sidebar CTA
+  ═══════════════════════════════════════════════════════════════ */
+  #opt2 { background: var(--parchment); }
+
+  /* Hero */
+  .b-hero {
+    height: 560px; position: relative; overflow: hidden;
+    background: #2a4a35;
+  }
+  .b-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .b-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(12,13,16,.1) 0%, rgba(12,13,16,.2) 40%, rgba(12,13,16,.72) 100%);
+  }
+  .b-hero-content {
+    position: absolute; bottom: 100px; left: 0; right: 0; padding: 0 48px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .b-hero-left {}
+  .b-hero-type { font-family: var(--fm); font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--egreen); margin-bottom: 10px; }
+  .b-hero-title { font-family: var(--ff); font-size: 44px; font-weight: 700;
+    color: #fff; line-height: 1.05; text-shadow: 0 2px 20px rgba(0,0,0,.4); margin-bottom: 8px; }
+  .b-hero-address { font-size: 13px; color: rgba(255,255,255,.7); display: flex; align-items: center; gap: 5px; }
+  .b-hero-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .b-hero-price { font-family: var(--ff); font-size: 38px; font-weight: 700; color: var(--parchment); }
+  .b-hero-price-label { font-family: var(--fm); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(242,232,213,.5); text-align: right; }
+
+  /* Floating KPI bar — overlaps out of hero */
+  .b-kpi-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+  .b-kpi-bar {
+    margin-top: -44px; position: relative; z-index: 10;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(26,60,40,.2);
+    border: 1px solid var(--border);
+  }
+  .b-kpi-cell {
+    background: #fff; padding: 18px 16px; display: flex; align-items: center; gap: 10px;
+    border-right: 1px solid var(--border);
+  }
+  .b-kpi-cell:last-child { border-right: 0; }
+  .b-kpi-icon { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; }
+  .b-kpi-icon svg { width: 16px; height: 16px; }
+  .b-kpi-lbl { font-family: var(--fm); font-size: 8px; text-transform: uppercase; letter-spacing: .15em; color: var(--amber); }
+  .b-kpi-val { font-family: var(--ff); font-size: 22px; color: var(--forest); line-height: 1.1; }
+
+  /* Body grid */
+  .b-body {
+    max-width: 1100px; margin: 0 auto; padding: 36px 40px 60px;
+    display: grid; grid-template-columns: 1fr 320px; gap: 28px;
+  }
+
+  /* Section card */
+  .b-section { background: #fff; border-radius: 16px; padding: 24px 24px; margin-bottom: 16px;
+    border: 1px solid var(--border); }
+  .b-section-h { font-family: var(--ff); font-size: 17px; font-weight: 600; color: var(--forest);
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px; }
+
+  /* Thumbnail strip below body */
+  .b-thumb-strip { display: flex; gap: 6px; padding: 12px; background: var(--carbon); overflow: hidden; }
+  .b-thumb { width: 100px; height: 64px; object-fit: cover; border-radius: 6px; cursor: pointer;
+    opacity: .7; border: 2px solid transparent; transition: all .2s; }
+  .b-thumb.active { opacity: 1; border-color: var(--egreen); }
+  .b-thumb-more { width: 100px; height: 64px; border-radius: 6px; background: rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    flex-shrink: 0; border: 1px dashed rgba(255,255,255,.2); }
+  .b-thumb-more span { font-family: var(--fm); font-size: 11px; color: rgba(255,255,255,.5); }
+
+  /* Sidebar sticky */
+  .b-sidebar { position: sticky; top: 72px; }
+  .b-sid-card { background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    overflow: hidden; margin-bottom: 16px; }
+  .b-sid-head { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-3a) 100%); padding: 18px 18px; }
+  .b-sid-price { font-family: var(--ff); font-size: 28px; font-weight: 700; color: var(--parchment); }
+  .b-sid-price-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(242,232,213,.45); }
+  .b-sid-body { padding: 18px; }
+  .b-btn-primary { width: 100%; padding: 13px; border-radius: 10px; font-weight: 700; font-size: 13px;
+    background: var(--egreen); color: var(--carbon); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
+  .b-btn-outline { width: 100%; padding: 11px; border-radius: 10px; font-size: 13px;
+    background: transparent; color: var(--forest); border: 1.5px solid var(--forest);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
+  .b-btn-ghost { width: 100%; padding: 11px; border-radius: 10px; font-size: 13px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+  .b-agent-row { display: flex; align-items: center; gap: 10px; padding: 14px 0; border-top: 1px solid var(--border); }
+  .b-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background: var(--cream); border: 2px solid var(--egreen);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff); font-size: 15px; font-weight: 700; color: var(--forest-lt); }
+  .b-trust { margin-left: auto; font-family: var(--fm); font-size: 10px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(0,232,122,.1); color: #00994D; border: 1px solid rgba(0,232,122,.2); }
+
+  /* Trust card */
+  .b-trust-card { border-radius: 14px; padding: 18px;
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-lt) 100%);
+    border: 1px solid rgba(255,255,255,.05); }
+  .b-trust-h { font-family: var(--fm); font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: rgba(242,232,213,.5); margin-bottom: 12px; }
+  .b-progress-row { margin-bottom: 10px; }
+  .b-progress-labels { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .b-progress-name { font-size: 11px; color: rgba(242,232,213,.75); }
+  .b-progress-pct { font-family: var(--fm); font-size: 11px; color: var(--egreen); }
+  .b-progress-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); }
+  .b-progress-fill { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--forest-lt), var(--egreen)); }
+
+  /* Description */
+  .b-desc { font-size: 13px; line-height: 1.8; color: #3a4a40; }
+  .b-features { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .b-feature { padding: 8px 12px; border-radius: 8px; font-size: 12px;
+    background: rgba(26,60,40,.06); color: var(--forest-lt);
+    display: flex; align-items: center; gap: 6px; }
+  .b-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--egreen); flex-shrink: 0; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 3 — "Heritage Ledger Pro"
+     Structured mosaic + data-dense horizontal layout
+     Matches the Heritage Ledger agent-profile design language
+  ═══════════════════════════════════════════════════════════════ */
+  #opt3 { background: var(--parchment); }
+
+  /* Header zone: forest topbar then white "deal header" strip */
+  .c-deal-header {
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    max-width: 1160px; margin: 0 auto;
+  }
+  .c-deal-header-grid {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 20px; align-items: center;
+  }
+  .c-prop-type { font-family: var(--fm); font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 6px; display: block; }
+  .c-prop-title { font-family: var(--ff); font-size: 28px; font-weight: 700; color: var(--forest);
+    line-height: 1.1; margin-bottom: 6px; }
+  .c-prop-address { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .c-prop-address svg { width: 12px; height: 12px; }
+  .c-price-block { text-align: right; }
+  .c-price-main { font-family: var(--ff); font-size: 36px; font-weight: 700; color: var(--rust); line-height: 1; }
+  .c-price-label { font-family: var(--fm); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--faint); margin-top: 3px; }
+  .c-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+  /* Gallery — 5-cell mosaic */
+  .c-gallery {
+    max-width: 1160px; margin: 16px auto 0; padding: 0 40px;
+    display: grid; grid-template-columns: 3fr 1fr 1fr; grid-template-rows: 240px 140px; gap: 4px;
+  }
+  .c-main-img { grid-row: 1/3; border-radius: 14px 0 0 14px; overflow: hidden; position: relative; }
+  .c-main-img img { width: 100%; height: 100%; object-fit: cover; }
+  .c-thumb-img { overflow: hidden; }
+  .c-thumb-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .c-thumb-img:first-of-type + .c-thumb-img { border-radius: 0 14px 0 0; }
+  .c-thumb-img.last-thumb { border-radius: 0 0 14px 0; position: relative; }
+  .c-thumb-overlay {
+    position: absolute; inset: 0;
+    background: rgba(12,13,16,.55);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; gap: 4px;
+  }
+  .c-thumb-overlay span { font-family: var(--fm); font-size: 11px; color: rgba(255,255,255,.7); letter-spacing: .08em; }
+  .c-thumb-overlay strong { font-family: var(--ff); font-size: 20px; color: var(--egreen); }
+
+  /* Gallery actions on main image */
+  .c-img-actions {
+    position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;
+  }
+  .c-img-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,.18); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+
+  /* Two-column body */
+  .c-body {
+    max-width: 1160px; margin: 20px auto 0; padding: 0 40px 60px;
+    display: grid; grid-template-columns: 1fr 300px; gap: 24px;
+  }
+
+  /* Stats bar (inline, full-width of left col) */
+  .c-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+    background: #fff; border: 1px solid var(--border);
+    box-shadow: 0 1px 4px var(--border);
+  }
+  .c-stat-cell {
+    padding: 14px 14px; display: flex; align-items: center; gap: 10px;
+    border-right: 1px solid var(--border);
+  }
+  .c-stat-cell:last-child { border-right: 0; }
+  .c-stat-ico {
+    width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .c-stat-ico svg { width: 15px; height: 15px; }
+  .c-stat-lbl { font-family: var(--fm); font-size: 8px; text-transform: uppercase;
+    letter-spacing: .15em; color: var(--amber); }
+  .c-stat-val { font-family: var(--ff); font-size: 20px; color: var(--forest); line-height: 1; }
+
+  /* Content card */
+  .c-card { background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    padding: 22px 22px; margin-bottom: 14px;
+    box-shadow: 0 1px 4px var(--border); }
+  .c-card-h {
+    font-family: var(--ff); font-size: 16px; font-weight: 600; color: var(--forest);
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .c-card-h svg { opacity: .7; }
+
+  /* Features */
+  .c-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .c-feat {
+    padding: 8px 10px; border-radius: 8px; font-size: 11px;
+    background: rgba(26,60,40,.06); color: var(--forest-lt);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .c-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--egreen); flex-shrink: 0; }
+
+  /* Monthly costs inline table */
+  .c-costs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+  .c-cost { padding: 12px; border-radius: 10px; text-align: center;
+    background: rgba(26,60,40,.06); }
+  .c-cost-lbl { font-family: var(--fm); font-size: 8px; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--amber); }
+  .c-cost-val { font-family: var(--ff); font-size: 16px; color: var(--forest); margin-top: 2px; }
+
+  /* Sidebar */
+  .c-sidebar { position: sticky; top: 72px; }
+  .c-sid-top { background: var(--forest); border-radius: 16px; padding: 20px; margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,.05); }
+  .c-sid-price { font-family: var(--ff); font-size: 26px; font-weight: 700; color: var(--parchment); }
+  .c-sid-price-lbl { font-family: var(--fm); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(242,232,213,.4); margin-bottom: 14px; }
+  .c-cta-1 { width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 13px;
+    background: var(--egreen); color: var(--carbon); border: none; cursor: pointer; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .c-cta-2 { width: 100%; padding: 10px; border-radius: 10px; font-size: 12px;
+    background: transparent; color: rgba(242,232,213,.8); border: 1px solid rgba(242,232,213,.25);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px; }
+  .c-cta-3 { width: 100%; padding: 10px; border-radius: 10px; font-size: 12px;
+    background: rgba(0,232,122,.08); color: var(--egreen); border: 1px solid rgba(0,232,122,.2);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+  .c-agent-card { background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    padding: 16px; margin-bottom: 14px; }
+  .c-agent-row { display: flex; align-items: center; gap: 10px; }
+  .c-avatar { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    background: var(--cream); border: 2px solid var(--egreen);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff); font-size: 14px; font-weight: 700; color: var(--forest-lt); }
+  .c-agent-name { font-size: 13px; font-weight: 600; color: var(--forest); }
+  .c-agent-co { font-size: 11px; color: var(--muted); }
+  .c-trust-badge { margin-left: auto; font-family: var(--fm); font-size: 10px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(0,232,122,.1); color: #00994D; border: 1px solid rgba(0,232,122,.2); }
+  .c-contact-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+  .c-contact-btn { padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .c-contact-call { background: var(--egreen); color: var(--carbon); border: none; }
+  .c-contact-email { background: transparent; color: var(--forest); border: 1.5px solid var(--forest); }
+
+  .c-verify-card { background: #fff; border-radius: 16px; border: 1px solid var(--border);
+    padding: 16px; margin-bottom: 14px; }
+  .c-verify-h { font-family: var(--fm); font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px; }
+  .c-verify-row { display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px solid var(--border); font-size: 12px; color: var(--forest); }
+  .c-verify-row:last-child { border-bottom: 0; }
+  .c-check { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; }
+  .c-check-ok { background: rgba(0,232,122,.15); }
+  .c-check-ok svg { width: 10px; height: 10px; color: #00994D; }
+  .c-check-pending { background: rgba(184,144,64,.15); }
+  .c-check-pending svg { width: 10px; height: 10px; color: var(--amber); }
+
+  .c-oh-card { background: rgba(0,232,122,.07); border: 1px solid rgba(0,232,122,.2);
+    border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  .c-oh-h { font-family: var(--fm); font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--egreen); margin-bottom: 10px; }
+  .c-oh-event { display: flex; justify-content: space-between; align-items: center; }
+  .c-oh-date { font-size: 12px; font-weight: 600; color: var(--forest); }
+  .c-oh-time { font-family: var(--fm); font-size: 11px; color: var(--muted); }
+  .c-oh-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 6px;
+    background: var(--egreen); color: var(--carbon); border: none; cursor: pointer; }
+
+  /* ── Shared SVG icon inline helpers ─── */
+  .icon { display: inline-block; vertical-align: middle; }
+  svg { display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- ─── Switcher ──────────────────────────────────────────────── -->
+<div class="switcher">
+  <span class="switcher-label">Property Detail — Redesign</span>
+  <button class="tab-btn active" onclick="show(1)">Option 1 — Editorial Spread</button>
+  <button class="tab-btn" onclick="show(2)">Option 2 — Immersive Showcase</button>
+  <button class="tab-btn" onclick="show(3)">Option 3 — Heritage Ledger Pro</button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+  OPTION 1 — "Editorial Spread"
+  Full-width mosaic photo grid → two-column content layout
+══════════════════════════════════════════════════════════════ -->
+<div id="opt1" class="option visible">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-back">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </span>
+    <span class="topbar-sep">›</span>
+    <span class="topbar-title">Houses / Cape Town / 4-Bedroom Villa in Bishopscourt</span>
+  </div>
+
+  <!-- Mosaic gallery: 1 hero (left 2 cols, full height) + 4 thumbnails (2×2 right) -->
+  <div class="a-mosaic">
+    <!-- Main image -->
+    <div class="a-mosaic-hero">
+      <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&h=520&fit=crop" alt="Main view" />
+      <div class="a-photo-overlay">
+        <div class="a-photo-top">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="status-pill pill-verified">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              VERIFIED
+            </span>
+            <span class="status-pill pill-active">ON SHOW</span>
+          </div>
+          <button class="a-heart-btn" title="Save property" aria-label="Save property">
+            <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="a-photo-bottom">
+          <div>
+            <div class="a-photo-price">R 4 850 000</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.6);font-family:var(--fm);letter-spacing:.08em;margin-top:2px;">ASKING PRICE</div>
+          </div>
+          <span class="a-photo-count">1 / 14 PHOTOS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 thumbnails -->
+    <div class="a-cell">
+      <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=420&h=280&fit=crop" alt="" />
+    </div>
+    <div class="a-cell">
+      <img src="https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=420&h=280&fit=crop" alt="" />
+    </div>
+    <div class="a-cell">
+      <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=420&h=280&fit=crop" alt="" />
+    </div>
+    <div class="a-cell" style="position:relative;">
+      <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=420&h=280&fit=crop" alt="" />
+      <div class="a-more-overlay">
+        <span>ALL PHOTOS</span>
+        <strong>+10</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="a-body">
+    <!-- Left column -->
+    <div>
+      <!-- Title & stats -->
+      <div class="a-section">
+        <span class="a-property-type-tag">Residential · House · For Sale</span>
+        <h1 class="a-title">4-Bedroom Villa in Bishopscourt</h1>
+        <p class="a-address">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          12 Vineyard Road, Bishopscourt, Cape Town, Western Cape
+        </p>
+
+        <!-- 4-stat strip -->
+        <div class="a-stats-strip">
+          <div class="a-stat">
+            <div class="a-stat-icon">
+              <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div>
+              <div class="a-stat-label">Bedrooms</div>
+              <div class="a-stat-value">4</div>
+            </div>
+          </div>
+          <div class="a-stat">
+            <div class="a-stat-icon">
+              <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12h16M4 12a2 2 0 0 1-2-2V6h20v4a2 2 0 0 1-2 2M6 12v8M18 12v8M6 20h12"/></svg>
+            </div>
+            <div>
+              <div class="a-stat-label">Bathrooms</div>
+              <div class="a-stat-value">3</div>
+            </div>
+          </div>
+          <div class="a-stat">
+            <div class="a-stat-icon">
+              <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div>
+              <div class="a-stat-label">Parking</div>
+              <div class="a-stat-value">2</div>
+            </div>
+          </div>
+          <div class="a-stat">
+            <div class="a-stat-icon">
+              <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            </div>
+            <div>
+              <div class="a-stat-label">Floor Area</div>
+              <div class="a-stat-value">320 m²</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="a-section">
+        <h2 class="a-section-title">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          About This Property
+        </h2>
+        <p class="a-description">
+          Nestled in the prestigious enclave of Bishopscourt, this executive family home offers refined living across 320m² of thoughtfully designed space. Floor-to-ceiling glazing frames Table Mountain views from the living room, while the wraparound entertainer's deck overlooks an indigenous garden and heated pool. The home is fully alarmed, walled, and offers solar-backup power — ideal for both local and diaspora buyers seeking a turnkey lifestyle asset.
+        </p>
+        <p class="a-description" style="margin-top:12px;">
+          An erf of 865m² provides generous outdoor space. The kitchen features Miele appliances, Caesarstone counters, and an integrated scullery. The master suite commands mountain views with a walk-in wardrobe and en-suite spa bathroom.
+        </p>
+      </div>
+
+      <!-- Features & Amenities -->
+      <div class="a-section">
+        <h2 class="a-section-title">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Features &amp; Amenities
+        </h2>
+        <div class="a-features-grid">
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Heated Swimming Pool</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Solar Backup Power</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Borehole Water</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Staff Quarters</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Double Garage</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Security Alarm</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Mountain Views</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Under-floor Heating</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Fibre Internet</div>
+          <div class="a-feature-tag"><span class="a-feature-dot"></span>Air Conditioning</div>
+        </div>
+      </div>
+
+      <!-- Map placeholder -->
+      <div class="a-section" style="padding-bottom:0;">
+        <h2 class="a-section-title">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location
+        </h2>
+        <div class="a-map">
+          <div class="a-map-pin">
+            <svg width="14" height="14" fill="none" stroke="#0C0D10" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="a-map-label">MAP LOADING…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right sidebar -->
+    <div>
+      <div class="a-sidebar-card">
+        <!-- Price header -->
+        <div class="a-sidebar-head">
+          <div class="a-sidebar-price-label">ASKING PRICE</div>
+          <div class="a-sidebar-price">R 4 850 000</div>
+        </div>
+
+        <div class="a-sidebar-body">
+          <button class="a-cta-primary">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Enquire About This Property
+          </button>
+          <button class="a-cta-outline">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Schedule a Viewing
+          </button>
+          <button class="a-cta-ghost">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call Agent
+          </button>
+
+          <div class="a-divider"></div>
+
+          <!-- Monthly costs mini -->
+          <div style="font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">MONTHLY COSTS (EST.)</div>
+          <div class="a-costs-row">
+            <div class="a-cost-chip">
+              <div class="a-cost-label">Rates</div>
+              <div class="a-cost-value">R 2 400</div>
+            </div>
+            <div class="a-cost-chip">
+              <div class="a-cost-label">Levy</div>
+              <div class="a-cost-value">R 1 800</div>
+            </div>
+            <div class="a-cost-chip">
+              <div class="a-cost-label">Bond</div>
+              <div class="a-cost-value">R 41 200</div>
+            </div>
+          </div>
+
+          <!-- Agent row -->
+          <div class="a-agent-row">
+            <div class="a-agent-avatar">SN</div>
+            <div>
+              <div class="a-agent-name">Sarah Ndlovu</div>
+              <div class="a-agent-co">Lew Geffen Sotheby's</div>
+            </div>
+            <span class="a-trust-pill">92% Trust</span>
+          </div>
+
+          <!-- Open house mini -->
+          <div class="a-oh">
+            <div class="a-oh-heading">UPCOMING OPEN HOUSE</div>
+            <div class="a-oh-row">
+              <div>
+                <div class="a-oh-date">Sat, 17 May 2026</div>
+                <div class="a-oh-time">10:00 – 12:00</div>
+              </div>
+              <button class="a-oh-btn">Register</button>
+            </div>
+          </div>
+
+          <!-- Map -->
+          <div class="a-map" style="margin-top:16px;">
+            <div class="a-map-pin">
+              <svg width="14" height="14" fill="none" stroke="#0C0D10" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <span class="a-map-label">MAP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust / verification card -->
+      <div class="a-section" style="margin-top:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span style="font-family:var(--fm);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);">VERIFICATION</span>
+        </div>
+        <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <svg width="14" height="14" fill="none" stroke="#00994D" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Title deed verified
+        </div>
+        <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <svg width="14" height="14" fill="none" stroke="#00994D" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Identity verified — agent
+        </div>
+        <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <svg width="14" height="14" fill="none" stroke="#B89040" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Compliance certificate pending
+        </div>
+        <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:7px;padding:7px 0;">
+          <svg width="14" height="14" fill="none" stroke="#00994D" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          No fraud flags
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+  OPTION 2 — "Immersive Showcase"
+  Full-viewport hero with overlay, floating KPI pill bar,
+  two-column body, thumbnail strip at bottom of hero
+══════════════════════════════════════════════════════════════ -->
+<div id="opt2" class="option">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-back">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to Listings
+    </span>
+    <span class="topbar-sep">›</span>
+    <span class="topbar-title">4-Bedroom Villa in Bishopscourt</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="b-hero">
+    <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1400&h=620&fit=crop" alt="Property hero" />
+    <div class="b-hero-overlay"></div>
+
+    <!-- Hero content (overlaid on photo) -->
+    <div class="b-hero-content">
+      <div class="b-hero-left">
+        <div class="b-hero-type">Residential · House · For Sale · Cape Town</div>
+        <h1 class="b-hero-title">4-Bedroom Villa<br/>in Bishopscourt</h1>
+        <p class="b-hero-address">
+          <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          12 Vineyard Road, Bishopscourt, Cape Town
+        </p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+          <span class="status-pill pill-verified">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            VERIFIED
+          </span>
+          <span class="status-pill pill-active">ON SHOW</span>
+        </div>
+      </div>
+      <div class="b-hero-right">
+        <div class="b-hero-price-label">ASKING PRICE</div>
+        <div class="b-hero-price">R 4 850 000</div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="a-heart-btn" title="Save" aria-label="Save property">
+            <svg width="16" height="16" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <button class="a-heart-btn" title="Share" aria-label="Share property">
+            <svg width="15" height="15" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thumbnail strip inside hero bottom -->
+    <div class="b-thumb-strip" style="position:absolute;bottom:0;left:0;right:0;">
+      <img class="b-thumb active" src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&h=100&fit=crop" alt="" />
+      <img class="b-thumb" src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=200&h=100&fit=crop" alt="" />
+      <img class="b-thumb" src="https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=200&h=100&fit=crop" alt="" />
+      <img class="b-thumb" src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=200&h=100&fit=crop" alt="" />
+      <img class="b-thumb" src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=200&h=100&fit=crop" alt="" />
+      <div class="b-thumb-more"><span>+9 photos</span></div>
+    </div>
+  </div>
+
+  <!-- Floating KPI bar -->
+  <div class="b-kpi-wrapper">
+    <div class="b-kpi-bar">
+      <div class="b-kpi-cell">
+        <div class="b-kpi-icon" style="background:rgba(26,60,40,.1);">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div><div class="b-kpi-lbl">Bedrooms</div><div class="b-kpi-val">4</div></div>
+      </div>
+      <div class="b-kpi-cell">
+        <div class="b-kpi-icon" style="background:rgba(26,60,40,.1);">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12h16M4 12a2 2 0 0 1-2-2V6h20v4a2 2 0 0 1-2 2M6 12v8M18 12v8M6 20h12"/></svg>
+        </div>
+        <div><div class="b-kpi-lbl">Bathrooms</div><div class="b-kpi-val">3</div></div>
+      </div>
+      <div class="b-kpi-cell">
+        <div class="b-kpi-icon" style="background:rgba(26,60,40,.1);">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div><div class="b-kpi-lbl">Parking</div><div class="b-kpi-val">2</div></div>
+      </div>
+      <div class="b-kpi-cell">
+        <div class="b-kpi-icon" style="background:rgba(26,60,40,.1);">
+          <svg width="16" height="16" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </div>
+        <div><div class="b-kpi-lbl">Floor Area</div><div class="b-kpi-val">320 m²</div></div>
+      </div>
+      <div class="b-kpi-cell">
+        <div class="b-kpi-icon" style="background:rgba(0,232,122,.12);">
+          <svg width="16" height="16" fill="none" stroke="#00994D" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div><div class="b-kpi-lbl">Trust Score</div><div class="b-kpi-val" style="color:#00994D;">92%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="b-body">
+    <!-- Left -->
+    <div>
+      <!-- Description -->
+      <div class="b-section">
+        <h2 class="b-section-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          About This Property
+        </h2>
+        <p class="b-desc">
+          Nestled in the prestigious enclave of Bishopscourt, this executive family home offers refined living across 320m² of thoughtfully designed space. Floor-to-ceiling glazing frames Table Mountain views from the living room, while the wraparound entertainer's deck overlooks an indigenous garden and heated pool.
+        </p>
+        <p class="b-desc" style="margin-top:12px;">
+          The home is fully alarmed, walled, and offers solar-backup power — ideal for both local and diaspora buyers seeking a turnkey lifestyle asset. An erf of 865m² provides generous outdoor space with an indigenous garden. The kitchen features Miele appliances, Caesarstone counters, and an integrated scullery.
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="b-section">
+        <h2 class="b-section-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Features &amp; Amenities
+        </h2>
+        <div class="b-features">
+          <div class="b-feature"><span class="b-dot"></span>Heated Swimming Pool</div>
+          <div class="b-feature"><span class="b-dot"></span>Solar Backup Power</div>
+          <div class="b-feature"><span class="b-dot"></span>Borehole Water</div>
+          <div class="b-feature"><span class="b-dot"></span>Staff Quarters</div>
+          <div class="b-feature"><span class="b-dot"></span>Double Garage</div>
+          <div class="b-feature"><span class="b-dot"></span>Security Alarm</div>
+          <div class="b-feature"><span class="b-dot"></span>Mountain Views</div>
+          <div class="b-feature"><span class="b-dot"></span>Under-floor Heating</div>
+          <div class="b-feature"><span class="b-dot"></span>Fibre Internet</div>
+          <div class="b-feature"><span class="b-dot"></span>Air Conditioning</div>
+        </div>
+      </div>
+
+      <!-- Neighbourhood stats mock -->
+      <div class="b-section">
+        <h2 class="b-section-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          Neighbourhood
+        </h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div style="text-align:center;padding:14px 10px;border-radius:12px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:22px;color:var(--forest);">4.8</div>
+            <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin-top:2px;">Safety Score</div>
+          </div>
+          <div style="text-align:center;padding:14px 10px;border-radius:12px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:22px;color:var(--forest);">1.2km</div>
+            <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin-top:2px;">Nearest School</div>
+          </div>
+          <div style="text-align:center;padding:14px 10px;border-radius:12px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:22px;color:var(--forest);">6 min</div>
+            <div style="font-family:var(--fm);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin-top:2px;">To CBD</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="b-section" style="padding-bottom:0;">
+        <h2 class="b-section-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location
+        </h2>
+        <div class="a-map">
+          <div class="a-map-pin">
+            <svg width="14" height="14" fill="none" stroke="#0C0D10" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="a-map-label">MAP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right sidebar -->
+    <div class="b-sidebar">
+      <!-- CTA card -->
+      <div class="b-sid-card">
+        <div class="b-sid-head">
+          <div class="b-sid-price-lbl">ASKING PRICE</div>
+          <div class="b-sid-price">R 4 850 000</div>
+        </div>
+        <div class="b-sid-body">
+          <button class="b-btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Enquire Now
+          </button>
+          <button class="b-btn-outline">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Schedule Viewing
+          </button>
+          <button class="b-btn-ghost">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1 19.79 19.79 0 0 1 1.62 4.43 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call Agent
+          </button>
+
+          <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+          <!-- Agent -->
+          <div class="b-agent-row">
+            <div class="b-avatar">SN</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--forest);">Sarah Ndlovu</div>
+              <div style="font-size:11px;color:var(--muted);">Lew Geffen Sotheby's</div>
+            </div>
+            <span class="b-trust">92%</span>
+          </div>
+
+          <!-- Open house -->
+          <div class="a-oh" style="margin-top:12px;">
+            <div class="a-oh-heading">UPCOMING OPEN HOUSE</div>
+            <div class="a-oh-row">
+              <div>
+                <div class="a-oh-date">Sat, 17 May 2026</div>
+                <div class="a-oh-time">10:00 – 12:00</div>
+              </div>
+              <button class="a-oh-btn">Register</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust card -->
+      <div class="b-trust-card">
+        <div class="b-trust-h">TRUST &amp; VERIFICATION</div>
+        <div class="b-progress-row">
+          <div class="b-progress-labels"><span class="b-progress-name">Document Score</span><span class="b-progress-pct">92%</span></div>
+          <div class="b-progress-track"><div class="b-progress-fill" style="width:92%;"></div></div>
+        </div>
+        <div class="b-progress-row">
+          <div class="b-progress-labels"><span class="b-progress-name">Agent Credibility</span><span class="b-progress-pct">88%</span></div>
+          <div class="b-progress-track"><div class="b-progress-fill" style="width:88%;"></div></div>
+        </div>
+        <div class="b-progress-row">
+          <div class="b-progress-labels"><span class="b-progress-name">Listing Accuracy</span><span class="b-progress-pct">95%</span></div>
+          <div class="b-progress-track"><div class="b-progress-fill" style="width:95%;"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);">
+          <span style="font-size:11px;color:rgba(242,232,213,.6);">Overall Trust Score</span>
+          <span style="font-family:var(--ff);font-size:20px;font-weight:700;color:var(--egreen);">92%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+  OPTION 3 — "Heritage Ledger Pro"
+  Compact deal header → 5-cell mosaic → two-column body
+  Data-dense, trust-forward, matches agent-profile design language
+══════════════════════════════════════════════════════════════ -->
+<div id="opt3" class="option">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="topbar-back">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to Listings
+    </span>
+    <span class="topbar-sep">›</span>
+    <span class="topbar-title">Houses / Cape Town / 4-Bedroom Villa in Bishopscourt</span>
+  </div>
+
+  <!-- Deal header -->
+  <div style="background:#fff;border-bottom:1px solid var(--border);padding:18px 0;">
+    <div class="c-deal-header" style="padding:0 40px;">
+      <div class="c-deal-header-grid">
+        <div>
+          <span class="c-prop-type">Residential · House · For Sale</span>
+          <h1 class="c-prop-title">4-Bedroom Villa in Bishopscourt</h1>
+          <p class="c-prop-address">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            12 Vineyard Road, Bishopscourt, Cape Town, Western Cape
+          </p>
+          <div class="c-badges">
+            <span class="status-pill pill-verified">
+              <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              VERIFIED
+            </span>
+            <span class="status-pill pill-active">ON SHOW</span>
+          </div>
+        </div>
+        <div class="c-price-block">
+          <div class="c-price-main">R 4 850 000</div>
+          <div class="c-price-label">ASKING PRICE</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px;">
+            <button style="width:32px;height:32px;border-radius:50%;background:rgba(26,60,40,.08);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Save" aria-label="Save">
+              <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button style="width:32px;height:32px;border-radius:50%;background:rgba(26,60,40,.08);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Share" aria-label="Share">
+              <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="c-gallery">
+    <div class="c-main-img">
+      <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&h=400&fit=crop" alt="Main" />
+      <div class="c-img-actions">
+        <button class="c-img-btn" title="Save" aria-label="Save">
+          <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="c-img-btn" title="View gallery" aria-label="View all photos">
+          <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="c-thumb-img" style="border-radius:0 14px 0 0;">
+      <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=320&h=240&fit=crop" alt="" />
+    </div>
+    <div class="c-thumb-img">
+      <img src="https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=320&h=240&fit=crop" alt="" />
+    </div>
+    <div class="c-thumb-img">
+      <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=320&h=140&fit=crop" alt="" />
+    </div>
+    <div class="c-thumb-img last-thumb" style="border-radius:0 0 14px 0;position:relative;">
+      <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=320&h=140&fit=crop" alt="" />
+      <div class="c-thumb-overlay">
+        <span>ALL PHOTOS</span>
+        <strong>+10</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="c-body">
+    <!-- Left -->
+    <div>
+      <!-- Stats bar -->
+      <div class="c-stats">
+        <div class="c-stat-cell">
+          <div class="c-stat-ico" style="background:rgba(26,60,40,.1);">
+            <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div><div class="c-stat-lbl">Bedrooms</div><div class="c-stat-val">4</div></div>
+        </div>
+        <div class="c-stat-cell">
+          <div class="c-stat-ico" style="background:rgba(26,60,40,.1);">
+            <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12h16M4 12a2 2 0 0 1-2-2V6h20v4a2 2 0 0 1-2 2M6 12v8M18 12v8M6 20h12"/></svg>
+          </div>
+          <div><div class="c-stat-lbl">Bathrooms</div><div class="c-stat-val">3</div></div>
+        </div>
+        <div class="c-stat-cell">
+          <div class="c-stat-ico" style="background:rgba(26,60,40,.1);">
+            <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div><div class="c-stat-lbl">Parking</div><div class="c-stat-val">2</div></div>
+        </div>
+        <div class="c-stat-cell">
+          <div class="c-stat-ico" style="background:rgba(26,60,40,.1);">
+            <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </div>
+          <div><div class="c-stat-lbl">Floor Area</div><div class="c-stat-val">320 m²</div></div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="c-card">
+        <div class="c-card-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          About This Property
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#3a4a40;">
+          Nestled in the prestigious enclave of Bishopscourt, this executive family home offers refined living across 320m² of thoughtfully designed space. Floor-to-ceiling glazing frames Table Mountain views from the living room, while the wraparound entertainer's deck overlooks an indigenous garden and heated pool.
+        </p>
+        <p style="font-size:13px;line-height:1.8;color:#3a4a40;margin-top:10px;">
+          The home is fully alarmed, walled, and offers solar-backup power — ideal for both local and diaspora buyers. Kitchen features Miele appliances, Caesarstone counters, and integrated scullery. Master suite commands mountain views with walk-in wardrobe and en-suite spa bathroom.
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="c-card">
+        <div class="c-card-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Features &amp; Amenities
+        </div>
+        <div class="c-feat-grid">
+          <div class="c-feat"><span class="c-dot"></span>Heated Pool</div>
+          <div class="c-feat"><span class="c-dot"></span>Solar Backup</div>
+          <div class="c-feat"><span class="c-dot"></span>Borehole Water</div>
+          <div class="c-feat"><span class="c-dot"></span>Staff Quarters</div>
+          <div class="c-feat"><span class="c-dot"></span>Double Garage</div>
+          <div class="c-feat"><span class="c-dot"></span>Security Alarm</div>
+          <div class="c-feat"><span class="c-dot"></span>Mountain Views</div>
+          <div class="c-feat"><span class="c-dot"></span>Under-floor Heat</div>
+          <div class="c-feat"><span class="c-dot"></span>Fibre Internet</div>
+          <div class="c-feat"><span class="c-dot"></span>Air Conditioning</div>
+          <div class="c-feat"><span class="c-dot"></span>Erf 865 m²</div>
+          <div class="c-feat"><span class="c-dot"></span>Miele Kitchen</div>
+        </div>
+      </div>
+
+      <!-- Monthly costs -->
+      <div class="c-card">
+        <div class="c-card-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Monthly Costs (Estimated)
+        </div>
+        <div class="c-costs">
+          <div class="c-cost">
+            <div class="c-cost-lbl">Monthly Rates</div>
+            <div class="c-cost-val">R 2 400</div>
+          </div>
+          <div class="c-cost">
+            <div class="c-cost-lbl">Levy</div>
+            <div class="c-cost-val">R 1 800</div>
+          </div>
+          <div class="c-cost">
+            <div class="c-cost-lbl">Bond @ 20yr</div>
+            <div class="c-cost-val">R 41 200</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Neighbourhood -->
+      <div class="c-card">
+        <div class="c-card-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          Neighbourhood Intelligence
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div style="text-align:center;padding:12px 8px;border-radius:10px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:20px;color:var(--forest);">4.8</div>
+            <div style="font-family:var(--fm);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-top:2px;">Safety</div>
+          </div>
+          <div style="text-align:center;padding:12px 8px;border-radius:10px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:20px;color:var(--forest);">1.2km</div>
+            <div style="font-family:var(--fm);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-top:2px;">School</div>
+          </div>
+          <div style="text-align:center;padding:12px 8px;border-radius:10px;background:rgba(26,60,40,.06);">
+            <div style="font-family:var(--ff);font-size:20px;color:var(--forest);">6 min</div>
+            <div style="font-family:var(--fm);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-top:2px;">To CBD</div>
+          </div>
+          <div style="text-align:center;padding:12px 8px;border-radius:10px;background:rgba(0,232,122,.07);">
+            <div style="font-family:var(--ff);font-size:20px;color:#00994D;">R 5.2M</div>
+            <div style="font-family:var(--fm);font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-top:2px;">Avg Price</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="c-card" style="padding-bottom:0;">
+        <div class="c-card-h">
+          <svg width="15" height="15" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location Map
+        </div>
+        <div class="a-map">
+          <div class="a-map-pin">
+            <svg width="14" height="14" fill="none" stroke="#0C0D10" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="a-map-label">MAP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="c-sidebar">
+      <!-- CTA card (forest) -->
+      <div class="c-sid-top">
+        <div class="c-sid-price-lbl">ASKING PRICE</div>
+        <div class="c-sid-price">R 4 850 000</div>
+        <div style="height:1px;background:rgba(255,255,255,.08);margin:14px 0;"></div>
+        <button class="c-cta-1">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Enquire About This Property
+        </button>
+        <button class="c-cta-2">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule a Viewing
+        </button>
+        <button class="c-cta-3">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1 19.79 19.79 0 0 1 1.62 4.43 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          WhatsApp Agent
+        </button>
+      </div>
+
+      <!-- Agent card -->
+      <div class="c-agent-card">
+        <div style="font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">LISTED BY</div>
+        <div class="c-agent-row">
+          <div class="c-avatar">SN</div>
+          <div>
+            <div class="c-agent-name">Sarah Ndlovu</div>
+            <div class="c-agent-co">Lew Geffen Sotheby's</div>
+          </div>
+          <span class="c-trust-badge">92% Trust</span>
+        </div>
+        <div class="c-contact-btns">
+          <button class="c-contact-btn c-contact-call">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1 19.79 19.79 0 0 1 1.62 4.43 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call
+          </button>
+          <button class="c-contact-btn c-contact-email">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email
+          </button>
+        </div>
+      </div>
+
+      <!-- Verification card -->
+      <div class="c-verify-card">
+        <div class="c-verify-h">TRUST &amp; VERIFICATION</div>
+        <div class="c-verify-row">
+          <div class="c-check c-check-ok">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          Title deed verified
+        </div>
+        <div class="c-verify-row">
+          <div class="c-check c-check-ok">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          Agent identity verified
+        </div>
+        <div class="c-verify-row">
+          <div class="c-check c-check-pending">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          Compliance cert pending
+        </div>
+        <div class="c-verify-row">
+          <div class="c-check c-check-ok">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          No fraud flags
+        </div>
+      </div>
+
+      <!-- Open house -->
+      <div class="c-oh-card">
+        <div class="c-oh-h">UPCOMING OPEN HOUSE</div>
+        <div class="c-oh-event">
+          <div>
+            <div class="c-oh-date">Sat, 17 May 2026</div>
+            <div class="c-oh-time">10:00 – 12:00</div>
+          </div>
+          <button class="c-oh-btn">Register</button>
+        </div>
+      </div>
+
+      <!-- Similar properties mini -->
+      <div class="c-card" style="padding:16px;">
+        <div style="font-family:var(--fm);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">SIMILAR PROPERTIES</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=80&h=56&fit=crop" alt="" style="width:64px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;" />
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--forest);">3-Bed in Constantia</div>
+              <div style="font-family:var(--ff);font-size:14px;color:var(--rust);">R 3 750 000</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <img src="https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=80&h=56&fit=crop" alt="" style="width:64px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0;" />
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--forest);">5-Bed in Newlands</div>
+              <div style="font-family:var(--ff);font-size:14px;color:var(--rust);">R 6 200 000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(n) {
+  document.querySelectorAll('.option').forEach(el => el.classList.remove('visible'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('opt' + n).classList.add('visible');
+  document.querySelectorAll('.tab-btn')[n - 1].classList.add('active');
+}
+</script>
+</body>
+</html>

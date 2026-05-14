@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Viewing Detail — Redesign Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:   #1A3C28;
+    --forest60: rgba(26,60,40,0.6);
+    --forest30: rgba(26,60,40,0.3);
+    --forest10: rgba(26,60,40,0.08);
+    --forest06: rgba(26,60,40,0.05);
+    --green:    #00E87A;
+    --green-dim:#0D7039;
+    --orange:   #C4562A;
+    --gold:     #B89040;
+    --cream:    #F2E8D5;
+    --cream2:   #EDE0C9;
+    --white:    #FFFFFF;
+    --ink:      #1A3C28;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── BREADCRUMB NAV ── */
+  .breadcrumb {
+    background: var(--forest);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .breadcrumb .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    cursor: pointer;
+    transition: color .15s;
+  }
+  .breadcrumb .back-btn:hover { color: var(--green); }
+  .breadcrumb .sep { color: rgba(255,255,255,0.2); font-size: 12px; }
+  .breadcrumb .crumb { color: rgba(255,255,255,0.35); font-size: 12px; font-family: 'DM Mono', monospace; }
+  .breadcrumb .crumb-active { color: rgba(255,255,255,0.75); font-size: 12px; font-family: 'DM Mono', monospace; }
+
+  /* ── OUTER LAYOUT ── */
+  .page-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
+  }
+
+  /* ── HERO HEADER ── */
+  .hero {
+    background: var(--forest);
+    border-radius: 20px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: var(--green);
+    opacity: .04;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    right: 60px;
+    bottom: -80px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: .06;
+  }
+  .avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: white;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.15);
+    position: relative;
+  }
+  .avatar-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--green);
+    border: 2.5px solid var(--forest);
+  }
+  .hero-info { flex: 1; min-width: 0; }
+  .hero-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+  }
+  .hero-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: .04em;
+  }
+  .hero-datetime {
+    color: var(--green);
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+  }
+  .status-pending  { background: rgba(184,144,64,.18); color: #F5C842; border: 1px solid rgba(184,144,64,.3); }
+  .status-confirmed{ background: rgba(0,232,122,.15); color: var(--green); border: 1px solid rgba(0,232,122,.25); }
+  .btn-confirm {
+    padding: 9px 18px;
+    background: var(--green);
+    color: var(--forest);
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-confirm:hover { opacity: .88; }
+  .btn-ghost {
+    padding: 9px 16px;
+    background: rgba(255,255,255,.07);
+    color: rgba(255,255,255,.65);
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,.12); }
+  .btn-danger {
+    padding: 9px 16px;
+    background: rgba(196,86,42,.15);
+    color: #F08060;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid rgba(196,86,42,.3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-danger:hover { background: rgba(196,86,42,.25); }
+
+  /* ── TWO COLUMN BODY ── */
+  .body-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* ── LEFT PANEL ── */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--white);
+    border: 1px solid rgba(26,60,40,.1);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--forest10);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .card-header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: rgba(26,60,40,.4);
+  }
+  .card-body { padding: 16px; }
+
+  /* Detail rows */
+  .detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--forest10);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--forest10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .detail-icon svg { width: 16px; height: 16px; }
+  .detail-icon.orange { background: rgba(196,86,42,.09); }
+  .detail-icon.green  { background: rgba(0,232,122,.09); }
+  .detail-icon.gold   { background: rgba(184,144,64,.09); }
+  .detail-label { font-size: 10px; color: rgba(26,60,40,.42); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .07em; }
+  .detail-value { font-size: 14px; font-weight: 500; color: var(--ink); margin-top: 2px; }
+  .detail-sub   { font-size: 12px; color: rgba(26,60,40,.5); margin-top: 1px; }
+
+  /* Property mini-card */
+  .property-card {
+    background: var(--forest);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .property-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .property-thumb svg { width: 22px; height: 22px; opacity: .5; color: white; }
+  .property-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.3;
+  }
+  .property-address {
+    font-size: 11px;
+    color: rgba(255,255,255,.45);
+    margin-top: 2px;
+  }
+  .property-price {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--green);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Contact info */
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .contact-row:hover { background: var(--forest10); }
+  .contact-row svg { width: 15px; height: 15px; color: rgba(26,60,40,.4); flex-shrink: 0; }
+  .contact-label { font-size: 10px; color: rgba(26,60,40,.4); font-family: 'DM Mono', monospace; }
+  .contact-value { font-size: 13px; color: var(--ink); margin-top: 1px; }
+
+  /* Timeline strip */
+  .timeline {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .tl-item {
+    display: flex;
+    gap: 12px;
+    position: relative;
+    padding-bottom: 16px;
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-dot.done  { background: rgba(0,232,122,.15); }
+  .tl-dot.now   { background: var(--forest); border: 2px solid var(--green); }
+  .tl-dot.future{ background: var(--forest10); }
+  .tl-dot svg { width: 10px; height: 10px; }
+  .tl-item:not(:last-child) .tl-dot::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: calc(100% + 16px - 22px);
+    background: var(--forest10);
+  }
+  .tl-text-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .tl-text-time  { font-size: 10px; color: rgba(26,60,40,.4); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+  /* ── RIGHT PANEL — MESSAGES ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg-panel {
+    background: var(--white);
+    border: 1px solid rgba(26,60,40,.1);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .msg-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--forest10);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .msg-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .msg-header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: rgba(26,60,40,.4);
+  }
+  .msg-count {
+    background: var(--green);
+    color: var(--forest);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-family: 'DM Mono', monospace;
+  }
+  .channel-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--forest10);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .channel-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: rgba(26,60,40,.45);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    transition: all .12s;
+  }
+  .channel-btn.active {
+    background: var(--forest);
+    color: var(--green);
+  }
+
+  /* Message thread */
+  .msg-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 360px;
+    max-height: 460px;
+    background: #F8F3EB;
+  }
+  /* System event */
+  .msg-event {
+    text-align: center;
+    padding: 6px 12px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: rgba(26,60,40,.35);
+    letter-spacing: .06em;
+  }
+  .msg-event span {
+    background: rgba(26,60,40,.06);
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+  /* Agent bubble (right-aligned) */
+  .bubble-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .bubble-wrap.agent { align-items: flex-end; }
+  .bubble-wrap.client { align-items: flex-start; }
+  .bubble-meta {
+    font-size: 10px;
+    color: rgba(26,60,40,.35);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+  }
+  .bubble-meta .channel-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(26,60,40,.07);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 9px;
+  }
+  .bubble {
+    max-width: 82%;
+    padding: 11px 15px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .bubble.agent {
+    background: var(--forest);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble.client {
+    background: white;
+    color: var(--ink);
+    border: 1px solid rgba(26,60,40,.1);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.system-note {
+    background: rgba(184,144,64,.09);
+    border: 1px solid rgba(184,144,64,.2);
+    color: var(--ink);
+    font-size: 12.5px;
+    max-width: 100%;
+  }
+  .bubble-tail-agent {
+    width: 0; height: 0;
+    border-top: 6px solid var(--forest);
+    border-left: 6px solid transparent;
+    align-self: flex-end;
+    margin-right: 4px;
+    margin-top: -2px;
+    display: none; /* simplified */
+  }
+  .read-receipt {
+    font-size: 10px;
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    padding-right: 4px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  /* Compose */
+  .compose-area {
+    border-top: 1px solid var(--forest10);
+    padding: 14px 16px;
+    background: white;
+  }
+  .compose-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .compose-input-wrap {
+    flex: 1;
+    background: var(--cream);
+    border: 1px solid rgba(26,60,40,.15);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .compose-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    min-height: 44px;
+    max-height: 100px;
+  }
+  .compose-footer {
+    padding: 6px 10px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .compose-channel {
+    display: flex;
+    gap: 4px;
+  }
+  .compose-ch-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: 'DM Mono', monospace;
+    color: rgba(26,60,40,.4);
+    background: transparent;
+    transition: all .12s;
+  }
+  .compose-ch-btn.active-email {
+    background: rgba(0,114,255,.07);
+    color: #0073E6;
+    border-color: rgba(0,114,255,.2);
+  }
+  .compose-ch-btn svg { width: 11px; height: 11px; }
+  .compose-hint { font-size: 10px; color: rgba(26,60,40,.3); font-family: 'DM Mono', monospace; }
+  .send-btn {
+    width: 44px;
+    height: 44px;
+    background: var(--forest);
+    border-radius: 12px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .12s;
+  }
+  .send-btn:hover { background: var(--green-dim); }
+  .send-btn svg { width: 18px; height: 18px; color: var(--green); }
+
+  /* Quick replies */
+  .quick-replies {
+    padding: 10px 16px 0;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .qr-chip {
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid rgba(26,60,40,.15);
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(26,60,40,.6);
+    cursor: pointer;
+    background: white;
+    transition: all .12s;
+  }
+  .qr-chip:hover {
+    border-color: var(--forest);
+    color: var(--forest);
+    background: var(--forest10);
+  }
+
+  /* ── NOTES card ── */
+  .notes-textarea {
+    width: 100%;
+    padding: 14px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    min-height: 88px;
+    line-height: 1.55;
+  }
+  .notes-footer {
+    padding: 8px 14px;
+    border-top: 1px solid var(--forest10);
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .btn-save {
+    padding: 6px 14px;
+    background: var(--forest);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity .12s;
+  }
+  .btn-save:hover { opacity: .85; }
+
+  /* inline SVG helpers */
+  svg { display: inline-block; vertical-align: middle; }
+
+  /* Scrollbar */
+  .msg-thread::-webkit-scrollbar { width: 4px; }
+  .msg-thread::-webkit-scrollbar-track { background: transparent; }
+  .msg-thread::-webkit-scrollbar-thumb { background: rgba(26,60,40,.15); border-radius: 4px; }
+
+  /* Fade-in animation for messages */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .bubble-wrap { animation: fadeUp .25s ease both; }
+  .bubble-wrap:nth-child(2) { animation-delay: .05s; }
+  .bubble-wrap:nth-child(3) { animation-delay: .1s; }
+  .bubble-wrap:nth-child(4) { animation-delay: .15s; }
+  .bubble-wrap:nth-child(5) { animation-delay: .2s; }
+  .bubble-wrap:nth-child(6) { animation-delay: .25s; }
+</style>
+</head>
+<body>
+
+<!-- BREADCRUMB -->
+<nav class="breadcrumb">
+  <span class="back-btn">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    My Listings
+  </span>
+  <span class="sep">›</span>
+  <span class="crumb">32 Mandela Drive, Sandton</span>
+  <span class="sep">›</span>
+  <span class="crumb">Viewings</span>
+  <span class="sep">›</span>
+  <span class="crumb-active">Jane Dlamini · 22 Apr</span>
+</nav>
+
+<div class="page-shell">
+
+  <!-- ── HERO HEADER ── -->
+  <div class="hero">
+    <div class="avatar">
+      JD
+      <span class="avatar-dot"></span>
+    </div>
+    <div class="hero-info">
+      <div class="hero-name">Jane Dlamini</div>
+      <div class="hero-sub">Potential Buyer · Booked by agent · Physical viewing</div>
+      <div class="hero-datetime">WED 22 APR &nbsp;·&nbsp; 11:00 AM &nbsp;·&nbsp; 30 min</div>
+    </div>
+    <div class="hero-actions">
+      <span class="status-pill status-pending">
+        <svg width="7" height="7" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+        Pending
+      </span>
+      <button class="btn-confirm">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Confirm
+      </button>
+      <button class="btn-ghost">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Reschedule
+      </button>
+      <button class="btn-danger">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        Decline
+      </button>
+    </div>
+  </div>
+
+  <!-- ── BODY ── -->
+  <div class="body-grid">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+      <!-- Property mini-card -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 22V12h6v10"/></svg>
+          <span class="card-header-label">Property</span>
+        </div>
+        <div class="card-body" style="padding:14px">
+          <div class="property-card">
+            <div class="property-thumb">
+              <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="property-title">32 Mandela Drive</div>
+              <div class="property-address">Sandton, Johannesburg</div>
+              <div class="property-price">R 2,450,000 &nbsp;·&nbsp; 3 bed · 2 bath</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Viewing Details -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="card-header-label">Viewing Details</span>
+        </div>
+        <div class="card-body" style="padding:12px 14px">
+          <div class="detail-row">
+            <div class="detail-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.55)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <div class="detail-label">Date</div>
+              <div class="detail-value">Wednesday, 22 April 2026</div>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-icon orange">
+              <svg fill="none" viewBox="0 0 24 24" stroke="#C4562A" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div class="detail-label">Time &amp; Duration</div>
+              <div class="detail-value">11:00 AM</div>
+              <div class="detail-sub">30 minutes</div>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-icon green">
+              <svg fill="none" viewBox="0 0 24 24" stroke="#0D7039" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div>
+              <div class="detail-label">Viewing Type</div>
+              <div class="detail-value">Physical · In-Person</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Contact -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="card-header-label">Client Contact</span>
+        </div>
+        <div class="card-body" style="padding:10px 12px">
+          <div class="contact-row">
+            <svg fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <div>
+              <div class="contact-label">Email</div>
+              <div class="contact-value">jane.dlamini@gmail.com</div>
+            </div>
+          </div>
+          <div class="contact-row">
+            <svg fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            <div>
+              <div class="contact-label">Phone</div>
+              <div class="contact-value">+27 82 345 6789</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Timeline -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="card-header-label">Timeline</span>
+        </div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot done">
+              <svg fill="none" viewBox="0 0 24 24" stroke="#0D7039" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+              <div class="tl-text-label">Viewing booked by agent</div>
+              <div class="tl-text-time">20 Apr · 7:34 PM</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot done">
+              <svg fill="none" viewBox="0 0 24 24" stroke="#0D7039" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+              <div class="tl-text-label">Confirmation SMS sent</div>
+              <div class="tl-text-time">20 Apr · 7:35 PM</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot now">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>
+            </div>
+            <div>
+              <div class="tl-text-label" style="color:var(--forest);font-weight:600">Awaiting confirmation</div>
+              <div class="tl-text-time">Now</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot future">
+              <div style="width:6px;height:6px;border-radius:50%;background:rgba(26,60,40,.2)"></div>
+            </div>
+            <div>
+              <div class="tl-text-label" style="color:rgba(26,60,40,.35)">Viewing takes place</div>
+              <div class="tl-text-time">22 Apr · 11:00 AM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left-panel -->
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- Message thread -->
+      <div class="msg-panel">
+        <div class="msg-header">
+          <div class="msg-header-left">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.5)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span class="msg-header-label">Messages</span>
+            <span class="msg-count">3</span>
+          </div>
+          <div class="channel-toggle">
+            <button class="channel-btn active">All</button>
+            <button class="channel-btn">Email</button>
+            <button class="channel-btn">SMS</button>
+          </div>
+        </div>
+
+        <!-- Quick replies bar -->
+        <div class="quick-replies">
+          <span class="qr-chip">Confirm tomorrow</span>
+          <span class="qr-chip">Directions</span>
+          <span class="qr-chip">Running late</span>
+          <span class="qr-chip">Follow-up</span>
+        </div>
+
+        <!-- Thread -->
+        <div class="msg-thread">
+
+          <div class="msg-event">
+            <span>Viewing booked · 20 Apr at 7:34 PM</span>
+          </div>
+
+          <!-- Agent message 1 -->
+          <div class="bubble-wrap agent">
+            <div class="bubble-meta">
+              <span>You (Demo Agent)</span>
+              <span>·</span>
+              <span>7:35 PM</span>
+              <span class="channel-tag">
+                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                SMS
+              </span>
+            </div>
+            <div class="bubble agent">Hi Jane, just confirming your viewing at 32 Mandela Drive on Wednesday 22 April at 11:00 AM. Looking forward to seeing you!</div>
+            <div class="read-receipt">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              Delivered
+            </div>
+          </div>
+
+          <!-- Client reply -->
+          <div class="bubble-wrap client">
+            <div class="bubble-meta">
+              <span>Jane Dlamini</span>
+              <span>·</span>
+              <span>7:52 PM</span>
+              <span class="channel-tag">
+                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                SMS
+              </span>
+            </div>
+            <div class="bubble client">Great, thank you! Could you send me directions? I'm not sure of the exact location.</div>
+          </div>
+
+          <!-- Agent reply -->
+          <div class="bubble-wrap agent">
+            <div class="bubble-meta">
+              <span>You (Demo Agent)</span>
+              <span>·</span>
+              <span>8:01 PM</span>
+              <span class="channel-tag">
+                <svg width="9" height="9" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Email
+              </span>
+            </div>
+            <div class="bubble agent">Of course! The property is at 32 Mandela Drive, Sandton. There's visitor parking available on site. I've sent a Google Maps pin to your email as well. See you Wednesday!</div>
+            <div class="read-receipt">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="margin-left:-4px"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              Read
+            </div>
+          </div>
+
+          <div class="msg-event">
+            <span>Today · 10:20 PM</span>
+          </div>
+
+          <!-- System note -->
+          <div class="bubble-wrap">
+            <div class="bubble system-note">
+              <div style="display:flex;gap:7px;align-items:flex-start">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#B89040" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span style="font-size:12px;color:rgba(26,60,40,.7);line-height:1.5">Viewing confirmed by agent. Client will receive a reminder 24 hours before the viewing.</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /msg-thread -->
+
+        <!-- Compose -->
+        <div class="compose-area">
+          <div class="compose-row">
+            <div class="compose-input-wrap">
+              <textarea class="compose-input" placeholder="Write a message to Jane…" rows="1"></textarea>
+              <div class="compose-footer">
+                <div class="compose-channel">
+                  <button class="compose-ch-btn active-email">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Email
+                  </button>
+                  <button class="compose-ch-btn">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    SMS
+                  </button>
+                </div>
+                <span class="compose-hint">⌘↵ to send</span>
+              </div>
+            </div>
+            <button class="send-btn">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Notes -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="rgba(26,60,40,.4)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <span class="card-header-label">Private Notes (Agent Only)</span>
+        </div>
+        <textarea class="notes-textarea" placeholder="Add internal notes about this viewing — not visible to the client…"></textarea>
+        <div class="notes-footer">
+          <button class="btn-save">Save Notes</button>
+        </div>
+      </div>
+
+    </div><!-- /right-panel -->
+  </div><!-- /body-grid -->
+</div><!-- /page-shell -->
+
+</body>
+</html>

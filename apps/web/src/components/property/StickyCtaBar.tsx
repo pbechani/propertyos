@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Phone, Calendar, Heart } from 'lucide-react';
+import { Phone, Calendar, Heart, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface StickyCtaBarProps {
@@ -14,6 +14,8 @@ interface StickyCtaBarProps {
   onScheduleViewing: () => void;
   onToggleSave: () => void;
   disabled?: boolean;
+  offerMade?: boolean;
+  onMakeOffer?: () => void;
 }
 
 export default function StickyCtaBar({
@@ -25,6 +27,8 @@ export default function StickyCtaBar({
   onScheduleViewing,
   onToggleSave,
   disabled = false,
+  offerMade = false,
+  onMakeOffer,
 }: StickyCtaBarProps) {
   const [visible, setVisible] = useState(false);
 
@@ -93,6 +97,31 @@ export default function StickyCtaBar({
             <Calendar className="w-4 h-4" />
             Schedule Viewing
           </Button>
+          {onMakeOffer && !disabled && (
+            offerMade ? (
+              <span
+                className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold"
+                style={{ background: 'rgba(184,144,64,0.15)', color: '#B89040', border: '1px solid rgba(184,144,64,0.4)', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.04em', cursor: 'pointer' }}
+                onClick={onMakeOffer}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') onMakeOffer(); }}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Offer Made</span>
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                onClick={onMakeOffer}
+                className="flex items-center gap-1.5"
+                style={{ background: '#B89040', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '11px', letterSpacing: '.06em' }}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Make Offer</span>
+              </Button>
+            )
+          )}
         </div>
       </div>
     </div>

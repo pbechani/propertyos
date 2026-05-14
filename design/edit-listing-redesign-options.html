@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Listing — Redesign Options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --forest:    #1A3C28;
+      --parchment: #F2E8D5;
+      --terracotta:#C4562A;
+      --egreen:    #00E87A;
+      --muted:     #6B8F7A;
+      --cream:     #F6F2EC;
+      --border:    #E4DDD0;
+      --white:     #ffffff;
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: #E8E0D3;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ─── Page Chrome ─────────────────────────────── */
+    .chrome-top {
+      background: var(--forest);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .chrome-top h1 {
+      font-family: var(--font-display);
+      color: var(--parchment);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .chrome-top .tag {
+      background: var(--egreen);
+      color: var(--forest);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ─── Intro Section ───────────────────────────── */
+    .intro {
+      max-width: 1000px;
+      margin: 40px auto 0;
+      padding: 0 32px 32px;
+    }
+    .intro h2 {
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 8px;
+    }
+    .intro p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+      max-width: 660px;
+    }
+
+    /* ─── Gap analysis bar ────────────────────────── */
+    .gap-bar {
+      max-width: 1000px;
+      margin: 0 auto 48px;
+      padding: 0 32px;
+    }
+    .gap-bar h3 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 16px;
+    }
+    .gap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .gap-item {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 15px;
+      border-left: 3px solid var(--terracotta);
+      font-size: 13px;
+      color: #333;
+    }
+    .gap-item strong {
+      display: block;
+      color: var(--forest);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .gap-item .ok {
+      border-left-color: var(--egreen);
+    }
+
+    /* ─── Option label ────────────────────────────── */
+    .option-label {
+      max-width: 1000px;
+      margin: 0 auto 20px;
+      padding: 0 32px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .option-label .num {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--border);
+      line-height: 1;
+    }
+    .option-label .meta { flex: 1; }
+    .option-label .meta h3 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
+    .option-label .meta p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .badge-rec {
+      background: var(--egreen);
+      color: var(--forest);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    /* ─── Option frame ────────────────────────────── */
+    .option-frame {
+      max-width: 1000px;
+      margin: 0 auto 64px;
+      padding: 0 32px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       OPTION A — Sectioned Wizard (step tabs at top)
+    ═══════════════════════════════════════════════ */
+    .opt-a {
+      background: var(--parchment);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(26,60,40,0.10);
+    }
+
+    /* breadcrumb */
+    .breadcrumb {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .breadcrumb-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .breadcrumb-left .arrow {
+      color: var(--forest);
+      font-size: 16px;
+    }
+    .breadcrumb-left .address {
+      font-weight: 600;
+      color: var(--forest);
+      font-size: 13px;
+    }
+    .breadcrumb-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-ghost {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .btn-primary {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+      background: var(--forest);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary .dot {
+      width: 6px; height: 6px;
+      background: var(--egreen);
+      border-radius: 50%;
+    }
+    .unsaved-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: #FFF8E7;
+      border: 1px solid #F5D57A;
+      color: #8B6914;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+    }
+
+    /* section tabs */
+    .section-tabs {
+      background: var(--forest);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .section-tab {
+      color: rgba(242,232,213,0.55);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: all 0.15s;
+    }
+    .section-tab.active {
+      color: var(--parchment);
+      border-bottom-color: var(--egreen);
+    }
+    .section-tab .tab-check {
+      display: inline-block;
+      width: 14px; height: 14px;
+      background: var(--egreen);
+      border-radius: 50%;
+      margin-right: 5px;
+      font-size: 8px;
+      line-height: 14px;
+      text-align: center;
+      color: var(--forest);
+      font-weight: 900;
+      vertical-align: middle;
+    }
+
+    /* progress strip */
+    .progress-strip {
+      height: 3px;
+      background: var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--forest), var(--egreen));
+      width: 40%;
+      transition: width 0.3s;
+    }
+
+    /* body layout */
+    .body-layout {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 0;
+      min-height: 480px;
+    }
+    .main-col {
+      padding: 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .field-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .field-grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--forest);
+      background: white;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field-input:focus {
+      border-color: var(--forest);
+    }
+    .field-input.prefixed {
+      padding-left: 28px;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .prefix-symbol {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    select.field-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B8F7A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .field-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--forest);
+      background: white;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+    }
+
+    .char-count {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* sidebar right col */
+    .sidebar-col {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: var(--cream);
+    }
+    .sidebar-card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .sidebar-card-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .sidebar-card-body {
+      padding: 14px;
+    }
+
+    .status-btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .status-btn {
+      padding: 6px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .status-btn.active-status {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: white;
+    }
+    .status-btn.under-offer {
+      background: #FFF8E7;
+      border-color: #F5D57A;
+      color: #8B6914;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--forest);
+    }
+    .toggle-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .toggle-pill {
+      width: 36px; height: 20px;
+      background: var(--egreen);
+      border-radius: 10px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .toggle-pill::after {
+      content: '';
+      position: absolute;
+      right: 3px;
+      top: 3px;
+      width: 14px; height: 14px;
+      background: white;
+      border-radius: 7px;
+    }
+    .toggle-pill.off {
+      background: var(--border);
+    }
+    .toggle-pill.off::after {
+      right: auto;
+      left: 3px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .sk { color: var(--muted); }
+    .stat-row .sv { font-weight: 700; color: var(--forest); font-family: var(--font-mono); }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .photo-thumb {
+      height: 56px;
+      border-radius: 6px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo-primary-badge {
+      position: absolute;
+      bottom: 3px;
+      left: 3px;
+      background: var(--forest);
+      color: var(--parchment);
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .photo-upload-btn {
+      width: 100%;
+      padding: 8px;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--cream);
+      text-align: center;
+      cursor: pointer;
+    }
+    .photo-upload-btn:hover {
+      border-color: var(--forest);
+      color: var(--forest);
+    }
+
+    /* feature chips */
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--forest);
+      font-weight: 500;
+    }
+    .chip .x {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    /* sub-section heading */
+    .sub-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin: 20px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sub-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ═══════════════════════════════════════════════
+       OPTION B — Floating Sidebar with inline saves
+    ═══════════════════════════════════════════════ */
+    .opt-b {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(26,60,40,0.08);
+    }
+
+    /* forest breadcrumb header */
+    .forest-breadcrumb {
+      background: var(--forest);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .forest-breadcrumb .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .back-circle {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(242,232,213,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--parchment);
+      font-size: 14px;
+    }
+    .forest-breadcrumb .title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--parchment);
+    }
+    .forest-breadcrumb .sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .forest-breadcrumb .right {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-glass {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--parchment);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer;
+    }
+    .btn-egreen {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--forest);
+      background: var(--egreen);
+      border: none;
+      cursor: pointer;
+    }
+
+    /* b body */
+    .b-body {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+    }
+    .b-nav {
+      padding: 20px 0;
+      background: var(--cream);
+      border-right: 1px solid var(--border);
+    }
+    .b-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+    .b-nav-item.active {
+      color: var(--forest);
+      border-left-color: var(--forest);
+      background: white;
+    }
+    .b-nav-item .nav-icon {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .b-nav-item.active .nav-icon {
+      background: var(--forest);
+    }
+    .b-nav-section {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--border);
+      padding: 14px 16px 6px;
+    }
+
+    .b-main {
+      padding: 24px;
+      overflow-y: auto;
+      max-height: 520px;
+    }
+
+    /* save-in-place CTA */
+    .b-field-group {
+      background: var(--cream);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+    .b-field-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 12px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       OPTION C — Full-page accordion sections
+    ═══════════════════════════════════════════════ */
+    .opt-c {
+      background: var(--parchment);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(26,60,40,0.08);
+    }
+
+    .c-header {
+      background: var(--forest);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .c-header .prop-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .c-header .prop-thumb {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid rgba(242,232,213,0.3);
+    }
+    .c-header .prop-name {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--parchment);
+    }
+    .c-header .prop-addr {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .c-header .prop-status {
+      background: rgba(0,232,122,0.18);
+      color: var(--egreen);
+      border: 1px solid rgba(0,232,122,0.3);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+
+    .c-progress {
+      display: flex;
+      background: var(--forest);
+      padding: 0 24px 14px;
+      gap: 6px;
+    }
+    .c-step {
+      flex: 1;
+      text-align: center;
+    }
+    .c-step-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      margin: 0 auto 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.3);
+    }
+    .c-step-dot.done {
+      background: var(--egreen);
+      border-color: var(--egreen);
+      color: var(--forest);
+    }
+    .c-step-dot.current {
+      background: white;
+      border-color: white;
+      color: var(--forest);
+    }
+    .c-step-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: rgba(242,232,213,0.4);
+    }
+    .c-step-label.done, .c-step-label.current {
+      color: rgba(242,232,213,0.8);
+    }
+
+    /* c-accordion */
+    .c-accordion {
+      border-bottom: 1px solid var(--border);
+    }
+    .c-accordion-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      cursor: pointer;
+      background: white;
+      transition: background 0.15s;
+    }
+    .c-accordion-head:hover { background: var(--cream); }
+    .c-accordion-head.open { background: var(--cream); }
+    .c-accordion-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .c-accordion-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+    .c-accordion-head.open .c-accordion-icon {
+      background: var(--forest);
+    }
+    .c-accordion-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--forest);
+    }
+    .c-accordion-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .c-accordion-badge {
+      background: var(--egreen);
+      color: var(--forest);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+    }
+    .c-accordion-badge.warn {
+      background: #FFF8E7;
+      border: 1px solid #F5D57A;
+      color: #8B6914;
+    }
+    .c-accordion-body {
+      padding: 20px 24px;
+      background: var(--cream);
+      border-top: 1px solid var(--border);
+      display: none; /* collapsed by default visually */
+    }
+    .c-accordion-body.open {
+      display: block;
+    }
+
+    /* New fields showcase */
+    .new-field-showcase {
+      max-width: 1000px;
+      margin: 0 auto 64px;
+      padding: 0 32px;
+    }
+    .showcase-heading {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+    .showcase-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .field-showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .field-showcase-card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 16px;
+    }
+    .field-showcase-card .cat {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 10px;
+    }
+    .field-showcase-card .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .field-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .field-pill .fn { color: var(--forest); font-weight: 600; }
+    .field-pill .ft { color: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+    .field-pill.missing .fn { color: var(--terracotta); }
+    .field-pill.missing .ft { color: #C4562A80; }
+
+    /* bottom comparison */
+    .comparison-section {
+      max-width: 1000px;
+      margin: 0 auto 80px;
+      padding: 0 32px;
+    }
+    .comparison-table {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .ct-head {
+      display: grid;
+      grid-template-columns: 200px repeat(3, 1fr);
+      background: var(--forest);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--parchment);
+    }
+    .ct-head > div, .ct-row > div { padding: 12px 16px; }
+    .ct-row {
+      display: grid;
+      grid-template-columns: 200px repeat(3, 1fr);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .ct-row:last-child { border-bottom: none; }
+    .ct-row .feature { color: var(--muted); font-weight: 500; }
+    .ct-row .check { color: #16a34a; font-weight: 700; }
+    .ct-row .cross { color: #dc2626; }
+    .ct-row .mid { color: #ca8a04; font-weight: 600; }
+    .ct-row.rec { background: #f0fdf4; }
+    .ct-head .rec-marker { background: var(--egreen); color: var(--forest); }
+
+    /* footer */
+    .design-footer {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .footer-cta {
+      background: var(--forest);
+      color: var(--parchment);
+      border-radius: 12px;
+      padding: 20px 24px;
+      flex: 1;
+    }
+    .footer-cta h4 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .footer-cta p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .footer-cta .approve-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 8px 20px;
+      background: var(--egreen);
+      color: var(--forest);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top chrome -->
+<div class="chrome-top">
+  <h1>PriBeC — Edit Listing Redesign</h1>
+  <span class="tag">3 Options · Pick 1</span>
+</div>
+
+<!-- Intro -->
+<div class="intro">
+  <h2>Edit Listing — Redesign Mockups</h2>
+  <p>
+    Three distinct layout approaches — each adding all missing fields, PriBeC brand tokens (forest / parchment / egreen),
+    Fraunces + Jakarta fonts, and proper SA-market field coverage. Pick your preferred layout direction before implementation begins.
+  </p>
+</div>
+
+<!-- Gap Analysis -->
+<div class="gap-bar">
+  <h3>🔴 Current Page Gaps</h3>
+  <div class="gap-grid">
+    <div class="gap-item"><strong>Missing — Location</strong>Province / Region, Country, Lat/Lng, Suburb</div>
+    <div class="gap-item"><strong>Missing — Property</strong>Parking spaces, Garages, Carports, ERF size, Floor area</div>
+    <div class="gap-item"><strong>Missing — Financial</strong>Monthly levy, Monthly rates, Monthly utilities, Currency selector</div>
+    <div class="gap-item"><strong>Missing — Listing Meta</strong>Listing type (Sale/Rent/Dev), Title deed type, Listing reference</div>
+    <div class="gap-item"><strong>Missing — Media</strong>Video URL, Virtual tour, Document uploads (title deed, floor plan)</div>
+    <div class="gap-item"><strong>Missing — Branding</strong>Uses bland blue — not forest/parchment/egreen PriBeC palette</div>
+    <div class="gap-item ok"><strong>Present ✓</strong>Price, bedrooms, bathrooms, sqft, description, photos, features</div>
+    <div class="gap-item ok"><strong>Present ✓</strong>Published toggle, Featured toggle, listing status</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     OPTION A
+══════════════════════════════════════════════════════════ -->
+<div class="option-label">
+  <div class="num">A</div>
+  <div class="meta">
+    <h3>Sectioned Wizard — Tabbed top navigation <span class="badge-rec">★ Recommended</span></h3>
+    <p>Forest tab-bar at the top with section tabs (Core · Location · Financials · Details · Media · Settings). 
+       Main content + sticky sidebar panel. Progress strip shows completion. Breadcrumb stays white so it reads as "app chrome".</p>
+  </div>
+</div>
+
+<div class="option-frame">
+<div class="opt-a">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    <div class="breadcrumb-left">
+      <span class="arrow">←</span>
+      <span>My Listings</span>
+      <span>›</span>
+      <span>47 Jacaranda Avenue, Pretoria</span>
+      <span>›</span>
+      <span class="address">Edit Listing</span>
+    </div>
+    <div class="breadcrumb-actions">
+      <span class="unsaved-pill">⚠ Unsaved changes</span>
+      <button class="btn-ghost">Cancel</button>
+      <button class="btn-primary"><span class="dot"></span> Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Section tabs -->
+  <div class="section-tabs">
+    <div class="section-tab"><span class="tab-check">✓</span> Core Info</div>
+    <div class="section-tab active">Location</div>
+    <div class="section-tab">Pricing &amp; Costs</div>
+    <div class="section-tab">Property Details</div>
+    <div class="section-tab">Description</div>
+    <div class="section-tab">Media</div>
+    <div class="section-tab">Features</div>
+    <div class="section-tab">Settings</div>
+  </div>
+  <div class="progress-strip"><div class="progress-fill"></div></div>
+
+  <!-- Body -->
+  <div class="body-layout">
+
+    <!-- Main content (showing "Location" tab as active) -->
+    <div class="main-col">
+      <div class="section-heading">📍 Location</div>
+
+      <div class="field-grid-2">
+        <div>
+          <label>Street Address</label>
+          <input class="field-input" value="47 Jacaranda Avenue" readonly />
+        </div>
+        <div>
+          <label>Suburb / Neighbourhood</label>
+          <input class="field-input" value="Waterkloof" readonly />
+        </div>
+      </div>
+
+      <div class="field-grid-3">
+        <div>
+          <label>City / Town</label>
+          <input class="field-input" value="Pretoria" readonly />
+        </div>
+        <div>
+          <label>Province / Region</label>
+          <select class="field-input">
+            <option>Gauteng</option>
+            <option>Western Cape</option>
+            <option>KwaZulu-Natal</option>
+          </select>
+        </div>
+        <div>
+          <label>Postal Code</label>
+          <input class="field-input" value="0181" readonly />
+        </div>
+      </div>
+
+      <div class="field-grid-2">
+        <div>
+          <label>Country</label>
+          <select class="field-input">
+            <option>South Africa</option>
+            <option>Zimbabwe</option>
+            <option>Zambia</option>
+          </select>
+        </div>
+        <div>
+          <label>Listing Reference</label>
+          <input class="field-input" value="PB-2024-0473" readonly />
+        </div>
+      </div>
+
+      <div class="sub-heading">Map Pin (optional)</div>
+
+      <div class="field-grid-2">
+        <div>
+          <label>Latitude</label>
+          <input class="field-input" placeholder="-25.7479" style="font-family: var(--font-mono); font-size:12px" />
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input class="field-input" placeholder="28.2293" style="font-family: var(--font-mono); font-size:12px" />
+        </div>
+      </div>
+
+      <!-- Showing Pricing tab preview as callout -->
+      <div class="sub-heading">Preview — Pricing &amp; Costs tab</div>
+      <div class="field-grid-2">
+        <div>
+          <label>List Price</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" value="2 850 000" readonly />
+          </div>
+        </div>
+        <div>
+          <label>Currency</label>
+          <select class="field-input">
+            <option>ZAR — Rand</option>
+            <option>USD — Dollar</option>
+            <option>GBP — Pound</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-grid-3">
+        <div>
+          <label>Monthly Levy</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" placeholder="1 800" />
+          </div>
+        </div>
+        <div>
+          <label>Monthly Rates</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" placeholder="2 400" />
+          </div>
+        </div>
+        <div>
+          <label>Monthly Utilities</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" placeholder="3 200" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-col">
+
+      <!-- Status card -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">Listing Status</div>
+        <div class="sidebar-card-body">
+          <div class="status-btn-group">
+            <div class="status-btn active-status">Active</div>
+            <div class="status-btn under-offer">Under Offer</div>
+            <div class="status-btn">Sold</div>
+            <div class="status-btn">Draft</div>
+            <div class="status-btn">Withdrawn</div>
+            <div class="status-btn">Rental</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggles -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">Visibility</div>
+        <div class="sidebar-card-body" style="padding: 10px 14px;">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Published</div>
+              <div class="toggle-sub">Visible on marketplace</div>
+            </div>
+            <div class="toggle-pill"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Featured</div>
+              <div class="toggle-sub">Highlighted placement</div>
+            </div>
+            <div class="toggle-pill off"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Verified Listing</div>
+              <div class="toggle-sub">Show verified badge</div>
+            </div>
+            <div class="toggle-pill off"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">Stats</div>
+        <div class="sidebar-card-body" style="padding: 10px 14px;">
+          <div class="stat-row"><span class="sk">Views</span><span class="sv">1,234</span></div>
+          <div class="stat-row"><span class="sk">Saves</span><span class="sv">87</span></div>
+          <div class="stat-row"><span class="sk">Leads</span><span class="sv">12</span></div>
+          <div class="stat-row"><span class="sk">Last Updated</span><span class="sv">2d ago</span></div>
+        </div>
+      </div>
+
+      <!-- Photos mini -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">Photos (5)</div>
+        <div class="sidebar-card-body">
+          <div class="photo-grid">
+            <div class="photo-thumb" style="background:#c8d8c4">
+              <div class="photo-primary-badge">Primary</div>
+            </div>
+            <div class="photo-thumb" style="background:#b8ccd0"></div>
+            <div class="photo-thumb" style="background:#d4c8bc"></div>
+            <div class="photo-thumb" style="background:#c0d0c8"></div>
+          </div>
+          <div class="photo-upload-btn">+ Upload photos</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     OPTION B
+══════════════════════════════════════════════════════════ -->
+<div class="option-label">
+  <div class="num">B</div>
+  <div class="meta">
+    <h3>Left Nav Drawer — Scrollable long-form</h3>
+    <p>Forest header with a persistent left sidebar showing section anchors. Main area scrolls through all sections in one long flow — 
+       like a settings page. Each section auto-saves independently. Great for power users who want everything visible at once.</p>
+  </div>
+</div>
+
+<div class="option-frame">
+<div class="opt-b">
+
+  <!-- Forest header -->
+  <div class="forest-breadcrumb">
+    <div class="left">
+      <div class="back-circle">←</div>
+      <div>
+        <div class="title">Edit Listing — 47 Jacaranda Avenue</div>
+        <div class="sub">Waterkloof · Pretoria · Active</div>
+      </div>
+    </div>
+    <div class="right">
+      <button class="btn-glass">Discard</button>
+      <button class="btn-egreen">Save All</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="b-body">
+
+    <!-- Left nav -->
+    <div class="b-nav">
+      <div class="b-nav-section">Listing</div>
+      <div class="b-nav-item">
+        <span class="nav-icon">🏠</span> Core Details
+      </div>
+      <div class="b-nav-item active">
+        <span class="nav-icon" style="background:var(--forest); color:white">📍</span> Location
+      </div>
+      <div class="b-nav-item">
+        <span class="nav-icon">💰</span> Pricing
+      </div>
+
+      <div class="b-nav-section">Property</div>
+      <div class="b-nav-item">
+        <span class="nav-icon">📐</span> Dimensions
+      </div>
+      <div class="b-nav-item">
+        <span class="nav-icon">🚗</span> Parking
+      </div>
+      <div class="b-nav-item">
+        <span class="nav-icon">✨</span> Features
+      </div>
+
+      <div class="b-nav-section">Media</div>
+      <div class="b-nav-item">
+        <span class="nav-icon">📸</span> Photos
+      </div>
+      <div class="b-nav-item">
+        <span class="nav-icon">🎬</span> Video / Tour
+      </div>
+      <div class="b-nav-item">
+        <span class="nav-icon">📄</span> Documents
+      </div>
+
+      <div class="b-nav-section">Admin</div>
+      <div class="b-nav-item">
+        <span class="nav-icon">⚙️</span> Settings
+      </div>
+    </div>
+
+    <!-- Main scroll area -->
+    <div class="b-main">
+
+      <div class="b-field-group">
+        <div class="b-field-group-title">Location</div>
+        <div class="field-grid-2">
+          <div>
+            <label>Street Address</label>
+            <input class="field-input" value="47 Jacaranda Avenue" readonly />
+          </div>
+          <div>
+            <label>Suburb</label>
+            <input class="field-input" value="Waterkloof" readonly />
+          </div>
+        </div>
+        <div class="field-grid-3">
+          <div>
+            <label>City</label>
+            <input class="field-input" value="Pretoria" readonly />
+          </div>
+          <div>
+            <label>Province</label>
+            <select class="field-input"><option>Gauteng</option></select>
+          </div>
+          <div>
+            <label>Postal Code</label>
+            <input class="field-input" value="0181" readonly />
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px">
+          <button class="btn-primary" style="font-size:11px;padding:5px 12px">Save Location</button>
+        </div>
+      </div>
+
+      <div class="b-field-group">
+        <div class="b-field-group-title">Pricing &amp; Monthly Costs</div>
+        <div class="field-grid-2">
+          <div>
+            <label>List Price</label>
+            <div class="input-wrap">
+              <span class="prefix-symbol">R</span>
+              <input class="field-input prefixed" value="2 850 000" readonly />
+            </div>
+          </div>
+          <div>
+            <label>Listing Type</label>
+            <select class="field-input">
+              <option>For Sale</option>
+              <option>To Rent</option>
+              <option>Development</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-grid-3">
+          <div>
+            <label>Monthly Levy</label>
+            <div class="input-wrap">
+              <span class="prefix-symbol">R</span>
+              <input class="field-input prefixed" value="1 800" readonly />
+            </div>
+          </div>
+          <div>
+            <label>Monthly Rates</label>
+            <div class="input-wrap">
+              <span class="prefix-symbol">R</span>
+              <input class="field-input prefixed" value="2 400" readonly />
+            </div>
+          </div>
+          <div>
+            <label>Monthly Utilities</label>
+            <div class="input-wrap">
+              <span class="prefix-symbol">R</span>
+              <input class="field-input prefixed" placeholder="est." />
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px">
+          <button class="btn-primary" style="font-size:11px;padding:5px 12px">Save Pricing</button>
+        </div>
+      </div>
+
+      <div class="b-field-group">
+        <div class="b-field-group-title">Dimensions &amp; Parking</div>
+        <div class="field-grid-4">
+          <div>
+            <label>Bedrooms</label>
+            <input class="field-input" value="4" readonly />
+          </div>
+          <div>
+            <label>Bathrooms</label>
+            <input class="field-input" value="3" readonly />
+          </div>
+          <div>
+            <label>Garages</label>
+            <input class="field-input" value="2" readonly />
+          </div>
+          <div>
+            <label>Carports</label>
+            <input class="field-input" value="1" readonly />
+          </div>
+        </div>
+        <div class="field-grid-3">
+          <div>
+            <label>Floor Area (m²)</label>
+            <input class="field-input" value="320" readonly />
+          </div>
+          <div>
+            <label>ERF Size (m²)</label>
+            <input class="field-input" value="850" readonly />
+          </div>
+          <div>
+            <label>Year Built</label>
+            <input class="field-input" value="2012" readonly />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     OPTION C
+══════════════════════════════════════════════════════════ -->
+<div class="option-label">
+  <div class="num">C</div>
+  <div class="meta">
+    <h3>Accordion Sections — Full-width with step progress</h3>
+    <p>Property identity card in the forest header (thumbnail + address + status chip). 
+       All sections collapse / expand as accordions. A row of completion step dots 
+       shows which sections have been filled. Best for guided first-time listing creation 
+       but also works for edits.</p>
+  </div>
+</div>
+
+<div class="option-frame">
+<div class="opt-c">
+
+  <!-- Header with property card -->
+  <div class="c-header">
+    <div class="prop-pill">
+      <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#2d5a3d,#1a3c28);border:2px solid rgba(242,232,213,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;">🏡</div>
+      <div>
+        <div class="prop-name">47 Jacaranda Avenue</div>
+        <div class="prop-addr">Waterkloof, Pretoria, Gauteng</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="prop-status">● Active</div>
+      <div class="breadcrumb-actions">
+        <button class="btn-glass">Cancel</button>
+        <button class="btn-egreen">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step progress dots -->
+  <div class="c-progress">
+    <div class="c-step">
+      <div class="c-step-dot done">✓</div>
+      <div class="c-step-label done">Core</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot done">✓</div>
+      <div class="c-step-label done">Location</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot current">3</div>
+      <div class="c-step-label current">Pricing</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot">4</div>
+      <div class="c-step-label">Details</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot">5</div>
+      <div class="c-step-label">Media</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot">6</div>
+      <div class="c-step-label">Features</div>
+    </div>
+    <div class="c-step">
+      <div class="c-step-dot">7</div>
+      <div class="c-step-label">Settings</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Core Info (closed, done) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">🏠</div>
+        <div>
+          <div class="c-accordion-title">Core Listing Info</div>
+          <div class="c-accordion-meta">Property type, title deed, listing reference</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge">✓ Complete</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Location (closed, done) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">📍</div>
+        <div>
+          <div class="c-accordion-title">Location</div>
+          <div class="c-accordion-meta">47 Jacaranda Ave · Waterkloof · Pretoria · Gauteng</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge">✓ Complete</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Pricing (OPEN) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head open">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon" style="background:var(--forest)">💰</div>
+        <div>
+          <div class="c-accordion-title">Pricing &amp; Monthly Costs</div>
+          <div class="c-accordion-meta">List price, levy, rates, utilities</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge warn">⚠ Missing levy</div>
+    </div>
+    <div class="c-accordion-body open">
+      <div class="field-grid-2">
+        <div>
+          <label>List Price</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" value="2 850 000" readonly />
+          </div>
+        </div>
+        <div>
+          <label>Currency</label>
+          <select class="field-input"><option>ZAR — South African Rand</option></select>
+        </div>
+      </div>
+      <div class="field-grid-3">
+        <div>
+          <label>Monthly Levy</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" placeholder="e.g. 1 800" style="border-color: var(--terracotta)" />
+          </div>
+        </div>
+        <div>
+          <label>Monthly Rates</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" value="2 400" readonly />
+          </div>
+        </div>
+        <div>
+          <label>Monthly Utilities</label>
+          <div class="input-wrap">
+            <span class="prefix-symbol">R</span>
+            <input class="field-input prefixed" value="3 100" readonly />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion: Property Details (closed, empty) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">📐</div>
+        <div>
+          <div class="c-accordion-title">Property Details</div>
+          <div class="c-accordion-meta">Beds, baths, garages, ERF size, floor area, year built</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge warn">⚠ Missing 3 fields</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Media (closed) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">📸</div>
+        <div>
+          <div class="c-accordion-title">Media — Photos &amp; Video</div>
+          <div class="c-accordion-meta">5 photos uploaded · No virtual tour</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge">5 items</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Features (closed) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">✨</div>
+        <div>
+          <div class="c-accordion-title">Features &amp; Amenities</div>
+          <div class="c-accordion-meta">12 items — pool, braai, solar</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge">✓ Complete</div>
+    </div>
+  </div>
+
+  <!-- Accordion: Settings (closed) -->
+  <div class="c-accordion">
+    <div class="c-accordion-head">
+      <div class="c-accordion-left">
+        <div class="c-accordion-icon">⚙️</div>
+        <div>
+          <div class="c-accordion-title">Listing Settings</div>
+          <div class="c-accordion-meta">Published · Not featured · Verification pending</div>
+        </div>
+      </div>
+      <div class="c-accordion-badge">✓ Complete</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     New fields showcase
+══════════════════════════════════════════════════════════ -->
+<div class="new-field-showcase">
+  <div class="showcase-heading">All missing fields — added in redesign</div>
+  <div class="showcase-sub">These are sourced from the <code>PropertyListing</code> TypeScript type and will all be wired to the API.</div>
+  <div class="field-showcase-grid">
+
+    <div class="field-showcase-card">
+      <div class="cat">📍 Location (new)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">Suburb / Neighbourhood</span><span class="ft">string</span></div>
+        <div class="field-pill missing"><span class="fn">Province / Region</span><span class="ft">string</span></div>
+        <div class="field-pill missing"><span class="fn">Country</span><span class="ft">string</span></div>
+        <div class="field-pill missing"><span class="fn">Latitude</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Longitude</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Listing Reference</span><span class="ft">string | null</span></div>
+      </div>
+    </div>
+
+    <div class="field-showcase-card">
+      <div class="cat">💰 Financials (new)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">Currency</span><span class="ft">ZAR/USD/GBP</span></div>
+        <div class="field-pill missing"><span class="fn">Monthly Levy</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Monthly Rates</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Monthly Utilities</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Listing Type</span><span class="ft">sale/rent/dev</span></div>
+        <div class="field-pill missing"><span class="fn">Title Deed Type</span><span class="ft">string | null</span></div>
+      </div>
+    </div>
+
+    <div class="field-showcase-card">
+      <div class="cat">🏠 Property Details (new)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">ERF Size (m²)</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Floor Area (m²)</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Garages</span><span class="ft">number | null</span></div>
+        <div class="field-pill missing"><span class="fn">Carports</span><span class="ft">number | null</span></div>
+        <div class="field-pill missing"><span class="fn">Parking Spaces</span><span class="ft">number | null</span></div>
+        <div class="field-pill missing"><span class="fn">Listing Subtype</span><span class="ft">string | null</span></div>
+      </div>
+    </div>
+
+    <div class="field-showcase-card">
+      <div class="cat">📸 Media (new)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">Video URL</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Virtual Tour URL</span><span class="ft">string | null</span></div>
+        <div class="field-pill missing"><span class="fn">Floor Plan Upload</span><span class="ft">image/pdf</span></div>
+        <div class="field-pill missing"><span class="fn">Title Deed Upload</span><span class="ft">pdf</span></div>
+      </div>
+    </div>
+
+    <div class="field-showcase-card">
+      <div class="cat">🎨 Branding (fix)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">Forest #1A3C28</span><span class="ft">colors replaced</span></div>
+        <div class="field-pill missing"><span class="fn">Parchment #F2E8D5</span><span class="ft">bg instead of gray</span></div>
+        <div class="field-pill missing"><span class="fn">Fraunces display font</span><span class="ft">section headings</span></div>
+        <div class="field-pill missing"><span class="fn">Jakarta Sans body</span><span class="ft">inputs/labels</span></div>
+        <div class="field-pill missing"><span class="fn">Egreen #00E87A</span><span class="ft">accents/toggles</span></div>
+      </div>
+    </div>
+
+    <div class="field-showcase-card">
+      <div class="cat">⚙️ Settings (new)</div>
+      <div class="fields">
+        <div class="field-pill missing"><span class="fn">Verification Status</span><span class="ft">read-only badge</span></div>
+        <div class="field-pill missing"><span class="fn">Company Attribution</span><span class="ft">read-only</span></div>
+        <div class="field-pill missing"><span class="fn">Next Open House</span><span class="ft">read-only info</span></div>
+        <div class="field-pill missing"><span class="fn">View Count</span><span class="ft">live stat</span></div>
+        <div class="field-pill"><span class="fn">Published toggle</span><span class="ft">exists ✓</span></div>
+        <div class="field-pill"><span class="fn">Featured toggle</span><span class="ft">exists ✓</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     Comparison table
+══════════════════════════════════════════════════════════ -->
+<div class="comparison-section">
+  <div class="showcase-heading">Option Comparison</div>
+  <div class="showcase-sub" style="margin-bottom:16px">All three add the missing fields. The difference is UX flow.</div>
+  <div class="comparison-table">
+    <div class="ct-head">
+      <div>Dimension</div>
+      <div>A — Tabbed Wizard</div>
+      <div class="rec-marker">B — Left Nav Drawer</div>
+      <div>C — Accordion</div>
+    </div>
+    <div class="ct-row rec">
+      <div class="feature">Navigation</div>
+      <div class="check">Top section tabs — quick jump</div>
+      <div class="check">Persistent left nav — instant jump</div>
+      <div class="mid">Click to expand — slightly slower</div>
+    </div>
+    <div class="ct-row">
+      <div class="feature">Scrolling</div>
+      <div class="check">Per-section — focused</div>
+      <div class="mid">One long scroll per section</div>
+      <div class="mid">Moderate — expand/collapse</div>
+    </div>
+    <div class="ct-row">
+      <div class="feature">Mobile friendliness</div>
+      <div class="mid">Tab scroll OK</div>
+      <div class="cross">Left nav collapses awkwardly</div>
+      <div class="check">Accordions work great</div>
+    </div>
+    <div class="ct-row">
+      <div class="feature">Completion feedback</div>
+      <div class="check">Progress strip + tab checkmarks</div>
+      <div class="mid">Section-level save buttons</div>
+      <div class="check">Step dots + accordion badges</div>
+    </div>
+    <div class="ct-row">
+      <div class="feature">Matches app chrome</div>
+      <div class="check">Forest tab bar is consistent</div>
+      <div class="check">Forest header is consistent</div>
+      <div class="check">Forest header + step dots</div>
+    </div>
+    <div class="ct-row">
+      <div class="feature">Recommended for</div>
+      <div class="check">Most agents — clean, guided</div>
+      <div class="mid">Power users with large listings</div>
+      <div class="mid">First-time listing creation flow</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer CTA -->
+<div class="design-footer">
+  <div class="footer-cta">
+    <h4>Ready to approve a direction?</h4>
+    <p>Reply with <strong>A</strong>, <strong>B</strong>, or <strong>C</strong> — or mix elements (e.g. "A but with the accordion completion badges from C").
+       Once approved, implementation starts immediately: full TSX component, API wiring, and TypeScript clean.</p>
+    <div class="approve-btn">Tell me your choice →</div>
+  </div>
+  <div style="flex: 0 0 260px; background:white; border-radius:12px; border:1px solid var(--border); padding:20px;">
+    <div style="font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--terracotta); margin-bottom:12px;">Implementation Scope</div>
+    <div style="font-size:12px; color:#333; line-height:1.7;">
+      ✓ Full TSX rewrite of <code>edit/page.tsx</code><br />
+      ✓ All missing fields added &amp; wired<br />
+      ✓ PriBeC brand tokens throughout<br />
+      ✓ Fraunces + Jakarta fonts applied<br />
+      ✓ Proper PATCH call to <code>/properties/:id</code><br />
+      ✓ Form validation on required fields<br />
+      ✓ Unsaved-changes guard on navigate-away<br />
+      ✓ TypeScript clean (no tsc errors)
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -32,6 +32,7 @@ export function OpenHousesView({ onViewOpenHouse }: { onViewOpenHouse?: () => vo
           const start = new Date(r.scheduled_at);
           const end = new Date(r.end_at);
           const isLive = r.status === 'scheduled' && now >= start && now <= end;
+          const isPast = r.status === 'scheduled' && now > end;
           const price = listing
             ? `${listing.currency ?? ''} ${Number(listing.price).toLocaleString()}`.trim()
             : '—';
@@ -42,8 +43,9 @@ export function OpenHousesView({ onViewOpenHouse }: { onViewOpenHouse?: () => vo
             state: listing?.region ?? '',
             date: start.toISOString().split('T')[0],
             time: `${fmt(start)} – ${fmt(end)}`,
-            status: isLive ? 'live' : r.status,
+            status: isLive ? 'live' : isPast ? 'completed' : r.status,
             attendees: r.max_attendees ?? 0,
+            maxAttendees: r.max_attendees ?? 0,
             views: listing?.views ?? 0,
             price,
             type: '',
@@ -57,11 +59,7 @@ export function OpenHousesView({ onViewOpenHouse }: { onViewOpenHouse?: () => vo
   }, [router]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold text-slate-900">Open Houses</h2>
-        <p className="text-slate-600">Schedule and manage your open house events</p>
-      </div>
+    <div className="px-7">
       <PropertyListView properties={properties} loading={loading} error={error} />
     </div>
   );

@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { EsignModule } from '../esign/esign.module';
 // PrismaService is provided globally by DatabaseModule
 import { ConveyancingAuditService } from './conveyancing-audit.service';
 import { FeeCalculatorService } from './fee-calculator.service';
@@ -20,7 +21,7 @@ import {
 import { ReportsController } from './reports.controller';
 
 @Module({
-  imports: [],
+  imports: [forwardRef(() => EsignModule)],
   controllers: [
     ConveyancingCasesController,
     FeeCalculatorController,
@@ -41,6 +42,6 @@ import { ReportsController } from './reports.controller';
     GovernmentInteractionsService,
     ReportsService,
   ],
-  exports: [ConveyancingService, TrustAccountService],
+  exports: [ConveyancingService, TrustAccountService, DocumentWorkflowService],
 })
 export class ConveyancingModule {}

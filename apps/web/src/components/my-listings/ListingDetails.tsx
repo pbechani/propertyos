@@ -41,12 +41,14 @@ function SectionCard({
   subtitle,
   icon: Icon,
   badge,
+  compact = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   icon: React.ElementType;
   badge?: string | number;
+  compact?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -61,7 +63,7 @@ function SectionCard({
           <span className="text-[11px] font-semibold bg-[#1A3C28]/10 text-[#1A3C28] px-2 py-0.5 rounded-full">{badge}</span>
         )}
       </div>
-      <div className="p-5">{children}</div>
+      <div className={compact ? 'p-3.5' : 'p-5'}>{children}</div>
     </div>
   );
 }
@@ -194,11 +196,14 @@ export function ListingDetails({ property }: ListingDetailsProps) {
         </SectionCard>
       )}
 
+      {/* ── Triptych: Property · Financial · Location ───────────────────── */}
+      <div className="grid xl:grid-cols-3 gap-3 items-start">
+
       {/* ── 3. Key specs grid (suggestion 1 + 4) ─────────────────────────── */}
       {specTiles.length > 0 && (
-        <SectionCard title="Property Details" icon={Home}>
-          {/* Icon tile grid */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+        <SectionCard title="Property Details" icon={Home} compact>
+          {/* Icon tile grid — 2-col within triptych, 4-col when full-width */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 gap-2 mb-4">
             {specTiles.map((tile) => (
               <SpecTile key={tile.label} icon={tile.icon} value={tile.value} label={tile.label} color={tile.color} />
             ))}
@@ -213,7 +218,7 @@ export function ListingDetails({ property }: ListingDetailsProps) {
       )}
 
       {/* ── 4. Financial highlights (suggestion 2) ───────────────────────── */}
-      <SectionCard title="Financial Details" icon={DollarSign}>
+      <SectionCard title="Financial Details" icon={DollarSign} compact>
         {/* Asking price hero */}
         <div className="bg-[#1A3C28] rounded-xl px-5 py-4 mb-4 flex items-center justify-between">
           <div>
@@ -240,7 +245,7 @@ export function ListingDetails({ property }: ListingDetailsProps) {
       </SectionCard>
 
       {/* ── 5. Location (suggestion 3) ───────────────────────────────────── */}
-      <SectionCard title="Location" icon={MapPin}>
+      <SectionCard title="Location" icon={MapPin} compact>
         {/* Full address headline */}
         {property.location?.address_line1 && (
           <p className="text-sm font-semibold text-[#1A3C28] mb-3">{property.location.address_line1}</p>
@@ -282,10 +287,15 @@ export function ListingDetails({ property }: ListingDetailsProps) {
         )}
       </SectionCard>
 
+      </div>{/* /triptych */}
+
+      {/* ── Diptych: Amenities · Listing Status ────────────────────────── */}
+      <div className="grid xl:grid-cols-[3fr_2fr] gap-3 items-start">
+
       {/* ── 6. Amenities (suggestion 5) ──────────────────────────────────── */}
       {property.features && property.features.length > 0 && (
         <SectionCard title="Amenities & Features" icon={Layers} badge={property.features.length}>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 xl:grid-cols-4 gap-2">
             {property.features.map((feature) => (
               <div
                 key={feature}
@@ -300,7 +310,7 @@ export function ListingDetails({ property }: ListingDetailsProps) {
       )}
 
       {/* ── 7. Listing status (suggestion 6) ─────────────────────────────── */}
-      <SectionCard title="Listing Status" icon={Tag}>
+      <SectionCard title="Listing Status" icon={Tag} compact>
         {/* Status badge banner */}
         <div className={`flex items-center gap-3 p-4 rounded-xl border mb-4 ${ver.bg}`}>
           <VerIcon className={`w-7 h-7 ${ver.color} shrink-0`} />
@@ -340,6 +350,8 @@ export function ListingDetails({ property }: ListingDetailsProps) {
           </div>
         </div>
       </SectionCard>
+
+      </div>{/* /diptych */}
 
     </div>
   );

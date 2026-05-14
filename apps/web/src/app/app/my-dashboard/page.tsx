@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
-import MyDashboard from '@/views/MyDashboard';
+import BuyerDashboardEnhanced from '@/views/BuyerDashboardEnhanced';
 
 export const metadata = { title: 'My Dashboard | Pribec' };
 
 export default function MyDashboardPage() {
   return (
     <Suspense fallback={null}>
-      <MyDashboard />
+      <BuyerDashboardEnhanced />
     </Suspense>
   );
 }

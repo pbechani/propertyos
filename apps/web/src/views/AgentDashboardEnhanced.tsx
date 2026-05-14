@@ -8,7 +8,8 @@ import {
   MessageSquare, Plus,
   Home, DollarSign, Copy,
   Calendar, Clock, Loader2, CheckCircle2, XCircle, X, Activity, Users,
-  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, AlertCircle, Share2, Bell
+  ChevronLeft, ChevronRight, List as ListIcon, FileText, PenLine, AlertCircle, Share2, Bell,
+  Search
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -387,6 +388,9 @@ export default function AgentDashboardEnhanced() {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [viewingsView, setViewingsView] = useState<"list" | "calendar">("list");
+  const [viewingsSearch, setViewingsSearch] = useState("");
+  const [viewingsStatusFilter, setViewingsStatusFilter] = useState<"all" | "pending" | "confirmed" | "onshow">("all");
+  const [completedNudgeDismissed, setCompletedNudgeDismissed] = useState(false);
   const [crmView, setCrmView] = useState<"table" | "kanban">("table");
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -783,8 +787,43 @@ export default function AgentDashboardEnhanced() {
     }
   };
 
-  const upcomingViewings = agentViewings.filter((v) => new Date(v.scheduled_at) >= new Date());
-  const pastViewings = agentViewings.filter((v) => new Date(v.scheduled_at) < new Date());
+  const _vNow = new Date();
+  const viewTodayStr = _vNow.toISOString().slice(0, 10);
+  const pastViewings = agentViewings.filter((v) => new Date(v.scheduled_at) < _vNow);
+  const todayViewingsAll = agentViewings.filter((v) => v.scheduled_at.startsWith(viewTodayStr));
+  const todayOnShowsAll = agentOpenHouses.filter((oh) => oh.scheduled_at.startsWith(viewTodayStr));
+  const pendingViewingItems = agentViewings.filter((v) => v.status === "requested" || v.status === "pending");
+  const upcomingConfViewings = agentViewings.filter(
+    (v) => v.status === "confirmed" && !v.scheduled_at.startsWith(viewTodayStr) && new Date(v.scheduled_at) > _vNow
+  );
+  const upcomingOnShowItems = agentOpenHouses.filter(
+    (oh) => oh.status === "scheduled" && !oh.scheduled_at.startsWith(viewTodayStr) && new Date(oh.scheduled_at) > _vNow
+  );
+  type _VUpcomingItem = { kind: "viewing"; data: ViewingResponse } | { kind: "onshow"; data: OpenHouseRecord };
+  const upcomingViewingsMerged: _VUpcomingItem[] = [
+    ...upcomingConfViewings.map((v): _VUpcomingItem => ({ kind: "viewing", data: v })),
+    ...upcomingOnShowItems.map((oh): _VUpcomingItem => ({ kind: "onshow", data: oh })),
+  ].sort((a, b) => new Date(a.data.scheduled_at).getTime() - new Date(b.data.scheduled_at).getTime());
+  const viewingsOutcomeNeeded = agentViewings.filter(
+    (v) => new Date(v.scheduled_at) < _vNow && v.status !== "completed" && v.status !== "cancelled"
+  );
+  const viewingsCompletedCount = agentViewings.filter((v) => v.status === "completed").length;
+  const getViewingBuyerName = (v: ViewingResponse): string => {
+    try {
+      const vmeta = v.notes ? (JSON.parse(v.notes) as { bookedByAgent?: boolean; name?: string }) : null;
+      if (vmeta?.bookedByAgent && vmeta.name) return vmeta.name;
+    } catch { /**/ }
+    return "Buyer";
+  };
+  const fmtVTime = (s: string) =>
+    new Date(s).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+  const fmtVDate = (s: string) =>
+    new Date(s).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+  const viewingsMatchSearch = (name: string, addr: string) => {
+    if (!viewingsSearch.trim()) return true;
+    const q = viewingsSearch.toLowerCase();
+    return name.toLowerCase().includes(q) || (addr ?? "").toLowerCase().includes(q);
+  };
 
   // Group all viewings by calendar date key (YYYY-MM-DD)
   const viewingsByDate = useMemo(() => {
@@ -941,7 +980,7 @@ export default function AgentDashboardEnhanced() {
             {([
               { id: 'overview',  label: 'Overview' },
               { id: 'listings',  label: 'My Listings' },
-              { id: 'viewings',  label: 'Viewings' },
+              { id: 'viewings',  label: 'Viewings & On Show' },
               { id: 'mandates',  label: 'Mandates' },
               { id: 'crm',       label: 'Lead Pipeline' },
             ] as const).map((tab) => (
@@ -2404,10 +2443,9 @@ export default function AgentDashboardEnhanced() {
         {/* Viewings Tab */}
         {selectedTab === "viewings" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>Viewings & Open Houses</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-fraunces)' }}>Viewings & On Show</h2>
               <div className="flex items-center gap-2">
-                {/* List / Calendar toggle */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-1">
                   <button
                     onClick={() => setViewingsView("list")}
@@ -2425,26 +2463,26 @@ export default function AgentDashboardEnhanced() {
                   </button>
                 </div>
                 <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => {
                     setScheduleViewingForm({ propertyId: "", viewingType: "physical", scheduledAt: "", durationMinutes: 30, buyerContactName: "", buyerContactEmail: "", buyerContactPhone: "", notes: "" });
                     setScheduleViewingError("");
                     setShowScheduleViewing(true);
                   }}
-                  variant="outline"
-                  disabled={activeListings.length === 0}
-                  title={activeListings.length === 0 ? "No listings available" : undefined}
+                  className="border-[#1A3C28] text-[#1A3C28] hover:bg-[#1A3C28]/5"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-1" />
                   Schedule Viewing
                 </Button>
                 <Button
+                  size="sm"
                   onClick={() => setShowOpenHouseModal(true)}
-                  className="bg-[#1A3C28] hover:bg-[#2D5A40] text-[#F2E8D5]"
-                  disabled={activeListings.length === 0}
-                  title={activeListings.length === 0 ? "You need at least one active property listing to schedule an open house" : undefined}
+                  className="text-[#F2E8D5] border-0"
+                  style={{ backgroundColor: 'var(--bt-terracotta)' }}
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Schedule Open House
+                  <Plus className="w-4 h-4 mr-1" />
+                  Schedule On Show
                 </Button>
               </div>
             </div>
@@ -2464,9 +2502,9 @@ export default function AgentDashboardEnhanced() {
               </div>
             ) : viewingsView === "calendar" ? (
               /* ── Calendar View ── */
-              <div className="rounded-xl bg-white p-4 md:p-6" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
-                {/* Month navigation */}
-                <div className="flex items-center justify-between mb-4">
+              <div className="space-y-4">
+                {/* Month nav */}
+                <div className="flex items-center justify-between">
                   <button
                     onClick={() => setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2478,7 +2516,7 @@ export default function AgentDashboardEnhanced() {
                     <h3 className="font-semibold text-gray-800">
                       {calendarMonth.toLocaleString("en-ZA", { month: "long", year: "numeric" })}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{agentViewings.length} total viewings</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{agentViewings.length} viewings · {agentOpenHouses.length} on shows</p>
                   </div>
                   <button
                     onClick={() => setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
@@ -2502,10 +2540,8 @@ export default function AgentDashboardEnhanced() {
                     const dayViewings = viewingsByDate.get(dateStr) ?? [];
                     const dayOpenHouses = openHousesByDate.get(dateStr) ?? [];
                     const totalItems = dayViewings.length + dayOpenHouses.length;
-                    const todayStr = new Date().toISOString().slice(0, 10);
-                    const isToday = dateStr === todayStr;
+                    const isToday = dateStr === new Date().toISOString().slice(0, 10);
                     const isSelected = dateStr === selectedCalDay;
-                    // Combined chips: viewings first (up to 2 total), then open houses
                     const viewingChips = dayViewings.slice(0, Math.min(2, dayViewings.length));
                     const openHouseChips = dayOpenHouses.slice(0, Math.max(0, 2 - viewingChips.length));
                     const hiddenCount = totalItems - viewingChips.length - openHouseChips.length;
@@ -2531,8 +2567,13 @@ export default function AgentDashboardEnhanced() {
                                   ? "bg-green-100 text-green-700"
                                   : v.status === "completed"
                                   ? "bg-gray-100 text-gray-500"
-                                  : "bg-blue-100 text-blue-700"
+                                  : "text-[#7A5F00]"
                               }`}
+                              style={
+                                v.status !== "confirmed" && v.status !== "completed"
+                                  ? { backgroundColor: "rgba(184,144,64,0.2)" }
+                                  : {}
+                              }
                             >
                               {new Date(v.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
                             </div>
@@ -2540,9 +2581,10 @@ export default function AgentDashboardEnhanced() {
                           {openHouseChips.map((oh) => (
                             <div
                               key={oh.id}
-                              className="text-[10px] px-1 py-0.5 rounded truncate leading-tight bg-purple-100 text-purple-700"
+                              className="text-[10px] px-1 py-0.5 rounded truncate leading-tight text-[#8B3010]"
+                              style={{ backgroundColor: "rgba(196,86,42,0.15)" }}
                             >
-                              OH {new Date(oh.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                              OS {new Date(oh.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                           ))}
                           {hiddenCount > 0 && (
@@ -2556,10 +2598,14 @@ export default function AgentDashboardEnhanced() {
 
                 {/* Legend */}
                 <div className="flex items-center gap-4 mt-4 text-xs text-gray-500 flex-wrap">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-100 inline-block" />Pending</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "rgba(184,144,64,0.2)" }} />Pending
+                  </span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-100 inline-block" />Confirmed</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-gray-100 inline-block" />Completed</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-purple-100 inline-block" />Open House</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "rgba(196,86,42,0.15)" }} />On Show
+                  </span>
                 </div>
 
                 {/* Selected day detail panel */}
@@ -2644,11 +2690,12 @@ export default function AgentDashboardEnhanced() {
                                 )}
                                 <Badge className={
                                   v.status === "confirmed" ? "bg-green-100 text-green-700" :
-                                  v.status === "completed" ? "bg-blue-100 text-blue-700" :
+                                  v.status === "completed" ? "bg-gray-100 text-gray-500" :
                                   v.status === "declined" ? "bg-red-100 text-red-700" :
                                   v.status === "cancelled" ? "bg-orange-100 text-orange-700" :
-                                  "bg-yellow-100 text-yellow-700"
-                                }>
+                                  "text-[#7A5F00]"
+                                }
+                                style={v.status !== "confirmed" && v.status !== "completed" && v.status !== "declined" && v.status !== "cancelled" ? { backgroundColor: "rgba(184,144,64,0.2)" } : {}}>
                                   {v.status}
                                 </Badge>
                               </div>
@@ -2657,14 +2704,14 @@ export default function AgentDashboardEnhanced() {
                         {dayOpenHousesDetail
                           .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
                           .map((oh) => (
-                            <div key={oh.id} className="flex items-center gap-3 p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
-                              <div className="text-xs font-mono text-purple-500 w-12 shrink-0">
+                            <div key={oh.id} className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: "rgba(196,86,42,0.06)" }}>
+                              <div className="text-xs font-mono w-12 shrink-0" style={{ color: "var(--bt-terracotta)" }}>
                                 {new Date(oh.scheduled_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium truncate">{oh.property_title}</p>
-                                <p className="text-xs text-purple-500">
-                                  Open House
+                                <p className="text-xs" style={{ color: "var(--bt-terracotta)" }}>
+                                  On Show
                                   {oh.max_attendees != null ? ` · max ${oh.max_attendees}` : ""}
                                   {" → "}{new Date(oh.end_at).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
                                 </p>
@@ -2672,8 +2719,9 @@ export default function AgentDashboardEnhanced() {
                               <Badge className={
                                 oh.status === "completed" ? "bg-green-100 text-green-700" :
                                 oh.status === "cancelled" ? "bg-red-100 text-red-700" :
-                                "bg-purple-100 text-purple-700"
-                              }>
+                                "text-[#8B3010]"
+                              }
+                              style={oh.status !== "completed" && oh.status !== "cancelled" ? { backgroundColor: "rgba(196,86,42,0.15)" } : {}}>
                                 {oh.status}
                               </Badge>
                             </div>
@@ -2691,191 +2739,341 @@ export default function AgentDashboardEnhanced() {
               </div>
             ) : (
               /* ── List View ── */
-              <>
-                {/* Upcoming */}
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-3">
-                    Upcoming ({upcomingViewings.length})
-                  </h3>
-                  {upcomingViewings.length === 0 ? (
-                    <div className="rounded-xl bg-white py-8 text-center text-gray-400" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
-                      <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">No upcoming viewings</p>
+              <div className="space-y-6">
+                {/* ── Pending alert banner ── */}
+                {pendingViewingItems.length > 0 && (
+                  <div className="flex items-start gap-3 rounded-xl px-4 py-3" style={{ backgroundColor: "#FEF3C7", border: "1px solid #F59E0B" }}>
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900">
+                        {pendingViewingItems.length} viewing request{pendingViewingItems.length !== 1 ? "s" : ""} awaiting your response
+                      </p>
+                      <p className="text-xs text-amber-700 mt-0.5">Respond promptly to maintain buyer confidence.</p>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {upcomingViewings.map((v) => (
-                        <div key={v.id} className="rounded-xl bg-white p-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
-                          <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-[#E8F0EC] rounded-lg flex items-center justify-center shrink-0">
-                              <Calendar className="w-5 h-5 text-[#1A3C28]" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
-                              {(() => {
-                                try {
-                                  const meta = v.notes ? JSON.parse(v.notes) : null;
-                                  if (meta?.bookedByAgent) {
-                                    return (
-                                      <p className="text-sm text-gray-600 mt-0.5">
-                                        {meta.name}{meta.phone ? ` · ${meta.phone}` : ""}{meta.email ? ` · ${meta.email}` : ""}
-                                      </p>
-                                    );
-                                  }
-                                } catch { /* not agent-booked */ }
-                                return <p className="text-sm text-gray-600 mt-0.5">Buyer Viewing</p>;
-                              })()}
-                              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
-                                </span>
-                                <Badge className="text-xs capitalize">{v.viewing_type?.replace("_", " ") ?? "in person"}</Badge>
+                  </div>
+                )}
+
+                {/* ── Search + status filter toolbar ── */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Search by property or buyer…"
+                      value={viewingsSearch}
+                      onChange={(e) => setViewingsSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1A3C28]/20"
+                    />
+                  </div>
+                  {(["all", "pending", "confirmed", "onshow"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setViewingsStatusFilter(f)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                        viewingsStatusFilter === f
+                          ? "text-[#F2E8D5] border-[#1A3C28]"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                      }`}
+                      style={viewingsStatusFilter === f ? { backgroundColor: "var(--bt-forest)" } : {}}
+                    >
+                      {f === "all" ? "All" : f === "pending" ? "Pending" : f === "confirmed" ? "Confirmed" : "On Show"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Status pills strip ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "#FEF3C7", border: "1px solid rgba(245,158,11,0.25)" }}>
+                    <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces)", color: "#92400E" }}>{pendingViewingItems.length}</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Pending</p>
+                  </div>
+                  <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "#FAE8DF", border: "1px solid rgba(196,86,42,0.25)" }}>
+                    <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces)", color: "var(--bt-terracotta)" }}>{todayOnShowsAll.length}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--bt-terracotta)" }}>On Show Today</p>
+                  </div>
+                  <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "#D4F7E5", border: "1px solid rgba(0,184,74,0.25)" }}>
+                    <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces)", color: "#166534" }}>{upcomingConfViewings.length + upcomingOnShowItems.length}</p>
+                    <p className="text-xs text-green-700 mt-0.5">Upcoming Confirmed</p>
+                  </div>
+                  <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "#F3F4F6", border: "1px solid #E5E7EB" }}>
+                    <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces)", color: "#374151" }}>{viewingsCompletedCount}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Completed</p>
+                  </div>
+                </div>
+
+                {/* ── Today Hero Section ── */}
+                {(todayViewingsAll.length > 0 || todayOnShowsAll.length > 0) && (() => {
+                  const filteredTodayViewings = todayViewingsAll.filter((v) =>
+                    viewingsMatchSearch(getViewingBuyerName(v), v.property_title ?? "") &&
+                    (viewingsStatusFilter === "all" ||
+                     (viewingsStatusFilter === "pending" && (v.status === "requested" || v.status === "pending")) ||
+                     (viewingsStatusFilter === "confirmed" && v.status === "confirmed"))
+                  );
+                  const filteredTodayOnShows = todayOnShowsAll.filter((oh) =>
+                    viewingsMatchSearch("On Show", oh.property_title ?? "") &&
+                    (viewingsStatusFilter === "all" || viewingsStatusFilter === "onshow")
+                  );
+                  const allToday = [
+                    ...filteredTodayViewings.map((v) => ({ kind: "viewing" as const, data: v, time: v.scheduled_at })),
+                    ...filteredTodayOnShows.map((oh) => ({ kind: "onshow" as const, data: oh, time: oh.scheduled_at })),
+                  ].sort((a, b) => a.time.localeCompare(b.time));
+                  if (allToday.length === 0) return null;
+                  return (
+                    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--bt-forest)" }}>
+                      <div className="px-5 pt-5 pb-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar className="w-4 h-4" style={{ color: "var(--bt-egreen)" }} />
+                          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--bt-egreen)" }}>Today</p>
+                        </div>
+                        <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--font-fraunces)" }}>
+                          {new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+                        </p>
+                      </div>
+                      <div className="px-3 pb-4 space-y-2">
+                        {allToday.map((item) =>
+                          item.kind === "viewing" ? (
+                            <div key={item.data.id} className="mx-1 rounded-xl bg-white/10 px-4 py-3 flex items-center gap-3">
+                              <p className="text-xs font-mono w-12 shrink-0" style={{ color: "var(--bt-egreen)" }}>{fmtVTime(item.data.scheduled_at)}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-medium text-sm truncate">{item.data.property_title}</p>
+                                <p className="text-white/60 text-xs">{getViewingBuyerName(item.data)}</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {(item.data.status === "requested" || item.data.status === "pending") ? (
+                                  <>
+                                    <button
+                                      onClick={() => { void handleConfirmViewing(item.data.id); }}
+                                      disabled={confirmingId === item.data.id}
+                                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#00E87A] text-[#1A3C28] hover:bg-[#00D070] disabled:opacity-50"
+                                    >
+                                      {confirmingId === item.data.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Accept"}
+                                    </button>
+                                    <button
+                                      onClick={() => { setDecliningViewingId(item.data.id); setDeclineForm({ reason: "", alternativeDates: [], message: "" }); setDeclineError(""); setShowDeclineModal(true); }}
+                                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-white/15 text-white hover:bg-white/25"
+                                    >
+                                      Decline
+                                    </button>
+                                  </>
+                                ) : item.data.status === "confirmed" ? (
+                                  <button
+                                    onClick={() => { void handleCompleteViewing(item.data.id); }}
+                                    disabled={completingId === item.data.id}
+                                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-white/15 text-white hover:bg-white/25 disabled:opacity-50"
+                                  >
+                                    {completingId === item.data.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Done"}
+                                  </button>
+                                ) : null}
                               </div>
                             </div>
-                            <Badge className={v.status === "confirmed" ? "bg-green-100 text-green-700" : v.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}>
+                          ) : (
+                            <div key={item.data.id} className="mx-1 rounded-xl px-4 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(196,86,42,0.25)" }}>
+                              <p className="text-xs font-mono w-12 shrink-0" style={{ color: "#FFCAB5" }}>{fmtVTime(item.data.scheduled_at)}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-medium text-sm truncate">{item.data.property_title}</p>
+                                <p className="text-xs" style={{ color: "#FFCAB5" }}>On Show → {fmtVTime(item.data.end_at)}</p>
+                              </div>
+                              <Badge className="border-0 text-white" style={{ backgroundColor: "rgba(196,86,42,0.7)" }}>On Show</Badge>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Pending Requests section (non-today) ── */}
+                {pendingViewingItems.filter((v) => !v.scheduled_at.startsWith(viewTodayStr)).length > 0 &&
+                 (viewingsStatusFilter === "all" || viewingsStatusFilter === "pending") && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      Pending Requests
+                    </h3>
+                    <div className="space-y-3">
+                      {pendingViewingItems
+                        .filter((v) => !v.scheduled_at.startsWith(viewTodayStr))
+                        .filter((v) => viewingsMatchSearch(getViewingBuyerName(v), v.property_title ?? ""))
+                        .map((v) => (
+                          <div
+                            key={v.id}
+                            className="rounded-xl px-4 py-3 flex items-start gap-4"
+                            style={{ border: "1px solid rgba(196,86,42,0.15)", backgroundColor: "#FFFBF5" }}
+                          >
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#FEF3C7" }}>
+                              <Clock className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{v.property_title}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{getViewingBuyerName(v)} · {fmtVDate(v.scheduled_at)} at {fmtVTime(v.scheduled_at)}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={() => { void handleConfirmViewing(v.id); }}
+                                disabled={confirmingId === v.id}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg text-white disabled:opacity-50"
+                                style={{ backgroundColor: "var(--bt-forest)" }}
+                              >
+                                {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Accept"}
+                              </button>
+                              <button
+                                onClick={() => { setDecliningViewingId(v.id); setDeclineForm({ reason: "", alternativeDates: [], message: "" }); setDeclineError(""); setShowDeclineModal(true); }}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Upcoming Confirmed (viewings + on shows merged) ── */}
+                {upcomingViewingsMerged.filter((item) =>
+                  item.kind === "viewing"
+                    ? viewingsMatchSearch(getViewingBuyerName(item.data), item.data.property_title ?? "")
+                    : viewingsMatchSearch("On Show", item.data.property_title ?? "")
+                ).length > 0 &&
+                 (viewingsStatusFilter === "all" || viewingsStatusFilter === "confirmed" || viewingsStatusFilter === "onshow") && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      Upcoming Confirmed
+                    </h3>
+                    <div className="space-y-3">
+                      {upcomingViewingsMerged
+                        .filter((item) =>
+                          viewingsStatusFilter === "confirmed" ? item.kind === "viewing" :
+                          viewingsStatusFilter === "onshow" ? item.kind === "onshow" : true
+                        )
+                        .filter((item) =>
+                          item.kind === "viewing"
+                            ? viewingsMatchSearch(getViewingBuyerName(item.data), item.data.property_title ?? "")
+                            : viewingsMatchSearch("On Show", item.data.property_title ?? "")
+                        )
+                        .map((item) =>
+                          item.kind === "viewing" ? (
+                            <div key={item.data.id} className="rounded-xl bg-white px-4 py-3 flex items-start gap-4" style={{ border: "1px solid rgba(26,60,40,0.12)" }}>
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#D4F7E5" }}>
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{item.data.property_title}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{getViewingBuyerName(item.data)} · {fmtVDate(item.data.scheduled_at)} at {fmtVTime(item.data.scheduled_at)}</p>
+                                {item.data.duration_minutes && (
+                                  <p className="text-xs text-gray-400 mt-0.5">{item.data.duration_minutes} min</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={() => { void handleCompleteViewing(item.data.id); }}
+                                  disabled={completingId === item.data.id}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-[#1A3C28] hover:text-[#1A3C28] disabled:opacity-50"
+                                >
+                                  {completingId === item.data.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Done"}
+                                </button>
+                                <button
+                                  onClick={() => { setReschedulingViewingId(item.data.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
+                                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-gray-300"
+                                >
+                                  Reschedule
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div key={item.data.id} className="rounded-xl px-4 py-3 flex items-start gap-4" style={{ border: "1px solid rgba(196,86,42,0.25)", backgroundColor: "rgba(250,232,223,0.3)" }}>
+                              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "#FAE8DF" }}>
+                                <Users className="w-5 h-5" style={{ color: "var(--bt-terracotta)" }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{item.data.property_title}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{fmtVDate(item.data.scheduled_at)} · {fmtVTime(item.data.scheduled_at)} → {fmtVTime(item.data.end_at)}</p>
+                                {item.data.max_attendees != null && (
+                                  <p className="text-xs text-gray-400 mt-0.5">Max {item.data.max_attendees} attendees</p>
+                                )}
+                              </div>
+                              <Badge className="border-0 text-[#8B3010]" style={{ backgroundColor: "rgba(196,86,42,0.15)" }}>On Show</Badge>
+                            </div>
+                          )
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Outcome Nudge ── */}
+                {viewingsOutcomeNeeded.length > 0 && !completedNudgeDismissed && viewingsStatusFilter === "all" && (
+                  <div className="flex items-start gap-3 rounded-xl px-4 py-3" style={{ backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900">
+                        {viewingsOutcomeNeeded.length} past viewing{viewingsOutcomeNeeded.length !== 1 ? "s" : ""} need{viewingsOutcomeNeeded.length === 1 ? "s" : ""} an outcome
+                      </p>
+                      <p className="text-xs text-blue-600 mt-0.5">Mark them complete to keep your records accurate.</p>
+                    </div>
+                    <button onClick={() => setCompletedNudgeDismissed(true)} className="text-blue-400 hover:text-blue-600 shrink-0" aria-label="Dismiss nudge">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Past / History section ── */}
+                {pastViewings.length > 0 && viewingsStatusFilter === "all" && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      Past &amp; Completed
+                    </h3>
+                    <div className="space-y-2">
+                      {pastViewings
+                        .filter((v) => viewingsMatchSearch(getViewingBuyerName(v), v.property_title ?? ""))
+                        .slice(0, 10)
+                        .map((v) => (
+                          <div key={v.id} className="rounded-xl bg-white px-4 py-3 flex items-center gap-3 opacity-80" style={{ border: "1px solid #E5E7EB" }}>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm text-gray-600 truncate">{v.property_title}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{getViewingBuyerName(v)} · {fmtVDate(v.scheduled_at)}</p>
+                            </div>
+                            <Badge className={`border-0 ${v.status === "completed" ? "bg-green-100 text-green-700" : v.status === "cancelled" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-500"}`}>
                               {v.status}
                             </Badge>
                           </div>
-                          {(v.status === 'requested' || v.status === 'confirmed') && (
-                            <div className="ml-14 flex flex-wrap gap-2 mt-2">
-                              {v.status === 'requested' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7 px-2"
-                                    disabled={confirmingId === v.id}
-                                    onClick={() => void handleConfirmViewing(v.id)}
-                                  >
-                                    {confirmingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1" />}
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7 px-2 text-red-600 border-red-200 hover:bg-red-50"
-                                    onClick={() => { setDecliningViewingId(v.id); setDeclineForm({ reason: "", alternativeDates: [], message: "" }); setDeclineError(""); setShowDeclineModal(true); }}
-                                  >
-                                    <XCircle className="w-3 h-3 mr-1" />
-                                    Decline
-                                  </Button>
-                                </>
-                              )}
-                              {v.status === 'confirmed' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7 px-2"
-                                    disabled={completingId === v.id}
-                                    onClick={() => void handleCompleteViewing(v.id)}
-                                  >
-                                    {completingId === v.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3 mr-1 text-green-600" />}
-                                    Complete
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs h-7 px-2 text-[#1A3C28] border-[#1A3C28]/30 hover:bg-[#E8F0EC]"
-                                    onClick={() => { setReschedulingViewingId(v.id); setRescheduleForm({ scheduledAt: "", reason: "" }); setRescheduleError(""); setShowRescheduleModal(true); }}
-                                  >
-                                    <Calendar className="w-3 h-3 mr-1" />
-                                    Reschedule
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 px-2 text-orange-600 border-orange-200 hover:bg-orange-50"
-                                onClick={() => { setCancellingViewingId(v.id); setCancelReason(""); setCancelError(""); setShowCancelModal(true); }}
-                              >
-                                <X className="w-3 h-3 mr-1" />
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Past */}
-                {pastViewings.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-700 mb-3">Past ({pastViewings.length})</h3>
-                    <div className="space-y-3">
-                      {pastViewings.slice(0, 10).map((v) => (
-                        <div key={v.id} className="rounded-xl bg-white p-4 flex items-start gap-4 opacity-70" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
-                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                            <Clock className="w-5 h-5 text-gray-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{v.property_title ?? "Property"}</p>
-                            {(() => {
-                              try {
-                                const meta = v.notes ? JSON.parse(v.notes) : null;
-                                if (meta?.bookedByAgent) {
-                                  return <p className="text-sm text-gray-600 mt-0.5">{meta.name}</p>;
-                                }
-                              } catch { /* not agent-booked */ }
-                              return null;
-                            })()}
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(v.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
-                            </p>
-                          </div>
-                          <Badge className={v.status === "completed" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}>
-                            {v.status}
-                          </Badge>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 )}
 
-                {/* Open Houses */}
-                {agentOpenHouses.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
-                      Open Houses ({agentOpenHouses.length})
-                    </h3>
-                    <div className="space-y-3">
-                      {agentOpenHouses.map((oh) => (
-                        <div key={oh.id} className="rounded-xl bg-white p-4 flex items-start gap-4" style={{ border: '1px solid rgba(26,60,40,0.12)' }}>
-                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{oh.property_title}</p>
-                            <p className="text-sm text-gray-600 mt-0.5">
-                              {new Date(oh.scheduled_at).toLocaleString("en-ZA", { dateStyle: "medium", timeStyle: "short" })}
-                              {" → "}
-                              {new Date(oh.end_at).toLocaleTimeString("en-ZA", { timeStyle: "short" })}
-                            </p>
-                            {oh.max_attendees != null && (
-                              <p className="text-xs text-gray-400 mt-0.5">Max {oh.max_attendees} attendees</p>
-                            )}
-                            {oh.description && (
-                              <p className="text-xs text-gray-400 mt-0.5 truncate">{oh.description}</p>
-                            )}
-                          </div>
-                          <Badge className={
-                            oh.status === "completed" ? "bg-green-100 text-green-700" :
-                            oh.status === "cancelled" ? "bg-red-100 text-red-700" :
-                            "bg-purple-100 text-purple-700"
-                          }>
-                            {oh.status}
-                          </Badge>
-                        </div>
-                      ))}
+                {/* ── Empty state ── */}
+                {agentViewings.length === 0 && agentOpenHouses.length === 0 && (
+                  <div className="text-center py-16">
+                    <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                    <p className="font-semibold text-gray-500" style={{ fontFamily: "var(--font-fraunces)" }}>No viewings yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Schedule a viewing or on show to get started.</p>
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setScheduleViewingForm({ propertyId: "", viewingType: "physical", scheduledAt: "", durationMinutes: 30, buyerContactName: "", buyerContactEmail: "", buyerContactPhone: "", notes: "" });
+                          setScheduleViewingError("");
+                          setShowScheduleViewing(true);
+                        }}
+                        className="border-[#1A3C28] text-[#1A3C28]"
+                      >
+                        Schedule Viewing
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setShowOpenHouseModal(true)}
+                        className="text-[#F2E8D5] border-0"
+                        style={{ backgroundColor: "var(--bt-terracotta)" }}
+                      >
+                        Schedule On Show
+                      </Button>
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
@@ -3034,7 +3232,7 @@ export default function AgentDashboardEnhanced() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Schedule Open House</h3>
+              <h3 className="text-lg font-bold">Schedule On Show</h3>
               <button onClick={() => setShowOpenHouseModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
@@ -3108,7 +3306,7 @@ export default function AgentDashboardEnhanced() {
             )}
             {openHouseSuccess && (
               <div className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle2 className="w-4 h-4" /> Open house scheduled!
+                <CheckCircle2 className="w-4 h-4" /> On Show scheduled!
               </div>
             )}
 
