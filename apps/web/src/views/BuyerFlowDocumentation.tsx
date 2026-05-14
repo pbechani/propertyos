@@ -57,6 +57,7 @@ export default function BuyerFlowDocumentation() {
         { name: "Search Properties", route: "/app/listings", screen: "Listings", status: "✓" },
         { name: "Filter + Map View", route: "/app/listings", screen: "Listings (with filters)", status: "✓" },
         { name: "View Property Detail", route: "/app/property/1", screen: "PropertyDetailEnhanced", status: "✓" },
+        { name: "View Agent Profile", route: "/agent-profile/agent-001?back=/app/property/1", screen: "AgentProfile", status: "✓" },
         { name: "Property Comparison", route: "/compare", screen: "PropertyComparison", status: "✓" },
       ],
       features: [
@@ -94,7 +95,7 @@ export default function BuyerFlowDocumentation() {
       color: "bg-red-600",
       steps: [
         { name: "Construction Dashboard", route: "/construction", screen: "ConstructionProjectDashboard", status: "✓" },
-        { name: "Contractor Marketplace", route: "/contractor-supplier-marketplace", screen: "ContractorSupplierMarketplace", status: "✓" },
+        { name: "Service Provider Marketplace", route: "/service-providers", screen: "ServiceProviderMarketplace", status: "✓" },
         { name: "Inspection & Verification", route: "/inspection-verification", screen: "InspectionVerificationModule", status: "✓" },
       ],
       features: [
@@ -116,7 +117,7 @@ export default function BuyerFlowDocumentation() {
       color: "bg-yellow-600",
       steps: [
         { name: "BOQ Workspace", route: "/boq-workspace", screen: "IntelligentBOQWorkspace", status: "✓" },
-        { name: "Supplier Catalog", route: "/contractor-supplier-marketplace", screen: "ContractorSupplierMarketplace (Suppliers)", status: "✓" },
+        { name: "Service Provider Marketplace (Suppliers)", route: "/service-providers", screen: "ServiceProviderMarketplace (Suppliers)", status: "✓" },
       ],
       features: [
         "Create BOQ manually",
@@ -199,7 +200,7 @@ export default function BuyerFlowDocumentation() {
 
           <Card className="p-4 bg-green-50 border-green-200">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+              <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-green-900 mb-2">
                   ✓ All Buyer Flow Screens Implemented
@@ -414,7 +415,7 @@ export default function BuyerFlowDocumentation() {
         </Card>
 
         {/* Integration Points */}
-        <Card className="p-6 border-gray-200 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
+        <Card className="p-6 border-gray-200 bg-linear-to-br from-gray-900 to-gray-700 text-white">
           <h3 className="font-semibold text-lg mb-4">Integration Points</h3>
           <div className="grid grid-cols-3 gap-4">
             <div>

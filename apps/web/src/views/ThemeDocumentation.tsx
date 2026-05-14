@@ -57,7 +57,7 @@ export default function ThemeDocumentation() {
         <div className="px-6 py-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 {theme === "dark" ? (
                   <Moon className="w-7 h-7 text-white" />
                 ) : (
@@ -82,7 +82,7 @@ export default function ThemeDocumentation() {
 
           <Card className="p-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-1" />
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
                   ✓ Dark & Light Mode Fully Implemented
@@ -150,7 +150,7 @@ export default function ThemeDocumentation() {
                   className="p-5 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950 rounded-lg flex items-center justify-center shrink-0">
                       <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
@@ -181,7 +181,7 @@ export default function ThemeDocumentation() {
                   key={index}
                   className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
                 >
-                  <code className="text-sm font-mono text-purple-600 dark:text-purple-400 flex-shrink-0 w-40">
+                  <code className="text-sm font-mono text-purple-600 dark:text-purple-400 shrink-0 w-40">
                     {variable.name}
                   </code>
                   <div className="flex-1 flex items-center gap-4">
@@ -324,7 +324,7 @@ function MyComponent() {
         </div>
 
         {/* Benefits */}
-        <Card className="p-6 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+        <Card className="p-6 border-gray-200 dark:border-gray-800 bg-linear-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
           <h3 className="font-semibold text-lg mb-4 text-black dark:text-white">
             Benefits of Dark Mode
           </h3>

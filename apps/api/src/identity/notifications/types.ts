@@ -1,7 +1,15 @@
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType: string;
+};
+
 export type EmailMessage = {
   to: string;
   subject: string;
   body: string;
+  html?: string;
+  attachments?: EmailAttachment[];
 };
 
 export type SmsMessage = {

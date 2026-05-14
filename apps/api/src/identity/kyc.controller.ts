@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Query,
@@ -185,11 +184,22 @@ export class AdminKycController {
   @Get('pending')
   @Permissions({ resource: 'kyc', action: 'approve' })
   async pending(
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
   ): Promise<Record<string, unknown>[]> {
     const rows = await this.kycService.listPending(limit, offset);
     return rows.map((row) => this.kycService.sanitize(row));
+  }
+
+  @Get()
+  @Permissions({ resource: 'kyc', action: 'approve' })
+  async list(
+    @Query('status') status?: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ): Promise<Record<string, unknown>[]> {
+    const rows = await this.kycService.listAll({ status, limit, offset });
+    return rows.map((row) => this.kycService.sanitizeWithUser(row));
   }
 
   @Get(':id')

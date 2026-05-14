@@ -81,7 +81,7 @@
   - Real-time material swapping with instant cost updates
   - Price comparison across supplier marketplace
 
-#### Module 3: Contractor Marketplace
+#### Module 3: Service Provider Marketplace
 - Verified profiles with certifications
 - Portfolio uploads and past project showcase
 - Project bidding system
@@ -133,7 +133,7 @@
 **Property Buyer:**
 > "As a property buyer, I want to track my purchase through all 14 stages with full visibility into required documents and current status."
 
-**Contractor:**
+**Service Provider:**
 > "As a contractor, I want to receive milestone payments automatically when my work is approved so I don't have to chase clients for payment."
 
 **Agent:**
@@ -428,7 +428,30 @@ common.*         # Shared lookup tables
 /
 ├── apps/
 │   ├── api/              # NestJS backend
+│   │   └── src/
+│   │       ├── common/           # Shared backend utilities
+│   │       │   ├── types.ts      # AuthRequest, PublicRequest types
+│   │       │   ├── base-audit.service.ts  # Abstract audit service base
+│   │       │   └── index.ts      # Barrel export
+│   │       ├── property/         # Property module
+│   │       ├── sales/            # Sales progression module
+│   │       ├── conveyancing/     # Conveyancing module
+│   │       ├── financial/        # Financial/escrow module
+│   │       └── ai-intelligence/  # AI intelligence module
 │   ├── web/              # Next.js frontend
+│   │   └── src/
+│   │       ├── lib/              # Shared frontend utilities
+│   │       │   ├── formatters.ts     # formatMoney, formatRelativeTime
+│   │       │   ├── status-colors.ts  # getStatusColor, getPriorityColor
+│   │       │   └── constants.ts      # STAGE_NAMES, TEMPERATURE_CONFIG
+│   │       ├── components/ui/    # Reusable UI components
+│   │       │   ├── kpi-card.tsx      # Gradient KPI card
+│   │       │   ├── stat-card.tsx     # Simple stat card
+│   │       │   ├── loading-spinner.tsx
+│   │       │   ├── empty-state.tsx
+│   │       │   ├── error-message.tsx
+│   │       │   └── page-header.tsx
+│   │       └── views/            # Page view components
 │   └── mobile/           # React Native app
 ├── packages/
 │   ├── shared-types/     # TypeScript interfaces
@@ -469,8 +492,27 @@ Before implementing any sprint, read:
 
 ## Testing Requirements
 
-- Unit tests for business logic
-- Integration tests for API endpoints
+Every code change must include or update tests. No change is complete without test coverage.
+
+### Required Tests by Change Type
+| Change Type | Required Tests |
+|---|---|
+| New service method | Unit test: happy path + ≥2 edge cases / error paths |
+| New API endpoint | Integration test: success, 401 auth failure, 400 invalid input, 404 not found |
+| New DTO | Validation tests for each `@IsIn`, `@IsNotEmpty`, `@Min`/`@Max` rule |
+| Bug fix | Regression test that would have caught the original bug |
+| Schema change | Update all affected spec mocks to match new column names/types/constraints |
+| New business rule | Unit test encoding the rule as an expectation |
+
+### Verification Checklist Before Done
+- [ ] `npx tsc --noEmit -p apps/api/tsconfig.json` (full output, **no** `| head`) exits 0
+- [ ] `npm run test --workspace=apps/api` — all tests pass
+- [ ] CHANGELOG updated under `### Fixed`, `### Added`, or `### Changed`
+- [ ] All relevant sprint/design/API docs updated
+
+### Test Scope
+- Unit tests for all business logic (service methods)
+- Integration tests for all API endpoints
 - E2E tests for critical flows (auth, escrow release, stage progression)
 - Offline sync tests for mobile
 - Load tests before production (target: 1000 concurrent users)

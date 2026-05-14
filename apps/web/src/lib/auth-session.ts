@@ -1,16 +1,25 @@
 'use client';
 
-import type { AuthResponse, AuthTokens, AuthUser } from './api-client';
+import type { AuthResponse, AuthTokens, AuthUser, CompanyContext } from './api-client';
 
 const ACCESS_TOKEN_KEY = 'pribec.access_token';
 const REFRESH_TOKEN_KEY = 'pribec.refresh_token';
 const USER_KEY = 'pribec.user';
+const PENDING_COMPANIES_KEY = 'pribec.pending_companies';
+const USER_COMPANIES_KEY = 'pribec.user_companies';
+const ACTIVE_COMPANY_KEY = 'pribec.active_company';
+const SESSION_UPDATED_EVENT = 'pribec:session-updated';
 
 type JwtPayload = {
   sub?: string;
   roles?: string[];
   email?: string;
+  exp?: number;
   kyc_status?: string | null;
+  /** Company context embedded by the backend at selectContext time */
+  active_company_id?: string | null;
+  active_company_role?: string | null;
+  active_company_is_admin?: boolean;
 };
 
 function decodeJwtPayload(token: string): JwtPayload | null {
@@ -37,6 +46,18 @@ export function saveAuthSession(response: AuthResponse): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, response.tokens.accessToken);
   localStorage.setItem(REFRESH_TOKEN_KEY, response.tokens.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+
+  // Store pending companies for the context-selection screen
+  if (response.requires_context_selection && response.companies?.length) {
+    sessionStorage.setItem(PENDING_COMPANIES_KEY, JSON.stringify(response.companies));
+    // Also persist the full list to localStorage so the sidebar knows the user
+    // has multiple companies even after context selection clears the pending list.
+    localStorage.setItem(USER_COMPANIES_KEY, JSON.stringify(response.companies));
+  } else {
+    sessionStorage.removeItem(PENDING_COMPANIES_KEY);
+  }
+
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
 }
 
 export function clearAuthSession(): void {
@@ -47,6 +68,64 @@ export function clearAuthSession(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(USER_COMPANIES_KEY);
+  localStorage.removeItem(ACTIVE_COMPANY_KEY);
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+/** Returns all companies the user belongs to, or null if only one / unknown. */
+export function getUserCompanies(): CompanyContext[] | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(USER_COMPANIES_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as CompanyContext[];
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the active company context after context selection. */
+export function saveActiveCompanyContext(company: CompanyContext): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ACTIVE_COMPANY_KEY, JSON.stringify(company));
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+/** Returns the active company context, or null if not yet selected. */
+export function getActiveCompanyContext(): CompanyContext | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(ACTIVE_COMPANY_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as CompanyContext;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Update only the access/refresh tokens in storage after a silent token rotation.
+ * Does NOT touch user data or company context.
+ */
+export function rotateTokens(tokens: AuthTokens): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+export function updateStoredUser(user: AuthUser): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+export function getSessionUpdatedEventName(): string {
+  return SESSION_UPDATED_EVENT;
 }
 
 export function getAccessToken(): string | null {
@@ -54,7 +133,31 @@ export function getAccessToken(): string | null {
     return null;
   }
 
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!token) {
+    return null;
+  }
+
+  const payload = decodeJwtPayload(token);
+  if (!payload) {
+    // Non-JWT value in storage (e.g. dev placeholder like "mock-token") — purge it.
+    clearAuthSession();
+    return null;
+  }
+
+  if (payload.exp !== undefined && Math.floor(Date.now() / 1000) > payload.exp) {
+    // Access token is expired. If a refresh token exists, return the expired token
+    // so the API layer can send it, receive a 401, and silently rotate credentials —
+    // without bouncing the user to the login page mid-session.
+    // Only return null (which causes redirect guards to fire) when there is no
+    // refresh token to recover with, i.e. the session is truly gone.
+    if (getRefreshToken()) {
+      return token;
+    }
+    return null;
+  }
+
+  return token;
 }
 
 export function getRefreshToken(): string | null {
@@ -67,6 +170,12 @@ export function getRefreshToken(): string | null {
 
 export function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
+    return null;
+  }
+
+  // Session is alive as long as a refresh token exists; the access token may be expired
+  // and awaiting rotation, so don't gate on getAccessToken() here.
+  if (!getRefreshToken()) {
     return null;
   }
 
@@ -91,6 +200,30 @@ export function getSessionClaims(): JwtPayload | null {
   return decodeJwtPayload(token);
 }
 
+/**
+ * Returns whether the current JWT token indicates the user is a company admin.
+ * This is the authoritative source — set by the backend at context-selection time.
+ */
+export function getIsAdminFromToken(): boolean {
+  return getSessionClaims()?.active_company_is_admin === true;
+}
+
+/**
+ * Returns whether the logged-in user is the platform-level system admin.
+ * Checks JWT `roles` for the 'admin' value — distinct from company-level admin
+ * (`active_company_is_admin`) which any company admin also carries.
+ */
+export function getIsPlatformAdminFromToken(): boolean {
+  return getSessionClaims()?.roles?.includes('admin') === true;
+}
+
+/**
+ * Returns the active company ID embedded in the current JWT token.
+ */
+export function getActiveCompanyIdFromToken(): string | null {
+  return getSessionClaims()?.active_company_id ?? null;
+}
+
 export function getPrimaryRole(): string | null {
   const claims = getSessionClaims();
   return claims?.roles?.[0] ?? null;
@@ -110,4 +243,37 @@ export function getAuthTokens(): AuthTokens | null {
     accessTokenExpiresIn: '',
     refreshTokenExpiresIn: '',
   };
+}
+
+/** Returns the companies list stored during a multi-company login, or null. */
+export function getPendingCompanies(): CompanyContext[] | null {
+  if (typeof window === 'undefined') return null;
+  const raw = sessionStorage.getItem(PENDING_COMPANIES_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as CompanyContext[];
+  } catch {
+    return null;
+  }
+}
+
+/** Replace the stored access/refresh tokens after context selection and clear pending companies. */
+export function saveSelectedContextTokens(tokens: AuthTokens): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  sessionStorage.removeItem(PENDING_COMPANIES_KEY);
+  window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+}
+
+/** Persist a fresh companies list (e.g. after re-fetching from the API). */
+export function saveUserCompanies(companies: CompanyContext[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(USER_COMPANIES_KEY, JSON.stringify(companies));
+}
+
+/** Update the pending companies in sessionStorage (e.g. after a fresh getContexts call refreshes logos). */
+export function savePendingCompanies(companies: CompanyContext[]): void {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(PENDING_COMPANIES_KEY, JSON.stringify(companies));
 }

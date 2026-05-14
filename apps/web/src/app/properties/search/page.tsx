@@ -1,108 +1,237 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
-
-const MOCK_RESULTS: PropertyCardData[] = [
-  {
-    id: '1',
-    title: '4-Bed Executive Home, Sandton',
-    price: 4800000,
-    currency: 'ZAR',
-    location: 'Sandton, Johannesburg',
-    bedrooms: 4,
-    bathrooms: 3,
-    sqm: 280,
-    propertyType: 'Residential',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 3,
-    agentName: 'Sarah Mokoena',
-    agentTier: 'gold',
-  },
-  {
-    id: '2',
-    title: 'Prime Commercial Land',
-    price: 620000,
-    currency: 'USD',
-    location: 'East Legon, Accra',
-    sqm: 1200,
-    propertyType: 'Land',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 1,
-    agentName: 'Kwame Asante',
-    agentTier: 'gold',
-  },
-  {
-    id: '3',
-    title: 'Off-Plan Luxury Apartment',
-    price: 2100000,
-    currency: 'ZAR',
-    location: 'Umhlanga, Durban',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 180,
-    propertyType: 'Off-Plan',
-    verified: true,
-    pipelineStage: 5,
-    agentName: 'Thabo Dlamini',
-    agentTier: 'silver',
-  },
-  {
-    id: '4',
-    title: '3-Bed Family Home',
-    price: 1750000,
-    currency: 'ZAR',
-    location: 'Midrand, Gauteng',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 210,
-    propertyType: 'Residential',
-    verified: true,
-    pipelineStage: 2,
-    agentName: 'Linda Sithole',
-    agentTier: 'silver',
-  },
-  {
-    id: '5',
-    title: 'Commercial Office Block',
-    price: 8500000,
-    currency: 'ZAR',
-    location: 'Rosebank, Johannesburg',
-    sqm: 950,
-    propertyType: 'Commercial',
-    verified: true,
-    escrowReady: true,
-    agentName: 'Bongani Ndlovu',
-    agentTier: 'gold',
-  },
-  {
-    id: '6',
-    title: 'Agricultural Land, Limpopo',
-    price: 980000,
-    currency: 'ZAR',
-    location: 'Tzaneen, Limpopo',
-    sqm: 50000,
-    propertyType: 'Agricultural',
-    verified: false,
-    fraudAlert: true,
-    agentName: 'Sipho Mahlangu',
-    agentTier: 'bronze',
-  },
-];
+import MultiListingDialog from '@/components/property/MultiListingDialog';
+import type { MultiListingItem } from '@/components/property/MultiListingDialog';
+import { propertiesApi, type PropertyListing } from '@/lib/api-client';
 
 const PROPERTY_TYPES = ['Residential', 'Land', 'Commercial', 'Off-Plan', 'Agricultural', 'New Build'];
 const AGENT_TIERS = ['Gold', 'Silver', 'Bronze'];
 
-const ACTIVE_FILTERS = ['Verified Only', 'Johannesburg', 'R1M – R6M'];
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Sort: Newest' },
+  { value: 'price_asc', label: 'Price: Low–High' },
+  { value: 'price_desc', label: 'Price: High–Low' },
+  { value: 'relevance', label: 'Most Relevant' },
+] as const;
 
-export default function PropertySearchResults() {
+function toTitleCase(value: string): string {
+  return value
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function toCardData(property: PropertyListing): PropertyCardData {
+  const city = property.location?.city ?? '';
+  const region = property.location?.region ?? '';
+  const location = [city, region].filter(Boolean).join(', ') || 'Location unavailable';
+  const primaryImage = property.media?.find((item) => item.is_primary)?.url;
+
+  return {
+    id: property.id,
+    title: property.title,
+    price: Number(property.price),
+    currency: property.currency,
+    location,
+    addressLine1: property.location?.address_line1 ?? null,
+    addressCity: property.location?.city ?? null,
+    bedrooms: property.bedrooms ?? undefined,
+    bathrooms: property.bathrooms ?? undefined,
+    sqm: property.area_sqm ? Number(property.area_sqm) : undefined,
+    propertyType: toTitleCase(property.property_type),
+    verified: property.verification_status === 'verified',
+    fraudAlert: property.verification_status === 'flagged',
+    underInvestigation: property.company_status === 'under_investigation',
+    imageUrl: primaryImage,
+    isPrivateListing: property.company_is_system !== false,
+    companyLogoUrl: property.company_logo_url,
+    companyName: property.company_name,
+    companyBrandColor: property.company_brand_color,
+  };
+}
+
+function PropertySearchResultsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [verifiedOnly, setVerifiedOnly] = useState(
+    searchParams.get('verified') !== 'false',
+  );
   const [escrowReady, setEscrowReady] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [cityInput, setCityInput] = useState(searchParams.get('city') ?? '');
+  const [results, setResults] = useState<PropertyListing[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(Number(searchParams.get('page') ?? '1'));
+  const [limit] = useState(20);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const sort = searchParams.get('sort') ?? 'newest';
+
+  const cardResults = useMemo(
+    () => results.map((property) => toCardData(property)),
+    [results],
+  );
+
+  // ── Multi-agent listing grouping ─────────────────────────────────────────
+  const [multiListingDialogOpen, setMultiListingDialogOpen] = useState(false);
+  const [selectedMultiListings, setSelectedMultiListings] = useState<MultiListingItem[]>([]);
+
+  const multiListingGroups = useMemo(() => {
+    const groups = new Map<string, PropertyCardData[]>();
+    for (const p of cardResults) {
+      if (!p.addressLine1) continue;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      const group = groups.get(key);
+      if (group) group.push(p);
+      else groups.set(key, [p]);
+    }
+    const result = new Map<string, PropertyCardData[]>();
+    for (const [key, group] of groups) {
+      if (group.length >= 2) result.set(key, group);
+    }
+    return result;
+  }, [cardResults]);
+
+  const multiListingCountById = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const group of multiListingGroups.values()) {
+      for (const p of group) countMap.set(p.id, group.length);
+    }
+    return countMap;
+  }, [multiListingGroups]);
+
+  const deduplicatedCards = useMemo(() => {
+    const shownKeys = new Set<string>();
+    return cardResults.filter((p) => {
+      if (!p.addressLine1) return true;
+      const key = `${p.addressLine1.trim().toLowerCase()}|${(p.addressCity ?? '').trim().toLowerCase()}`;
+      if (!multiListingGroups.has(key)) return true;
+      if (shownKeys.has(key)) return false;
+      shownKeys.add(key);
+      return true;
+    });
+  }, [cardResults, multiListingGroups]);
+
+  function openMultiListingDialog(property: PropertyCardData) {
+    const key = `${(property.addressLine1 ?? '').trim().toLowerCase()}|${(property.addressCity ?? '').trim().toLowerCase()}`;
+    const group = multiListingGroups.get(key) ?? [property];
+    setSelectedMultiListings(group.map((p) => ({
+      id: p.id,
+      title: p.title,
+      location: p.location,
+      addressLine1: p.addressLine1 ?? null,
+      price: new Intl.NumberFormat('en-US', { style: 'currency', currency: p.currency ?? 'USD', maximumFractionDigits: 0 }).format(p.price),
+      beds: p.bedrooms ?? 0,
+      baths: p.bathrooms ?? 0,
+      garage: 0,
+      garages: 0,
+      carports: 0,
+      sqm: p.sqm ?? 0,
+      propertyType: p.propertyType,
+      image: p.imageUrl ?? '',
+      agent: p.agentName ?? 'Agent',
+      agentCompany: p.companyName ?? 'Estate Agency',
+      agentAvatarUrl: p.personAvatarUrl ?? null,
+      agentCompanyLogoUrl: p.companyLogoUrl ?? null,
+      agentCompanyBrandColor: p.companyBrandColor ?? null,
+      isPrivateListing: p.isPrivateListing ?? true,
+    })));
+    setMultiListingDialogOpen(true);
+  }
+
+  function handleMultiListingSelect(id: string) {
+    setMultiListingDialogOpen(false);
+    const refParam = '/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '');
+    router.push(`/properties/${id}?ref=${encodeURIComponent(refParam)}`);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const unverifiedCount = results.filter(
+    (property) => property.verification_status !== 'verified',
+  ).length;
+
+  useEffect(() => {
+    setCityInput(searchParams.get('city') ?? '');
+    setPage(Number(searchParams.get('page') ?? '1'));
+    setVerifiedOnly(searchParams.get('verified') !== 'false');
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const city = searchParams.get('city') ?? undefined;
+        const verified = searchParams.get('verified') !== 'false';
+        const currentPage = Number(searchParams.get('page') ?? '1');
+        const currentSort =
+          (searchParams.get('sort') as
+            | 'newest'
+            | 'price_asc'
+            | 'price_desc'
+            | 'relevance'
+            | null) ?? 'newest';
+
+        const response = await propertiesApi.search({
+          city,
+          page: currentPage,
+          limit,
+          sort: currentSort,
+          verification_status: verified ? 'verified' : undefined,
+        });
+
+        setResults(response.data);
+        setTotal(response.total);
+      } catch (fetchError) {
+        setResults([]);
+        setTotal(0);
+        setError('Unable to load properties right now. Please try again.');
+        console.error(fetchError);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void fetchProperties();
+  }, [searchParams, limit]);
+
+  const updateQuery = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    }
+    router.replace(`${pathname}?${next.toString()}`);
+  };
+
+  const applySearch = () => {
+    updateQuery({
+      city: cityInput.trim() || null,
+      page: '1',
+    });
+  };
+
+  const toggleVerifiedOnly = () => {
+    const nextValue = !verifiedOnly;
+    updateQuery({
+      verified: nextValue ? null : 'false',
+      page: '1',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-manrope">
@@ -113,24 +242,34 @@ export default function PropertySearchResults() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-3 items-center">
           {/* Search input */}
           <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 focus-within:border-[#F5A623] focus-within:ring-1 focus-within:ring-[#F5A623] transition bg-white">
-            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent"
-              defaultValue="Johannesburg, South Africa"
+              value={cityInput}
+              onChange={(event) => setCityInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  applySearch();
+                }
+              }}
               placeholder="Search location..."
             />
           </div>
           {/* Save search */}
-          <button className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 hover:border-[#F5A623] hover:text-[#0A1628] transition bg-white whitespace-nowrap">
+          <button
+            onClick={applySearch}
+            title="Save search"
+            className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 hover:border-[#F5A623] hover:text-[#0A1628] transition bg-white whitespace-nowrap"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
             Save Search
           </button>
           {/* User avatar */}
-          <div className="w-9 h-9 rounded-full bg-[#0A1628] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-[#0A1628] flex items-center justify-center text-white text-sm font-bold shrink-0">
             J
           </div>
         </div>
@@ -140,11 +279,11 @@ export default function PropertySearchResults() {
         <div className="flex gap-6">
 
           {/* ── LEFT SIDEBAR FILTERS ── */}
-          <aside className={`${sidebarOpen ? 'w-64 flex-shrink-0' : 'hidden'} transition-all`}>
+          <aside className={`${sidebarOpen ? 'w-64 shrink-0' : 'hidden'} transition-all`}>
             <div className="bg-white rounded-2xl border border-gray-200 p-5 sticky top-36 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-[#0A1628]">Filters</h3>
-                <button className="text-xs text-[#F5A623] font-semibold hover:underline">Clear all</button>
+                <button className="text-xs text-[#F5A623] font-semibold hover:underline" title="Clear all filters">Clear all</button>
               </div>
 
               {/* Verified Only */}
@@ -155,8 +294,10 @@ export default function PropertySearchResults() {
                     <p className="text-xs text-gray-400">Show title-deed verified listings</p>
                   </div>
                   <button
-                    onClick={() => setVerifiedOnly(!verifiedOnly)}
-                    className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${verifiedOnly ? 'bg-[#22C55E]' : 'bg-gray-200'}`}
+                    onClick={toggleVerifiedOnly}
+                    title="Toggle verified only"
+                    aria-label="Toggle verified only"
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${verifiedOnly ? 'bg-[#22C55E]' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${verifiedOnly ? 'translate-x-5' : ''}`} />
                   </button>
@@ -172,7 +313,9 @@ export default function PropertySearchResults() {
                   </div>
                   <button
                     onClick={() => setEscrowReady(!escrowReady)}
-                    className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${escrowReady ? 'bg-[#F5A623]' : 'bg-gray-200'}`}
+                    title="Toggle escrow ready"
+                    aria-label="Toggle escrow ready"
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${escrowReady ? 'bg-[#F5A623]' : 'bg-gray-200'}`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${escrowReady ? 'translate-x-5' : ''}`} />
                   </button>
@@ -254,6 +397,7 @@ export default function PropertySearchResults() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
+                  title="Toggle filters"
                   className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#0A1628] transition-colors border border-gray-200 rounded-lg px-3 py-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,21 +406,35 @@ export default function PropertySearchResults() {
                   Filters
                 </button>
                 <p className="text-sm font-semibold text-[#0A1628]">
-                  <span className="text-[#22C55E]">142</span> Verified Properties Found
+                  <span className="text-[#22C55E]">{total}</span>{' '}
+                  {verifiedOnly ? 'Verified Properties Found' : 'Properties Found'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#F5A623] text-gray-600 bg-white">
-                  <option>Sort: Newest</option>
-                  <option>Price: Low–High</option>
-                  <option>Price: High–Low</option>
-                  <option>Most Verified</option>
-                  <option>Pipeline Stage</option>
+                <select
+                  value={sort}
+                  onChange={(event) =>
+                    updateQuery({
+                      sort: event.target.value,
+                      page: '1',
+                    })
+                  }
+                  title="Sort results"
+                  aria-label="Sort results"
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#F5A623] text-gray-600 bg-white"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
                 {/* View mode */}
                 <div className="flex border border-gray-200 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setViewMode('grid')}
+                    title="Grid view"
+                    aria-label="Grid view"
                     className={`px-3 py-2 transition-colors ${viewMode === 'grid' ? 'bg-[#0A1628] text-white' : 'text-gray-500 hover:text-[#0A1628]'}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -285,6 +443,8 @@ export default function PropertySearchResults() {
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
+                    title="List view"
+                    aria-label="List view"
                     className={`px-3 py-2 transition-colors border-l border-gray-200 ${viewMode === 'list' ? 'bg-[#0A1628] text-white' : 'text-gray-500 hover:text-[#0A1628]'}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -297,10 +457,24 @@ export default function PropertySearchResults() {
 
             {/* Active filter chips */}
             <div className="flex flex-wrap gap-2 mb-5">
-              {ACTIVE_FILTERS.map((f) => (
+              {[verifiedOnly ? 'Verified Only' : null, cityInput.trim() || null]
+                .filter((item): item is string => Boolean(item))
+                .map((f) => (
                 <span key={f} className="flex items-center gap-1.5 bg-[#0A1628] text-white text-xs font-medium px-3 py-1.5 rounded-full">
                   {f}
-                  <button className="hover:text-[#F5A623] transition-colors">
+                  <button
+                    onClick={() => {
+                      if (f === 'Verified Only') {
+                        updateQuery({ verified: 'false', page: '1' });
+                        return;
+                      }
+                      setCityInput('');
+                      updateQuery({ city: null, page: '1' });
+                    }}
+                    title={`Remove ${f}`}
+                    aria-label={`Remove ${f}`}
+                    className="hover:text-[#F5A623] transition-colors"
+                  >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -310,43 +484,93 @@ export default function PropertySearchResults() {
             </div>
 
             {/* Fraud alert banner (for unverified results) */}
-            <div className="bg-[#FEF3C7] border border-[#F59E0B] rounded-xl px-4 py-3 flex items-center gap-3 mb-5">
-              <svg className="w-5 h-5 text-[#F59E0B] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <p className="text-sm text-[#92400E] font-medium">
-                <strong>1 unverified listing</strong> is included in these results. Unverified listings have not had their title deeds independently checked. Proceed with caution.
-              </p>
-            </div>
+            {unverifiedCount > 0 && (
+              <div className="bg-[#FEF3C7] border border-[#F59E0B] rounded-xl px-4 py-3 flex items-center gap-3 mb-5">
+                <svg className="w-5 h-5 text-[#F59E0B] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-[#92400E] font-medium">
+                  <strong>{unverifiedCount} unverified listing{unverifiedCount > 1 ? 's' : ''}</strong> are included in these results. Unverified listings have not had their title deeds independently checked. Proceed with caution.
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm">
+                {error}
+              </div>
+            )}
 
             {/* Results Grid */}
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-5' : 'flex flex-col gap-4'}>
-              {MOCK_RESULTS.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
+              {isLoading && (
+                <div className="col-span-full bg-white border border-gray-200 rounded-xl p-6 text-sm text-gray-500">
+                  Loading properties...
+                </div>
+              )}
+              {!isLoading && cardResults.length === 0 && (
+                <div className="col-span-full bg-white border border-gray-200 rounded-xl p-6 text-sm text-gray-500">
+                  No properties match your current filters.
+                </div>
+              )}
+              {deduplicatedCards.map((property) => {
+                const multiAgentCount = multiListingCountById.get(property.id);
+                const isMultiAgent = multiAgentCount !== undefined && multiAgentCount >= 2;
+
+                if (isMultiAgent) {
+                  return (
+                    <div
+                      key={property.id}
+                      className="cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openMultiListingDialog(property)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMultiListingDialog(property); } }}
+                    >
+                      <div className="bg-amber-50 border border-amber-200 rounded-t-xl px-3 py-1.5 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100-8 4 4 0 000 8zm14 14v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+                        <span className="text-xs font-semibold text-amber-700">
+                          Listed by {multiAgentCount} Estate {multiAgentCount === 1 ? 'Agency' : 'Agencies'}
+                        </span>
+                      </div>
+                      <PropertyCard property={property} />
+                    </div>
+                  );
+                }
+
+                return (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    refParam={'/properties/search' + (searchParams.toString() ? '?' + searchParams.toString() : '')}
+                  />
+                );
+              })}
             </div>
 
             {/* Pagination */}
             <div className="flex items-center justify-center gap-2 mt-10">
-              <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white">
+              <button
+                disabled={page <= 1}
+                onClick={() => updateQuery({ page: String(Math.max(1, page - 1)) })}
+                title="Previous page"
+                aria-label="Previous page"
+                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              {[1, 2, 3, '...', 8, 9, 10].map((page, idx) => (
-                <button
-                  key={idx}
-                  className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors
-                    ${page === 1
-                      ? 'bg-[#0A1628] text-white'
-                      : page === '...'
-                      ? 'text-gray-400 cursor-default'
-                      : 'border border-gray-200 text-gray-600 hover:border-[#0A1628] hover:text-[#0A1628] bg-white'}`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white">
+              <span className="px-4 text-sm text-gray-600">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => updateQuery({ page: String(Math.min(totalPages, page + 1)) })}
+                title="Next page"
+                aria-label="Next page"
+                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:border-[#0A1628] hover:text-[#0A1628] transition-colors bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -355,27 +579,26 @@ export default function PropertySearchResults() {
           </div>
 
           {/* ── MAP PANEL ── */}
-          <div className="hidden lg:block w-80 flex-shrink-0">
+          <div className="hidden lg:block w-80 shrink-0">
             <div className="sticky top-36 bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <div className="bg-[#0A1628] px-4 py-3 flex items-center justify-between">
                 <span className="text-white text-sm font-semibold">Map View</span>
-                <button className="text-white/60 hover:text-white text-xs">Expand</button>
+                <button className="text-white/60 hover:text-white text-xs" title="Expand map">Expand</button>
               </div>
               {/* Placeholder map */}
               <div className="h-96 bg-gray-100 relative flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50" />
+                <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-green-50" />
                 {/* Mock property pins */}
                 {[
-                  { x: 40, y: 30, price: 'R4.8M', active: true },
-                  { x: 65, y: 50, price: 'R2.1M', active: false },
-                  { x: 25, y: 65, price: 'R1.75M', active: false },
-                  { x: 75, y: 25, price: 'R8.5M', active: false },
-                  { x: 50, y: 75, price: '$620K', active: false },
+                  { positionClass: 'left-[40%] top-[30%]', price: 'R4.8M', active: true },
+                  { positionClass: 'left-[65%] top-[50%]', price: 'R2.1M', active: false },
+                  { positionClass: 'left-[25%] top-[65%]', price: 'R1.75M', active: false },
+                  { positionClass: 'left-[75%] top-[25%]', price: 'R8.5M', active: false },
+                  { positionClass: 'left-[50%] top-[75%]', price: '$620K', active: false },
                 ].map((pin, i) => (
                   <div
                     key={i}
-                    style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${pin.positionClass}`}
                   >
                     <div className={`px-2 py-1 rounded-full text-xs font-bold shadow-lg cursor-pointer
                       ${pin.active
@@ -411,6 +634,22 @@ export default function PropertySearchResults() {
           </div>
         </div>
       </div>
+
+      {/* Multi-agent listing selection dialog */}
+      <MultiListingDialog
+        open={multiListingDialogOpen}
+        onOpenChange={setMultiListingDialogOpen}
+        listings={selectedMultiListings}
+        onSelectListing={handleMultiListingSelect}
+      />
     </div>
+  );
+}
+
+export default function PropertySearchResultsPage() {
+  return (
+    <Suspense fallback={null}>
+      <PropertySearchResultsContent />
+    </Suspense>
   );
 }

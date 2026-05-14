@@ -1,6 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import Navbar from '@/components/property/Navbar';
 import PipelineTracker, { PURCHASE_STAGES } from '@/components/property/PipelineTracker';
+import { PropertyActions } from '@/components/property/PropertyActions';
+import BackButton from '@/components/property/BackButton';
 
 const PROPERTY = {
   id: '1',
@@ -50,26 +52,214 @@ function formatPrice(price: number, currency = 'ZAR') {
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 0 }).format(price);
 }
 
-export default function PropertyDetail() {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.pribec.com';
+
+type ApiPropertyDetail = {
+  id: string;
+  title: string;
+  description?: string | null;
+  property_type: string;
+  price: string;
+  currency: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: string | null;
+  verification_status: string;
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+  } | null;
+};
+
+async function fetchPropertyById(id: string): Promise<ApiPropertyDetail | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/properties/${id}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as ApiPropertyDetail;
+  } catch {
+    return null;
+  }
+}
+
+function mapApiPropertyToDisplayProperty(
+  property: ApiPropertyDetail | null,
+): typeof PROPERTY {
+  if (!property) {
+    return PROPERTY;
+  }
+
+  const city = property.location?.city ?? '';
+  const region = property.location?.region ?? '';
+  const country = property.location?.country ?? '';
+  const location = [city, region, country].filter(Boolean).join(', ');
+  const areaSqm = property.area_sqm ? Number(property.area_sqm) : null;
+  const price = Number(property.price);
+  const pricePerSqm = areaSqm && areaSqm > 0 ? Math.round(price / areaSqm) : PROPERTY.pricePerSqm;
+
+  return {
+    ...PROPERTY,
+    id: property.id,
+    title: property.title,
+    price,
+    currency: property.currency,
+    pricePerSqm,
+    location: location || PROPERTY.location,
+    bedrooms: property.bedrooms ?? PROPERTY.bedrooms,
+    bathrooms: property.bathrooms ?? PROPERTY.bathrooms,
+    sqm: areaSqm ?? PROPERTY.sqm,
+    propertyType: property.property_type
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (match) => match.toUpperCase()),
+    verified: property.verification_status === 'verified',
+    description: property.description || PROPERTY.description,
+  };
+}
+
+type PropertyPageProps = {
+  params: {
+    id: string;
+  };
+  searchParams: Record<string, string | string[] | undefined>;
+};
+
+type BackContext = { href: string; label: string };
+
+function getBackContext(ref?: string): BackContext {
+  if (!ref) return { href: '/properties', label: 'Property Marketplace' };
+
+  const decoded = decodeURIComponent(ref);
+
+  // Only allow safe internal paths
+  if (!decoded.startsWith('/')) {
+    return { href: '/properties', label: 'Property Marketplace' };
+  }
+
+  if (decoded.startsWith('/properties/search')) {
+    try {
+      const url = new URL(decoded, 'http://localhost');
+      const city = url.searchParams.get('city');
+      const label = city ? `Search Results – ${city}` : 'Search Results';
+      return { href: decoded, label };
+    } catch {
+      return { href: '/properties/search', label: 'Search Results' };
+    }
+  }
+
+  if (decoded === '/properties' || decoded.startsWith('/properties?')) {
+    return { href: decoded, label: 'Property Marketplace' };
+  }
+
+  // Generic internal path fallback
+  const segment = decoded.split('/').filter(Boolean)[1] ?? 'listings';
+  const label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+  return { href: decoded, label };
+}
+
+function getListingSeoDescription(description: string): string {
+  const normalized = description.replace(/\s+/g, ' ').trim();
+  return normalized.slice(0, 160);
+}
+
+function getListingCity(location: string): string {
+  const parts = location.split(',').map((part) => part.trim());
+  return parts[1] ?? parts[0] ?? 'Unknown City';
+}
+
+export async function generateMetadata({ params }: PropertyPageProps): Promise<Metadata> {
+  const liveProperty = await fetchPropertyById(params.id);
+  const displayProperty = mapApiPropertyToDisplayProperty(liveProperty);
+  const city = getListingCity(displayProperty.location);
+  const propertyType = displayProperty.propertyType.toLowerCase();
+  const title = `${displayProperty.bedrooms}BR ${propertyType} in ${city} | PRIBEC`;
+  const description = getListingSeoDescription(displayProperty.description);
+  const canonicalPath = `/properties/${params.id}`;
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: canonicalUrl,
+      siteName: 'PRIBEC',
+    },
+  };
+}
+
+export default async function PropertyDetail({ params, searchParams }: PropertyPageProps) {
+  const ref = typeof searchParams.ref === 'string' ? searchParams.ref : undefined;
+  const backContext = getBackContext(ref);
+  const liveProperty = await fetchPropertyById(params.id);
+  const PROPERTY = mapApiPropertyToDisplayProperty(liveProperty);
   const deposit = PROPERTY.price * 0.1;
   const transferDuty = PROPERTY.price * 0.05;
   const legalFees = 45000;
   const total = PROPERTY.price + transferDuty + legalFees;
+  const listingUrl = `${SITE_URL}/properties/${params.id}`;
+  const listingDescription = getListingSeoDescription(PROPERTY.description);
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateListing',
+    name: PROPERTY.title,
+    description: listingDescription,
+    url: listingUrl,
+    datePosted: new Date().toISOString(),
+    offers: {
+      '@type': 'Offer',
+      price: PROPERTY.price,
+      priceCurrency: PROPERTY.currency,
+      availability: 'https://schema.org/InStock',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: getListingCity(PROPERTY.location),
+      addressCountry: 'ZA',
+      streetAddress: PROPERTY.location,
+    },
+    numberOfRooms: PROPERTY.bedrooms,
+    floorSize: {
+      '@type': 'QuantitativeValue',
+      value: PROPERTY.sqm,
+      unitCode: 'MTK',
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-manrope">
-      <Navbar />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
 
       {/* ── BREADCRUMB ── */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/" className="hover:text-[#0A1628] transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/properties" className="hover:text-[#0A1628] transition-colors">Marketplace</Link>
-          <span>/</span>
-          <Link href="/properties/search" className="hover:text-[#0A1628] transition-colors">Search</Link>
-          <span>/</span>
-          <span className="text-[#0A1628] font-medium truncate max-w-xs">{PROPERTY.title}</span>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+          <BackButton />
+          <span className="text-gray-200 shrink-0">│</span>
+          {/* Breadcrumb trail */}
+          <div className="flex items-center gap-2 text-sm text-gray-400 min-w-0">
+            <Link href="/" className="hover:text-[#0A1628] transition-colors shrink-0">Home</Link>
+            <span>/</span>
+            <Link href={backContext.href} className="hover:text-[#0A1628] transition-colors shrink-0 hidden sm:inline">
+              {backContext.label}
+            </Link>
+            <span className="hidden sm:inline">/</span>
+            <span className="text-[#0A1628] font-medium truncate">{PROPERTY.title}</span>
+          </div>
         </div>
       </div>
 
@@ -77,7 +267,7 @@ export default function PropertyDetail() {
       <div className="relative bg-[#0A1628] h-80 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           {/* Placeholder gradient gallery */}
-          <div className="w-full h-full bg-gradient-to-br from-[#0A1628] via-[#1A3050] to-[#0F2040] flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-[#0A1628] via-[#1A3050] to-[#0F2040] flex items-center justify-center">
             <p className="text-white/30 text-sm">Property Gallery · 12 Photos</p>
           </div>
         </div>
@@ -101,7 +291,7 @@ export default function PropertyDetail() {
         {/* Thumbnail strip */}
         <div className="absolute bottom-4 left-5 right-5 flex gap-2 overflow-x-auto pb-1">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className={`w-16 h-11 flex-shrink-0 rounded-lg border-2 cursor-pointer
+            <div key={i} className={`w-16 h-11 shrink-0 rounded-lg border-2 cursor-pointer
               ${i === 1 ? 'border-[#F5A623]' : 'border-white/30 hover:border-white/70'} 
               bg-white/10 transition-colors`}
             />
@@ -124,13 +314,13 @@ export default function PropertyDetail() {
                   <p className="text-sm text-gray-400 mt-0.5">{formatPrice(PROPERTY.pricePerSqm, PROPERTY.currency)}/m²</p>
                   <h1 className="text-xl font-bold text-[#0A1628] mt-2">{PROPERTY.title}</h1>
                   <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     </svg>
                     {PROPERTY.location}
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 shrink-0">
                   <button className="flex items-center gap-1.5 border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-600 hover:border-[#0A1628] transition-colors">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -174,7 +364,7 @@ export default function PropertyDetail() {
                 </span>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#DCFCE7] flex items-center justify-center text-[#22C55E] text-xl flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#DCFCE7] flex items-center justify-center text-[#22C55E] text-xl shrink-0">
                   ✓
                 </div>
                 <div>
@@ -221,7 +411,7 @@ export default function PropertyDetail() {
                   return (
                     <div key={doc.name} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <div className="flex items-center gap-3">
-                        <span className={`w-7 h-7 rounded-full ${s.bg} ${s.color} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
+                        <span className={`w-7 h-7 rounded-full ${s.bg} ${s.color} flex items-center justify-center text-sm font-bold shrink-0`}>
                           {s.icon}
                         </span>
                         <div>
@@ -248,7 +438,7 @@ export default function PropertyDetail() {
                     href={`/properties/${p.id}`}
                     className="block bg-[#F8F9FA] rounded-xl p-4 hover:shadow-md transition-shadow border border-gray-100"
                   >
-                    <div className="h-24 bg-gradient-to-br from-[#0A1628] to-[#1A3050] rounded-lg mb-3 flex items-center justify-center">
+                    <div className="h-24 bg-linear-to-br from-[#0A1628] to-[#1A3050] rounded-lg mb-3 flex items-center justify-center">
                       <svg className="w-8 h-8 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
                       </svg>
@@ -266,19 +456,19 @@ export default function PropertyDetail() {
           </div>
 
           {/* ── RIGHT STICKY SIDEBAR ── */}
-          <div className="w-80 flex-shrink-0 hidden lg:block">
+          <div className="w-80 shrink-0 hidden lg:block">
             <div className="sticky top-24 space-y-4">
 
               {/* Agent Card */}
               <div className="bg-white rounded-2xl border border-gray-200 p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-[#F5A623] flex items-center justify-center text-[#0A1628] text-xl font-bold flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-[#F5A623] flex items-center justify-center text-[#0A1628] text-xl font-bold shrink-0">
                     S
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-[#0A1628] truncate">Sarah Mokoena</p>
-                      <span className="flex-shrink-0 text-xs font-bold bg-[#F5A623] text-[#0A1628] px-2 py-0.5 rounded-full">Gold</span>
+                      <span className="shrink-0 text-xs font-bold bg-[#F5A623] text-[#0A1628] px-2 py-0.5 rounded-full">Gold</span>
                     </div>
                     <p className="text-xs text-gray-500">Verified Agent since 2019</p>
                   </div>
@@ -364,9 +554,7 @@ export default function PropertyDetail() {
 
               {/* Report */}
               <div className="text-center">
-                <button className="text-xs text-[#EF4444] hover:underline transition-colors">
-                  ⚠ Report This Listing
-                </button>
+                <PropertyActions propertyId={PROPERTY.id} />
               </div>
             </div>
           </div>

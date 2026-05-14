@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
+  ConflictException,
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { NotificationService } from '../notification.service';
 import { RedisService } from '../../cache';
 import { PrismaService } from '../../database';
 import { OAuthVerificationService } from './oauth-verification.service';
+import { SessionsService } from '../sessions/sessions.service';
 
 import * as bcrypt from 'bcrypt';
 
@@ -103,6 +105,11 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockSessions = {
+    create: jest.fn().mockResolvedValue({ id: 'session-uuid-001' }),
+    rotate: jest.fn().mockResolvedValue({ id: 'session-uuid-001' }),
+  };
+
   const requestCtx = { ip: '127.0.0.1', userAgent: 'jest' };
 
   let module: TestingModule;
@@ -119,6 +126,7 @@ describe('AuthService', () => {
         { provide: AuditService, useValue: mockAudit },
         { provide: NotificationService, useValue: mockNotification },
         { provide: OAuthVerificationService, useValue: mockOAuthVerification },
+        { provide: SessionsService, useValue: mockSessions },
       ],
     }).compile();
 
@@ -152,7 +160,12 @@ describe('AuthService', () => {
       mockUsers.findByEmail.mockResolvedValueOnce(null); // not existing
       mockUsers.create.mockResolvedValueOnce(baseUser);
       mockUsers.assignRole.mockResolvedValueOnce(undefined);
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
+        .mockResolvedValueOnce([])                          // getRolePermissions → no perms
+        .mockResolvedValueOnce([])                          // pending invitations → none
+        .mockResolvedValueOnce([{ id: 'refresh-id' }]);     // insert refresh token
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 
       const result = await service.register(dto, requestCtx);
 
@@ -170,7 +183,7 @@ describe('AuthService', () => {
     it('throws BadRequestException when email already exists', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
       await expect(service.register(dto, requestCtx)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
 
@@ -198,14 +211,19 @@ describe('AuthService', () => {
         ...baseUser,
         password_hash: hash,
       });
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'co-uuid', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
+        .mockResolvedValueOnce([{ id: 'refresh-id' }]); // insert refresh token
 
       const result = await service.login(
         { email: EMAIL, password: PASSWORD },
         requestCtx,
       );
 
-      expect(result.tokens.accessToken).toBe('signed-access-token');
+      expect('tokens' in result).toBe(true);
+      if ('tokens' in result) {
+        expect(result.tokens.accessToken).toBe('signed-access-token');
+      }
       expect(mockUsers.markLastLogin).toHaveBeenCalledWith(USER_ID);
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ eventId: 'user.login' }),
@@ -250,6 +268,41 @@ describe('AuthService', () => {
       ).rejects.toThrow(
         expect.objectContaining({ status: HttpStatus.TOO_MANY_REQUESTS }),
       );
+    });
+
+    it('throws UnauthorizedException when account is suspended', async () => {
+      const hash = bcrypt.hashSync(PASSWORD, 1);
+      mockRedis.get.mockResolvedValueOnce(null);
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        status: 'suspended',
+        password_hash: hash,
+      });
+
+      await expect(
+        service.login({ email: EMAIL, password: PASSWORD }, requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('allows login when account is under_investigation', async () => {
+      const hash = bcrypt.hashSync(PASSWORD, 1);
+      mockRedis.get.mockResolvedValueOnce(null);
+      mockUsers.findByEmail.mockResolvedValueOnce({
+        ...baseUser,
+        status: 'under_investigation',
+        password_hash: hash,
+      });
+      mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'co-uuid', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }])
+        .mockResolvedValueOnce([{ id: 'refresh-id' }]);
+
+      const result = await service.login(
+        { email: EMAIL, password: PASSWORD },
+        requestCtx,
+      );
+
+      expect('tokens' in result).toBe(true);
     });
   });
 
@@ -297,8 +350,10 @@ describe('AuthService', () => {
             user_id: USER_ID,
             expires_at: futureDate,
             revoked_at: null,
+            active_company_id: 'co-uuid',
           },
         ]) // lookup
+        .mockResolvedValueOnce([{ role: 'buyer_seller', is_admin: false }]) // member validation
         .mockResolvedValueOnce([{ id: 'new-rt-id' }]); // insert new token
       mockPrisma.$executeRaw.mockResolvedValueOnce(1n); // revoke old
       mockUsers.findById.mockResolvedValueOnce(baseUser);
@@ -423,6 +478,69 @@ describe('AuthService', () => {
     });
   });
 
+  // ─── changePassword ──────────────────────────────────────────────────────
+
+  describe('changePassword', () => {
+    it('updates hash, revokes sessions, and logs audit when current password is valid', async () => {
+      const currentHash = bcrypt.hashSync(PASSWORD, 1);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([
+          {
+            id: USER_ID,
+            email: EMAIL,
+            status: 'active',
+            password_hash: currentHash,
+          },
+        ])
+        .mockResolvedValueOnce([]); // revokeAllSessions token lookup
+      mockPrisma.$executeRaw.mockResolvedValue(1n);
+      mockUsers.getUserRoleNames.mockResolvedValueOnce(['buyer_seller']);
+
+      await service.changePassword(
+        USER_ID,
+        PASSWORD,
+        'NewP@ssword1',
+        requestCtx,
+      );
+
+      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'user.password_changed' }),
+      );
+    });
+
+    it('throws UnauthorizedException when current password is wrong', async () => {
+      const currentHash = bcrypt.hashSync(PASSWORD, 1);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          email: EMAIL,
+          status: 'active',
+          password_hash: currentHash,
+        },
+      ]);
+
+      await expect(
+        service.changePassword(USER_ID, 'WrongP@ssword1', 'NewP@ssword1', requestCtx),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws BadRequestException when account has no local password', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([
+        {
+          id: USER_ID,
+          email: EMAIL,
+          status: 'active',
+          password_hash: null,
+        },
+      ]);
+
+      await expect(
+        service.changePassword(USER_ID, PASSWORD, 'NewP@ssword1', requestCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   // ─── verifyEmail ──────────────────────────────────────────────────────────
 
   describe('verifyEmail', () => {
@@ -467,7 +585,9 @@ describe('AuthService', () => {
 
     it('logs in existing user without creating a new record', async () => {
       mockUsers.findByEmail.mockResolvedValueOnce(baseUser);
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token insert
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'self-co', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
+        .mockResolvedValueOnce([{ id: 'rt-id' }]); // refresh token insert
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
 
@@ -484,7 +604,12 @@ describe('AuthService', () => {
         .mockResolvedValueOnce(baseUser); // second call after create
 
       mockUsers.create.mockResolvedValueOnce(baseUser);
-      mockPrisma.$queryRaw.mockResolvedValueOnce([{ id: 'rt-id' }]);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ id: 'self-company-id' }]) // enrolInSelfCompany → find Self
+        .mockResolvedValueOnce([])                          // getRolePermissions → no perms
+        .mockResolvedValueOnce([{ id: 'self-company-id', role: 'buyer_seller', is_admin: false, name: 'Self', slug: 'self', category: 'individual', is_system: true, logo_url: null }]) // getUserActiveMemberships → one company
+        .mockResolvedValueOnce([{ id: 'rt-id' }]);          // refresh token
+      mockPrisma.$executeRaw.mockResolvedValueOnce(undefined); // enrolInSelfCompany → enrol member
 
       const result = await service.oauthLogin('google', oauthDto, requestCtx);
 

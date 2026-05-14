@@ -21,6 +21,7 @@ export class InquiryService {
     dto: CreateInquiryDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<unknown> {
     const property = await this.prisma.$queryRaw<{ id: string; agent_id: string }[]>`
       SELECT id, agent_id FROM property.properties
@@ -31,13 +32,16 @@ export class InquiryService {
 
     const result = await this.prisma.$queryRaw`
       INSERT INTO property.inquiries
-        (property_id, buyer_id, inquiry_type, message, preferred_date)
+        (property_id, buyer_id, inquiry_type, message, preferred_date, company_id, preferred_contact_method, best_contact_time)
       VALUES (
         ${propertyId}::uuid,
         ${buyerId}::uuid,
         ${dto.inquiryType},
         ${dto.message ?? null},
-        ${dto.preferredDate ? new Date(dto.preferredDate) : null}::timestamptz
+        ${dto.preferredDate ? new Date(dto.preferredDate) : null}::timestamptz,
+        ${companyId ?? null}::uuid,
+        ${dto.preferredContactMethod ?? null},
+        ${dto.bestContactTime ?? null}
       )
       RETURNING *
     `;
@@ -45,6 +49,7 @@ export class InquiryService {
     await this.audit.log({
       actorId: buyerId,
       actorRole: buyerRole,
+      companyId,
       action: 'property.inquiry.created',
       resourceType: 'property',
       resourceId: propertyId,
@@ -77,9 +82,18 @@ export class InquiryService {
 
     const [rows, countRows] = await Promise.all([
       this.prisma.$queryRaw`
-        SELECT * FROM property.inquiries
-        WHERE property_id = ${propertyId}::uuid
-        ORDER BY created_at DESC
+        SELECT i.*,
+          CASE
+            WHEN i.message NOT LIKE 'Name: %'
+            THEN NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ' ')
+            ELSE NULL
+          END AS requester_name,
+          CASE WHEN i.message NOT LIKE 'Name: %' THEN u.email ELSE NULL END AS requester_email,
+          CASE WHEN i.message NOT LIKE 'Name: %' THEN u.phone ELSE NULL END AS requester_phone
+        FROM property.inquiries i
+        LEFT JOIN identity.users u ON u.id = i.buyer_id
+        WHERE i.property_id = ${propertyId}::uuid
+        ORDER BY i.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `,
       this.prisma.$queryRaw<[{ total: string }]>`

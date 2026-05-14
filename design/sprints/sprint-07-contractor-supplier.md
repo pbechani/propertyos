@@ -250,7 +250,7 @@ CREATE INDEX ON marketplace.material_prices (material_category, country, recorde
 
 ## API Endpoints
 
-### Contractor Marketplace
+### Service Provider Marketplace (Contractors)
 ```
 POST  /api/v1/contractors/profile
 GET   /api/v1/contractors?skills=&region=&rating_min=
@@ -334,9 +334,32 @@ Recalculated nightly via scheduled job.
 ---
 
 ## Dependencies
+- Sprint 01-b (company management layer — `identity.companies`, `identity.company_members`; company `verified` status gates marketplace profile creation)
 - Sprint 02 (contractor/supplier roles + KYC)
 - Sprint 05 (escrow for order payments)
 - Sprint 06 (projects to attach RFQs to)
+
+## Sprint 01-b Schema Adjustments Required at Sprint 07 Start
+
+`marketplace.contractor_profiles` and `marketplace.supplier_profiles` were designed with `user_id UUID UNIQUE`. Now that companies exist, update both tables to support company-owned profiles:
+
+```sql
+-- Add to marketplace.contractor_profiles
+ALTER TABLE marketplace.contractor_profiles
+  DROP CONSTRAINT contractor_profiles_user_id_key,          -- remove individual unique constraint
+  ADD COLUMN company_id UUID REFERENCES identity.companies(id),
+  ADD CONSTRAINT chk_contractor_profile_owner
+    CHECK (
+      (company_id IS NOT NULL AND user_id IS NULL) OR
+      (company_id IS NULL     AND user_id IS NOT NULL)
+    );
+CREATE UNIQUE INDEX ON marketplace.contractor_profiles (company_id) WHERE company_id IS NOT NULL;
+CREATE UNIQUE INDEX ON marketplace.contractor_profiles (user_id)    WHERE user_id    IS NOT NULL;
+
+-- Apply the same pattern to marketplace.supplier_profiles
+```
+
+Also add `company_id UUID REFERENCES identity.companies(id)` to `marketplace.quotes` and `marketplace.contracts` so all transactional records carry the acting company context alongside the acting user.
 
 ## Blocks
 - Sprint 08 (BOQ needs supplier pricing data)

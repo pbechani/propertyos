@@ -101,7 +101,7 @@ A web type-check sweep still reports substantial pre-existing issues outside Spr
 ### Phase B progress (batch 3 completed)
 - `src/views/ConstructionProjectDashboard.tsx`
   - Removed unused icon/chart imports, dropped unused state setter, and removed unused map callback parameter
-- `src/views/ContractorSupplierMarketplace.tsx`
+- `src/views/ServiceProviderMarketplace.tsx`
   - Removed unused icon/UI imports, removed unused `selectedCategory` state, and fixed unused quote callback variable
 - `src/views/PublicHomeVariation1.tsx`
   - Removed unused icon imports and removed invalid unused `../tools` import causing TS2307
@@ -120,7 +120,7 @@ A web type-check sweep still reports substantial pre-existing issues outside Spr
 - `src/views/PropertySaleWorkspace.tsx`
   - Removed unused icon imports and dead `currentStage` variable
 - Targeted verification:
-  - `npx tsc --noEmit | grep -E "ConstructionProjectDashboard|ContractorSupplierMarketplace|PublicHomeVariation1|AgentDashboardEnhanced|BuyerDashboardEnhanced|BuyerFlowDocumentation|Safety|PublicHomeVariation2|PublicHome|PropertySaleWorkspace"` returns no matches
+  - `npx tsc --noEmit | grep -E "ConstructionProjectDashboard|ServiceProviderMarketplace|PublicHomeVariation1|AgentDashboardEnhanced|BuyerDashboardEnhanced|BuyerFlowDocumentation|Safety|PublicHomeVariation2|PublicHome|PropertySaleWorkspace"` returns no matches
 
 ### Phase B progress (batch 4 completed)
 - `src/views/BuyerSimpleView.tsx`
@@ -184,7 +184,7 @@ A web type-check sweep still reports substantial pre-existing issues outside Spr
 
 ### Final gate snapshot (2026-02-23)
 - Regression follow-up fixes applied:
-  - `src/views/ContractorSupplierMarketplace.tsx`
+  - `src/views/ServiceProviderMarketplace.tsx`
     - Aligned `selectedProduct` state type with supplier-enriched selection shape used by UI.
   - `src/views/IntelligentBOQWorkspace.tsx`
     - Normalized supplier-lookup fallback from `undefined` to `null` for state setter type safety.

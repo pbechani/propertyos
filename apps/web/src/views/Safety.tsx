@@ -21,6 +21,17 @@ import { useState } from "react";
 export default function Safety() {
   const [activeTab, setActiveTab] = useState<"property" | "contractor">("property");
 
+  const getTrendBorderClass = (statusColor: string) => {
+    switch (statusColor) {
+      case "red":
+        return "border-red-500";
+      case "orange":
+        return "border-orange-500";
+      default:
+        return "border-green-500";
+    }
+  };
+
   const recentPropertyReports = [
     {
       id: "#RF-9921",
@@ -191,7 +202,7 @@ export default function Safety() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white px-4 md:px-6 lg:px-8 py-12 md:py-16">
+      <div className="bg-linear-to-br from-blue-600 to-blue-800 text-white px-4 md:px-6 lg:px-8 py-12 md:py-16">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
             <Badge className="bg-blue-500/30 text-white border-white/20">
@@ -253,7 +264,7 @@ export default function Safety() {
       <div className="max-w-7xl mx-auto px-8 py-8">
         {/* Your Impact */}
         <div className="mb-8">
-          <Card className="p-6 bg-gradient-to-br from-gray-50 to-white">
+          <Card className="p-6 bg-linear-to-br from-gray-50 to-white">
             <h2 className="text-lg font-semibold mb-4">Your Impact</h2>
             <div className="grid grid-cols-3 gap-4">
               {stats.map((stat, idx) => (
@@ -271,7 +282,7 @@ export default function Safety() {
             </div>
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
               <p className="text-sm text-blue-900 flex items-start gap-2">
-                <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <Shield className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
                   <strong>Vigilance Tip:</strong>{" "}
                   {activeTab === "property"
@@ -322,7 +333,11 @@ export default function Safety() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Reason for Report
                   </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Reason for report"
+                    aria-label="Reason for report"
+                  >
                     <option>Select a reason</option>
                     <option>Suspicious Price</option>
                     <option>Fake Agent Profile</option>
@@ -379,7 +394,11 @@ export default function Safety() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Type of Fraud
                   </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <select
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    title="Type of fraud"
+                    aria-label="Type of fraud"
+                  >
                     <option>Select fraud type</option>
                     <option>Abandoned Project</option>
                     <option>Substandard Materials Used</option>
@@ -426,7 +445,7 @@ export default function Safety() {
                 </div>
                 <div className="col-span-2">
                   <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
                     <div className="text-sm text-orange-900">
                       <strong>Important:</strong> If this involves an active construction project, 
                       our team can arrange an independent structural inspection to verify your claims. 
@@ -554,7 +573,7 @@ export default function Safety() {
               {cases.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 border border-gray-200 rounded-lg bg-gradient-to-br from-white to-gray-50"
+                  className="p-4 border border-gray-200 rounded-lg bg-linear-to-br from-white to-gray-50"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -627,15 +646,7 @@ export default function Safety() {
             {fraudTrends.map((trend, idx) => (
               <div
                 key={idx}
-                className="p-4 border-l-4 bg-gradient-to-r from-gray-50 to-white rounded-lg"
-                style={{
-                  borderColor:
-                    trend.statusColor === "red"
-                      ? "#ef4444"
-                      : trend.statusColor === "orange"
-                      ? "#f97316"
-                      : "#10b981",
-                }}
+                className={`p-4 border-l-4 bg-linear-to-r from-gray-50 to-white rounded-lg ${getTrendBorderClass(trend.statusColor)}`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <span className="text-2xl">{trend.icon}</span>
@@ -661,7 +672,7 @@ export default function Safety() {
 
         {/* Contractor-Specific: Blacklist Preview */}
         {activeTab === "contractor" && (
-          <Card className="p-6 mt-8 bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
+          <Card className="p-6 mt-8 bg-linear-to-br from-red-50 to-orange-50 border-red-200">
             <div className="flex items-start gap-4 mb-6">
               <div className="p-3 bg-red-100 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -735,7 +746,7 @@ export default function Safety() {
         )}
 
         {/* Bottom CTA */}
-        <div className="mt-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-8 text-white text-center">
+        <div className="mt-8 bg-linear-to-r from-blue-600 to-indigo-700 rounded-xl p-8 text-white text-center">
           <h3 className="text-2xl font-bold mb-3">
             Safety starts with <span className="text-blue-200">Vigilance.</span>
           </h3>

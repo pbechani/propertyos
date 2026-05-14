@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent Dashboard – Rebrand Mockup – PRIBEC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:          #1A3C28;
+    --forest-light:    #2D5A40;
+    --forest-muted:    #3A5E48;
+    --terracotta:      #C4562A;
+    --terracotta-light:#E8A080;
+    --terracotta-hover:#A84422;
+    --parchment:       #F2E8D5;
+    --parchment-dark:  #E8D9BC;
+    --egreen:          #00E87A;
+    --sidebar-border:  rgba(242,232,213,0.12);
+    --card-bg:         #FFFFFF;
+    --body-bg:         #F2E8D5;
+    --text-dark:       #1A3C28;
+    --text-muted:      #6B8F7A;
+    --border:          rgba(26,60,40,0.12);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Sidebar ──────────────────────────────────────── */
+  .sidebar {
+    width: 248px;
+    min-height: 100vh;
+    background: var(--forest);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--terracotta);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { color: #fff; }
+
+  .logo-text {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--parchment);
+    letter-spacing: -0.2px;
+  }
+
+  .sidebar-section { padding: 12px 8px 4px; }
+
+  .sidebar-label {
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(242,232,213,0.4);
+    padding: 0 8px 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    color: rgba(242,232,213,0.75);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 1px; text-decoration: none;
+  }
+  .sidebar-item:hover { background: rgba(242,232,213,0.08); color: var(--parchment); }
+  .sidebar-item.active { background: rgba(0,232,122,0.12); color: var(--egreen); }
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .sidebar-item.active svg { opacity: 1; color: var(--egreen); }
+  .sidebar-item-text { flex: 1; }
+
+  .badge-count {
+    font-size: 10px; font-weight: 700;
+    background: var(--terracotta); color: #fff;
+    padding: 1px 6px; border-radius: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-role-badge {
+    margin: 0 8px 12px;
+    padding: 8px 12px;
+    background: rgba(242,232,213,0.06);
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 8px;
+  }
+  .role-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(242,232,213,0.4); font-family: 'IBM Plex Mono', monospace; }
+  .role-name { font-size: 12px; font-weight: 600; color: var(--parchment); margin-top: 2px; }
+  .role-tag {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 4px; margin-top: 4px;
+    background: rgba(196,86,42,0.2); color: #E8A080;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 8px;
+    border-top: 1px solid var(--sidebar-border);
+  }
+  .sidebar-user {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    cursor: pointer;
+  }
+  .sidebar-user:hover { background: rgba(242,232,213,0.08); }
+  .sidebar-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--terracotta);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .sidebar-user-name { font-size: 12px; font-weight: 600; color: var(--parchment); flex: 1; }
+  .sidebar-user-role { font-size: 10px; color: rgba(242,232,213,0.45); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Main ──────────────────────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-x: hidden; }
+
+  /* ── Page header ───────────────────────────────────── */
+  .page-header {
+    background: var(--forest);
+    padding: 28px 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 240px; height: 240px;
+    background: var(--terracotta); opacity: 0.08; border-radius: 50%;
+  }
+  .page-header::after {
+    content: '';
+    position: absolute; bottom: 10px; left: 38%;
+    width: 180px; height: 180px;
+    background: var(--egreen); opacity: 0.04; border-radius: 50%;
+  }
+  .page-header-accent {
+    position: absolute; top: 30px; right: 260px;
+    width: 120px; height: 120px;
+    background: var(--parchment); opacity: 0.03; border-radius: 50%;
+  }
+
+  .header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 22px; position: relative; z-index: 1;
+  }
+
+  .header-greeting-block {}
+  .header-eyebrow {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--terracotta); margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .header-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 26px; font-weight: 700;
+    color: var(--parchment); letter-spacing: -0.4px; line-height: 1.15;
+  }
+  .header-title em { font-style: italic; color: var(--egreen); }
+  .header-subtitle { font-size: 13px; color: rgba(242,232,213,0.55); margin-top: 5px; font-weight: 400; }
+  .header-subtitle strong { color: rgba(242,232,213,0.85); font-weight: 600; }
+
+  .header-actions {
+    display: flex; align-items: center; gap: 10px;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Buttons ───────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn svg { width: 15px; height: 15px; }
+  .btn-primary { background: var(--terracotta); color: #fff; }
+  .btn-primary:hover { background: var(--terracotta-hover); }
+  .btn-ghost {
+    background: rgba(242,232,213,0.08); color: rgba(242,232,213,0.8);
+    border: 1px solid rgba(242,232,213,0.14);
+  }
+  .btn-ghost:hover { background: rgba(242,232,213,0.14); color: var(--parchment); }
+
+  /* ── KPI strip in header ───────────────────────────── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 0;
+    position: relative; z-index: 1;
+    padding-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-card.kpi-highlight {
+    background: rgba(0,232,122,0.07);
+    border-color: rgba(0,232,122,0.2);
+  }
+
+  .kpi-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em;
+    color: rgba(242,232,213,0.45); margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .kpi-value {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 22px; font-weight: 700; color: var(--parchment); line-height: 1;
+  }
+  .kpi-delta { font-size: 11px; font-weight: 500; color: var(--egreen); margin-top: 4px; }
+  .kpi-delta.down { color: #F87171; }
+  .kpi-delta.neutral { color: rgba(242,232,213,0.4); }
+
+  /* ── Tabs bar ──────────────────────────────────────── */
+  .tabs-bar {
+    display: flex; gap: 0;
+    background: var(--forest);
+    border-top: 1px solid rgba(242,232,213,0.08);
+    position: relative; z-index: 2;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 22px;
+    font-size: 13px; font-weight: 600;
+    color: rgba(242,232,213,0.5);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.15s; white-space: nowrap; user-select: none;
+  }
+  .tab:hover { color: rgba(242,232,213,0.85); }
+  .tab.active { color: var(--parchment); border-bottom-color: var(--terracotta); }
+  .tab svg { width: 15px; height: 15px; }
+  .tab-badge {
+    font-size: 10px; font-weight: 700;
+    background: rgba(196,86,42,0.25); color: var(--terracotta);
+    padding: 1px 6px; border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .tab.active .tab-badge { background: var(--terracotta); color: #fff; }
+
+  /* ── Content area ──────────────────────────────────── */
+  .content-area { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+  /* ── Section headers ───────────────────────────────── */
+  .section-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 15px; font-weight: 700; color: var(--text-dark);
+  }
+  .section-link {
+    font-size: 11px; font-weight: 600; color: var(--terracotta);
+    text-decoration: none; font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .section-link:hover { text-decoration: underline; }
+
+  /* ── Cards ──────────────────────────────────────────── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-family: 'Fraunces', Georgia, serif; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+  .card-meta { font-size: 11px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+  .card-body { padding: 20px; }
+
+  /* ── Grid layouts ────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .grid-432 { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 18px; }
+
+  /* ── Priority tasks list ─────────────────────────────── */
+  .priority-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.1s;
+  }
+  .priority-row:last-child { border-bottom: none; }
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .priority-type-tag {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 7px; border-radius: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
+  }
+  .type-appt  { background: #DBEAFE; color: #1D4ED8; }
+  .type-followup { background: #FEF3C7; color: #B45309; }
+  .type-signing  { background: #D1FAE5; color: #065F46; }
+  .type-alert    { background: #FEE2E2; color: #DC2626; }
+  .priority-body { flex: 1; min-width: 0; }
+  .priority-title { font-size: 13px; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .priority-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .priority-time {
+    font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
+  }
+  .priority-time.soon { color: #D97706; font-weight: 700; }
+  .priority-time.overdue { color: #DC2626; font-weight: 700; }
+  .priority-action {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    background: var(--terracotta); color: #fff;
+    cursor: pointer; border: none; white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .priority-action:hover { background: var(--terracotta-hover); }
+  .priority-action.ghost {
+    background: transparent; color: var(--text-dark);
+    border: 1px solid var(--border);
+  }
+  .priority-action.ghost:hover { background: rgba(26,60,40,0.05); }
+
+  /* ── Active listing row ─────────────────────────────── */
+  .listing-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .listing-row:last-child { border-bottom: none; }
+  .listing-thumb {
+    width: 60px; height: 48px; border-radius: 7px;
+    object-fit: cover; flex-shrink: 0;
+    background: var(--border);
+  }
+  .listing-thumb-placeholder {
+    width: 60px; height: 48px; border-radius: 7px;
+    background: linear-gradient(135deg, #2D5A40, #1A3C28);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .listing-thumb-placeholder svg { width: 18px; height: 18px; color: rgba(242,232,213,0.4); }
+  .listing-name { font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 2px; }
+  .listing-address { font-size: 11px; color: var(--text-muted); }
+  .listing-info { flex: 1; min-width: 0; }
+  .listing-price { font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700; color: var(--terracotta); white-space: nowrap; }
+  .listing-stats { display: flex; gap: 10px; margin-top: 4px; }
+  .listing-stat { font-size: 10px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+  .listing-hot { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 5px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+  .hot-high { background: #D1FAE5; color: #065F46; }
+  .hot-med  { background: #FEF3C7; color: #B45309; }
+  .hot-low  { background: #F3F4F6; color: #374151; }
+
+  /* ── Lead rows ───────────────────────────────────────── */
+  .lead-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .lead-row:last-child { border-bottom: none; }
+  .lead-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; color: #fff; }
+  .lead-name { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
+  .lead-meta { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .lead-info { flex: 1; min-width: 0; }
+  .temp-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; }
+  .temp-hot { background: #FEE2E2; color: #DC2626; }
+  .temp-warm { background: #FEF3C7; color: #D97706; }
+  .temp-cold { background: #DBEAFE; color: #2563EB; }
+  .temp-nurture { background: #EDE9FE; color: #7C3AED; }
+
+  /* ── Activity feed ───────────────────────────────────── */
+  .activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .activity-dot svg { width: 13px; height: 13px; }
+  .activity-body { flex: 1; }
+  .activity-text { font-size: 12px; color: var(--text-dark); line-height: 1.45; }
+  .activity-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Commission bar ──────────────────────────────────── */
+  .commission-track {
+    background: rgba(26,60,40,0.06);
+    border-radius: 6px; height: 8px; overflow: hidden;
+    margin-top: 8px;
+  }
+  .commission-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--terracotta), #E8734A);
+    transition: width 0.4s ease;
+  }
+  .commission-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .commission-label { font-size: 11px; font-weight: 600; color: var(--text-dark); }
+  .commission-value { font-family: 'Fraunces', serif; font-size: 13px; font-weight: 700; color: var(--terracotta); }
+
+  /* ── Document alert chip ──────────────────────────────── */
+  .doc-alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .doc-alert:last-child { margin-bottom: 0; }
+  .doc-alert.urgent { background: #FEF2F2; border: 1px solid #FECACA; }
+  .doc-alert.warn   { background: #FFFBEB; border: 1px solid #FDE68A; }
+  .doc-alert.ok     { background: #F0FDF4; border: 1px solid #BBF7D0; }
+  .doc-alert-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .doc-alert.urgent .doc-alert-icon { background: #FEE2E2; }
+  .doc-alert.warn   .doc-alert-icon { background: #FEF3C7; }
+  .doc-alert.ok     .doc-alert-icon { background: #D1FAE5; }
+  .doc-alert-icon svg { width: 13px; height: 13px; }
+  .doc-alert.urgent .doc-alert-icon svg { color: #DC2626; }
+  .doc-alert.warn   .doc-alert-icon svg { color: #D97706; }
+  .doc-alert.ok     .doc-alert-icon svg { color: #059669; }
+  .doc-alert-body { flex: 1; min-width: 0; }
+  .doc-alert-title { font-size: 12px; font-weight: 600; color: var(--text-dark); }
+  .doc-alert-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
+  .doc-alert-action { font-size: 11px; font-weight: 700; color: var(--terracotta); white-space: nowrap; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Performance ring ──────────────────────────────── */
+  .perf-ring-wrap { display: flex; align-items: center; gap: 20px; padding: 20px; }
+  .perf-ring-svg { flex-shrink: 0; }
+  .perf-ring-stats { flex: 1; }
+  .perf-stat { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .perf-stat:last-child { border-bottom: none; }
+  .perf-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+  .perf-stat-value { font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+  /* ── Mini chart bars ───────────────────────────────── */
+  .mini-chart { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
+  .mini-bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--terracotta); opacity: 0.2; min-height: 4px; transition: opacity 0.15s; }
+  .mini-bar.highlight { opacity: 0.9; }
+  .mini-bar:hover { opacity: 0.65; }
+
+  /* ── Hotspot map ─────────────────────────────────────── */
+  .map-wrap { position: relative; height: 200px; background: #E8F0EA; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+  .map-svg-bg { width: 100%; height: 100%; opacity: 0.18; }
+  .map-hotspot { position: absolute; transform: translate(-50%, -50%); }
+  .map-dot { width: 14px; height: 14px; border-radius: 50%; animation: pulse-dot 2s infinite; }
+  .map-dot-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; border: 2px solid; opacity: 0.35; animation: expand-ring 2s infinite; }
+  .map-label-chip { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 20px; padding: 3px 8px; font-size: 10px; font-weight: 700; color: var(--text-dark); white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-family: 'IBM Plex Mono', monospace; }
+  @keyframes pulse-dot { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.2)} }
+  @keyframes expand-ring { 0%{width:14px;height:14px;opacity:0.5} 100%{width:36px;height:36px;opacity:0} }
+
+  /* ── Funnel bars ─────────────────────────────────────── */
+  .funnel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .funnel-label { font-size: 11px; font-weight: 600; color: var(--text-dark); width: 100px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; background: rgba(26,60,40,0.06); border-radius: 4px; height: 22px; overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: 4px; background: var(--forest); display: flex; align-items: center; padding-left: 8px; }
+  .funnel-bar-text { font-size: 10px; font-weight: 700; color: rgba(242,232,213,0.8); font-family: 'IBM Plex Mono', monospace; }
+  .funnel-count { font-size: 11px; font-weight: 700; color: var(--text-muted); width: 24px; text-align: right; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Annotations ─────────────────────────────────────── */
+  .annotation {
+    display: inline-block;
+    background: #FFFBEB; border: 1.5px dashed #F59E0B; color: #92400E;
+    font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+    margin-left: 8px; font-family: 'IBM Plex Mono', monospace;
+    vertical-align: middle; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .annotation.new { background: #F0FDF4; border-color: #6EE7B7; color: #065F46; }
+
+  /* ── Top bar ──────────────────────────────────────────── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 12px; padding: 0 32px; height: 0;
+    position: relative; z-index: 10;
+  }
+
+  /* ── Tabs switcher display ────────────────────────────── */
+  #tab-overview   { display: block; }
+  #tab-listings   { display: none; }
+  #tab-pipeline   { display: none; }
+  #tab-commission { display: none; }
+  #tab-schedule   { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="logo-text">PRIBEC</span>
+  </div>
+
+  <div style="padding: 10px 8px;">
+    <div class="sidebar-role-badge">
+      <div class="role-label">Current Company</div>
+      <div class="role-name">Horizon Realty</div>
+      <span class="role-tag">Agent</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Agent Cockpit</div>
+
+    <a class="sidebar-item active" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="sidebar-item-text">Dashboard</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="sidebar-item-text">My Listings</span>
+      <span class="badge-count">12</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <span class="sidebar-item-text">Properties</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="sidebar-item-text">Lead Management</span>
+      <span class="badge-count">24</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="sidebar-item-text">My Sales</span>
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Tools</div>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span class="sidebar-item-text">Schedule</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="sidebar-item-text">Commission</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sidebar-item-text">Analytics</span>
+    </a>
+
+    <a class="sidebar-item" href="#">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/><path d="M3 14v1a9 9 0 0018 0v-1"/></svg>
+      <span class="sidebar-item-text">AI Intelligence</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">AK</div>
+      <div style="flex:1;min-width:0;">
+        <div class="sidebar-user-name">Alex Khumalo</div>
+        <div class="sidebar-user-role">Senior Agent</div>
+      </div>
+      <svg width="13" height="13" fill="none" stroke="rgba(242,232,213,0.35)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MAIN AREA -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Page Header ──────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-accent"></div>
+
+    <div class="header-top">
+      <div class="header-greeting-block">
+        <div class="header-eyebrow">Agent Cockpit &rsaquo; Dashboard</div>
+        <h1 class="header-title">Good morning, <em>Alex.</em></h1>
+        <p class="header-subtitle">You have <strong>12 tasks</strong> today &mdash; 3 are urgent. Let's close some deals.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule
+        </button>
+        <button class="btn btn-ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span style="background:var(--terracotta);width:6px;height:6px;border-radius:50%;display:inline-block;margin-left:-4px;margin-top:-8px;"></span>
+        </button>
+        <button class="btn btn-primary">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Listing
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Strip: 5 metrics in header (matching lead-management pattern) -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Active Listings</div>
+        <div class="kpi-value">12</div>
+        <div class="kpi-delta">↑ 2 added this week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Open Leads</div>
+        <div class="kpi-value">24</div>
+        <div class="kpi-delta">↑ 4 new today</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pipeline Value</div>
+        <div class="kpi-value">R 18.4M</div>
+        <div class="kpi-delta">↑ 11% vs last month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Commission YTD</div>
+        <div class="kpi-value">R 412K</div>
+        <div class="kpi-delta">78% of target</div>
+      </div>
+      <div class="kpi-card kpi-highlight">
+        <div class="kpi-label">MoM Growth</div>
+        <div class="kpi-value">+24.5%</div>
+        <div class="kpi-delta">↑ Best quarter</div>
+      </div>
+    </div>
+
+    <!-- Tabs bar (same pattern as Lead Management) -->
+    <div class="tabs-bar">
+      <div class="tab active" onclick="showTab('overview',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Overview
+      </div>
+      <div class="tab" onclick="showTab('listings',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        My Listings
+        <span class="tab-badge">12</span>
+      </div>
+      <div class="tab" onclick="showTab('pipeline',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="17" y="5" width="4" height="16"/></svg>
+        Lead Pipeline
+        <span class="tab-badge">24</span>
+      </div>
+      <div class="tab" onclick="showTab('commission',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Commission
+        <span class="annotation new" style="margin-left:4px;">New</span>
+      </div>
+      <div class="tab" onclick="showTab('schedule',this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Schedule
+        <span class="tab-badge" style="background:#DC2626;color:#fff">3</span>
+      </div>
+    </div>
+  </div><!-- /page-header -->
+
+  <!-- ══════════════════ TAB: OVERVIEW ══════════════════ -->
+  <div class="content-area">
+    <div id="tab-overview">
+
+      <!-- Row 1: Today's Priorities + Document Compliance (NEW) + Performance Ring (NEW) -->
+      <div class="grid-432" style="margin-bottom:20px;">
+
+        <!-- Today's Priorities -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Today's Priorities</span>
+            <span class="card-meta">12 tasks &mdash; 3 urgent</span>
+          </div>
+          <div style="padding:4px 20px 12px;">
+            <div class="priority-row">
+              <div class="priority-dot" style="background:#1D4ED8;"></div>
+              <span class="priority-type-tag type-appt">Viewing</span>
+              <div class="priority-body">
+                <div class="priority-title">Sunset Villa &mdash; Sarah Johnson</div>
+                <div class="priority-sub">12 West Hills Rd &middot; 88 Sunset Blvd</div>
+              </div>
+              <span class="priority-time soon">10:40 AM</span>
+              <button class="priority-action">Check In</button>
+            </div>
+            <div class="priority-row">
+              <div class="priority-dot" style="background:#B45309;"></div>
+              <span class="priority-type-tag type-followup">Follow-up</span>
+              <div class="priority-body">
+                <div class="priority-title">Call Michael Chen</div>
+                <div class="priority-sub">Offer pending &middot; Downtown Apt</div>
+              </div>
+              <span class="priority-time overdue">Overdue</span>
+              <button class="priority-action">Call Now</button>
+            </div>
+            <div class="priority-row">
+              <div class="priority-dot" style="background:#065F46;"></div>
+              <span class="priority-type-tag type-signing">Signing</span>
+              <div class="priority-body">
+                <div class="priority-title">Contract Signing &mdash; Riverside Estate</div>
+                <div class="priority-sub">R 1.4M &middot; Docs ready</div>
+              </div>
+              <span class="priority-time">2:00 PM</span>
+              <button class="priority-action ghost">Review</button>
+            </div>
+            <div class="priority-row">
+              <div class="priority-dot" style="background:#DC2626;"></div>
+              <span class="priority-type-tag type-alert">Alert</span>
+              <div class="priority-body">
+                <div class="priority-title">FICA docs expiring &mdash; Deal #1041</div>
+                <div class="priority-sub">Themba Mokoena &middot; Expires in 2 days</div>
+              </div>
+              <span class="priority-time overdue">Urgent</span>
+              <button class="priority-action">Resolve</button>
+            </div>
+            <div class="priority-row">
+              <div class="priority-dot" style="background:#7C3AED;"></div>
+              <span class="priority-type-tag" style="background:#EDE9FE;color:#7C3AED;">Task</span>
+              <div class="priority-body">
+                <div class="priority-title">Update OTP status &mdash; Deal #1039</div>
+                <div class="priority-sub">Jayden van der Berg &middot; Stage 6</div>
+              </div>
+              <span class="priority-time">EOD</span>
+              <button class="priority-action ghost">Update</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Compliance (NEW GAP FILLED) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Document Compliance <span class="annotation new">New</span></span>
+            <span class="card-meta">3 need attention</span>
+          </div>
+          <div class="card-body" style="padding:14px 16px;">
+            <div class="doc-alert urgent">
+              <div class="doc-alert-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="doc-alert-body">
+                <div class="doc-alert-title">FICA — Themba Mokoena</div>
+                <div class="doc-alert-sub">Expires 07 Apr · Deal #1041</div>
+              </div>
+              <span class="doc-alert-action">Upload →</span>
+            </div>
+            <div class="doc-alert warn">
+              <div class="doc-alert-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="doc-alert-body">
+                <div class="doc-alert-title">OTP not signed — Deal #1039</div>
+                <div class="doc-alert-sub">Awaiting Seller · 5 days passed</div>
+              </div>
+              <span class="doc-alert-action">Chase →</span>
+            </div>
+            <div class="doc-alert warn">
+              <div class="doc-alert-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <div class="doc-alert-body">
+                <div class="doc-alert-title">Title deed search pending</div>
+                <div class="doc-alert-sub">Riverside Estate · Stage 6 blocked</div>
+              </div>
+              <span class="doc-alert-action">View →</span>
+            </div>
+            <div class="doc-alert ok">
+              <div class="doc-alert-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="doc-alert-body">
+                <div class="doc-alert-title">Compliance clear — Sunset Villa</div>
+                <div class="doc-alert-sub">All 8 docs verified · Ready to transfer</div>
+              </div>
+              <span class="doc-alert-action" style="color:#059669;">Good ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Score Ring (NEW GAP FILLED) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Performance Score <span class="annotation new">New</span></span>
+          </div>
+          <div class="perf-ring-wrap">
+            <svg class="perf-ring-svg" width="90" height="90" viewBox="0 0 90 90">
+              <circle cx="45" cy="45" r="37" fill="none" stroke="rgba(26,60,40,0.1)" stroke-width="8"/>
+              <!-- 78% fill: circumference = 2π×37 ≈ 232.5 -->
+              <circle cx="45" cy="45" r="37" fill="none" stroke="#C4562A" stroke-width="8"
+                stroke-dasharray="181.35 232.5" stroke-dashoffset="58.1"
+                stroke-linecap="round" transform="rotate(-90 45 45)"/>
+              <text x="45" y="42" text-anchor="middle" font-family="Fraunces,serif" font-size="18" font-weight="700" fill="#1A3C28">78</text>
+              <text x="45" y="56" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="#6B8F7A">/ 100</text>
+            </svg>
+            <div class="perf-ring-stats">
+              <div class="perf-stat">
+                <span class="perf-stat-label">Conversion Rate</span>
+                <span class="perf-stat-value">18%</span>
+              </div>
+              <div class="perf-stat">
+                <span class="perf-stat-label">Avg. Deal Days</span>
+                <span class="perf-stat-value">42</span>
+              </div>
+              <div class="perf-stat">
+                <span class="perf-stat-label">Client Rating</span>
+                <span class="perf-stat-value">4.8★</span>
+              </div>
+              <div class="perf-stat">
+                <span class="perf-stat-label">Deals Closed</span>
+                <span class="perf-stat-value">7 / 9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Active Listings + Commission Tracker (NEW) -->
+      <div class="grid-2" style="margin-bottom:20px;">
+
+        <!-- Active Listings -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Active Listings</span>
+            <a class="section-link" href="#">View All →</a>
+          </div>
+          <div style="padding:4px 20px 12px;">
+            <div class="listing-row">
+              <div class="listing-thumb-placeholder">
+                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div class="listing-info">
+                <div class="listing-name">88 Sunset Boulevard</div>
+                <div class="listing-address">West Hills &middot; 4 bed &middot; 3 bath</div>
+                <div class="listing-stats">
+                  <span class="listing-stat">24 leads</span>
+                  <span class="listing-stat">12 tours</span>
+                  <span class="listing-stat">3 offers</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="listing-price">R 1.25M</div>
+                <div class="listing-hot hot-high" style="margin-top:6px;">🔥 High</div>
+              </div>
+            </div>
+            <div class="listing-row">
+              <div class="listing-thumb-placeholder">
+                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div class="listing-info">
+                <div class="listing-name">204 Sky View Tower, Unit 12</div>
+                <div class="listing-address">Downtown &middot; 2 bed &middot; 2 bath</div>
+                <div class="listing-stats">
+                  <span class="listing-stat">8 leads</span>
+                  <span class="listing-stat">3 tours</span>
+                  <span class="listing-stat">0 offers</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="listing-price">R 450K</div>
+                <div class="listing-hot hot-med" style="margin-top:6px;">⚡ Warm</div>
+              </div>
+            </div>
+            <div class="listing-row">
+              <div class="listing-thumb-placeholder">
+                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div class="listing-info">
+                <div class="listing-name">Riverside Estate, Lot 7</div>
+                <div class="listing-address">Riverside &middot; 5 bed &middot; 4 bath</div>
+                <div class="listing-stats">
+                  <span class="listing-stat">31 leads</span>
+                  <span class="listing-stat">18 tours</span>
+                  <span class="listing-stat">5 offers</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="listing-price">R 2.1M</div>
+                <div class="listing-hot hot-high" style="margin-top:6px;">🔥 High</div>
+              </div>
+            </div>
+            <div class="listing-row">
+              <div class="listing-thumb-placeholder">
+                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div class="listing-info">
+                <div class="listing-name">The Pines, Unit 4B</div>
+                <div class="listing-address">Sandton &middot; 3 bed &middot; 2 bath</div>
+                <div class="listing-stats">
+                  <span class="listing-stat">5 leads</span>
+                  <span class="listing-stat">1 tour</span>
+                  <span class="listing-stat">0 offers</span>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="listing-price">R 780K</div>
+                <div class="listing-hot hot-low" style="margin-top:6px;">❄ Slow</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commission Tracker (NEW GAP FILLED) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Commission Tracker <span class="annotation new">New</span></span>
+            <span class="card-meta">Apr 2026</span>
+          </div>
+          <div class="card-body">
+            <!-- Monthly target bar -->
+            <div style="margin-bottom:18px;">
+              <div class="commission-row">
+                <span class="commission-label">Monthly Target</span>
+                <span class="commission-value">R 52.5K / R 67K</span>
+              </div>
+              <div class="commission-track">
+                <div class="commission-fill" style="width:78%;"></div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'IBM Plex Mono',monospace;">78% of target &mdash; R 14.5K remaining</div>
+            </div>
+            <!-- YTD bar -->
+            <div style="margin-bottom:18px;">
+              <div class="commission-row">
+                <span class="commission-label">YTD Earned</span>
+                <span class="commission-value">R 412K / R 529K</span>
+              </div>
+              <div class="commission-track">
+                <div class="commission-fill" style="width:77.9%;background:linear-gradient(90deg,var(--forest),var(--forest-light));"></div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'IBM Plex Mono',monospace;">3 months remaining to annual target</div>
+            </div>
+
+            <!-- Monthly trend sparkline -->
+            <div style="margin-bottom:14px;">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;">Monthly Trend (Last 7 months)</div>
+              <div class="mini-chart">
+                <div class="mini-bar" style="height:55%;"></div>
+                <div class="mini-bar" style="height:62%;"></div>
+                <div class="mini-bar" style="height:48%;"></div>
+                <div class="mini-bar" style="height:70%;"></div>
+                <div class="mini-bar" style="height:65%;"></div>
+                <div class="mini-bar" style="height:82%;"></div>
+                <div class="mini-bar highlight" style="height:100%;"></div>
+              </div>
+            </div>
+
+            <!-- Pending commissions list -->
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+              <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:11px;font-weight:700;color:var(--text-dark);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;">Pending Commissions</span>
+                <span style="font-size:10px;color:var(--text-muted);">4 deals</span>
+              </div>
+              <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:var(--text-dark);">Riverside Estate</div>
+                  <div style="font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">Stage 11 · Transfer in progress</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--terracotta);">R 21K</div>
+                  <div style="font-size:9px;font-weight:700;background:#FEF3C7;color:#B45309;padding:1px 5px;border-radius:4px;font-family:'IBM Plex Mono',monospace;margin-top:2px;">PENDING</div>
+                </div>
+              </div>
+              <div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:var(--text-dark);">Sunset Villa</div>
+                  <div style="font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">Stage 13 · Final payment</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--terracotta);">R 12.5K</div>
+                  <div style="font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:4px;font-family:'IBM Plex Mono',monospace;margin-top:2px;">RELEASING</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Lead Funnel + Market Heatmap (NEW) + Recent Activity -->
+      <div class="grid-432">
+
+        <!-- Conversion Funnel -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Lead Conversion Funnel</span>
+            <span class="card-meta">This month</span>
+          </div>
+          <div style="padding:16px 20px;">
+            <div class="funnel-row">
+              <span class="funnel-label">New Leads</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;"><span class="funnel-bar-text">124</span></div></div>
+              <span class="funnel-count">124</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Contacted</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:80%;"><span class="funnel-bar-text">99</span></div></div>
+              <span class="funnel-count">99</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Qualified</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:55%;background:#2D5A40;"><span class="funnel-bar-text">68</span></div></div>
+              <span class="funnel-count">68</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Active Offer</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:30%;background:#1A3C28;"><span class="funnel-bar-text">37</span></div></div>
+              <span class="funnel-count">37</span>
+            </div>
+            <div class="funnel-row">
+              <span class="funnel-label">Closed</span>
+              <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:14%;background:var(--terracotta);"><span class="funnel-bar-text">17</span></div></div>
+              <span class="funnel-count">17</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+              <div>
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;">Conv. Rate</div>
+                <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--terracotta);">13.7%</div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;">Avg. Value</div>
+                <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--forest);">R 1.08M</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Market Heatmap (NEW GAP FILLED) -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Market Heatmap <span class="annotation new">New</span></span>
+            <span style="font-size:9px;font-weight:700;background:#FEE2E2;color:#DC2626;padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;">● High Activity</span>
+          </div>
+          <div style="padding:12px 20px 16px;">
+            <div class="map-wrap">
+              <!-- Abstract map background with SVG shapes -->
+              <svg class="map-svg-bg" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+                <rect width="400" height="200" fill="#C5D9C8"/>
+                <path d="M0,100 Q100,60 200,90 Q300,120 400,80 L400,200 L0,200z" fill="#B0C9B4" opacity="0.6"/>
+                <ellipse cx="160" cy="95" rx="60" ry="40" fill="#96B59A" opacity="0.4"/>
+                <ellipse cx="300" cy="110" rx="50" ry="35" fill="#96B59A" opacity="0.3"/>
+                <path d="M80,40 L120,40 L130,60 L90,65z" fill="#8FAD93" opacity="0.5"/>
+                <path d="M200,30 L250,35 L260,55 L195,52z" fill="#8FAD93" opacity="0.4"/>
+                <!-- Streets -->
+                <line x1="0" y1="100" x2="400" y2="100" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+                <line x1="200" y1="0" x2="200" y2="200" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+                <line x1="0" y1="50" x2="400" y2="130" stroke="#fff" stroke-width="1" opacity="0.3"/>
+                <line x1="100" y1="0" x2="100" y2="200" stroke="#fff" stroke-width="1" opacity="0.3"/>
+                <line x1="300" y1="0" x2="300" y2="200" stroke="#fff" stroke-width="1" opacity="0.3"/>
+              </svg>
+              <!-- Hotspot: West Hills -->
+              <div class="map-hotspot" style="top:47%;left:38%;">
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;width:14px;height:14px;">
+                  <div class="map-dot-ring" style="border-color:#DC2626;"></div>
+                  <div class="map-dot" style="background:#DC2626;position:absolute;"></div>
+                </div>
+                <div class="map-label-chip">West Hills <span style="color:var(--terracotta);">1,242</span></div>
+              </div>
+              <!-- Hotspot: Downtown -->
+              <div class="map-hotspot" style="top:62%;left:74%;">
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;width:14px;height:14px;">
+                  <div class="map-dot-ring" style="border-color:#2563EB;"></div>
+                  <div class="map-dot" style="background:#2563EB;position:absolute;"></div>
+                </div>
+                <div class="map-label-chip">Downtown <span style="color:#2563EB;">892</span></div>
+              </div>
+              <!-- Hotspot: Riverside -->
+              <div class="map-hotspot" style="top:68%;left:55%;">
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;width:14px;height:14px;">
+                  <div class="map-dot-ring" style="border-color:#DC2626;"></div>
+                  <div class="map-dot" style="background:#EF4444;position:absolute;"></div>
+                </div>
+                <div class="map-label-chip">Riverside <span style="color:var(--terracotta);">1,580</span></div>
+              </div>
+            </div>
+
+            <!-- Legend -->
+            <div style="display:flex;align-items:center;gap:14px;margin-top:12px;">
+              <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#DC2626;display:inline-block;"></span>High demand
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#2563EB;display:inline-block;"></span>Medium
+              </div>
+              <div style="margin-left:auto;font-size:10px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;">
+                Views last 30 days
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity + Hot Leads stacked -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+
+          <!-- Hot Leads -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Hot Leads</span>
+              <a class="section-link" href="#">All Leads →</a>
+            </div>
+            <div style="padding:4px 20px 12px;">
+              <div class="lead-row">
+                <div class="lead-avatar" style="background:#1A3C28;">TM</div>
+                <div class="lead-info">
+                  <div class="lead-name">Themba Mokoena</div>
+                  <div class="lead-meta">Buyer &middot; Sandton &middot; R 1.2M–1.8M</div>
+                </div>
+                <span class="temp-badge temp-hot">🔥 Hot</span>
+              </div>
+              <div class="lead-row">
+                <div class="lead-avatar" style="background:#C4562A;">SK</div>
+                <div class="lead-info">
+                  <div class="lead-name">Sarah Khumalo</div>
+                  <div class="lead-meta">Investor &middot; Cape Town &middot; R 3M+</div>
+                </div>
+                <span class="temp-badge temp-warm">🌡 Warm</span>
+              </div>
+              <div class="lead-row">
+                <div class="lead-avatar" style="background:#2D5A40;">JV</div>
+                <div class="lead-info">
+                  <div class="lead-name">Jayden van der Berg</div>
+                  <div class="lead-meta">Seller &middot; JHB &middot; R 850K</div>
+                </div>
+                <span class="temp-badge temp-cold">❄ Cold</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recent Activity</span>
+            </div>
+            <div style="padding:6px 20px 12px;">
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#FEE2E2;">
+                  <svg fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 0112 19a19.5 19.5 0 01-5-3.07A19.79 19.79 0 01.1 1.09 2 2 0 012.07.07h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.29 6.29l1-1.41a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-text">Called <strong>Themba Mokoena</strong> — confirmed viewing</div>
+                  <div class="activity-time">2 hours ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#DBEAFE;">
+                  <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-text">Sent brochure to <strong>Sarah Khumalo</strong></div>
+                  <div class="activity-time">4 hours ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot" style="background:#D1FAE5;">
+                  <svg fill="none" stroke="#065F46" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                </div>
+                <div class="activity-body">
+                  <div class="activity-text"><strong>Riverside Estate</strong> — offer accepted</div>
+                  <div class="activity-time">Yesterday</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /stacked right col -->
+      </div><!-- /grid-432 row 3 -->
+
+    </div><!-- /tab-overview -->
+
+    <!-- Placeholder for other tabs -->
+    <div id="tab-listings" style="display:none;color:var(--text-muted);padding:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;">[ My Listings tab — content to be designed ]</div>
+    <div id="tab-pipeline" style="display:none;color:var(--text-muted);padding:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;">[ Lead Pipeline tab — content to be designed ]</div>
+    <div id="tab-commission" style="display:none;color:var(--text-muted);padding:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;">[ Commission tab — content to be designed ]</div>
+    <div id="tab-schedule" style="display:none;color:var(--text-muted);padding:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;">[ Schedule tab — content to be designed ]</div>
+
+  </div><!-- /content-area -->
+</div><!-- /main -->
+
+<script>
+  function showTab(name, el) {
+    // Hide all tabs
+    ['overview','listings','pipeline','commission','schedule'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      if (el) el.style.display = 'none';
+    });
+    // Show selected
+    document.getElementById('tab-' + name).style.display = 'block';
+    // Update active tab style
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>

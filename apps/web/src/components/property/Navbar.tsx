@@ -21,20 +21,20 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/properties" className="text-white/80 hover:text-white transition-colors">Marketplace</Link>
           <Link href="/properties/search" className="text-white/80 hover:text-white transition-colors">Search</Link>
-          <Link href="/buyer" className="text-white/80 hover:text-white transition-colors">Buy</Link>
+          <Link href="/buyer" className="text-white/80 hover:text-white transition-colors">Property Hub</Link>
           <Link href="/agent" className="text-white/80 hover:text-white transition-colors">Agents</Link>
         </div>
 
         {/* Right actions */}
         <div className="hidden md:flex items-center gap-3">
           <Link
-            href="/auth/login"
+            href="/login"
             className="text-white/80 hover:text-white text-sm font-medium transition-colors"
           >
             Sign In
           </Link>
           <Link
-            href="/auth/register"
+            href="/register"
             className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#FBBF47] transition-colors"
           >
             Get Started
@@ -59,10 +59,10 @@ export default function Navbar() {
         <div className="md:hidden bg-[#0F2040] border-t border-white/10 px-4 pb-4 flex flex-col gap-3 pt-3">
           <Link href="/properties" className="text-white/80 hover:text-white text-sm">Marketplace</Link>
           <Link href="/properties/search" className="text-white/80 hover:text-white text-sm">Search</Link>
-          <Link href="/buyer" className="text-white/80 hover:text-white text-sm">Buy</Link>
+          <Link href="/buyer" className="text-white/80 hover:text-white text-sm">Property Hub</Link>
           <Link href="/agent" className="text-white/80 hover:text-white text-sm">Agents</Link>
-          <Link href="/auth/login" className="text-white/80 hover:text-white text-sm">Sign In</Link>
-          <Link href="/auth/register" className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg text-center">Get Started</Link>
+          <Link href="/login" className="text-white/80 hover:text-white text-sm">Sign In</Link>
+          <Link href="/register" className="bg-[#F5A623] text-[#0A1628] text-sm font-bold px-4 py-2 rounded-lg text-center">Get Started</Link>
         </div>
       )}
     </nav>

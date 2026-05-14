@@ -18,12 +18,8 @@ import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { VerificationService } from './verification.service';
 import { AdminRejectDto, AdminVerifyDto, SubmitVerificationDto } from './property.dto';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { resolvePropertyActorRole } from './property.constants';
+import { AuthRequest } from '../common/types';
 
 /**
  * Agent verification request endpoint.
@@ -50,7 +46,7 @@ export class VerificationController {
       throw new BadRequestException('titleDeed file is required');
     }
 
-    const role = req.user.roles?.[0] ?? 'agent';
+    const role = resolvePropertyActorRole(req.user.roles, 'agent');
     return this.verificationService.submitVerificationRequest(
       id,
       req.user.sub,

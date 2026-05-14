@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateMeDto {
   @IsOptional()
@@ -19,11 +19,36 @@ export class UpdateMeDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  businessType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  yearsExperience?: string;
 }
 
 export class UpdateUserStatusDto {
   @IsString()
-  status!: 'active' | 'suspended' | 'deleted';
+  @IsIn(['active', 'suspended', 'under_investigation', 'deleted'])
+  status!: 'active' | 'suspended' | 'under_investigation' | 'deleted';
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class AssignRoleDto {

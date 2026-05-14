@@ -73,11 +73,11 @@ export default function PublicHomeVariation1() {
         <div className="container mx-auto px-4 md:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Home className="w-6 h-6 text-white" />
               </div>
               <span className="font-bold text-xl">
-                PropertyOS <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Pro</span>
+                PropertyOS <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600">Pro</span>
               </span>
             </Link>
 
@@ -91,7 +91,7 @@ export default function PublicHomeVariation1() {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+                <Button className="bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -101,7 +101,7 @@ export default function PublicHomeVariation1() {
       </nav>
 
       {/* Hero Section - Split Screen */}
-      <section className="pt-24 pb-12 md:pt-32 md:pb-20 bg-gradient-to-br from-gray-50 to-white">
+      <section className="pt-24 pb-12 md:pt-32 md:pb-20 bg-linear-to-br from-gray-50 to-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left - Content */}
@@ -112,7 +112,7 @@ export default function PublicHomeVariation1() {
               </div>
               
               <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Trusted</span><br />
+                Your <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600">Trusted</span><br />
                 Property<br />
                 Marketplace
               </h1>
@@ -132,7 +132,7 @@ export default function PublicHomeVariation1() {
                       className="flex-1 bg-transparent outline-none text-gray-700"
                     />
                   </div>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 rounded-xl shadow-lg">
+                  <Button className="bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 rounded-xl shadow-lg">
                     <Search className="w-5 h-5 mr-2" />
                     Search
                   </Button>
@@ -162,7 +162,7 @@ export default function PublicHomeVariation1() {
                     alt="Luxury property"
                     className="rounded-2xl shadow-xl w-full h-64 object-cover"
                   />
-                  <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
+                  <div className="bg-linear-to-br from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
                     <div className="text-3xl font-bold">$2.4B+</div>
                     <div className="text-blue-100">Transaction Volume</div>
                   </div>
@@ -236,7 +236,7 @@ export default function PublicHomeVariation1() {
       </section>
 
       {/* Stats Banner */}
-      <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-16 bg-linear-to-r from-blue-600 to-purple-600">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-white text-center">
             {stats.map((stat, idx) => (
@@ -288,7 +288,7 @@ export default function PublicHomeVariation1() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 to-blue-900 text-white relative overflow-hidden">
+      <section className="py-20 bg-linear-to-br from-gray-900 to-blue-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
@@ -323,7 +323,7 @@ export default function PublicHomeVariation1() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <Home className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-bold">PropertyOS Pro</span>

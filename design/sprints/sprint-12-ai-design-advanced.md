@@ -6,6 +6,22 @@ Build the AI-powered voice/text-to-floor-plan design system with auto-BOQ genera
 
 ---
 
+## Prerequisites (Sprint 11 must be complete)
+
+All AI Design features consume the **AI Engine infrastructure delivered in Sprint 11**. Do not start Sprint 12 until the following are operational:
+
+| Prerequisite | Sprint 11 Component | Used By |
+|---|---|---|
+| LLM Gateway deployed | `ai_engine.llm_requests` table + gateway service | All design generation calls |
+| pgvector embeddings live | `ai_engine.legislation_corpus` | Building code compliance check |
+| RAG pipeline operational | `POST /api/v1/ai/legal-query` | Compliance validation step |
+| Document AI running | `apps/ai-services/document_extraction/` | Floor plan image parsing |
+| MLflow model registry | `apps/ai-services/risk_scoring/` | Cost estimation in design pipeline |
+| Voice-to-text endpoint | `POST /api/v1/ai/voice-to-text` | Conversational design input |
+| Celery + Redis workers | Background job infrastructure | Async generation jobs |
+
+---
+
 ## Part A: AI Design Assistant (Phase 13 | Weeks 81–92)
 
 ### Deliverables

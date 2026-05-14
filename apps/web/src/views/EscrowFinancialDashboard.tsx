@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   DollarSign, Lock, Shield, TrendingUp, Download,
   Eye, CheckCircle2, Clock, AlertCircle, ArrowUpRight, ArrowDownLeft,
   FileText, Building, Calendar,
-  X, Circle
+  X, Circle, Plus, Loader2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getAccessToken } from "@/lib/auth-session";
+import { adminFinanceApi, escrowApi } from "@/lib/api-client";
+import { getStatusColor } from "@/lib/status-colors";
 
 type TransactionStatus = "completed" | "pending" | "processing" | "failed" | "scheduled";
 type ReleaseStatus = "pending" | "partial" | "approved" | "released";
@@ -54,6 +57,70 @@ export default function EscrowFinancialDashboard() {
   const [selectedRelease, setSelectedRelease] = useState<EscrowRelease | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | TransactionStatus>("all");
+  // Sprint 05 — real API state
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
+  const [showNewReleaseForm, setShowNewReleaseForm] = useState(false);
+  const [newReleaseForm, setNewReleaseForm] = useState({ escrowAccountId: '', amount: '', currency: 'ZAR', reason: '' });
+  const [newReleaseLoading, setNewReleaseLoading] = useState(false);
+  const [newReleaseError, setNewReleaseError] = useState<string | null>(null);
+
+  const handleApproveRelease = useCallback(async () => {
+    if (!selectedRelease) return;
+    const token = getAccessToken();
+    if (!token) { setApprovalError('Not authenticated'); return; }
+    setApprovalLoading(true);
+    setApprovalError(null);
+    try {
+      // Try admin approval first; fall back to buyer approval
+      const result = await adminFinanceApi.approveRelease(token, selectedRelease.id);
+      setApprovalTxHash(result?.id ?? selectedRelease.id);
+      setShowReleaseModal(false);
+      setShowConfirmation(true);
+    } catch {
+      // If admin endpoint fails (non-admin user) try buyer approval
+      try {
+        const token2 = getAccessToken();
+        if (token2) {
+          const result2 = await escrowApi.approveRelease(token2, selectedRelease.id);
+          setApprovalTxHash(result2?.id ?? selectedRelease.id);
+          setShowReleaseModal(false);
+          setShowConfirmation(true);
+          return;
+        }
+      } catch { /* fall through to show error */ }
+      setApprovalError('Failed to submit approval. Check your permissions.');
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [selectedRelease]);
+
+  const handleRequestRelease = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) { setNewReleaseError('Not authenticated'); return; }
+    const amount = parseFloat(newReleaseForm.amount);
+    if (!newReleaseForm.escrowAccountId || isNaN(amount) || amount <= 0 || !newReleaseForm.reason.trim()) {
+      setNewReleaseError('Please fill in all fields.');
+      return;
+    }
+    setNewReleaseLoading(true);
+    setNewReleaseError(null);
+    try {
+      await escrowApi.requestRelease(token, {
+        escrowAccountId: newReleaseForm.escrowAccountId,
+        amount,
+        currency: newReleaseForm.currency,
+        reason: newReleaseForm.reason,
+      });
+      setShowNewReleaseForm(false);
+      setNewReleaseForm({ escrowAccountId: '', amount: '', currency: 'ZAR', reason: '' });
+    } catch (err) {
+      setNewReleaseError(err instanceof Error ? err.message : 'Failed to request release.');
+    } finally {
+      setNewReleaseLoading(false);
+    }
+  }, [newReleaseForm]);
 
   const escrowSummary = {
     totalBalance: 45250000,
@@ -202,16 +269,6 @@ export default function EscrowFinancialDashboard() {
     ? transactions 
     : transactions.filter(t => t.status === filterStatus);
 
-  const getStatusColor = (status: TransactionStatus | ReleaseStatus) => {
-    switch (status) {
-      case "completed": case "released": case "approved": return "bg-green-100 text-green-700";
-      case "processing": case "partial": return "bg-blue-100 text-blue-700";
-      case "pending": case "scheduled": return "bg-yellow-100 text-yellow-700";
-      case "failed": return "bg-red-100 text-red-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
-
   const getStatusIcon = (status: TransactionStatus | ReleaseStatus) => {
     switch (status) {
       case "completed": case "released": case "approved": return <CheckCircle2 className="w-4 h-4" />;
@@ -229,7 +286,7 @@ export default function EscrowFinancialDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Security Badge */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 md:px-8 py-6">
+      <div className="bg-linear-to-r from-gray-900 to-gray-800 text-white px-4 md:px-8 py-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -250,8 +307,8 @@ export default function EscrowFinancialDashboard() {
               <Download className="w-4 h-4 mr-2" />
               Export Report
             </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              <DollarSign className="w-4 h-4 mr-2" />
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setShowNewReleaseForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               New Release
             </Button>
           </div>
@@ -267,7 +324,7 @@ export default function EscrowFinancialDashboard() {
       <div className="px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Balance */}
-          <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-blue-500 to-blue-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <DollarSign className="w-6 h-6" />
@@ -280,7 +337,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Available Balance */}
-          <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-green-500 to-green-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <TrendingUp className="w-6 h-6" />
@@ -293,7 +350,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Funds Held */}
-          <Card className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-purple-500 to-purple-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <Lock className="w-6 h-6" />
@@ -306,7 +363,7 @@ export default function EscrowFinancialDashboard() {
           </Card>
 
           {/* Pending Releases */}
-          <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+          <Card className="p-6 bg-linear-to-br from-orange-500 to-orange-600 text-white border-0">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
                 <ArrowUpRight className="w-6 h-6" />
@@ -361,7 +418,7 @@ export default function EscrowFinancialDashboard() {
                         <div key={txn.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div className={`
-                              w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                              w-10 h-10 rounded-full flex items-center justify-center shrink-0
                               ${txn.debitCredit === "credit" ? "bg-green-100" : "bg-red-100"}
                             `}>
                               {txn.debitCredit === "credit" ? (
@@ -396,7 +453,7 @@ export default function EscrowFinancialDashboard() {
                     <h3 className="font-semibold text-lg mb-4">Pending Release Approvals</h3>
                     <div className="space-y-3">
                       {pendingReleases.map((release) => (
-                        <div key={release.id} className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
+                        <div key={release.id} className="p-4 bg-linear-to-br from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1 min-w-0">
                               <div className="font-semibold mb-1 truncate">{release.property}</div>
@@ -643,17 +700,17 @@ export default function EscrowFinancialDashboard() {
             {selectedTab === "commissions" && (
               <div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                  <Card className="p-6 bg-linear-to-br from-green-50 to-emerald-50 border-green-200">
                     <div className="text-sm text-gray-600 mb-1">Total Commissions</div>
                     <div className="text-3xl font-bold text-green-600 mb-2">R 523,750</div>
                     <div className="text-xs text-gray-600">2 Transactions</div>
                   </Card>
-                  <Card className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                  <Card className="p-6 bg-linear-to-br from-yellow-50 to-orange-50 border-yellow-200">
                     <div className="text-sm text-gray-600 mb-1">Pending Release</div>
                     <div className="text-3xl font-bold text-yellow-600 mb-2">R 375,000</div>
                     <div className="text-xs text-gray-600">Awaiting Registration</div>
                   </Card>
-                  <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                  <Card className="p-6 bg-linear-to-br from-blue-50 to-indigo-50 border-blue-200">
                     <div className="text-sm text-gray-600 mb-1">Released</div>
                     <div className="text-3xl font-bold text-blue-600 mb-2">R 148,750</div>
                     <div className="text-xs text-gray-600">1 Payment Complete</div>
@@ -722,7 +779,7 @@ export default function EscrowFinancialDashboard() {
                 <div className="space-y-3">
                   {auditLogs.map((log, idx) => (
                     <div key={idx} className="flex items-start gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
                         {log.verified ? (
                           <CheckCircle2 className="w-5 h-5 text-green-600" />
                         ) : (
@@ -777,7 +834,7 @@ export default function EscrowFinancialDashboard() {
       {showReleaseModal && selectedRelease && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white sticky top-0">
+            <div className="p-6 border-b border-gray-200 bg-linear-to-r from-blue-500 to-purple-600 text-white sticky top-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-xl mb-1">Multi-Signature Approval Required</h3>
@@ -796,7 +853,7 @@ export default function EscrowFinancialDashboard() {
             
             <div className="p-6 space-y-6">
               {/* Release Details */}
-              <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
+              <div className="p-4 bg-linear-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Property</div>
@@ -858,7 +915,7 @@ export default function EscrowFinancialDashboard() {
               {/* Security Notice */}
               <div className="p-4 bg-gray-900 text-white rounded-lg">
                 <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <Shield className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-semibold mb-1">Security Notice</div>
                     <div className="text-sm text-gray-300">
@@ -878,15 +935,100 @@ export default function EscrowFinancialDashboard() {
               >
                 Cancel
               </Button>
+              {approvalError && (
+                <p className="flex-1 text-sm text-red-600 text-center px-2">{approvalError}</p>
+              )}
               <Button 
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => {
-                  setShowReleaseModal(false);
-                  setShowConfirmation(true);
-                }}
+                onClick={handleApproveRelease}
+                disabled={approvalLoading}
               >
-                <Lock className="w-4 h-4 mr-2" />
-                Approve & Sign
+                {approvalLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                {approvalLoading ? 'Submitting…' : 'Approve & Sign'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* New Release Request Modal */}
+      {showNewReleaseForm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-lg w-full">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-600 to-emerald-700 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-xl mb-1">Request Escrow Release</h3>
+                  <div className="text-sm opacity-90">Funds will be released upon multi-signature approval</div>
+                </div>
+                <button onClick={() => setShowNewReleaseForm(false)} className="text-white hover:bg-white/20 p-2 rounded-lg" aria-label="Close">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Escrow Account ID</label>
+                <input
+                  type="text"
+                  placeholder="UUID of the escrow account"
+                  value={newReleaseForm.escrowAccountId}
+                  onChange={e => setNewReleaseForm(f => ({ ...f, escrowAccountId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    value={newReleaseForm.amount}
+                    onChange={e => setNewReleaseForm(f => ({ ...f, amount: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                  <select
+                    value={newReleaseForm.currency}
+                    onChange={e => setNewReleaseForm(f => ({ ...f, currency: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                  >
+                    <option value="ZAR">ZAR</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Milestone</label>
+                <textarea
+                  placeholder="e.g. Transfer duty payment — Stage 12"
+                  rows={3}
+                  value={newReleaseForm.reason}
+                  onChange={e => setNewReleaseForm(f => ({ ...f, reason: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm resize-none"
+                />
+              </div>
+              {newReleaseError && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {newReleaseError}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <Button onClick={() => setShowNewReleaseForm(false)} variant="outline" className="flex-1">Cancel</Button>
+              <Button
+                onClick={handleRequestRelease}
+                disabled={newReleaseLoading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {newReleaseLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <DollarSign className="w-4 h-4 mr-2" />}
+                {newReleaseLoading ? 'Submitting…' : 'Submit Release Request'}
               </Button>
             </div>
           </Card>
@@ -906,8 +1048,8 @@ export default function EscrowFinancialDashboard() {
                 Your approval has been cryptographically signed and recorded on the blockchain.
               </p>
               <div className="p-4 bg-gray-50 rounded-lg mb-6">
-                <div className="text-sm text-gray-600 mb-1">Transaction Hash</div>
-                <div className="font-mono text-xs text-blue-600 break-all">0x7a8f9e2c1d5b4a3c6e8f1a2b3c4d5e6f</div>
+                <div className="text-sm text-gray-600 mb-1">Release ID</div>
+                <div className="font-mono text-xs text-blue-600 break-all">{approvalTxHash ?? selectedRelease?.id ?? '—'}</div>
               </div>
               <Button 
                 className="w-full bg-blue-600 hover:bg-blue-700"

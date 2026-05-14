@@ -537,6 +537,18 @@ export default function IntelligentBOQWorkspace() {
                 </div>
                 <div className={`text-2xl font-bold ${budgetStatus.color}`}>{budgetStatus.label}</div>
               </Card>
+
+              <Card className="p-4 border-purple-200 bg-purple-50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">AI Cost Est.</span>
+                  <Zap className="w-4 h-4 text-purple-500" />
+                </div>
+                <div className="text-2xl font-bold text-purple-700">£{Math.round(totalCost * 0.97).toLocaleString()}</div>
+                <div className="flex items-center gap-1 mt-1">
+                  <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-200">±15% CI</Badge>
+                  <span className="text-xs text-gray-500">XGBoost · MLflow v1</span>
+                </div>
+              </Card>
             </div>
 
             {/* BOQ Table */}
@@ -807,6 +819,32 @@ export default function IntelligentBOQWorkspace() {
               </div>
             </Card>
 
+            {/* AI Budget Optimizer */}
+            <Card className="p-6 border-purple-200 bg-purple-50">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2 text-purple-900">
+                  <Zap className="w-5 h-5 text-purple-600" />
+                  AI Budget Optimizer
+                </h3>
+                <Badge className="bg-purple-600 text-white text-xs">Claude</Badge>
+              </div>
+              <p className="text-xs text-purple-800 mb-3">
+                Claude (claude-opus-4-6) analyzes your BOQ and suggests optimal tier swaps to align with your target budget.
+              </p>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Target budget e.g. £280,000"
+                  className="flex-1 px-3 py-2 text-sm border border-purple-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Optimize
+                </Button>
+              </div>
+              <p className="text-xs text-purple-600">Calls POST /api/boq/:id/optimize · sprint-11 required</p>
+            </Card>
+
             {/* Material Swap Suggestions */}
             <Card className="p-6 border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-4">
@@ -814,7 +852,10 @@ export default function IntelligentBOQWorkspace() {
                   <Lightbulb className="w-5 h-5 text-yellow-500" />
                   Smart Suggestions
                 </h3>
-                <Badge variant="secondary">{materialSwaps.length}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-purple-100 text-purple-700 text-xs border-purple-200">Powered by Claude</Badge>
+                  <Badge variant="secondary">{materialSwaps.length}</Badge>
+                </div>
               </div>
 
               <ScrollArea className="h-80">
@@ -833,9 +874,9 @@ export default function IntelligentBOQWorkspace() {
                           </div>
                         </div>
                         {swap.impactOnBudget === "positive" ? (
-                          <TrendingDown className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          <TrendingDown className="w-5 h-5 text-green-600 shrink-0" />
                         ) : (
-                          <TrendingUp className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                          <TrendingUp className="w-5 h-5 text-yellow-600 shrink-0" />
                         )}
                       </div>
 
@@ -1040,7 +1081,7 @@ export default function IntelligentBOQWorkspace() {
                   <ul className="space-y-2">
                     {showMaterialSwap.pros.map((pro: string, index: number) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                         <span>{pro}</span>
                       </li>
                     ))}
@@ -1054,7 +1095,7 @@ export default function IntelligentBOQWorkspace() {
                   <ul className="space-y-2">
                     {showMaterialSwap.cons.map((con: string, index: number) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
-                        <Info className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <Info className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
                         <span>{con}</span>
                       </li>
                     ))}

@@ -15,12 +15,8 @@ import { RolesGuard } from '../identity/rbac/roles.guard';
 import { Roles } from '../identity/rbac/roles.decorator';
 import { FraudService } from './fraud.service';
 import { CreateFraudReportDto, ResolveFraudReportDto } from './property.dto';
-
-type AuthRequest = {
-  user: { sub: string; email: string; roles: string[] };
-  ip: string;
-  headers: { 'user-agent'?: string };
-};
+import { resolvePropertyActorRole } from './property.constants';
+import { AuthRequest } from '../common/types';
 
 /**
  * Public + authenticated fraud reporting.
@@ -40,7 +36,7 @@ export class FraudController {
     @Body() dto: CreateFraudReportDto,
     @Request() req: AuthRequest,
   ) {
-    const role = req.user.roles?.[0] ?? 'buyer_seller';
+    const role = resolvePropertyActorRole(req.user.roles, 'buyer_seller');
     return this.fraudService.create(
       id,
       req.user.sub,
@@ -48,6 +44,7 @@ export class FraudController {
       dto,
       req.ip,
       req.headers['user-agent'],
+      req.user.active_company_id,
     );
   }
 }

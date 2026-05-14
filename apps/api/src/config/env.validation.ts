@@ -81,6 +81,28 @@ export const envValidationSchema = Joi.object({
   // Observability
   SENTRY_DSN: Joi.string().allow('').optional(),
   ELASTICSEARCH_URL: Joi.string().optional(),
+
+  // LLM Gateway (PDR-007 — all optional; features degrade gracefully without a key)
+  LLM_PROVIDER: Joi.string().valid('openai', 'anthropic', 'gemini').default('openai'),
+  LLM_API_KEY: Joi.string().optional(),
+  LLM_MODEL: Joi.string().default('gpt-4o-mini'),
+  LLM_FALLBACK_PROVIDER: Joi.string().valid('openai', 'anthropic', 'gemini').optional(),
+  LLM_FALLBACK_API_KEY: Joi.string().optional(),
+  LLM_FALLBACK_MODEL: Joi.string().optional(),
+
+  // MindsDB — Predictive ML layer (Sprint 11, all optional — service degrades gracefully)
+  MINDSDB_URL: Joi.string().uri().default('http://localhost:47334'),
+  MINDSDB_TIMEOUT_MS: Joi.number().integer().min(1000).default(30000),
+
+  // Financial / Payment Gateways (Sprint 05)
+  STRIPE_SECRET_KEY: Joi.string().optional(),
+  STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
+  FLUTTERWAVE_SECRET_KEY: Joi.string().optional(),
+  FLUTTERWAVE_WEBHOOK_SECRET: Joi.string().optional(),
+  OPEN_EXCHANGE_RATES_APP_ID: Joi.string().optional(),
+  HIGH_VALUE_THRESHOLD_USD: Joi.number().default(10000),
+  COMMISSION_PLATFORM_PCT: Joi.number().default(1.5),
+  COMMISSION_AGENT_PCT: Joi.number().default(1.0),
 });
 
 export const envValidationOptions = {

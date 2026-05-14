@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule Viewing — Person Selector Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:    #1A3C28;
+    --parchment: #F2E8D5;
+    --terracotta:#C4562A;
+    --egreen:    #00E87A;
+    --amber:     #B89040;
+    --border:    #E4DDD0;
+    --muted:     #F6F2EC;
+    --textMuted: #6B8F7A;
+    --forestLight:#2D5940;
+    --ff:        'Fraunces', Georgia, serif;
+    --fm:        'IBM Plex Mono', monospace;
+    --fs:        'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    background: #EDEAE5;
+    font-family: var(--fs);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+    gap: 48px;
+  }
+
+  h1.page-title {
+    font-family: var(--ff);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--textMuted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  /* ── Panel shell ─────────────────────────── */
+  .panel {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  }
+
+  .panel-header {
+    background: var(--forest);
+    padding: 20px 24px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-header-left { display: flex; flex-direction: column; gap: 3px; }
+  .panel-eyebrow {
+    font-family: var(--fm);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--terracotta);
+  }
+  .panel-title {
+    font-family: var(--ff);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--parchment);
+  }
+  .panel-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(242,232,213,0.1);
+    border: none;
+    color: rgba(242,232,213,0.6);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .panel-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── Tabs: type selector ─────────────────── */
+  .type-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .type-tab {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 8px;
+    background: var(--muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .type-tab:hover { border-color: var(--forest); background: #fff; }
+  .type-tab.active {
+    border-color: var(--forest);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26,60,40,0.08);
+  }
+  .type-tab.active .type-tab-check {
+    opacity: 1;
+  }
+  .type-tab-check {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--egreen);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .type-tab-check svg { width: 10px; height: 10px; }
+  .type-tab-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+  .type-tab.lead .type-tab-icon    { background: rgba(196,86,42,0.1); }
+  .type-tab.client .type-tab-icon  { background: rgba(26,60,40,0.1); }
+  .type-tab.adhoc .type-tab-icon   { background: rgba(0,232,122,0.1); }
+  .type-tab-label {
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--forest);
+  }
+  .type-tab-desc {
+    font-size: 10px;
+    color: var(--textMuted);
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  /* ── Search ──────────────────────────────── */
+  .search-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-label {
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--textMuted);
+  }
+  .search-input-wrap {
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 40px 10px 12px;
+    font-family: var(--fs);
+    font-size: 13px;
+    color: var(--forest);
+    background: var(--muted);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .search-input:focus {
+    border-color: var(--forest);
+    background: #fff;
+  }
+  .search-input::placeholder { color: #AAB8B0; }
+  .search-icon {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--textMuted);
+    pointer-events: none;
+  }
+
+  /* ── Dropdown results ────────────────────── */
+  .search-results {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  }
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: var(--muted); }
+  .search-result-item.selected { background: rgba(26,60,40,0.05); }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--forest);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--parchment);
+    flex-shrink: 0;
+  }
+  .avatar.terracotta { background: var(--terracotta); }
+  .avatar.amber      { background: var(--amber); }
+
+  .result-info { flex: 1; min-width: 0; }
+  .result-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .result-sub {
+    font-family: var(--fm);
+    font-size: 10px;
+    color: var(--textMuted);
+    margin-top: 1px;
+  }
+  .result-badge {
+    font-family: var(--fm);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .badge-hot   { background: #FEE2E2; color: #DC2626; }
+  .badge-warm  { background: #FEF3C7; color: #D97706; }
+  .badge-client{ background: rgba(26,60,40,0.1); color: var(--forest); }
+
+  /* ── Selected person card ───────────────── */
+  .selected-person {
+    background: rgba(26,60,40,0.04);
+    border: 1.5px solid rgba(26,60,40,0.15);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .selected-person-info { flex: 1; }
+  .selected-person-name {
+    font-family: var(--ff);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--forest);
+  }
+  .selected-person-meta {
+    font-family: var(--fm);
+    font-size: 10px;
+    color: var(--textMuted);
+    margin-top: 2px;
+  }
+  .change-btn {
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--terracotta);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  /* ── Auto-filled fields ──────────────────── */
+  .autofill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .autofill-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: var(--fs);
+    font-size: 13px;
+    color: var(--forest);
+    background: var(--muted);
+    outline: none;
+    display: flex;
+    align-items: center;
+  }
+  .autofill-input.populated {
+    background: rgba(0,232,122,0.06);
+    border-color: rgba(0,232,122,0.4);
+    color: var(--forest);
+  }
+  .autofill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--fm);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #059669;
+    margin-top: 2px;
+  }
+
+  /* ── Datetime row ───────────────────────── */
+  .datetime-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── Type badge strip ───────────────────── */
+  .type-strip {
+    display: flex;
+    gap: 8px;
+  }
+  .type-btn {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 6px;
+    background: var(--muted);
+    cursor: pointer;
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--textMuted);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .type-btn.active {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: var(--parchment);
+  }
+
+  /* ── Divider ────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 -24px;
+  }
+
+  /* ── Notes ──────────────────────────────── */
+  textarea.notes {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--fs);
+    font-size: 13px;
+    color: var(--forest);
+    background: var(--muted);
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: border-color 0.15s;
+  }
+  textarea.notes:focus { border-color: var(--forest); background: #fff; }
+
+  /* ── Bottom actions ─────────────────────── */
+  .panel-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--muted);
+  }
+  .btn-cancel {
+    flex: 1;
+    padding: 11px 0;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-family: var(--fs);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-cancel:hover { background: var(--muted); }
+  .btn-confirm {
+    flex: 2;
+    padding: 11px 0;
+    border-radius: 8px;
+    border: none;
+    background: var(--forest);
+    font-family: var(--fs);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--parchment);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: opacity 0.15s;
+  }
+  .btn-confirm:hover { opacity: 0.9; }
+
+  /* ── Toggle row ─────────────────────────── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--textMuted);
+  }
+  .toggle {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    background: var(--forest);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    top: 3px;
+    right: 3px;
+    transition: right 0.15s;
+  }
+  .toggle.off { background: var(--border); }
+  .toggle.off::after { right: auto; left: 3px; }
+
+  /* ── Section label ──────────────────────── */
+  .section-label {
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--textMuted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Annotation labels (mockup only) ─────── */
+  .annotation {
+    font-family: var(--fm);
+    font-size: 10px;
+    color: var(--terracotta);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .annotation::before {
+    content: '→';
+    font-size: 11px;
+  }
+
+  /* ── State panels layout ──────────────────── */
+  .states-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 1160px;
+  }
+  .state-label {
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--terracotta);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  /* ── Annotations sidebar ──────────────────── */
+  .annotations-box {
+    width: 100%;
+    max-width: 560px;
+    background: var(--forest);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .annotations-box h2 {
+    font-family: var(--ff);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--parchment);
+    margin-bottom: 4px;
+  }
+  .anno-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .anno-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--terracotta);
+    font-family: var(--fm);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .anno-text {
+    font-size: 12px;
+    color: rgba(242,232,213,0.8);
+    line-height: 1.5;
+  }
+  .anno-text strong {
+    color: var(--parchment);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">PersonSelector Component — Visual Mockup for Approval</h1>
+
+<!-- ── STATE 1: Default (no selection) ─────────────────────────────────── -->
+<div style="width:100%;max-width:560px;">
+  <div class="state-label">State 1 — Lead selected, search results showing</div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="panel-eyebrow">My Listings › 14 Sandton Drive</span>
+        <span class="panel-title">Schedule a Viewing</span>
+      </div>
+      <button class="panel-close">✕</button>
+    </div>
+
+    <div class="panel-body">
+
+      <!-- Step 1: Person type -->
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">1 — Who is attending?</div>
+        <div class="type-selector">
+          <!-- Lead -->
+          <div class="type-tab lead active" onclick="selectType(this,'lead')">
+            <div class="type-tab-check">
+              <svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="type-tab-icon">🔥</div>
+            <span class="type-tab-label">Lead</span>
+            <span class="type-tab-desc">Prospect in your CRM pipeline</span>
+          </div>
+          <!-- Client -->
+          <div class="type-tab client" onclick="selectType(this,'client')">
+            <div class="type-tab-check">
+              <svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="type-tab-icon">👤</div>
+            <span class="type-tab-label">Client</span>
+            <span class="type-tab-desc">Existing registered client</span>
+          </div>
+          <!-- Ad-hoc -->
+          <div class="type-tab adhoc" onclick="selectType(this,'adhoc')">
+            <div class="type-tab-check">
+              <svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="type-tab-icon">✏️</div>
+            <span class="type-tab-label">Ad-hoc</span>
+            <span class="type-tab-desc">Walk-in or new contact</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Search -->
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">2 — Search lead</div>
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <input class="search-input" type="text" value="Sarah" placeholder="Search by name, email or phone…">
+            <span class="search-icon">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+          </div>
+          <!-- Dropdown results -->
+          <div class="search-results">
+            <div class="search-result-item">
+              <div class="avatar terracotta">SM</div>
+              <div class="result-info">
+                <div class="result-name">Sarah Mokoena</div>
+                <div class="result-sub">sarah.m@gmail.com · +27 82 345 6789</div>
+              </div>
+              <span class="result-badge badge-hot">🔥 Hot</span>
+            </div>
+            <div class="search-result-item selected">
+              <div class="avatar">SK</div>
+              <div class="result-info">
+                <div class="result-name">Sarah Khumalo ✓</div>
+                <div class="result-sub">skhumalo@work.co.za · +27 71 987 6543</div>
+              </div>
+              <span class="result-badge badge-warm">⚡ Warm</span>
+            </div>
+            <div class="search-result-item">
+              <div class="avatar amber">SD</div>
+              <div class="result-info">
+                <div class="result-name">Sarah Dlamini</div>
+                <div class="result-sub">s.dlamini@hotmail.com · +27 83 111 2222</div>
+              </div>
+              <span class="result-badge badge-warm">⚡ Warm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Auto-populated contact -->
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">3 — Contact details <span style="font-size:10px;color:#059669;font-family:var(--fm);font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px;">✦ Auto-filled from lead record</span></div>
+        <div class="autofill-grid">
+          <div class="field-group">
+            <span class="field-label">Email address</span>
+            <input class="autofill-input populated" type="email" value="skhumalo@work.co.za" readonly>
+            <span class="autofill-badge">
+              <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+              From lead record
+            </span>
+          </div>
+          <div class="field-group">
+            <span class="field-label">Phone number</span>
+            <input class="autofill-input populated" type="tel" value="+27 71 987 6543" readonly>
+            <span class="autofill-badge">
+              <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+              From lead record
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Viewing details -->
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">4 — Viewing details</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <!-- Type strip -->
+          <div class="field-group">
+            <span class="field-label">Viewing type</span>
+            <div class="type-strip">
+              <button class="type-btn active">📍 Physical</button>
+              <button class="type-btn">💻 Virtual</button>
+            </div>
+          </div>
+          <!-- Date + Time + Duration -->
+          <div class="datetime-grid">
+            <div class="field-group">
+              <span class="field-label">Date</span>
+              <input class="autofill-input" style="background:#fff;" type="date" value="2026-04-22">
+            </div>
+            <div class="field-group">
+              <span class="field-label">Time</span>
+              <input class="autofill-input" style="background:#fff;" type="time" value="10:00">
+            </div>
+            <div class="field-group">
+              <span class="field-label">Duration</span>
+              <select class="autofill-input" style="background:#fff;cursor:pointer;">
+                <option>30 min</option>
+                <option selected>60 min</option>
+                <option>90 min</option>
+              </select>
+            </div>
+          </div>
+          <!-- Notes -->
+          <div class="field-group">
+            <span class="field-label">Agent notes (optional)</span>
+            <textarea class="notes" placeholder="Access code, special instructions…"></textarea>
+          </div>
+          <!-- Toggles -->
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="toggle-row">
+              <span>Send confirmation email to client</span>
+              <div class="toggle"></div>
+            </div>
+            <div class="toggle-row">
+              <span>Add calendar invite</span>
+              <div class="toggle"></div>
+            </div>
+            <div class="toggle-row">
+              <span>Send 24-hour reminder</span>
+              <div class="toggle off"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-body -->
+
+    <div class="panel-footer">
+      <button class="btn-cancel">Cancel</button>
+      <button class="btn-confirm">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Confirm Viewing
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATE 2: Ad-hoc (manual form) ──────────────────────────────────── -->
+<div style="width:100%;max-width:560px;">
+  <div class="state-label">State 2 — Ad-hoc: manual entry (no DB lookup)</div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="panel-eyebrow">My Listings › 14 Sandton Drive</span>
+        <span class="panel-title">Schedule a Viewing</span>
+      </div>
+      <button class="panel-close">✕</button>
+    </div>
+
+    <div class="panel-body">
+
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">1 — Who is attending?</div>
+        <div class="type-selector">
+          <div class="type-tab lead" onclick="selectType(this,'lead')">
+            <div class="type-tab-check"><svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <div class="type-tab-icon">🔥</div>
+            <span class="type-tab-label">Lead</span>
+            <span class="type-tab-desc">Prospect in your CRM pipeline</span>
+          </div>
+          <div class="type-tab client" onclick="selectType(this,'client')">
+            <div class="type-tab-check"><svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <div class="type-tab-icon">👤</div>
+            <span class="type-tab-label">Client</span>
+            <span class="type-tab-desc">Existing registered client</span>
+          </div>
+          <div class="type-tab adhoc active" onclick="selectType(this,'adhoc')">
+            <div class="type-tab-check"><svg fill="none" stroke="#1A3C28" stroke-width="2.5" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <div class="type-tab-icon">✏️</div>
+            <span class="type-tab-label">Ad-hoc</span>
+            <span class="type-tab-desc">Walk-in or new contact</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider hint -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-family:var(--fm);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--textMuted);">Enter contact manually</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <!-- Manual fields -->
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">2 — Contact details</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="field-group">
+            <span class="field-label">Full name</span>
+            <input class="autofill-input" style="background:#fff;" type="text" placeholder="e.g. John Dlamini">
+          </div>
+          <div class="autofill-grid">
+            <div class="field-group">
+              <span class="field-label">Email address</span>
+              <input class="autofill-input" style="background:#fff;" type="email" placeholder="john@email.com">
+            </div>
+            <div class="field-group">
+              <span class="field-label">Phone number</span>
+              <input class="autofill-input" style="background:#fff;" type="tel" placeholder="+27 82…">
+            </div>
+          </div>
+          <!-- Prompt to convert to lead -->
+          <div style="background:rgba(196,86,42,0.06);border:1.5px solid rgba(196,86,42,0.18);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:14px;">💡</span>
+            <div style="flex:1;">
+              <span style="font-size:11px;color:var(--terracotta);font-weight:600;">Save as a lead?</span>
+              <span style="font-size:11px;color:var(--textMuted);margin-left:4px;">Add them to your CRM pipeline after this viewing.</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--terracotta);">
+              <input type="checkbox" style="accent-color:var(--terracotta);"> Yes
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="section-label" style="margin-bottom:10px;">3 — Viewing details</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="field-group">
+            <span class="field-label">Viewing type</span>
+            <div class="type-strip">
+              <button class="type-btn active">📍 Physical</button>
+              <button class="type-btn">💻 Virtual</button>
+            </div>
+          </div>
+          <div class="datetime-grid">
+            <div class="field-group">
+              <span class="field-label">Date</span>
+              <input class="autofill-input" style="background:#fff;" type="date" value="2026-04-22">
+            </div>
+            <div class="field-group">
+              <span class="field-label">Time</span>
+              <input class="autofill-input" style="background:#fff;" type="time" value="10:00">
+            </div>
+            <div class="field-group">
+              <span class="field-label">Duration</span>
+              <select class="autofill-input" style="background:#fff;cursor:pointer;">
+                <option>30 min</option>
+                <option selected>60 min</option>
+                <option>90 min</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <span class="field-label">Agent notes (optional)</span>
+            <textarea class="notes" placeholder="Access code, special instructions…"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="panel-footer">
+      <button class="btn-cancel">Cancel</button>
+      <button class="btn-confirm">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Confirm Viewing
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Annotations ─────────────────────────────────────────────────── -->
+<div class="annotations-box">
+  <h2>Design Decisions & Recommendations</h2>
+
+  <div class="anno-item">
+    <div class="anno-num">1</div>
+    <div class="anno-text"><strong>3-way type selector (tabbed cards)</strong> — Lead / Client / Ad-hoc each shown as a tappable card with icon + description. The active type is visually raised with a green check. Instantly scannable and works on mobile too.</div>
+  </div>
+  <div class="anno-item">
+    <div class="anno-num">2</div>
+    <div class="anno-text"><strong>Live search with inline dropdown</strong> — Searches against <code>/leads</code> or <code>/users/search</code> depending on type. Shows avatar initials, name, email, phone and temperature badge (🔥 Hot / ⚡ Warm) so the agent can identify the right record at a glance.</div>
+  </div>
+  <div class="anno-item">
+    <div class="anno-num">3</div>
+    <div class="anno-text"><strong>Auto-fill with visual confirmation</strong> — Once a lead/client is selected, email and phone auto-populate with a green "From lead record" indicator. Fields are read-only but editable on click (override mode) for one-off corrections without touching the CRM.</div>
+  </div>
+  <div class="anno-item">
+    <div class="anno-num">4</div>
+    <div class="anno-text"><strong>Ad-hoc CRM prompt</strong> — When type is Ad-hoc, a contextual nudge offers to save the contact as a lead after booking. One checkbox — low friction, high CRM hygiene upside.</div>
+  </div>
+  <div class="anno-item">
+    <div class="anno-num">5</div>
+    <div class="anno-text"><strong>Reusable &lt;PersonSelector&gt; component</strong> — The type picker + search + auto-fill block will be extracted as a single component accepting <code>onSelect(person)</code> + <code>mode</code> prop. Ready for re-use on Open House check-in, Offer submission, Communication logs, and any future CRM touchpoint.</div>
+  </div>
+  <div class="anno-item">
+    <div class="anno-num">6</div>
+    <div class="anno-text"><strong>API wiring plan</strong> — Lead search → <code>leadsApi.list({ search })</code>. Client search → <code>usersApi.search()</code>. Viewing submit → <code>viewingsApi.bookForBuyer()</code> extended to accept <code>leadId</code> and <code>personType</code>. No new endpoints required for MVP; just extend payload.</div>
+  </div>
+</div>
+
+<script>
+  function selectType(el, type) {
+    const container = el.closest('.type-selector');
+    container.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Toggle interaction
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('off'));
+  });
+
+  // Type buttons
+  document.querySelectorAll('.type-strip').forEach(strip => {
+    strip.querySelectorAll('.type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        strip.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Listing — Approach Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:     #1A3C28;
+      --forest-l:   #2D5A40;
+      --forest-ll:  #4A7C5A;
+      --parchment:  #F2E8D5;
+      --cream:      #EAD9C4;
+      --egreen:     #00E87A;
+      --amber:      #B89040;
+      --terracotta: #C4562A;
+      --muted:      #E8F0EC;
+      --carbon:     #0C0D10;
+      --gray100:    #F3F4F6;
+      --gray200:    #E5E7EB;
+      --gray300:    #D1D5DB;
+      --gray500:    #6B7280;
+      --gray700:    #374151;
+      --gray900:    #111827;
+      --indigo:     #4F46E5;
+      --blue:       #2563EB;
+      --ff: 'Fraunces', serif;
+      --fj: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--fj);
+      background: #0C0D10;
+      color: #fff;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 56px;
+    }
+    .page-header .eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--egreen);
+      margin-bottom: 14px;
+    }
+    .page-header h1 {
+      font-family: var(--ff);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--parchment);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .page-header p {
+      font-size: 15px;
+      color: rgba(242,232,213,.55);
+      line-height: 1.6;
+    }
+
+    /* ── Approach grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      max-width: 1240px;
+      margin: 0 auto 64px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card shell ── */
+    .card {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1.5px solid rgba(242,232,213,.10);
+      display: flex;
+      flex-direction: column;
+    }
+    .card.recommended {
+      border-color: var(--egreen);
+      box-shadow: 0 0 0 1px var(--egreen), 0 24px 64px rgba(0,232,122,.12);
+    }
+
+    /* ── Card header label ── */
+    .card-label {
+      background: rgba(242,232,213,.06);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(242,232,213,.08);
+    }
+    .card-label .approach-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(242,232,213,.45);
+    }
+    .card.recommended .approach-tag { color: var(--egreen); }
+    .badge-rec {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--egreen);
+      color: var(--carbon);
+      padding: 3px 9px;
+      border-radius: 99px;
+    }
+
+    /* ── Card title block ── */
+    .card-title-block {
+      padding: 20px 20px 0;
+    }
+    .card-title-block h2 {
+      font-family: var(--ff);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--parchment);
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .card-title-block p {
+      font-size: 13px;
+      color: rgba(242,232,213,.5);
+      line-height: 1.55;
+    }
+
+    /* ── Mockup area ── */
+    .mockup-area {
+      padding: 20px;
+      flex: 1;
+    }
+
+    /* ── MOCKUP A: tabs ── */
+    .mock-a .mock-window {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
+    .mock-a .win-chrome {
+      background: #F8F8F8;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--gray200);
+    }
+    .mock-a .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .mock-a .dot.r { background: #FF5F57; }
+    .mock-a .dot.y { background: #FEBC2E; }
+    .mock-a .dot.g { background: #28C840; }
+    .mock-a .url-bar {
+      flex: 1; height: 18px; background: var(--gray200);
+      border-radius: 4px; font-size: 10px; color: var(--gray500);
+      display: flex; align-items: center; padding: 0 8px;
+    }
+    /* overlay treatment */
+    .mock-a .overlay-bg {
+      background: rgba(0,0,0,.45);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mock-a .modal-box {
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .modal-header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray200);
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header .mh-title { font-size: 12px; font-weight: 600; color: var(--gray900); }
+    .modal-header .mh-close {
+      width: 18px; height: 18px; background: var(--gray100);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: var(--gray500); cursor: pointer;
+    }
+    .tabs-row {
+      display: flex;
+      border-bottom: 1px solid var(--gray200);
+      padding: 0 14px;
+    }
+    .tab-pill {
+      font-size: 10px; font-weight: 500; color: var(--gray500);
+      padding: 7px 10px; border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+    .tab-pill.active { color: var(--indigo); border-color: var(--indigo); }
+    .form-area { padding: 12px 14px; }
+    .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .form-field { flex: 1; }
+    .field-label { font-size: 9px; font-weight: 600; color: var(--gray700); margin-bottom: 3px; }
+    .field-input {
+      width: 100%; height: 24px; border: 1px solid var(--gray300);
+      border-radius: 5px; background: #fff;
+    }
+    .field-input.indigo:focus-visible { outline: 2px solid var(--indigo); }
+    .modal-footer {
+      border-top: 1px solid var(--gray200);
+      padding: 8px 14px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .btn-cancel { font-size: 10px; padding: 5px 10px; border-radius: 5px; background: var(--gray100); color: var(--gray700); }
+    .btn-primary { font-size: 10px; padding: 5px 12px; border-radius: 5px; background: var(--indigo); color: #fff; }
+    .btn-primary.forest { background: var(--forest); }
+
+    /* ── MOCKUP B: wizard ── */
+    .mock-b .mock-window {
+      background: var(--parchment);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
+    .wiz-chrome {
+      background: #F8F8F8;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--gray200);
+    }
+    .wiz-chrome .url-bar {
+      flex: 1; height: 18px; background: var(--gray200);
+      border-radius: 4px; font-size: 10px; color: var(--gray500);
+      display: flex; align-items: center; padding: 0 8px;
+    }
+    .wiz-nav {
+      background: var(--forest);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wiz-logo-box {
+      width: 22px; height: 22px; background: rgba(255,255,255,.12);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wiz-logo-b {
+      font-family: var(--ff);
+      font-size: 11px; font-weight: 700; color: var(--egreen);
+    }
+    .wiz-logo-text {
+      font-family: var(--ff);
+      font-size: 12px; font-weight: 700; color: var(--parchment);
+    }
+    .wiz-back-btn {
+      margin-left: auto;
+      font-size: 10px; color: rgba(242,232,213,.6);
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    .wiz-progress {
+      background: var(--parchment);
+      padding: 10px 16px 0;
+    }
+    .progress-label {
+      font-size: 9px; font-weight: 600; color: var(--forest);
+      opacity: .6; margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .step-pills {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .step-pill {
+      flex: 1; height: 3px; border-radius: 99px;
+    }
+    .step-pill.done { background: var(--forest); }
+    .step-pill.active { background: var(--egreen); }
+    .step-pill.todo { background: var(--gray200); }
+    .step-labels {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .step-label-item {
+      flex: 1;
+      text-align: center;
+      font-size: 7.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--gray500);
+    }
+    .step-label-item.done { color: var(--forest); }
+    .step-label-item.active { color: var(--forest); font-weight: 700; }
+
+    .wiz-card {
+      margin: 0 16px 12px;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .wiz-card-header {
+      background: var(--forest);
+      padding: 9px 12px;
+    }
+    .wiz-card-header .step-eyebrow {
+      font-size: 8px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(242,232,213,.5);
+      margin-bottom: 1px;
+    }
+    .wiz-card-header .step-title {
+      font-family: var(--ff);
+      font-size: 13px; font-weight: 700; color: var(--parchment);
+    }
+    .wiz-card-body { padding: 10px 12px; }
+    .wiz-type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .wiz-type-tile {
+      border: 1.5px solid var(--gray200);
+      border-radius: 7px;
+      padding: 7px 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .wiz-type-tile.selected {
+      border-color: var(--forest);
+      background: var(--muted);
+    }
+    .tile-icon {
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      background: var(--gray100);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .wiz-type-tile.selected .tile-icon { background: var(--forest); }
+    .tile-label { font-size: 9px; font-weight: 600; color: var(--gray700); }
+    .wiz-type-tile.selected .tile-label { color: var(--forest); }
+
+    .wiz-footer {
+      margin: 0 16px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wiz-btn-back { font-size: 10px; color: rgba(26,60,40,.55); padding: 5px 0; }
+    .wiz-btn-next {
+      font-size: 10px; font-weight: 600;
+      background: var(--forest); color: var(--parchment);
+      padding: 6px 14px; border-radius: 6px;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── MOCKUP C: drawer ── */
+    .mock-c .mock-window {
+      background: var(--gray100);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+      position: relative;
+    }
+    .dash-bg {
+      padding: 10px 12px;
+      min-height: 220px;
+    }
+    .dash-topbar {
+      background: #fff;
+      border-radius: 7px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      border: 1px solid var(--gray200);
+    }
+    .dash-topbar .dt-logo { font-family: var(--ff); font-size: 10px; font-weight: 700; color: var(--forest); }
+    .dash-topbar .dt-actions { display: flex; gap: 5px; }
+    .dt-btn {
+      font-size: 9px; font-weight: 600;
+      padding: 3px 8px; border-radius: 4px;
+      background: var(--gray100); color: var(--gray700);
+    }
+    .dt-btn.primary { background: var(--forest); color: var(--parchment); }
+    .dash-kpi-row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .kpi-tile {
+      flex: 1; background: #fff; border-radius: 6px;
+      padding: 6px 8px; border: 1px solid var(--gray200);
+    }
+    .kpi-tile .kl { font-size: 7.5px; color: var(--gray500); margin-bottom: 2px; }
+    .kpi-tile .kv { font-family: var(--ff); font-size: 12px; font-weight: 700; color: var(--forest); }
+    .dash-listings { }
+    .dl-header { font-size: 9px; font-weight: 700; color: var(--gray700); margin-bottom: 5px; }
+    .dl-row {
+      background: #fff; border-radius: 5px;
+      padding: 5px 8px; font-size: 8.5px; color: var(--gray700);
+      border: 1px solid var(--gray200); margin-bottom: 3px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* Drawer sliding in */
+    .drawer-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: stretch;
+    }
+    .drawer-scrim {
+      flex: 1;
+      background: rgba(0,0,0,.3);
+    }
+    .drawer-panel {
+      width: 65%;
+      background: #fff;
+      border-left: 1px solid var(--gray200);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .drawer-header {
+      background: var(--forest);
+      padding: 10px 12px;
+    }
+    .drawer-header .dh-eyebrow {
+      font-size: 7.5px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(242,232,213,.5);
+      margin-bottom: 1px;
+    }
+    .drawer-header .dh-title {
+      font-family: var(--ff);
+      font-size: 13px; font-weight: 700; color: var(--parchment);
+    }
+    .drawer-steps {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gray100);
+      display: flex;
+      gap: 4px;
+    }
+    .ds-step {
+      flex: 1; text-align: center;
+    }
+    .ds-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      margin: 0 auto 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700;
+    }
+    .ds-dot.done { background: var(--forest); color: #fff; }
+    .ds-dot.active { background: var(--egreen); color: var(--carbon); }
+    .ds-dot.todo { background: var(--gray100); color: var(--gray500); border: 1px solid var(--gray200); }
+    .ds-label { font-size: 7px; color: var(--gray500); }
+    .ds-step.active .ds-label { color: var(--forest); font-weight: 600; }
+
+    .drawer-body { padding: 8px 12px; flex: 1; overflow: hidden; }
+    .drawer-form-title { font-family: var(--ff); font-size: 11px; font-weight: 700; color: var(--forest); margin-bottom: 8px; }
+    .drawer-footer {
+      padding: 8px 12px;
+      border-top: 1px solid var(--gray100);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .df-back { font-size: 9px; color: var(--gray500); }
+    .df-next {
+      font-size: 9px; font-weight: 600;
+      background: var(--forest); color: var(--parchment);
+      padding: 5px 12px; border-radius: 5px;
+    }
+    .complx-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 600;
+      padding: 3px 10px; border-radius: 99px;
+      margin-bottom: 6px;
+    }
+    .complx-badge.low { background: rgba(0,232,122,.12); color: #059669; }
+    .complx-badge.med { background: rgba(184,144,64,.12); color: var(--amber); }
+    .complx-badge.high { background: rgba(196,86,42,.12); color: var(--terracotta); }
+
+    /* ── Pros / Cons ── */
+    .trade-block {
+      padding: 0 20px 20px;
+    }
+    .trade-section { margin-bottom: 10px; }
+    .trade-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .trade-title.pro { color: var(--egreen); }
+    .trade-title.con { color: var(--terracotta); }
+    .trade-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .trade-list li {
+      font-size: 12px;
+      color: rgba(242,232,213,.65);
+      line-height: 1.5;
+      padding-left: 14px;
+      position: relative;
+    }
+    .trade-list li::before { position: absolute; left: 0; }
+    .trade-list.pro li::before { content: '+'; color: var(--egreen); font-weight: 700; }
+    .trade-list.con li::before { content: '−'; color: var(--terracotta); font-weight: 700; }
+
+    /* ── Choose button ── */
+    .choose-row {
+      padding: 0 20px 24px;
+      text-align: center;
+    }
+    .choose-btn {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 24px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: .02em;
+      transition: opacity .15s;
+      text-decoration: none;
+    }
+    .choose-btn:hover { opacity: .85; }
+    .choose-btn.default { background: rgba(242,232,213,.10); color: var(--parchment); border: 1px solid rgba(242,232,213,.2); }
+    .choose-btn.recommended { background: var(--egreen); color: var(--carbon); }
+
+    /* ── Comparison table ── */
+    .compare-section {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .compare-section h2 {
+      font-family: var(--ff);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--parchment);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .compare-table { width: 100%; border-collapse: collapse; }
+    .compare-table th {
+      font-size: 12px; font-weight: 700;
+      padding: 12px 16px; text-align: center;
+      border-bottom: 1px solid rgba(242,232,213,.12);
+      color: rgba(242,232,213,.5);
+    }
+    .compare-table th.appr { font-family: var(--ff); font-size: 14px; color: var(--parchment); }
+    .compare-table th.rec { color: var(--egreen); }
+    .compare-table td {
+      font-size: 12.5px;
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(242,232,213,.07);
+      color: rgba(242,232,213,.65);
+      vertical-align: top;
+    }
+    .compare-table td:first-child { font-weight: 600; color: rgba(242,232,213,.4); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+    .compare-table td.center { text-align: center; }
+    .tick { color: var(--egreen); font-weight: 700; }
+    .cross { color: var(--terracotta); font-weight: 700; }
+    .half { color: var(--amber); }
+    .compare-table tr:hover td { background: rgba(242,232,213,.02); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <span class="eyebrow">New Listing Screen · Design Decision</span>
+    <h1>Three Approaches to<br>Unified Listing Creation</h1>
+    <p>All three use the same PRIBEC brand tokens, Fraunces headings, and parchment palette.<br>The choice is about UX pattern, not branding — every option looks on-brand.</p>
+  </div>
+
+  <!-- ── Three approach cards ── -->
+  <div class="grid">
+
+    <!-- ── APPROACH A ── -->
+    <div class="card">
+      <div class="card-label">
+        <span class="approach-tag">Approach A</span>
+      </div>
+      <div class="card-title-block" style="padding:20px 20px 12px">
+        <div style="margin-bottom:6px"><span class="complx-badge low">Low complexity</span></div>
+        <h2>Evolved Tabs</h2>
+        <p>Extend <code style="font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">CreateListing.tsx</code> into a full-page form. Same 4-tab structure, real API preserved, extra fields added to existing tabs.</p>
+      </div>
+
+      <!-- Mockup A -->
+      <div class="mockup-area mock-a">
+        <div class="mock-window">
+          <div class="win-chrome">
+            <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+            <div class="url-bar">localhost:3000/app/my-listings/new</div>
+          </div>
+          <!-- Simulated full-page, not modal -->
+          <div style="background:#F8F8F8;border-bottom:1px solid #E5E7EB;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="width:16px;height:16px;background:var(--gray200);border-radius:3px;"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray900);font-family:var(--ff)">Create New Listing</div>
+                <div style="font-size:8.5px;color:var(--gray500)">Add a property to your portfolio</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px">
+              <div class="btn-cancel">Cancel</div>
+              <div class="btn-primary" style="background:var(--indigo)">Save as Draft</div>
+              <div class="btn-primary" style="background:var(--indigo)">Publish →</div>
+            </div>
+          </div>
+          <div class="tabs-row" style="background:#fff">
+            <div class="tab-pill active">📋 Basic Info</div>
+            <div class="tab-pill">🖼 Media</div>
+            <div class="tab-pill">📍 Location</div>
+            <div class="tab-pill">⭐ Features</div>
+          </div>
+          <div class="form-area" style="background:#fff">
+            <div class="form-row">
+              <div class="form-field">
+                <div class="field-label">Title</div>
+                <div class="field-input" style="background:var(--gray100);border-color:var(--indigo);border-width:2px;height:24px;border-radius:5px;"></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <div class="field-label">Property Type</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+              <div class="form-field">
+                <div class="field-label">Listing Type</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <div class="field-label">Price</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+              <div class="form-field">
+                <div class="field-label">Currency</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <div class="field-label">MLS #</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+              <div class="form-field">
+                <div class="field-label">Year Built</div>
+                <div class="field-input" style="background:var(--gray100);height:24px;border-radius:5px;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="field-label">Description</div>
+              <div style="height:36px;background:var(--gray100);border:1px solid var(--gray300);border-radius:5px;"></div>
+            </div>
+            <!-- Settings addons -->
+            <div style="margin-top:10px;padding:8px;background:#F8F8F8;border-radius:6px;border:1px solid var(--gray200)">
+              <div style="font-size:9px;font-weight:700;color:var(--gray700);margin-bottom:5px;">Listing Settings</div>
+              <div style="display:flex;gap:10px;align-items:center">
+                <div style="display:flex;align-items:center;gap:4px">
+                  <div style="width:26px;height:13px;background:var(--indigo);border-radius:99px; position:relative">
+                    <div style="width:9px;height:9px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px"></div>
+                  </div>
+                  <span style="font-size:8.5px;color:var(--gray700)">Published</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <div style="width:26px;height:13px;background:var(--gray200);border-radius:99px; position:relative">
+                    <div style="width:9px;height:9px;background:#fff;border-radius:50%;position:absolute;left:2px;top:2px"></div>
+                  </div>
+                  <span style="font-size:8.5px;color:var(--gray700)">Featured</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trade-block">
+        <div class="trade-section">
+          <div class="trade-title pro">Pros</div>
+          <ul class="trade-list pro">
+            <li>Least code to write — evolves existing component</li>
+            <li>Real API already wired, nothing to rewire</li>
+            <li>Low risk — minimal change surface</li>
+          </ul>
+        </div>
+        <div class="trade-section">
+          <div class="trade-title con">Cons</div>
+          <ul class="trade-list con">
+            <li>Awkward origin — modal architecture repurposed</li>
+            <li>All fields visible at once → feels dense and long</li>
+            <li>Tabs don't guide — easy to skip required sections</li>
+            <li>Indigo tab style fights brand tokens</li>
+          </ul>
+        </div>
+      </div>
+      <div class="choose-row">
+        <button class="choose-btn default" onclick="choose('A')">Choose Approach A</button>
+      </div>
+    </div>
+
+    <!-- ── APPROACH B ── -->
+    <div class="card recommended">
+      <div class="card-label">
+        <span class="approach-tag">Approach B</span>
+        <span class="badge-rec">Recommended</span>
+      </div>
+      <div class="card-title-block" style="padding:20px 20px 12px">
+        <div style="margin-bottom:6px"><span class="complx-badge med">Moderate complexity</span></div>
+        <h2>5-Step Wizard</h2>
+        <p>New <code style="font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">NewListingWizard.tsx</code> at <code style="font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">/app/my-listings/new</code>. Guided, one section per step, full brand treatment, all fields, real API.</p>
+      </div>
+
+      <!-- Mockup B -->
+      <div class="mockup-area mock-b">
+        <div class="mock-window">
+          <div class="wiz-chrome">
+            <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+            <div class="url-bar">localhost:3000/app/my-listings/new</div>
+          </div>
+          <div class="wiz-nav">
+            <div class="wiz-logo-box"><span class="wiz-logo-b">B</span></div>
+            <span class="wiz-logo-text">BuildTrust</span>
+            <div class="wiz-back-btn">← Back to listings</div>
+          </div>
+          <div class="wiz-progress">
+            <div class="progress-label">New Listing · Step 1 of 5</div>
+            <div class="step-pills">
+              <div class="step-pill active"></div>
+              <div class="step-pill todo"></div>
+              <div class="step-pill todo"></div>
+              <div class="step-pill todo"></div>
+              <div class="step-pill todo"></div>
+            </div>
+            <div class="step-labels">
+              <div class="step-label-item active">Type</div>
+              <div class="step-label-item todo">Info</div>
+              <div class="step-label-item todo">Media</div>
+              <div class="step-label-item todo">Location</div>
+              <div class="step-label-item todo">Publish</div>
+            </div>
+          </div>
+          <div class="wiz-card">
+            <div class="wiz-card-header">
+              <div class="step-eyebrow">Step 1 of 5</div>
+              <div class="step-title">What kind of listing is this?</div>
+            </div>
+            <div class="wiz-card-body">
+              <div style="font-size:9px;font-weight:600;color:var(--gray700);margin-bottom:5px;">Property Type</div>
+              <div class="wiz-type-grid">
+                <div class="wiz-type-tile selected">
+                  <div class="wiz-type-tile-icon" style="width:18px;height:18px;background:var(--forest);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🏠</div>
+                  <span class="tile-label" style="color:var(--forest)">Residential</span>
+                </div>
+                <div class="wiz-type-tile">
+                  <div class="wiz-type-tile-icon" style="width:18px;height:18px;background:var(--gray100);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🏢</div>
+                  <span class="tile-label">Commercial</span>
+                </div>
+                <div class="wiz-type-tile">
+                  <div class="wiz-type-tile-icon" style="width:18px;height:18px;background:var(--gray100);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🌿</div>
+                  <span class="tile-label">Land</span>
+                </div>
+                <div class="wiz-type-tile">
+                  <div class="wiz-type-tile-icon" style="width:18px;height:18px;background:var(--gray100);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;">🏗</div>
+                  <span class="tile-label">Off-Plan</span>
+                </div>
+              </div>
+              <div style="font-size:9px;font-weight:600;color:var(--gray700);margin-bottom:5px;">Listing Type</div>
+              <div style="display:flex;gap:5px;">
+                <div style="flex:1;border:1.5px solid var(--forest);background:var(--muted);border-radius:6px;padding:5px 8px;font-size:9px;font-weight:600;color:var(--forest);text-align:center">For Sale</div>
+                <div style="flex:1;border:1.5px solid var(--gray200);border-radius:6px;padding:5px 8px;font-size:9px;color:var(--gray500);text-align:center">For Rent</div>
+                <div style="flex:1;border:1.5px solid var(--gray200);border-radius:6px;padding:5px 8px;font-size:9px;color:var(--gray500);text-align:center">Auction</div>
+              </div>
+            </div>
+          </div>
+          <div class="wiz-footer">
+            <div class="wiz-btn-back">← Back</div>
+            <div class="wiz-btn-next">Next: Basic Info →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trade-block">
+        <div class="trade-section">
+          <div class="trade-title pro">Pros</div>
+          <ul class="trade-list pro">
+            <li>One canonical route — both callers go here</li>
+            <li>Guided flow prevents skipped required fields</li>
+            <li>Full brand treatment — forest header, Fraunces, parchment</li>
+            <li>All merged fields, real API from both screens</li>
+            <li>Easiest to test — pure linear flow</li>
+          </ul>
+        </div>
+        <div class="trade-section">
+          <div class="trade-title con">Cons</div>
+          <ul class="trade-list con">
+            <li>More new code than Approach A</li>
+            <li>Agent dashboard loses inline modal — navigates away</li>
+          </ul>
+        </div>
+      </div>
+      <div class="choose-row">
+        <button class="choose-btn recommended" onclick="choose('B')">Choose Approach B</button>
+      </div>
+    </div>
+
+    <!-- ── APPROACH C ── -->
+    <div class="card">
+      <div class="card-label">
+        <span class="approach-tag">Approach C</span>
+      </div>
+      <div class="card-title-block" style="padding:20px 20px 12px">
+        <div style="margin-bottom:6px"><span class="complx-badge high">High complexity</span></div>
+        <h2>Right-Side Drawer</h2>
+        <p>New component with <code style="font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px">mode: 'page' | 'drawer'</code>. Agent Dashboard keeps inline drawer; My Listings navigates to full page.</p>
+      </div>
+
+      <!-- Mockup C -->
+      <div class="mockup-area mock-c">
+        <div class="mock-window">
+          <!-- Dashboard underneath -->
+          <div class="dash-bg">
+            <div class="dash-topbar">
+              <div class="dt-logo">BuildTrust</div>
+              <div class="dt-actions">
+                <div class="dt-btn">Filter</div>
+                <div class="dt-btn primary">+ Add Listing</div>
+              </div>
+            </div>
+            <div class="dash-kpi-row">
+              <div class="kpi-tile"><div class="kl">Active</div><div class="kv">12</div></div>
+              <div class="kpi-tile"><div class="kl">Views</div><div class="kv">847</div></div>
+              <div class="kpi-tile"><div class="kl">Enquiries</div><div class="kv">23</div></div>
+              <div class="kpi-tile"><div class="kl">Value</div><div class="kv">R8.2M</div></div>
+            </div>
+            <div class="dash-listings">
+              <div class="dl-header">My Listings</div>
+              <div class="dl-row"><span>3 Bed House · Cape Town</span><span style="color:var(--egreen);font-weight:600">Active</span></div>
+              <div class="dl-row"><span>Office Space · Joburg CBD</span><span style="color:var(--amber);font-weight:600">Pending</span></div>
+            </div>
+          </div>
+
+          <!-- Drawer overlay -->
+          <div class="drawer-overlay">
+            <div class="drawer-scrim"></div>
+            <div class="drawer-panel">
+              <div class="drawer-header">
+                <div class="dh-eyebrow">New Listing · Step 2 of 5</div>
+                <div class="dh-title">Basic Info</div>
+              </div>
+              <div class="drawer-steps">
+                <div class="ds-step">
+                  <div class="ds-dot done">✓</div>
+                  <div class="ds-label">Type</div>
+                </div>
+                <div class="ds-step active">
+                  <div class="ds-dot active">2</div>
+                  <div class="ds-label" style="color:var(--forest);font-weight:600">Info</div>
+                </div>
+                <div class="ds-step">
+                  <div class="ds-dot todo">3</div>
+                  <div class="ds-label">Media</div>
+                </div>
+                <div class="ds-step">
+                  <div class="ds-dot todo">4</div>
+                  <div class="ds-label">Location</div>
+                </div>
+                <div class="ds-step">
+                  <div class="ds-dot todo">5</div>
+                  <div class="ds-label">Publish</div>
+                </div>
+              </div>
+              <div class="drawer-body">
+                <div class="drawer-form-title">Property Details</div>
+                <div style="margin-bottom:6px">
+                  <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">Title</div>
+                  <div style="height:20px;background:var(--gray100);border:1.5px solid var(--forest);border-radius:4px;"></div>
+                </div>
+                <div style="display:flex;gap:5px;margin-bottom:6px">
+                  <div style="flex:1">
+                    <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">Price</div>
+                    <div style="height:20px;background:var(--gray100);border:1px solid var(--gray300);border-radius:4px;"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">Currency</div>
+                    <div style="height:20px;background:var(--gray100);border:1px solid var(--gray300);border-radius:4px;"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:5px">
+                  <div style="flex:1">
+                    <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">Beds</div>
+                    <div style="height:20px;background:var(--gray100);border:1px solid var(--gray300);border-radius:4px;"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">Baths</div>
+                    <div style="height:20px;background:var(--gray100);border:1px solid var(--gray300);border-radius:4px;"></div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:8.5px;font-weight:600;color:var(--gray700);margin-bottom:2px">m²</div>
+                    <div style="height:20px;background:var(--gray100);border:1px solid var(--gray300);border-radius:4px;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="drawer-footer">
+                <div class="df-back">← Back</div>
+                <div class="df-next">Next →</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="trade-block">
+        <div class="trade-section">
+          <div class="trade-title pro">Pros</div>
+          <ul class="trade-list pro">
+            <li>Agent dashboard stays in context (no navigation)</li>
+            <li>Drawer feels premium and modern</li>
+          </ul>
+        </div>
+        <div class="trade-section">
+          <div class="trade-title con">Cons</div>
+          <ul class="trade-list con">
+            <li>Two modes = two inconsistent UX patterns</li>
+            <li>Drawer is cramped for photo upload and amenity grid</li>
+            <li>Most complex — dual-mode prop API, harder to test</li>
+            <li>Not truly "consistent" — the original problem remains</li>
+          </ul>
+        </div>
+      </div>
+      <div class="choose-row">
+        <button class="choose-btn default" onclick="choose('C')">Choose Approach C</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Comparison table ── -->
+  <div class="compare-section">
+    <h2>Side-by-Side Comparison</h2>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;width:22%">Criterion</th>
+          <th class="appr">A · Tabs</th>
+          <th class="appr rec">B · Wizard ✦</th>
+          <th class="appr">C · Drawer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Consistency (both callers)</td>
+          <td class="center"><span class="tick">✔</span> Same page</td>
+          <td class="center"><span class="tick">✔</span> Same page</td>
+          <td class="center"><span class="half">~</span> Drawer vs page</td>
+        </tr>
+        <tr>
+          <td>PRIBEC brand treatment</td>
+          <td class="center"><span class="half">~</span> Partial</td>
+          <td class="center"><span class="tick">✔</span> Full</td>
+          <td class="center"><span class="tick">✔</span> Full</td>
+        </tr>
+        <tr>
+          <td>Fraunces headings</td>
+          <td class="center"><span class="tick">✔</span> Auto (globals)</td>
+          <td class="center"><span class="tick">✔</span> Auto + explicit</td>
+          <td class="center"><span class="tick">✔</span> Auto + explicit</td>
+        </tr>
+        <tr>
+          <td>Guided / hard to skip</td>
+          <td class="center"><span class="cross">✗</span> All tabs open</td>
+          <td class="center"><span class="tick">✔</span> One step at a time</td>
+          <td class="center"><span class="tick">✔</span> One step at a time</td>
+        </tr>
+        <tr>
+          <td>All merged fields</td>
+          <td class="center"><span class="tick">✔</span> Added to tabs</td>
+          <td class="center"><span class="tick">✔</span> Clean union</td>
+          <td class="center"><span class="tick">✔</span> Clean union</td>
+        </tr>
+        <tr>
+          <td>Real API wired</td>
+          <td class="center"><span class="tick">✔</span> Already exists</td>
+          <td class="center"><span class="tick">✔</span> Migrated</td>
+          <td class="center"><span class="tick">✔</span> Migrated</td>
+        </tr>
+        <tr>
+          <td>Photos upload comfort</td>
+          <td class="center"><span class="tick">✔</span> Full width tab</td>
+          <td class="center"><span class="tick">✔</span> Dedicated step</td>
+          <td class="center"><span class="cross">✗</span> Cramped in drawer</td>
+        </tr>
+        <tr>
+          <td>Implementation effort</td>
+          <td class="center"><span class="tick">✔</span> Low</td>
+          <td class="center"><span class="half">~</span> Medium</td>
+          <td class="center"><span class="cross">✗</span> High</td>
+        </tr>
+        <tr>
+          <td>Removes old screens</td>
+          <td class="center"><span class="tick">✔</span> Yes</td>
+          <td class="center"><span class="tick">✔</span> Yes</td>
+          <td class="center"><span class="tick">✔</span> Yes</td>
+        </tr>
+        <tr>
+          <td>Deep-linkable URL</td>
+          <td class="center"><span class="tick">✔</span> /my-listings/new</td>
+          <td class="center"><span class="tick">✔</span> /my-listings/new</td>
+          <td class="center"><span class="half">~</span> Only in page mode</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function choose(approach) {
+      const labels = { A: 'Approach A — Evolved Tabs', B: 'Approach B — 5-Step Wizard (Recommended)', C: 'Approach C — Right-Side Drawer' };
+      const msg = `You selected: ${labels[approach]}\n\nClose this window and tell Copilot: "proceed with approach ${approach}"`;
+      alert(msg);
+    }
+  </script>
+</body>
+</html>

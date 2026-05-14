@@ -13,15 +13,21 @@ import {
   MessageSquare,
   ChevronLeft,
   CheckCircle2,
-  MapPinned,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { UserAvatarContent } from "@/components/UserAvatarContent";
+import { buildSinglePointMapSource } from "@/lib/map-utils";
+import LeafletMapDynamic from "@/components/LeafletMapDynamic";
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export default function PropertyDetail() {
   const property = {
     title: "Contemporary Coastal Residence",
     address: "4.2 Beach Road, Sea Point, Cape Town, 8005",
+    latitude: -33.9154,
+    longitude: 18.3897,
     price: "R 12,500,000",
     beds: 4,
     baths: 3.5,
@@ -59,15 +65,28 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
       competitive: true,
     },
   };
+  const agentInitials = property.agent.name
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'A';
+  const locationMapSource = buildSinglePointMapSource({
+    latitude: property.latitude,
+    longitude: property.longitude,
+    mapboxToken: MAPBOX_TOKEN,
+  });
 
   return (
     <div className="bg-gray-50">
       {/* Back Button */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4">
-        <Link to="/app/listings" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Listings</span>
-        </Link>
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <ChevronLeft className="w-4 h-4" />
+            <span>Back</span>
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-8">
@@ -80,7 +99,7 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                 <img
                   src={property.images[0]}
                   alt="Main"
-                  className="w-full h-[400px] object-cover rounded-lg"
+                  className="w-full h-100 object-cover rounded-lg"
                 />
               </div>
               {property.images.slice(1).map((image, idx) => (
@@ -104,10 +123,18 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button
+                    className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    title="Save property"
+                    aria-label="Save property"
+                  >
                     <Heart className="w-5 h-5" />
                   </button>
-                  <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button
+                    className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    title="Share property"
+                    aria-label="Share property"
+                  >
                     <Share2 className="w-5 h-5" />
                   </button>
                 </div>
@@ -187,17 +214,20 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
                   Sea Point, Cape Town
                 </Link>
               </div>
-              <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center relative overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&h=300&fit=crop"
-                  alt="Map"
-                  className="w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-blue-500 text-white p-4 rounded-full">
-                    <MapPinned className="w-8 h-8" />
-                  </div>
-                </div>
+              <div className="bg-gray-200 rounded-lg h-64 overflow-hidden border border-gray-200">
+                {locationMapSource.type === 'image' ? (
+                  <img
+                    src={locationMapSource.url}
+                    alt="Property location map"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <LeafletMapDynamic
+                    center={locationMapSource.center}
+                    zoom={locationMapSource.zoom}
+                    markers={locationMapSource.markers}
+                  />
+                )}
               </div>
             </Card>
           </div>
@@ -207,11 +237,13 @@ Perfect for entertaining, the home includes a dedicated media room and an automa
             {/* Agent Card */}
             <Card className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <img
-                  src={property.agent.image}
-                  alt={property.agent.name}
-                  className="w-14 h-14 rounded-full object-cover"
-                />
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
+                  <UserAvatarContent
+                    avatarUrl={property.agent.image}
+                    initials={agentInitials}
+                    alt={property.agent.name}
+                  />
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{property.agent.name}</h3>

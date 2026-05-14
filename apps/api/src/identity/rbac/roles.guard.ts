@@ -12,6 +12,7 @@ type AuthenticatedUser = {
   id: string;
   email: string;
   roles: string[];
+  active_company_role?: string | null;
 };
 
 @Injectable()
@@ -31,7 +32,11 @@ export class RolesGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<{ user?: AuthenticatedUser }>();
-    const userRoles = request.user?.roles ?? [];
+    const globalRoles = request.user?.roles ?? [];
+    const companyRole = request.user?.active_company_role;
+    const userRoles = companyRole
+      ? [...globalRoles, companyRole]
+      : globalRoles;
     const hasRole = requiredRoles.some((role) => userRoles.includes(role));
 
     if (!hasRole) {

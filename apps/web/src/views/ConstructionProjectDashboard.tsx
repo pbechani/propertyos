@@ -32,6 +32,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router-compat";
+import { Progress } from "@/components/ui/progress";
 
 // Mock Data
 const budgetData = [
@@ -172,7 +173,11 @@ export default function ConstructionProjectDashboard() {
                 <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-semibold text-gray-900">Budget vs Actual Costs</h3>
-                    <select className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <select
+                      className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      title="Filter chart phases"
+                      aria-label="Filter chart phases"
+                    >
                       <option>All Phases</option>
                       <option>Completed Only</option>
                     </select>
@@ -259,9 +264,7 @@ export default function ConstructionProjectDashboard() {
                                 <span>Progress</span>
                                 <span>{milestone.progress}%</span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${milestone.progress}%` }}></div>
-                              </div>
+                              <Progress value={milestone.progress} className="h-2 bg-gray-200" />
                             </div>
                           )}
                         </div>
@@ -346,12 +349,10 @@ export default function ConstructionProjectDashboard() {
                       <div className="p-4 bg-gray-50 rounded-lg">
                         <h5 className="text-sm font-medium text-gray-500 mb-1">Budget Allocation</h5>
                         <p className="text-2xl font-bold text-gray-900">${selectedMilestone.budget.toLocaleString()}</p>
-                        <div className="mt-2 w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${selectedMilestone.spent > selectedMilestone.budget ? "bg-red-500" : "bg-green-500"}`}
-                            style={{ width: `${Math.min((selectedMilestone.spent / selectedMilestone.budget) * 100, 100)}%` }}
-                          ></div>
-                        </div>
+                        <Progress
+                          value={Math.min((selectedMilestone.spent / selectedMilestone.budget) * 100, 100)}
+                          className={`mt-2 h-1.5 bg-gray-200 ${selectedMilestone.spent > selectedMilestone.budget ? "construction-progress-over" : "construction-progress-ok"}`}
+                        />
                         <p className="text-xs text-gray-500 mt-1">
                           {Math.round((selectedMilestone.spent / selectedMilestone.budget) * 100)}% utilized
                         </p>

@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Listing Detail — Rebrand Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ━━━━ DESIGN TOKENS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    :root {
+      /* brand palette */
+      --parchment:   #F0E8D6;
+      --parchment-2: #E6DBC6;
+      --forest:      #1A3C28;
+      --forest-60:   rgba(26,60,40,.6);
+      --forest-15:   rgba(26,60,40,.15);
+      --forest-8:    rgba(26,60,40,.08);
+      --forest-4:    rgba(26,60,40,.04);
+      --terra:       #C4562A;
+      --terra-light: #F0D5C8;
+      --gold:        #B07D2A;
+      --gold-light:  #F5EED6;
+      --egreen:      #00D46A;
+      --egreen-dim:  rgba(0,212,106,.12);
+      /* neutral */
+      --ink:         #0D1813;
+      --ink-60:      rgba(13,24,19,.6);
+      --ink-30:      rgba(13,24,19,.3);
+      /* fonts */
+      --font-d: 'Fraunces', Georgia, serif;
+      --font-b: 'DM Sans', system-ui, sans-serif;
+      --font-m: 'JetBrains Mono', monospace;
+      /* geometry */
+      --r-sm: 8px;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-xl: 28px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; scroll-behavior: smooth; }
+    body { background: var(--parchment); font-family: var(--font-b); color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+    /* ━━━━ PAGE CHROME ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .chrome-label {
+      font-family: var(--font-m);
+      font-size: .65rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--forest-60);
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+    .chrome-divider {
+      height: 1px;
+      background: var(--forest-15);
+      margin: 60px 0;
+    }
+
+    /* ━━━━ APP SHELL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 0 60px;
+    }
+
+    /* ━━━━ TOP NAVIGATION BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(240,232,214,.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--forest-15);
+      padding: 0 24px;
+    }
+    .topbar-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--forest-15);
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background .15s;
+      color: var(--forest);
+    }
+    .back-btn:hover { background: var(--forest-8); }
+    .topbar-breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .75rem; color: var(--forest-60);
+      font-family: var(--font-m);
+    }
+    .topbar-breadcrumb .sep { opacity: .4; }
+    .topbar-breadcrumb a { color: var(--forest-60); text-decoration: none; }
+    .topbar-breadcrumb a:hover { color: var(--forest); }
+    .topbar-breadcrumb .current { color: var(--forest); font-weight: 600; }
+    .topbar-actions {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-ghost {
+      height: 34px; padding: 0 14px;
+      border: 1px solid var(--forest-15);
+      border-radius: var(--r-sm);
+      background: transparent;
+      font-family: var(--font-b); font-size: .8rem; font-weight: 500;
+      color: var(--forest);
+      cursor: pointer;
+      display: flex; align-items: center; gap-6px; gap: 6px;
+      transition: background .15s;
+    }
+    .btn-ghost:hover { background: var(--forest-8); }
+    .btn-primary {
+      height: 34px; padding: 0 14px;
+      border: none;
+      border-radius: var(--r-sm);
+      background: var(--forest);
+      font-family: var(--font-b); font-size: .8rem; font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .88; }
+    .ai-btn {
+      height: 34px; padding: 0 14px;
+      border-radius: var(--r-sm);
+      background: var(--forest);
+      border: none;
+      font-family: var(--font-b); font-size: .8rem; font-weight: 600;
+      color: var(--egreen);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      position: relative;
+    }
+    .ai-btn .pulse {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--egreen);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(.7); }
+    }
+
+    /* ━━━━ HERO BAND ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0;
+      min-height: 360px;
+      overflow: hidden;
+      border-radius: var(--r-xl);
+      margin: 20px 24px 0;
+      box-shadow: 0 2px 32px rgba(26,60,40,.1);
+    }
+    .hero-image {
+      position: relative;
+      background: #c8c0b0;
+      overflow: hidden;
+    }
+    .hero-image img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hero-image-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(13,24,19,.45) 0%, transparent 55%);
+    }
+    .hero-image-chips {
+      position: absolute; bottom: 20px; left: 20px;
+      display: flex; gap: 8px;
+    }
+    .chip {
+      height: 26px; padding: 0 10px;
+      border-radius: 100px;
+      font-size: .7rem; font-weight: 600; font-family: var(--font-m);
+      letter-spacing: .06em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .chip-verified  { background: var(--egreen); color: var(--forest); }
+    .chip-for-sale  { background: var(--forest); color: #fff; }
+    .chip-active    { background: var(--gold-light); color: var(--gold); border: 1px solid var(--gold); }
+    .chip-photo-count { background: rgba(0,0,0,.55); color: #fff; }
+
+    /* photo strip */
+    .photo-strip {
+      display: flex; gap: 6px;
+      padding: 12px;
+      background: var(--ink);
+      overflow-x: auto;
+    }
+    .photo-strip::-webkit-scrollbar { height: 3px; }
+    .photo-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
+    .thumb {
+      width: 64px; height: 64px;
+      border-radius: 6px;
+      object-fit: cover;
+      opacity: .6;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity .15s;
+    }
+    .thumb.active { opacity: 1; outline: 2px solid var(--terra); outline-offset: 2px; }
+
+    /* hero right panel */
+    .hero-panel {
+      background: var(--forest);
+      padding: 28px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-panel::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.03);
+    }
+    .hero-panel-ref {
+      font-family: var(--font-m);
+      font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-bottom: 6px;
+    }
+    .hero-panel-address {
+      font-family: var(--font-d);
+      font-size: 1.4rem; font-weight: 400;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+    .hero-panel-city {
+      font-size: .85rem; color: rgba(255,255,255,.55);
+      margin-bottom: 22px;
+    }
+    .hero-panel-price {
+      font-family: var(--font-d);
+      font-size: 2rem; font-weight: 600;
+      color: #fff;
+      letter-spacing: -.02em;
+      line-height: 1;
+    }
+    .hero-panel-price-label {
+      font-size: .7rem; font-weight: 500; font-family: var(--font-m);
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--egreen);
+      margin-bottom: 4px;
+    }
+    .hero-spec-row {
+      display: flex; gap: 6px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+    .spec-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 100px;
+      font-size: .78rem; color: rgba(255,255,255,.85);
+      font-weight: 500;
+    }
+    .spec-pill svg { opacity: .55; }
+    .hero-divider {
+      height: 1px;
+      background: rgba(255,255,255,.1);
+      margin: 20px 0;
+    }
+    /* days on market + stats row */
+    .stat-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r-sm);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .stat-box-value {
+      font-family: var(--font-d);
+      font-size: 1.35rem; font-weight: 600;
+      color: #fff;
+      line-height: 1;
+    }
+    .stat-box-value.accent { color: var(--egreen); }
+    .stat-box-label {
+      font-family: var(--font-m);
+      font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-top: 3px;
+    }
+    .hero-panel-agent {
+      margin-top: auto;
+      padding-top: 18px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .agent-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--terra);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-b); font-weight: 700; font-size: .8rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .agent-name { font-size: .82rem; font-weight: 600; color: rgba(255,255,255,.9); }
+    .agent-company { font-size: .72rem; color: rgba(255,255,255,.4); }
+    .edit-btn-hero {
+      margin-left: auto;
+      height: 30px; padding: 0 12px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: var(--r-sm);
+      color: rgba(255,255,255,.8);
+      font-size: .75rem; font-weight: 500; font-family: var(--font-b);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .edit-btn-hero:hover { background: rgba(255,255,255,.18); }
+
+    /* ━━━━ ACTIVITY PULSE STRIP ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .pulse-strip {
+      margin: 16px 24px 0;
+      background: #fff;
+      border: 1px solid var(--forest-15);
+      border-radius: var(--r-md);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pulse-label {
+      font-family: var(--font-m);
+      font-size: .63rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--ink-30);
+      flex-shrink: 0;
+    }
+    .pulse-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: .78rem; font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .pulse-item:hover { opacity: .75; }
+    .pulse-views  { background: var(--forest-8);   color: var(--forest); }
+    .pulse-req    { background: #FFF4E8;             color: #B45309; border: 1px solid #F6D5A8; }
+    .pulse-enq    { background: #EDF1FE;             color: #3B5BDB; border: 1px solid #C5D0FA; }
+    .pulse-offers { background: var(--egreen-dim);  color: #0A7A3E; border: 1px solid rgba(0,212,106,.25); }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .pulse-divider { height: 16px; width: 1px; background: var(--forest-15); flex-shrink: 0; }
+    .activity-link {
+      margin-left: auto;
+      font-size: .75rem; font-weight: 500; color: var(--forest-60);
+      text-decoration: none;
+      font-family: var(--font-m);
+      letter-spacing: .06em;
+      flex-shrink: 0;
+    }
+    .activity-link:hover { color: var(--forest); }
+
+    /* ━━━━ TAB BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .tab-wrap {
+      margin: 16px 24px 0;
+      background: #fff;
+      border: 1px solid var(--forest-15);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .tab-scroll {
+      display: flex;
+      overflow-x: auto;
+      gap: 0;
+      padding: 0 4px;
+    }
+    .tab-scroll::-webkit-scrollbar { height: 0; }
+    .tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 13px 16px;
+      font-size: .8rem; font-weight: 500;
+      color: var(--ink-60);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color .15s, border-color .15s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .tab:hover { color: var(--forest); }
+    .tab.active {
+      color: var(--forest);
+      border-bottom-color: var(--forest);
+      font-weight: 600;
+    }
+    .tab-badge {
+      min-width: 18px; height: 18px;
+      padding: 0 5px;
+      border-radius: 100px;
+      font-size: .65rem; font-weight: 700; font-family: var(--font-m);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tab.active .tab-badge { background: var(--forest); color: #fff; }
+    .tab:not(.active) .tab-badge { background: var(--forest-8); color: var(--forest); }
+
+    /* ━━━━ BODY GRID ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .body-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      margin: 16px 24px 0;
+    }
+    .main-col { display: flex; flex-direction: column; gap: 16px; }
+    .side-col  { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ━━━━ SECTION CARDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .card {
+      background: #fff;
+      border: 1px solid var(--forest-15);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--forest-8);
+      background: var(--forest-4);
+    }
+    .card-head-left { display: flex; align-items: center; gap: 8px; }
+    .card-head-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      background: var(--forest-8);
+    }
+    .card-head-title {
+      font-size: .84rem; font-weight: 650;
+      color: var(--forest);
+      letter-spacing: -.01em;
+    }
+    .card-head-sub { font-size: .72rem; color: var(--forest-60); }
+    .card-badge {
+      font-family: var(--font-m);
+      font-size: .65rem; font-weight: 600;
+      background: var(--forest-8); color: var(--forest);
+      padding: 2px 8px; border-radius: 100px;
+    }
+    .card-body { padding: 18px; }
+
+    /* ━━━━ DESCRIPTION CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .description-text {
+      font-size: .85rem; line-height: 1.75;
+      color: var(--ink-60);
+    }
+
+    /* ━━━━ SPEC GRID ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .spec-tile {
+      background: var(--forest-4);
+      border: 1px solid var(--forest-8);
+      border-radius: var(--r-sm);
+      padding: 14px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      text-align: center;
+    }
+    .spec-tile-icon {
+      width: 32px; height: 32px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2px;
+    }
+    .spec-tile-icon.green  { background: rgba(0,100,40,.1); color: var(--forest); }
+    .spec-tile-icon.terra  { background: var(--terra-light); color: var(--terra); }
+    .spec-tile-icon.gold   { background: var(--gold-light); color: var(--gold); }
+    .spec-tile-value { font-family: var(--font-d); font-size: 1.25rem; font-weight: 600; color: var(--ink); line-height: 1; }
+    .spec-tile-label { font-size: .68rem; font-family: var(--font-m); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-30); }
+
+    /* ━━━━ META ROWS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .meta-rows { border-top: 1px solid var(--forest-8); padding-top: 14px; }
+    .meta-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--forest-4);
+      font-size: .82rem;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-key { color: var(--ink-30); }
+    .meta-val { font-weight: 500; color: var(--ink); }
+    .meta-val.badge-wrap { display: flex; gap: 6px; }
+    .meta-badge {
+      padding: 2px 10px; border-radius: 100px; font-size: .72rem; font-weight: 600;
+    }
+    .meta-badge.green  { background: #D3F9E5; color: #0A6838; }
+    .meta-badge.amber  { background: #FEF3C7; color: #92400E; }
+    .meta-badge.terra  { background: var(--terra-light); color: #8B3020; }
+    .meta-badge.blue   { background: #DBEAFE; color: #1E40AF; }
+
+    /* ━━━━ FINANCIAL CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .financial-hero {
+      background: var(--forest);
+      border-radius: var(--r-sm);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .financial-hero::after {
+      content: 'ZAR';
+      position: absolute; right: 18px; top: 14px;
+      font-family: var(--font-m); font-size: .7rem; letter-spacing: .1em;
+      color: rgba(255,255,255,.2);
+    }
+    .financial-price-label { font-family: var(--font-m); font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; color: var(--egreen); margin-bottom: 4px; }
+    .financial-price { font-family: var(--font-d); font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+    .financial-per-m2 { font-size: .75rem; color: rgba(255,255,255,.4); margin-top: 2px; }
+    .financial-price-change {
+      font-family: var(--font-m); font-size: .72rem; font-weight: 600;
+      color: var(--egreen);
+      background: var(--egreen-dim);
+      padding: 4px 10px; border-radius: 100px;
+    }
+    .monthly-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 12px;
+    }
+    .monthly-tile {
+      border: 1px solid var(--forest-8);
+      border-radius: var(--r-sm);
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .monthly-tile-val { font-family: var(--font-d); font-size: 1rem; font-weight: 600; color: var(--ink); }
+    .monthly-tile-lab { font-size: .67rem; font-family: var(--font-m); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-30); margin-top: 2px; }
+
+    /* ━━━━ LOCATION CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .location-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
+    }
+    .location-tile {
+      background: var(--forest-4); border: 1px solid var(--forest-8);
+      border-radius: var(--r-sm); padding: 10px 12px;
+    }
+    .location-tile-key { font-family: var(--font-m); font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-30); margin-bottom: 3px; }
+    .location-tile-val { font-size: .84rem; font-weight: 600; color: var(--ink); }
+    .map-placeholder {
+      height: 150px;
+      background: linear-gradient(135deg, #e4ddd0 0%, #d4cbbf 100%);
+      border-radius: var(--r-sm);
+      border: 1px solid var(--forest-15);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .map-placeholder-pin {
+      width: 32px; height: 32px;
+      background: var(--terra);
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 8px rgba(196,86,42,.35);
+    }
+    .map-placeholder-label {
+      font-family: var(--font-m); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--ink-30);
+    }
+    .map-link {
+      position: absolute; bottom: 10px; right: 12px;
+      font-size: .72rem; font-weight: 500; color: var(--forest); text-decoration: none;
+      font-family: var(--font-m); letter-spacing: .06em;
+    }
+    .map-link:hover { text-decoration: underline; }
+
+    /* ━━━━ AMENITIES CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .amenity-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    }
+    .amenity-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 10px;
+      background: var(--forest-4);
+      border-left: 2px solid var(--forest);
+      border-radius: 0 var(--r-sm) var(--r-sm) 0;
+      font-size: .78rem; font-weight: 500; color: var(--forest);
+    }
+    .amenity-check { width: 14px; height: 14px; flex-shrink: 0; color: var(--forest); }
+
+    /* ━━━━ VERIFICATION CARD (side) ━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .ver-banner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--r-sm);
+      border: 1px solid;
+      margin-bottom: 14px;
+    }
+    .ver-banner.verified  { background: #D3F9E5; border-color: #6EE7B7; }
+    .ver-banner.pending   { background: #FEF3C7; border-color: #FCD977; }
+    .ver-banner.unverified{ background: var(--forest-4); border-color: var(--forest-15); }
+    .ver-icon-wrap { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ver-banner.verified  .ver-icon-wrap { background: #6EE7B7; }
+    .ver-banner.pending   .ver-icon-wrap { background: #FCD977; }
+    .ver-banner.unverified .ver-icon-wrap { background: var(--forest-15); }
+    .ver-status { font-size: .84rem; font-weight: 700; color: var(--ink); }
+    .ver-date { font-size: .72rem; color: var(--ink-30); margin-top: 1px; }
+    .ver-ref {
+      margin-left: auto;
+      font-family: var(--font-m); font-size: .7rem; font-weight: 600;
+      background: rgba(255,255,255,.7); color: var(--ink-60);
+      padding: 3px 10px; border-radius: 100px;
+      border: 1px solid var(--forest-15);
+      white-space: nowrap;
+    }
+    .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .date-tile {
+      background: var(--forest-4); border: 1px solid var(--forest-8);
+      border-radius: var(--r-sm); padding: 12px;
+    }
+    .date-tile-key { font-family: var(--font-m); font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-30); margin-bottom: 3px; }
+    .date-tile-val { font-size: .84rem; font-weight: 600; color: var(--ink); }
+
+    /* ━━━━ QUICK ACTIONS CARD (side) ━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .quick-actions { display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+    .qa-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--forest-15);
+      background: transparent;
+      cursor: pointer;
+      font-family: var(--font-b); font-size: .82rem; font-weight: 500;
+      color: var(--forest);
+      transition: background .15s;
+      text-align: left;
+    }
+    .qa-btn:hover { background: var(--forest-4); }
+    .qa-icon { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .qa-icon.green  { background: var(--egreen-dim); color: #0A7A3E; }
+    .qa-icon.terra  { background: var(--terra-light); color: var(--terra); }
+    .qa-icon.gold   { background: var(--gold-light); color: var(--gold); }
+    .qa-icon.blue   { background: #DBEAFE; color: #1E40AF; }
+    .qa-icon.forest { background: var(--forest-8); color: var(--forest); }
+    .qa-label { flex: 1; }
+    .qa-arrow { color: var(--ink-30); }
+
+    /* ━━━━ PERFORMANCE MINI-CHART (side) ━━━━━━━━━━━━━━━━━━━━━━ */
+    .perf-chart {
+      padding: 16px 18px;
+    }
+    .perf-heading { font-size: .78rem; font-weight: 600; color: var(--forest); margin-bottom: 12px; }
+    .perf-bars { display: flex; flex-direction: column; gap: 8px; }
+    .perf-bar-row { display: flex; align-items: center; gap: 10px; }
+    .perf-bar-label { font-size: .72rem; color: var(--ink-30); width: 62px; flex-shrink: 0; }
+    .perf-bar-track { flex: 1; height: 7px; background: var(--forest-8); border-radius: 100px; overflow: hidden; }
+    .perf-bar-fill  { height: 100%; border-radius: 100px; }
+    .perf-bar-fill.forest { background: var(--forest); }
+    .perf-bar-fill.terra  { background: var(--terra); }
+    .perf-bar-fill.gold   { background: var(--gold); }
+    .perf-bar-fill.egreen { background: var(--egreen); }
+    .perf-bar-val { font-family: var(--font-m); font-size: .72rem; font-weight: 600; color: var(--ink); width: 24px; text-align: right; }
+
+    /* ━━━━ SVG ICON HELPERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    svg { display: inline-block; vertical-align: middle; }
+
+    /* ━━━━ INTRO BANNER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .intro-banner {
+      background: var(--forest);
+      color: #fff;
+      padding: 32px 40px;
+      font-family: var(--font-d);
+    }
+    .intro-title { font-size: 2rem; font-weight: 400; margin-bottom: 6px; }
+    .intro-sub { font-family: var(--font-b); font-size: .88rem; color: rgba(255,255,255,.55); }
+    .intro-tags {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+    }
+    .intro-tag {
+      font-family: var(--font-m); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px;
+      background: rgba(255,255,255,.08); color: rgba(255,255,255,.7);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .intro-tag.new { background: var(--egreen-dim); color: var(--egreen); border-color: rgba(0,212,106,.3); }
+
+    /* ━━━━ ENHANCEMENTS SECTION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .enhancements {
+      padding: 40px 24px;
+    }
+    .enh-title {
+      font-family: var(--font-d); font-size: 1.5rem; font-weight: 400;
+      color: var(--forest); margin-bottom: 6px;
+    }
+    .enh-sub {
+      font-size: .82rem; color: var(--ink-30); margin-bottom: 32px;
+      font-family: var(--font-m); letter-spacing: .06em; text-transform: uppercase;
+    }
+    .enh-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .enh-card {
+      background: #fff;
+      border: 1px solid var(--forest-15);
+      border-radius: var(--r-md);
+      padding: 20px;
+    }
+    .enh-num {
+      font-family: var(--font-m); font-size: .65rem; font-weight: 600;
+      color: var(--terra); letter-spacing: .1em;
+      margin-bottom: 10px;
+    }
+    .enh-name { font-family: var(--font-d); font-size: 1.05rem; font-weight: 400; color: var(--forest); margin-bottom: 6px; }
+    .enh-desc { font-size: .8rem; line-height: 1.6; color: var(--ink-60); }
+    .enh-tag {
+      display: inline-block; margin-top: 10px;
+      font-family: var(--font-m); font-size: .62rem; text-transform: uppercase; letter-spacing: .08em;
+      padding: 3px 10px; border-radius: 100px;
+      background: var(--forest-4); color: var(--forest);
+      border: 1px solid var(--forest-15);
+    }
+    .enh-tag.new { background: var(--egreen-dim); color: #0A7A3E; border-color: rgba(0,212,106,.25); }
+  </style>
+</head>
+<body>
+
+  <!-- ━━━━━━━━━━━━━━━━ INTRO BANNER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="intro-banner">
+    <div class="intro-title">My Listing Detail — Rebrand Mockup</div>
+    <div class="intro-sub">Agent workspace · PRIBEC PropertyOS · April 2026</div>
+    <div class="intro-tags">
+      <span class="intro-tag">Fraunces + DM Sans</span>
+      <span class="intro-tag">Forest / Parchment palette</span>
+      <span class="intro-tag new">+ 6 New Enhancements</span>
+      <span class="intro-tag">Full desktop layout</span>
+    </div>
+  </div>
+
+  <!-- ━━━━━━━━━━━━━━━━ APP SHELL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="back-btn" title="Back">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M5 12l7-7M5 12l7 7"/></svg>
+      </button>
+      <div class="topbar-breadcrumb">
+        <a href="#">My Listings</a>
+        <span class="sep">/</span>
+        <a href="#">12 Acacia Avenue, Sandton</a>
+        <span class="sep">/</span>
+        <span class="current">Listing Details</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-ghost">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          Share
+        </button>
+        <button class="btn-ghost">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 11l-4 4m0 0l-4-4m4 4V3"/></svg>
+          Export
+        </button>
+        <button class="btn-primary">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit Listing
+        </button>
+        <button class="ai-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          AI Assistant
+          <span class="pulse"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO BAND -->
+  <div class="shell">
+    <div class="hero">
+      <!-- Left: hero image -->
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=900&q=85&fit=crop" alt="Property" />
+        <div class="hero-image-overlay"></div>
+        <div class="hero-image-chips">
+          <span class="chip chip-verified">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Verified
+          </span>
+          <span class="chip chip-for-sale">For Sale</span>
+          <span class="chip chip-active">Active</span>
+          <span class="chip chip-photo-count">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            14
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: info panel -->
+      <div class="hero-panel">
+        <div class="hero-panel-ref"># PRK-2024-4471</div>
+        <div class="hero-panel-address">12 Acacia Avenue,<br>Morningside</div>
+        <div class="hero-panel-city">Sandton, Gauteng</div>
+
+        <div class="hero-panel-price-label">Asking Price</div>
+        <div class="hero-panel-price">R 4 850 000</div>
+        <div style="font-size:.74rem;color:rgba(255,255,255,.38);margin-top:3px;">≈ R 7 917 / m²</div>
+
+        <div class="hero-spec-row">
+          <span class="spec-pill">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 012-2h16a2 2 0 012 2v8M2 20h20M9 12V7a3 3 0 016 0v5"/></svg>
+            4 Beds
+          </span>
+          <span class="spec-pill">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l1.5-5.5A1 1 0 015.5 3h13a1 1 0 011 .5L21 9M3 9h18M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9"/></svg>
+            3 Baths
+          </span>
+          <span class="spec-pill">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            612 m²
+          </span>
+          <span class="spec-pill">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8zM5 17v4M19 17v4"/></svg>
+            2 Garages
+          </span>
+        </div>
+
+        <div class="hero-divider"></div>
+
+        <!-- Key stats -->
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-box-value">47</div>
+            <div class="stat-box-label">Days Listed</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value accent">312</div>
+            <div class="stat-box-label">Total Views</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-value">8</div>
+            <div class="stat-box-label">Viewings</div>
+          </div>
+        </div>
+
+        <!-- Agent row -->
+        <div class="hero-panel-agent">
+          <div class="agent-avatar">PB</div>
+          <div>
+            <div class="agent-name">Priya Bechani</div>
+            <div class="agent-company">PropertyOS Realty</div>
+          </div>
+          <button class="edit-btn-hero">Edit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY PULSE STRIP -->
+    <div class="pulse-strip">
+      <span class="pulse-label">Today</span>
+      <span class="pulse-item pulse-views">
+        <span class="pulse-dot"></span>
+        312 portal views
+      </span>
+      <div class="pulse-divider"></div>
+      <button class="pulse-item pulse-req">
+        <span class="pulse-dot"></span>
+        3 viewing requests
+      </button>
+      <button class="pulse-item pulse-enq">
+        <span class="pulse-dot"></span>
+        5 enquiries
+      </button>
+      <button class="pulse-item pulse-offers">
+        <span class="pulse-dot"></span>
+        2 offers received
+      </button>
+      <a href="#" class="activity-link">View all activity →</a>
+    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-wrap">
+      <div class="tab-scroll">
+        <div class="tab active">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Listing Details
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Viewings
+          <span class="tab-badge">3</span>
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Enquiries
+          <span class="tab-badge">5</span>
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2"/></svg>
+          Open Houses
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+          Communications
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Documents
+          <span class="tab-badge">4</span>
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Condition
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Selling Points
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Notes
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Leads
+          <span class="tab-badge">7</span>
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          Offers
+          <span class="tab-badge">2</span>
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.98 1.61h9.72a2 2 0 001.98-1.61L23 6H6"/></svg>
+          Sale Details
+        </div>
+        <div class="tab">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Post-Sale
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY GRID -->
+    <div class="body-grid">
+
+      <!-- ── MAIN COLUMN ─────────────────────────────────────────────────── -->
+      <div class="main-col">
+
+        <!-- Description -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+              <span class="card-head-title">Description</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="description-text">
+              This immaculate 4-bedroom family home is nestled in the prestigious Morningside extension, offering an exceptional blend of modern luxury and timeless elegance. The home features an open-plan kitchen and living area that flows seamlessly onto a covered entertainer's patio overlooking the sparkling pool. The chef's kitchen is fitted with Caesarstone counters, a 5-burner gas hob, and integrated appliances. The master suite boasts a walk-in dressing room and spa-style en-suite bathroom. Three additional bedrooms all have built-in cupboards, with two sharing a family bathroom. The double automated garage leads directly into the home with additional covered parking. Security features include an 8-camera CCTV system, electric fencing, and 24-hour estate guarding.
+            </p>
+          </div>
+        </div>
+
+        <!-- Property Details -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <span class="card-head-title">Property Details</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="spec-grid">
+              <div class="spec-tile">
+                <div class="spec-tile-icon green">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 012-2h16a2 2 0 012 2v8"/><path d="M9 12V7a3 3 0 016 0v5"/></svg>
+                </div>
+                <span class="spec-tile-value">4</span>
+                <span class="spec-tile-label">Bedrooms</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon green">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l1.5-5.5A1 1 0 015.5 3h13a1 1 0 011 .5L21 9M3 9h18M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9"/></svg>
+                </div>
+                <span class="spec-tile-value">3</span>
+                <span class="spec-tile-label">Bathrooms</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon terra">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                </div>
+                <span class="spec-tile-value">612</span>
+                <span class="spec-tile-label">Total m²</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon terra">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                </div>
+                <span class="spec-tile-value">380</span>
+                <span class="spec-tile-label">Floor m²</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon gold">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8zM5 17v4M19 17v4"/></svg>
+                </div>
+                <span class="spec-tile-value">2</span>
+                <span class="spec-tile-label">Garages</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon gold">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                </div>
+                <span class="spec-tile-value">232</span>
+                <span class="spec-tile-label">Erf m²</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon green">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/></svg>
+                </div>
+                <span class="spec-tile-value">4</span>
+                <span class="spec-tile-label">Parking</span>
+              </div>
+              <div class="spec-tile">
+                <div class="spec-tile-icon terra">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
+                </div>
+                <span class="spec-tile-value">1</span>
+                <span class="spec-tile-label">Carport</span>
+              </div>
+            </div>
+            <div class="meta-rows">
+              <div class="meta-row"><span class="meta-key">Property Type</span><span class="meta-val">House</span></div>
+              <div class="meta-row"><span class="meta-key">Subtype</span><span class="meta-val">Freehold</span></div>
+              <div class="meta-row"><span class="meta-key">Listing Type</span><span class="meta-val">For Sale</span></div>
+              <div class="meta-row">
+                <span class="meta-key">Status</span>
+                <span class="meta-val badge-wrap"><span class="meta-badge green">Active</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Details -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <span class="card-head-title">Financial Details</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="financial-hero">
+              <div>
+                <div class="financial-price-label">Asking Price</div>
+                <div class="financial-price">R 4 850 000</div>
+                <div class="financial-per-m2">≈ R 7 917 / m²</div>
+              </div>
+              <span class="financial-price-change">+2.3% vs market</span>
+            </div>
+            <div class="monthly-grid">
+              <div class="monthly-tile">
+                <div class="monthly-tile-val">R 2 400</div>
+                <div class="monthly-tile-lab">Levy / mo</div>
+              </div>
+              <div class="monthly-tile">
+                <div class="monthly-tile-val">R 1 850</div>
+                <div class="monthly-tile-lab">Rates / mo</div>
+              </div>
+              <div class="monthly-tile">
+                <div class="monthly-tile-val">R 950</div>
+                <div class="monthly-tile-lab">Utilities / mo</div>
+              </div>
+            </div>
+            <div class="meta-rows">
+              <div class="meta-row"><span class="meta-key">Title Type</span><span class="meta-val">Sectional Title</span></div>
+              <div class="meta-row"><span class="meta-key">Listing Reference</span><span class="meta-val" style="font-family:var(--font-m);font-size:.8rem;">PRK-2024-4471</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <span class="card-head-title">Location</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <p style="font-size:.84rem;font-weight:600;color:var(--ink);margin-bottom:14px;">12 Acacia Avenue, Morningside Extension 4</p>
+            <div class="location-grid">
+              <div class="location-tile"><div class="location-tile-key">City</div><div class="location-tile-val">Sandton</div></div>
+              <div class="location-tile"><div class="location-tile-key">Region</div><div class="location-tile-val">Gauteng</div></div>
+              <div class="location-tile"><div class="location-tile-key">Postcode</div><div class="location-tile-val">2196</div></div>
+            </div>
+            <div class="map-placeholder">
+              <div class="map-placeholder-pin"></div>
+              <span class="map-placeholder-label">Map Preview</span>
+              <a href="#" class="map-link">View on Google Maps →</a>
+            </div>
+            <div class="meta-rows" style="margin-top:12px;">
+              <div class="meta-row"><span class="meta-key">Country</span><span class="meta-val">South Africa</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amenities & Features -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <span class="card-head-title">Amenities &amp; Features</span>
+            </div>
+            <span class="card-badge">12</span>
+          </div>
+          <div class="card-body">
+            <div class="amenity-grid">
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Swimming Pool</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Fibre Internet</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Solar Panels</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Borehole</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Pet Friendly</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>CCTV Security</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Electric Fence</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Covered Patio</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Flatlet / Cottage</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Water Storage</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Staff Quarters</div>
+              <div class="amenity-item"><svg class="amenity-check" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Study / Office</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /main-col -->
+
+      <!-- ── SIDE COLUMN ─────────────────────────────────────────────────── -->
+      <div class="side-col">
+
+        <!-- Listing Status Card -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <span class="card-head-title">Listing Status</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="ver-banner verified">
+              <div class="ver-icon-wrap">
+                <svg width="18" height="18" fill="none" stroke="#0A6838" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="ver-status">Verified</div>
+                <div class="ver-date">Verified 12 Mar 2024</div>
+              </div>
+              <span class="ver-ref"># PRK-2024-4471</span>
+            </div>
+            <div class="date-grid">
+              <div class="date-tile">
+                <div class="date-tile-key">Listed On</div>
+                <div class="date-tile-val">20 Feb 2024</div>
+              </div>
+              <div class="date-tile">
+                <div class="date-tile-key">Last Updated</div>
+                <div class="date-tile-val">05 Apr 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Mini-Chart -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <span class="card-head-title">Performance</span>
+            </div>
+            <span class="card-badge" style="font-size:.62rem;">Last 30 days</span>
+          </div>
+          <div class="perf-chart">
+            <div class="perf-bars">
+              <div class="perf-bar-row">
+                <span class="perf-bar-label">Portal Views</span>
+                <div class="perf-bar-track"><div class="perf-bar-fill egreen" style="width:88%"></div></div>
+                <span class="perf-bar-val">312</span>
+              </div>
+              <div class="perf-bar-row">
+                <span class="perf-bar-label">Enquiries</span>
+                <div class="perf-bar-track"><div class="perf-bar-fill forest" style="width:55%"></div></div>
+                <span class="perf-bar-val">5</span>
+              </div>
+              <div class="perf-bar-row">
+                <span class="perf-bar-label">Viewings</span>
+                <div class="perf-bar-track"><div class="perf-bar-fill terra" style="width:35%"></div></div>
+                <span class="perf-bar-val">3</span>
+              </div>
+              <div class="perf-bar-row">
+                <span class="perf-bar-label">Offers</span>
+                <div class="perf-bar-track"><div class="perf-bar-fill gold" style="width:22%"></div></div>
+                <span class="perf-bar-val">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-head-icon">
+                <svg width="14" height="14" fill="none" stroke="#1A3C28" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <span class="card-head-title">Quick Actions</span>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <button class="qa-btn">
+              <div class="qa-icon green"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+              <span class="qa-label">Schedule a Viewing</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon terra"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="2"/></svg></div>
+              <span class="qa-label">Schedule Open House</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon blue"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <span class="qa-label">Log Communication</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon gold"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+              <span class="qa-label">Add Offer</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon forest"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <span class="qa-label">Upload Document</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon green"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+              <span class="qa-label">Add Lead</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon terra"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></div>
+              <span class="qa-label">Share Listing</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="qa-btn">
+              <div class="qa-icon blue"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+              <span class="qa-label">Generate Report</span>
+              <svg class="qa-arrow" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /side-col -->
+    </div><!-- /body-grid -->
+  </div><!-- /shell -->
+
+  <!-- ━━━━━━━━━━━━━━━━ ENHANCEMENTS SECTION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="chrome-divider" style="margin:40px 24px;"></div>
+  <div class="enhancements">
+    <div class="enh-title">Proposed Enhancements</div>
+    <div class="enh-sub">6 new capabilities incorporated into this design</div>
+    <div class="enh-grid">
+      <div class="enh-card">
+        <div class="enh-num">01 — HERO</div>
+        <div class="enh-name">Immersive Hero Panel</div>
+        <div class="enh-desc">
+          Full-bleed property image with a forest-green info panel fused to the right. Key price, specs, days on market, and portal views are all visible above the fold — no scrolling required. Eliminates the thin topbar-only pattern.
+        </div>
+        <span class="enh-tag new">New layout</span>
+      </div>
+      <div class="enh-card">
+        <div class="enh-num">02 — ACTIVITY</div>
+        <div class="enh-name">Real-Time Activity Pulse Strip</div>
+        <div class="enh-desc">
+          A sticky alert row beneath the hero shows live counts for viewing requests, enquiries, and offers with colour-coded chips. Clicking a chip deep-links directly to that tab — replaces the ActivitySummary whitebox with something far more prominent.
+        </div>
+        <span class="enh-tag new">New component</span>
+      </div>
+      <div class="enh-card">
+        <div class="enh-num">03 — FINANCE</div>
+        <div class="enh-name">Price Intelligence Row</div>
+        <div class="enh-desc">
+          The financial card now shows a "+2.3% vs market" badge derived from comparable sales. Asking price is displayed alongside a per-m² rate so agents can justify pricing to buyers on the spot.
+        </div>
+        <span class="enh-tag new">New data point</span>
+      </div>
+      <div class="enh-card">
+        <div class="enh-num">04 — SIDEBAR</div>
+        <div class="enh-name">Performance Mini-Bar Chart</div>
+        <div class="enh-desc">
+          A sidebar card with horizon bars for Views, Enquiries, Viewings, and Offers in the last 30 days. Gives agents a quick health-check on listing performance without leaving the details tab.
+        </div>
+        <span class="enh-tag new">New component</span>
+      </div>
+      <div class="enh-card">
+        <div class="enh-num">05 — ACTIONS</div>
+        <div class="enh-name">Consolidated Quick Actions Panel</div>
+        <div class="enh-desc">
+          All 8 common agent actions (schedule viewing, add offer, upload doc, share listing, generate report…) are grouped in a persistent sidebar card with colour-coded icons. Reduces click-depth for the most frequent tasks.
+        </div>
+        <span class="enh-tag new">New component</span>
+      </div>
+      <div class="enh-card">
+        <div class="enh-num">06 — TOKENS</div>
+        <div class="enh-name">Refined Design System</div>
+        <div class="enh-desc">
+          Fraunces (display) + DM Sans (body) + JetBrains Mono (labels/refs). Parchment backgrounds with forest green as the dominant accent, terra red and amber gold as secondary signals. Consistent border-radius scale (8/14/20/28px).
+        </div>
+        <span class="enh-tag">Design system</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

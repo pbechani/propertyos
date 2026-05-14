@@ -51,6 +51,10 @@ docker/rabbitmq_data/
 docker/minio_data/
 docker/elasticsearch_data/
 
+# Local uploaded files (avatars, documents)
+apps/api/storage/
+storage/
+
 # Secrets (never commit these)
 *.pem
 *.key
@@ -67,3 +71,15 @@ infrastructure/terraform/.terraform.lock.hcl
 .cache/
 tmp/
 temp/
+
+# Expo
+.expo/
+
+sample_ui/
+
+# Agent Folder Security
+.github/
+
+# Tool-generated artifacts
+.playwright-mcp/
+.specify/

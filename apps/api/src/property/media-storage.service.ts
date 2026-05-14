@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { writeFile, mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
+import { homedir } from 'os';
 import {
   ALLOWED_MEDIA_MIME_TYPES,
   MAX_MEDIA_FILE_SIZE_BYTES,
@@ -7,9 +10,18 @@ import {
 
 @Injectable()
 export class MediaStorageService {
+  private get localStorageDir(): string {
+    return process.env.LOCAL_STORAGE_DIR ?? join(homedir(), '.pribec', 'storage');
+  }
+
+  private get publicBaseUrl(): string {
+    const port = process.env.PORT ?? '3001';
+    return process.env.PUBLIC_URL ?? `http://localhost:${port}`;
+  }
+
   /**
-   * Validates and "uploads" a media file (image or video) for a property listing.
-   * Storage path is set up for MinIO/S3 — real signed URL wired in a later sprint.
+   * Validates and saves a media file to local disk, returning a publicly accessible URL.
+   * TODO (D2): Replace local storage with MinIO/S3.
    */
   async uploadPropertyMedia(params: {
     propertyId: string;
@@ -22,10 +34,13 @@ export class MediaStorageService {
     const extension = this.getExtension(params.file.originalname, params.file.mimetype);
     const key = `property-media/${params.propertyId}/${params.agentId}/${randomUUID()}.${extension}`;
 
-    // TODO (D2): Replace with real MinIO/S3 signed URL
+    const filePath = join(this.localStorageDir, key);
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, params.file.buffer);
+
     return {
       storagePath: key,
-      signedUrl: `https://storage.pribec.local/${key}?expiresIn=3600`,
+      signedUrl: `${this.publicBaseUrl}/storage/${key}`,
       mediaType,
     };
   }

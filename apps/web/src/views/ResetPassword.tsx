@@ -2,11 +2,12 @@
 
 import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Home, Lock, Eye, EyeOff, CheckCircle, X, Check } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle, X, Check } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { authApi, ApiError } from "@/lib/api-client";
+import { AuthLayout } from "@/components/AuthLayout";
+
+const C = { forest: '#1A3C28', cream: '#EAD9C4', egreen: '#00E87A', parchment: '#F2E8D5' };
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -59,7 +60,13 @@ export default function ResetPassword() {
       }, 2000);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status === 400 || err.status === 401) {
+          setError("Your reset link is invalid or has expired. Please request a new one.");
+        } else if (err.status >= 500) {
+          setError("Server error while resetting password. Please try again shortly.");
+        } else {
+          setError("Unable to reset password right now.");
+        }
       } else {
         setError("Unable to reset password right now.");
       }
@@ -69,165 +76,115 @@ export default function ResetPassword() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-              <Home className="w-7 h-7 text-white" />
-            </div>
-            <span className="font-bold text-2xl">PropertyOS</span>
-          </Link>
-
-          <Card className="p-8 border-gray-200">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h1 className="text-2xl font-bold mb-2">Password Reset!</h1>
-              <p className="text-gray-600 mb-6">
-                Your password has been successfully reset. Redirecting you to sign in...
-              </p>
-            </div>
-          </Card>
+      <AuthLayout variant="centered">
+        <div className="text-center">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ background: `${C.egreen}20` }}
+          >
+            <CheckCircle className="w-7 h-7" style={{ color: C.egreen }} />
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 24, fontWeight: 700, color: C.forest, marginBottom: 8 }}>
+            Password Reset!
+          </h1>
+          <p className="text-sm" style={{ color: `${C.forest}70` }}>
+            Your password has been successfully reset. Redirecting you to sign in…
+          </p>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-            <Home className="w-7 h-7 text-white" />
-          </div>
-          <span className="font-bold text-2xl">PropertyOS</span>
-        </Link>
+    <AuthLayout variant="centered">
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 24, fontWeight: 700, color: C.forest, marginBottom: 6 }}>
+          Set New Password
+        </h1>
+        <p className="text-sm mb-6" style={{ color: `${C.forest}70` }}>
+          Your new password must be different from previously used passwords.
+        </p>
 
-        <Card className="p-8 border-gray-200">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Set New Password</h1>
-            <p className="text-gray-600">
-              Your new password must be different from previously used passwords.
-            </p>
+        {error && (
+          <div className="mb-5 p-3.5 rounded-xl flex items-start gap-3" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5' }}>
+            <span className="text-sm text-red-800">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: C.forest }}>New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: `${C.forest}60` }} />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="w-full pl-10 pr-12 py-3 rounded-xl text-sm focus:outline-none focus:ring-2"
+                style={{ border: `1.5px solid ${C.cream}`, background: 'rgba(255,255,255,0.7)', color: C.forest }}
+                required
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: `${C.forest}60` }}>
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
-              {error}
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: C.forest }}>Confirm Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: `${C.forest}60` }} />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full pl-10 pr-12 py-3 rounded-xl text-sm focus:outline-none focus:ring-2"
+                style={{ border: `1.5px solid ${passwordsMatch === false && confirmPassword ? '#FCA5A5' : C.cream}`, background: 'rgba(255,255,255,0.7)', color: C.forest }}
+                required
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: `${C.forest}60` }}>
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {confirmPassword && (
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+                {passwordsMatch
+                  ? <><Check className="w-3.5 h-3.5" style={{ color: C.egreen }} /><span style={{ color: C.egreen }}>Passwords match</span></>
+                  : <><X className="w-3.5 h-3.5 text-red-500" /><span className="text-red-500">Passwords do not match</span></>}
+              </div>
+            )}
+          </div>
+
+          {password && (
+            <div className="rounded-xl p-4 space-y-2" style={{ background: `${C.forest}08`, border: `1px solid ${C.forest}18` }}>
+              <p className="text-xs font-medium mb-2" style={{ color: C.forest }}>Password Requirements</p>
+              {requirements.map((req, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: req.met ? C.egreen : `${C.forest}30` }} />
+                  <span style={{ color: req.met ? C.forest : `${C.forest}50` }}>{req.text}</span>
+                </div>
+              ))}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                New Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
+          <button
+            type="submit"
+            disabled={isLoading || !allRequirementsMet || !passwordsMatch}
+            className="w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-60"
+            style={{ background: C.forest, color: C.parchment }}
+          >
+            {isLoading ? "Resetting…" : "Reset Password"}
+          </button>
+        </form>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-              {confirmPassword && (
-                <div className="mt-2 text-sm">
-                  {passwordsMatch ? (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <Check className="w-4 h-4" />
-                      Passwords match
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-600">
-                      <X className="w-4 h-4" />
-                      Passwords do not match
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {password && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="text-sm font-medium text-gray-900 mb-2">
-                  Password Requirements:
-                </div>
-                <div className="space-y-2">
-                  {requirements.map((req, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-2 text-sm ${
-                        req.met ? "text-green-600" : "text-gray-600"
-                      }`}
-                    >
-                      {req.met ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <X className="w-4 h-4 text-gray-400" />
-                      )}
-                      {req.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={isLoading || !allRequirementsMet || !passwordsMatch}
-              className="w-full bg-black hover:bg-gray-800 text-white py-3"
-            >
-              {isLoading ? "Resetting..." : "Reset Password"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Link to="/login" className="text-sm text-black font-semibold hover:underline">
-              Back to Sign In
-            </Link>
-          </div>
-        </Card>
+        <p className="mt-5 text-center text-sm">
+          <Link to="/login" className="font-semibold hover:underline" style={{ color: C.forest }}>
+            Back to Sign In
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

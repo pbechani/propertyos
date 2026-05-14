@@ -20,16 +20,34 @@
     "db:seed": "npm run seed --workspace=apps/api",
     "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker-compose -f docker/docker-compose.yml down",
-    "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f"
+    "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f",
+    "smoke:web": "bash scripts/smoke-web-routes.sh"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },
+  "overrides": {
+    "expo-font": "~12.0.10",
+    "@expo/vector-icons": "14.0.4",
+    "metro": "~0.80.12",
+    "metro-config": "~0.80.12",
+    "metro-resolver": "~0.80.12",
+    "metro-transform-worker": "~0.80.12",
+    "metro-runtime": "~0.80.12",
+    "metro-source-map": "~0.80.12",
+    "nativewind": "4.1.23",
+    "@react-native/metro-config": {
+      "metro": "~0.80.12"
+    }
+  },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "packageManager": "npm@10.2.0"
+  "packageManager": "npm@10.2.0",
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1"
+  }
 }

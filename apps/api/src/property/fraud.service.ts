@@ -17,6 +17,7 @@ export class FraudService {
     dto: CreateFraudReportDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<unknown> {
     const property = await this.prisma.$queryRaw<{ id: string }[]>`
       SELECT id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
@@ -25,13 +26,14 @@ export class FraudService {
 
     const result = await this.prisma.$queryRaw`
       INSERT INTO property.fraud_reports
-        (property_id, reporter_id, report_type, description, evidence_urls)
+        (property_id, reporter_id, report_type, description, evidence_urls, company_id)
       VALUES (
         ${propertyId}::uuid,
         ${reporterId}::uuid,
         ${dto.reportType},
         ${dto.description},
-        ${JSON.stringify(dto.evidenceUrls ?? [])}::jsonb
+        ${JSON.stringify(dto.evidenceUrls ?? [])}::jsonb,
+        ${companyId ?? null}::uuid
       )
       RETURNING *
     `;
@@ -47,6 +49,7 @@ export class FraudService {
     await this.audit.log({
       actorId: reporterId,
       actorRole: reporterRole,
+      companyId,
       action: 'property.fraud.reported',
       resourceType: 'property',
       resourceId: propertyId,

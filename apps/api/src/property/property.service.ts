@@ -2,11 +2,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { PrismaService } from '../database';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
+import { NotificationService } from '../identity/notification.service';
 import {
   CreatePropertyDto,
   UpdatePropertyDto,
@@ -17,26 +20,60 @@ import {
   DEFAULT_RADIUS_KM,
   MAX_MEDIA_PER_PROPERTY,
 } from './property.constants';
+import { SELF_COMPANY_SLUG } from '../identity/identity.constants';
+import { generateSaleReference, TOTAL_STAGES } from '../sales/sales.constants';
 
 export type PropertyRecord = {
   id: string;
   title: string;
   description: string | null;
   property_type: string;
+  property_subtype: string | null;
+  listing_type: string | null;
   status: string;
   price: string;
   currency: string;
   area_sqm: string | null;
+  erf_size_sqm: string | null;
+  floor_area_sqm: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   parking_spaces: number | null;
+  garages: number | null;
+  carports: number | null;
+  monthly_levy: string | null;
+  monthly_rates: string | null;
+  monthly_utilities: string | null;
+  title_type: string | null;
+  listing_reference: string | null;
   features: unknown;
   agent_id: string | null;
   owner_id: string | null;
+  /** Company the listing was created under. */
+  company_id: string | null;
+  /** Whether the listing's company is a system (Self) company. Null means no company was set (also treated as private). */
+  company_is_system: boolean | null;
+  /** Display name of the company the listing was created under. */
+  company_name: string | null;
+  /** Logo URL of the company the listing was created under. */
+  company_logo_url: string | null;
+  /** Brand color hex (e.g. "#4A9E8E") of the company. Used for property card header theming. */
+  company_brand_color: string | null;
+  /** Status of the company the listing was created under. Used to show investigation badge. */
+  company_status: string | null;
   verification_status: string;
   verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  /** Running count of non-owner page views (authenticated + anonymous). Anonymous views are
+   *  deduplicated per IP per hour via property.anonymous_view_logs. See migrations
+   *  202603060017 and 202604160050. */
+  view_count: number;
+  /** True when the listing's agent has been platform-suspended. Non-self-company listings remain
+   * visible but have interactions disabled; self-company listings are also set to 'inactive'. */
+  agent_suspended: boolean;
+  /** ISO timestamp of the next scheduled open house, if any. Injected by the search query. */
+  next_open_house_at?: string | null;
 };
 
 export type PropertyWithLocation = PropertyRecord & {
@@ -60,12 +97,71 @@ export type PropertyWithLocation = PropertyRecord & {
   }[];
 };
 
+export type FeaturedAgent = {
+  id: string;
+  fullName: string;
+  location: string;
+  tier: 'gold' | 'silver' | 'bronze';
+  deals: number;
+};
+
+export type AgentProfileListing = {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  currency: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: string | null;
+  status: string;
+  verification_status: string;
+  created_at: Date;
+  media_url: string | null;
+};
+
+export type AgentProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: string;
+  totalListings: number;
+  activeListings: number;
+  verifiedListings: number;
+  primaryCity: string;
+  /** Slug of the agent's primary non-system company, or null when they only belong to "Self". */
+  primaryCompanySlug: string | null;
+  /** Display name of the agent's primary non-system company. */
+  primaryCompanyName: string | null;
+  /** Logo URL of the agent's primary non-system company. */
+  primaryCompanyLogoUrl: string | null;
+  createdAt: Date | null;
+  listings: AgentProfileListing[];
+};
+
+export type AgentReviewRow = {
+  id: string;
+  reviewerName: string | null;
+  reviewerEmail: string | null;
+  rating: number;
+  comment: string | null;
+  propertyType: string | null;
+  propertyId: string | null;
+  createdAt: Date;
+};
+
 @Injectable()
 export class PropertyService {
+  private readonly logger = new Logger(PropertyService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaStorage: MediaStorageService,
     private readonly audit: PropertyAuditService,
+    private readonly notifications: NotificationService,
   ) {}
 
   // ──────────────────────────────────────────────────────────
@@ -78,17 +174,38 @@ export class PropertyService {
     dto: CreatePropertyDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<PropertyRecord> {
     const normalized = this.normalizeCreateDto(dto);
 
+    // Every listing must be attached to a company so that company_is_system is
+    // reliably set. When the caller has no explicit company context (JWT carries
+    // null active_company_id) fall back to the user's own Self system company so
+    // the listing is correctly flagged as privately listed.
+    let resolvedCompanyId = companyId ?? null;
+    if (!resolvedCompanyId) {
+      const selfRows = await this.prisma.$queryRaw<Array<{ company_id: string }>>`
+        SELECT cm.company_id
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = ${agentId}::uuid
+          AND c.is_system = true
+          AND c.slug = ${SELF_COMPANY_SLUG}
+          AND cm.status = 'active'
+        LIMIT 1
+      `;
+      resolvedCompanyId = selfRows[0]?.company_id ?? null;
+    }
+
     const property = await this.prisma.$queryRaw<PropertyRecord[]>`
       INSERT INTO property.properties (
-        title, description, property_type, price, currency,
-        area_sqm, bedrooms, bathrooms, parking_spaces, features, agent_id
+        title, description, property_type, listing_type, price, currency,
+        area_sqm, bedrooms, bathrooms, parking_spaces, features, agent_id, owner_id, company_id
       ) VALUES (
         ${normalized.title},
         ${normalized.description ?? null},
         ${normalized.propertyType},
+        ${normalized.listingType ?? null},
         ${normalized.price},
         ${normalized.currency ?? 'USD'},
         ${normalized.areaSqm ?? null},
@@ -96,7 +213,9 @@ export class PropertyService {
         ${normalized.bathrooms ?? null},
         ${normalized.parkingSpaces ?? null},
         ${JSON.stringify(normalized.features ?? [])}::jsonb,
-        ${agentId}::uuid
+        ${agentId}::uuid,
+        ${agentId}::uuid,
+        ${resolvedCompanyId}::uuid
       )
       RETURNING *
     `;
@@ -110,6 +229,7 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
+      companyId: resolvedCompanyId,
       action: 'property.created',
       resourceType: 'property',
       resourceId: created.id,
@@ -121,9 +241,128 @@ export class PropertyService {
     return created;
   }
 
-  async findById(id: string): Promise<PropertyWithLocation> {
-    const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
+  async duplicateProperty(
+    id: string,
+    actorId: string,
+    actorRole: string,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<PropertyRecord> {
+    // Fetch source property
+    const sources = await this.prisma.$queryRaw<PropertyRecord[]>`
       SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
+    `;
+    if (!sources[0]) {
+      throw new NotFoundException('Property not found');
+    }
+    const src = sources[0];
+
+    // Non-admins can only duplicate their own listings
+    if (actorRole !== 'admin' && src.agent_id !== actorId && src.owner_id !== actorId) {
+      throw new ForbiddenException('You do not have permission to duplicate this listing');
+    }
+
+    // Resolve company (same pattern as create)
+    let resolvedCompanyId = companyId ?? src.company_id ?? null;
+    if (!resolvedCompanyId) {
+      const selfRows = await this.prisma.$queryRaw<Array<{ company_id: string }>>`
+        SELECT cm.company_id
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = ${actorId}::uuid
+          AND c.is_system = true
+          AND c.slug = ${SELF_COMPANY_SLUG}
+          AND cm.status = 'active'
+        LIMIT 1
+      `;
+      resolvedCompanyId = selfRows[0]?.company_id ?? null;
+    }
+
+    const newTitle = `${src.title} (Copy)`;
+
+    const newProperty = await this.prisma.$queryRaw<PropertyRecord[]>`
+      INSERT INTO property.properties (
+        title, description, property_type, property_subtype, listing_type, listing_reference,
+        title_type, price, currency, area_sqm, floor_area_sqm, erf_size_sqm,
+        bedrooms, bathrooms, parking_spaces, garages, carports,
+        monthly_levy, monthly_rates, monthly_utilities,
+        features, agent_id, owner_id, company_id, status
+      ) VALUES (
+        ${newTitle},
+        ${src.description ?? null},
+        ${src.property_type},
+        ${(src as any).property_subtype ?? null},
+        ${src.listing_type ?? null},
+        ${null},
+        ${(src as any).title_type ?? null},
+        ${src.price},
+        ${src.currency ?? 'ZAR'},
+        ${src.area_sqm ?? null},
+        ${(src as any).floor_area_sqm ?? null},
+        ${(src as any).erf_size_sqm ?? null},
+        ${src.bedrooms ?? null},
+        ${src.bathrooms ?? null},
+        ${src.parking_spaces ?? null},
+        ${(src as any).garages ?? null},
+        ${(src as any).carports ?? null},
+        ${(src as any).monthly_levy ?? null},
+        ${(src as any).monthly_rates ?? null},
+        ${(src as any).monthly_utilities ?? null},
+        ${JSON.stringify(src.features ?? [])}::jsonb,
+        ${actorId}::uuid,
+        ${actorId}::uuid,
+        ${resolvedCompanyId}::uuid,
+        'draft'
+      )
+      RETURNING *
+    `;
+
+    const created = newProperty[0];
+
+    // Copy location if it exists
+    const srcLocation = await this.getLocation(id);
+    if (srcLocation) {
+      await this.upsertLocation(created.id, {
+        addressLine1: srcLocation.address_line1 ?? undefined,
+        city: srcLocation.city ?? undefined,
+        region: srcLocation.region ?? undefined,
+        country: srcLocation.country ?? 'ZA',
+        postalCode: srcLocation.postal_code ?? undefined,
+        latitude: srcLocation.latitude ? Number(srcLocation.latitude) : undefined,
+        longitude: srcLocation.longitude ? Number(srcLocation.longitude) : undefined,
+      });
+    }
+
+    await this.audit.log({
+      actorId,
+      actorRole,
+      companyId: resolvedCompanyId,
+      action: 'property.duplicated',
+      resourceType: 'property',
+      resourceId: created.id,
+      payload: { sourceId: id, title: created.title },
+      ipAddress,
+      userAgent,
+    });
+
+    return created;
+  }
+
+  async findById(
+    id: string,
+    viewContext?: {
+      actorId?: string;
+      actorRole?: string;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+  ): Promise<PropertyWithLocation> {
+    const properties = await this.prisma.$queryRaw<PropertyRecord[]>`
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
+      WHERE p.id = ${id}::uuid LIMIT 1
     `;
 
     if (!properties[0]) {
@@ -133,6 +372,75 @@ export class PropertyService {
     const property = properties[0];
     const location = await this.getLocation(id);
     const media = await this.getMedia(id);
+
+    // Increment the mutable view counter when the visitor is NOT the owner/agent.
+    //
+    // Authenticated visitors: counted immediately (actorId present, not owner).
+    //
+    // Anonymous visitors: counted once per IP per property per hour using the
+    //   property.anonymous_view_logs table.  The IP is stored as a SHA-256 hash
+    //   so no PII is persisted.  This deduplication prevents:
+    //     a) Next.js SSR calls firing multiple increments for the same page load.
+    //     b) Rapid page refreshes inflating the counter.
+    //   Views from different IP addresses (real unique anonymous visitors) are each counted.
+    const actorId = viewContext?.actorId;
+    const isOwnerView =
+      actorId &&
+      (actorId === property.agent_id || actorId === property.owner_id);
+
+    if (!isOwnerView) {
+      try {
+        if (actorId) {
+          // Authenticated non-owner: always count.
+          await this.prisma.$executeRaw`
+            UPDATE property.properties
+               SET view_count = view_count + 1
+             WHERE id = ${id}::uuid
+          `;
+        } else if (viewContext?.ipAddress) {
+          // Anonymous visitor: deduplicate by IP hash within a 1-hour window.
+          const ipHash = createHash('sha256').update(viewContext.ipAddress).digest('hex');
+          const existing = await this.prisma.$queryRaw<[{ cnt: string }]>`
+            SELECT COUNT(*)::text AS cnt
+              FROM property.anonymous_view_logs
+             WHERE property_id = ${id}::uuid
+               AND ip_hash     = ${ipHash}
+               AND viewed_at   > NOW() - INTERVAL '1 hour'
+          `;
+          const alreadyCounted = BigInt(existing[0]?.cnt ?? '0') > 0n;
+          if (!alreadyCounted) {
+            await this.prisma.$executeRaw`
+              INSERT INTO property.anonymous_view_logs (property_id, ip_hash)
+              VALUES (${id}::uuid, ${ipHash})
+            `;
+            await this.prisma.$executeRaw`
+              UPDATE property.properties
+                 SET view_count = view_count + 1
+               WHERE id = ${id}::uuid
+            `;
+          }
+        }
+      } catch {
+        // View counting must never block property reads.
+      }
+    }
+
+    // Still write an audit log entry so the full activity trail is preserved.
+    if (!isOwnerView) {
+      try {
+        await this.audit.log({
+          actorId: viewContext?.actorId,
+          actorRole: viewContext?.actorRole ?? 'public',
+          action: 'property.viewed',
+          resourceType: 'property',
+          resourceId: id,
+          ipAddress: viewContext?.ipAddress,
+          userAgent: viewContext?.userAgent,
+        });
+      } catch {
+        // Audit log failures must not block property reads.
+      }
+    }
 
     return { ...property, location: location ?? null, media };
   }
@@ -144,6 +452,7 @@ export class PropertyService {
     dto: UpdatePropertyDto,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<PropertyRecord> {
     const normalized = this.normalizeUpdateDto(dto);
 
@@ -153,8 +462,8 @@ export class PropertyService {
 
     if (!existing[0]) throw new NotFoundException('Property not found');
 
-    // Agents may only edit their own listings; admins may edit any
-    if (actorRole === 'agent' && existing[0].agent_id !== actorId) {
+    // Any non-admin may only edit their own listings
+    if (actorRole !== 'admin' && existing[0].agent_id !== actorId) {
       throw new ForbiddenException('You can only update your own listings');
     }
 
@@ -166,11 +475,23 @@ export class PropertyService {
       title: 'title',
       description: 'description',
       status: 'status',
+      propertyType: 'property_type',
+      property_subtype: 'property_subtype',
+      listingType: 'listing_type',
+      listing_reference: 'listing_reference',
+      title_type: 'title_type',
       price: 'price',
       currency: 'currency',
+      monthly_levy: 'monthly_levy',
+      monthly_rates: 'monthly_rates',
+      monthly_utilities: 'monthly_utilities',
       areaSqm: 'area_sqm',
+      floor_area_sqm: 'floor_area_sqm',
+      erf_size_sqm: 'erf_size_sqm',
       bedrooms: 'bedrooms',
       bathrooms: 'bathrooms',
+      garages: 'garages',
+      carports: 'carports',
       parkingSpaces: 'parking_spaces',
     };
 
@@ -212,9 +533,24 @@ export class PropertyService {
       await this.upsertLocation(id, normalized.location);
     }
 
+    // Record price change in price_history table
+    if (normalized.price !== undefined && String(normalized.price) !== String(existing[0].price)) {
+      await this.prisma.$queryRaw`
+        INSERT INTO property.price_history (property_id, old_price, new_price, currency, changed_by)
+        VALUES (
+          ${id}::uuid,
+          ${existing[0].price}::decimal,
+          ${normalized.price}::decimal,
+          ${updated.currency ?? existing[0].currency ?? 'ZAR'},
+          ${actorId}::uuid
+        )
+      `;
+    }
+
     await this.audit.log({
       actorId,
       actorRole,
+      companyId,
       action: 'property.updated',
       resourceType: 'property',
       resourceId: id,
@@ -232,6 +568,7 @@ export class PropertyService {
     actorRole: string,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<void> {
     const existing = await this.prisma.$queryRaw<PropertyRecord[]>`
       SELECT * FROM property.properties WHERE id = ${id}::uuid LIMIT 1
@@ -239,7 +576,7 @@ export class PropertyService {
 
     if (!existing[0]) throw new NotFoundException('Property not found');
 
-    if (actorRole === 'agent' && existing[0].agent_id !== actorId) {
+    if (actorRole !== 'admin' && existing[0].agent_id !== actorId) {
       throw new ForbiddenException('You can only delete your own listings');
     }
 
@@ -250,6 +587,7 @@ export class PropertyService {
     await this.audit.log({
       actorId,
       actorRole,
+      companyId,
       action: 'property.deleted',
       resourceType: 'property',
       resourceId: id,
@@ -259,12 +597,119 @@ export class PropertyService {
   }
 
   // ──────────────────────────────────────────────────────────
+  // Agent: own listings (all statuses, including drafts)
+  // ──────────────────────────────────────────────────────────
+
+  async getMyListings(
+    agentId: string,
+    status?: string,
+    companyId?: string | null,
+  ): Promise<{ data: PropertyWithLocation[]; total: number }> {
+    const hasStatusFilter = !!status && status !== 'all';
+    const hasCompanyFilter = !!companyId;
+
+    const conditions: string[] = ['p.agent_id = $1::uuid'];
+    const values: unknown[] = [agentId];
+
+    if (hasStatusFilter) {
+      values.push(status);
+      conditions.push(`p.status = $${values.length}`);
+    }
+    if (hasCompanyFilter) {
+      values.push(companyId);
+      conditions.push(`p.company_id = $${values.length}::uuid`);
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const dataQuery = `
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+    `;
+
+    const [countRows, dataRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<[{ total: string }]>(countQuery, ...values),
+      this.prisma.$queryRawUnsafe<PropertyRecord[]>(dataQuery, ...values),
+    ]);
+
+    const total = parseInt(countRows[0]?.total ?? '0', 10);
+
+    const enriched = await Promise.all(
+      dataRows.map(async (p) => {
+        const location = await this.getLocation(p.id);
+        const media = await this.getMedia(p.id);
+        return { ...p, location: location ?? null, media };
+      }),
+    );
+
+    return { data: enriched, total };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Buyer/Seller: own listings by owner_id (all statuses)
+  // ──────────────────────────────────────────────────────────
+
+  async getOwnerListings(
+    userId: string,
+    status?: string,
+    companyId?: string | null,
+  ): Promise<{ data: PropertyWithLocation[]; total: number }> {
+    const hasStatusFilter = !!status && status !== 'all';
+    const hasCompanyFilter = !!companyId;
+
+    const conditions: string[] = ['(p.owner_id = $1::uuid OR p.agent_id = $1::uuid)'];
+    const values: unknown[] = [userId];
+
+    if (hasStatusFilter) {
+      values.push(status);
+      conditions.push(`p.status = $${values.length}`);
+    }
+    if (hasCompanyFilter) {
+      values.push(companyId);
+      conditions.push(`p.company_id = $${values.length}::uuid`);
+    }
+
+    const whereClause = 'WHERE ' + conditions.join(' AND ');
+
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const dataQuery = `
+      SELECT DISTINCT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+    `;
+
+    const [countRows, dataRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<[{ total: string }]>(countQuery, ...values),
+      this.prisma.$queryRawUnsafe<PropertyRecord[]>(dataQuery, ...values),
+    ]);
+
+    const total = parseInt(countRows[0]?.total ?? '0', 10);
+
+    const enriched = await Promise.all(
+      dataRows.map(async (p) => {
+        const location = await this.getLocation(p.id);
+        const media = await this.getMedia(p.id);
+        return { ...p, location: location ?? null, media };
+      }),
+    );
+
+    return { data: enriched, total };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // Search
   // ──────────────────────────────────────────────────────────
 
   async search(
     dto: SearchPropertiesDto,
   ): Promise<{ data: PropertyWithLocation[]; total: number; page: number; limit: number }> {
+    const agentId = dto.agentId ?? dto.agent_id;
     const minPrice = dto.minPrice ?? dto.min_price;
     const maxPrice = dto.maxPrice ?? dto.max_price;
     const radiusKm = dto.radiusKm ?? dto.radius_km ?? DEFAULT_RADIUS_KM;
@@ -275,13 +720,21 @@ export class PropertyService {
     const limit = dto.limit ?? DEFAULT_PAGE_LIMIT;
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = ["p.status = 'active'"];
+    const conditions: string[] = [
+      "p.status IN ('active', 'under_offer', 'sold')",
+      "(p.company_id IS NULL OR c.status != 'suspended')",
+    ];
     const values: unknown[] = [];
     let idx = 1;
 
     if (dto.type) {
       conditions.push(`p.property_type = $${idx++}`);
       values.push(dto.type);
+    }
+
+    if (agentId) {
+      conditions.push(`p.agent_id = $${idx++}::uuid`);
+      values.push(agentId);
     }
 
     if (minPrice !== undefined) {
@@ -322,6 +775,12 @@ export class PropertyService {
       }
     }
 
+    if (dto.q) {
+      conditions.push(`(p.title ILIKE $${idx} OR p.description ILIKE $${idx})`);
+      idx++;
+      values.push(`%${dto.q}%`);
+    }
+
     // Geo-radius filter using PostGIS ST_DWithin
     const hasGeo = dto.lat !== undefined && dto.lng !== undefined;
     if (hasGeo) {
@@ -358,9 +817,14 @@ export class PropertyService {
     };
     const orderBy = orderMap[dto.sort ?? 'newest'];
 
-    const countQuery = `SELECT COUNT(*) as total FROM property.properties p ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM property.properties p LEFT JOIN identity.companies c ON c.id = p.company_id ${whereClause}`;
     const dataQuery = `
-      SELECT p.* FROM property.properties p
+      SELECT p.*, c.is_system AS company_is_system, c.name AS company_name, c.logo_url AS company_logo_url, c.brand_color AS company_brand_color, c.status AS company_status,
+        (SELECT MIN(oh.scheduled_at)::text FROM property.open_houses oh
+          WHERE oh.property_id = p.id AND oh.status = 'scheduled' AND oh.scheduled_at > NOW()
+        ) AS next_open_house_at
+      FROM property.properties p
+      LEFT JOIN identity.companies c ON c.id = p.company_id
       ${whereClause}
       ORDER BY ${orderBy}
       LIMIT $${idx++}
@@ -391,32 +855,62 @@ export class PropertyService {
   // Agent dashboard stats
   // ──────────────────────────────────────────────────────────
 
-  async getAgentDashboard(agentId: string): Promise<{
+  async getAgentDashboard(agentId: string, companyId?: string | null): Promise<{
     totalListings: number;
     byStatus: Record<string, number>;
     newInquiries7d: number;
     verificationSummary: Record<string, number>;
+    listingViewsLast7d: number;
+    listingViewsPrevious7d: number;
+    listingViewsTrendPct: number;
+    inquiryResponseRatePct: number;
   }> {
-    const [listingRows, inquiryRows, verRows] = await Promise.all([
-      this.prisma.$queryRaw<{ status: string; count: string }[]>`
+    const companyFilter = companyId ? `AND company_id = '${companyId}'::uuid` : '';
+    const companyJoinFilter = companyId ? `AND p.company_id = '${companyId}'::uuid` : '';
+    const [listingRows, inquiryRows, verRows, viewRows, responseRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<{ status: string; count: string }[]>(`
         SELECT status, COUNT(*)::text as count
         FROM property.properties
-        WHERE agent_id = ${agentId}::uuid
+        WHERE agent_id = $1::uuid ${companyFilter}
         GROUP BY status
-      `,
-      this.prisma.$queryRaw<[{ count: string }]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ count: string }]>(`
         SELECT COUNT(*)::text as count
         FROM property.inquiries i
         JOIN property.properties p ON i.property_id = p.id
-        WHERE p.agent_id = ${agentId}::uuid
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
           AND i.created_at >= NOW() - INTERVAL '7 days'
-      `,
-      this.prisma.$queryRaw<{ verification_status: string; count: string }[]>`
+      `, agentId),
+      this.prisma.$queryRawUnsafe<{ verification_status: string; count: string }[]>(`
         SELECT verification_status, COUNT(*)::text as count
         FROM property.properties
-        WHERE agent_id = ${agentId}::uuid
+        WHERE agent_id = $1::uuid ${companyFilter}
         GROUP BY verification_status
-      `,
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ current_views: string; previous_views: string }]>(`
+        SELECT
+          COUNT(*) FILTER (WHERE al.created_at >= NOW() - INTERVAL '7 days')::text AS current_views,
+          COUNT(*) FILTER (
+            WHERE al.created_at < NOW() - INTERVAL '7 days'
+              AND al.created_at >= NOW() - INTERVAL '14 days'
+          )::text AS previous_views
+        FROM property.audit_logs al
+        JOIN property.properties p ON p.id = al.resource_id
+        WHERE al.action = 'property.viewed'
+          AND al.resource_type = 'property'
+          AND p.agent_id = $1::uuid ${companyJoinFilter}
+          AND (al.actor_id IS NULL OR (al.actor_id != p.agent_id AND al.actor_id != COALESCE(p.owner_id, p.agent_id)))
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ total_inquiries: string; responded_inquiries: string }]>(`
+        SELECT
+          COUNT(*)::text AS total_inquiries,
+          COUNT(*) FILTER (
+            WHERE i.status IN ('responded', 'closed') OR i.responded_at IS NOT NULL
+          )::text AS responded_inquiries
+        FROM property.inquiries i
+        JOIN property.properties p ON p.id = i.property_id
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
+      `, agentId),
     ]);
 
     const byStatus: Record<string, number> = {};
@@ -432,12 +926,643 @@ export class PropertyService {
       verificationSummary[row.verification_status] = parseInt(row.count, 10);
     }
 
+    const currentViews = parseInt(viewRows[0]?.current_views ?? '0', 10);
+    const previousViews = parseInt(viewRows[0]?.previous_views ?? '0', 10);
+    const listingViewsTrendPct =
+      previousViews > 0
+        ? Math.round(((currentViews - previousViews) / previousViews) * 100)
+        : currentViews > 0
+          ? 100
+          : 0;
+
+    const totalInquiries = parseInt(responseRows[0]?.total_inquiries ?? '0', 10);
+    const respondedInquiries = parseInt(responseRows[0]?.responded_inquiries ?? '0', 10);
+    const inquiryResponseRatePct =
+      totalInquiries > 0
+        ? Math.round((respondedInquiries / totalInquiries) * 100)
+        : 0;
+
     return {
       totalListings,
       byStatus,
       newInquiries7d: parseInt(inquiryRows[0]?.count ?? '0', 10),
       verificationSummary,
+      listingViewsLast7d: currentViews,
+      listingViewsPrevious7d: previousViews,
+      listingViewsTrendPct,
+      inquiryResponseRatePct,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Extended agent dashboard (Sprint 03 Enhanced)
+  // ---------------------------------------------------------------------------
+
+  async getAgentDashboardSummary(agentId: string, companyId?: string | null) {
+    const companyFilter = companyId ? `AND company_id = '${companyId}'::uuid` : '';
+    const companyJoinFilter = companyId ? `AND p.company_id = '${companyId}'::uuid` : '';
+    const [listing, mandate, viewRows, commissionRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<
+        { status: string; count: string; total_value: string }[]
+      >(`
+        SELECT status, COUNT(*)::text AS count, COALESCE(SUM(price),0)::text AS total_value
+        FROM property.properties
+        WHERE agent_id = $1::uuid ${companyFilter}
+        GROUP BY status
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ active: string; pending: string }]>(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'active')::text AS active,
+          COUNT(*) FILTER (WHERE status = 'pending')::text AS pending
+        FROM property.mandates
+        WHERE agent_id = $1::uuid
+      `, agentId),
+      this.prisma.$queryRawUnsafe<[{ upcoming: string; today: string }]>(`
+        SELECT
+          COUNT(*) FILTER (WHERE v.scheduled_at >= NOW() AND v.status = 'confirmed')::text AS upcoming,
+          COUNT(*) FILTER (
+            WHERE DATE(v.scheduled_at) = CURRENT_DATE AND v.status IN ('confirmed','pending')
+          )::text AS today
+        FROM property.viewings v
+        WHERE v.agent_id = $1::uuid
+      `, agentId),
+      this.prisma.$queryRawUnsafe<
+        { property_id: string; title: string; price: string; stage_name: string | null }[]
+      >(`
+        SELECT p.id AS property_id, p.title, p.price::text, sc.stage_name
+        FROM property.properties p
+        JOIN sales.property_sales ps ON ps.property_id = p.id AND ps.status = 'active'
+        JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country
+        WHERE p.agent_id = $1::uuid ${companyJoinFilter}
+        ORDER BY p.price DESC
+        LIMIT 10
+      `, agentId),
+    ]);
+
+    const byStatus: Record<string, { count: number; totalValue: number }> = {};
+    let totalListings = 0;
+    let pipelineValue = 0;
+    for (const r of listing) {
+      const count = parseInt(r.count, 10);
+      const tv = parseFloat(r.total_value);
+      byStatus[r.status] = { count, totalValue: tv };
+      totalListings += count;
+      if (r.status === 'active') pipelineValue += tv;
+    }
+
+    return {
+      totalListings,
+      byStatus,
+      activeMandates: parseInt(mandate[0]?.active ?? '0', 10),
+      pendingMandates: parseInt(mandate[0]?.pending ?? '0', 10),
+      upcomingViewings: parseInt(viewRows[0]?.upcoming ?? '0', 10),
+      viewingsToday: parseInt(viewRows[0]?.today ?? '0', 10),
+      pipelineValue,
+      recentDeals: commissionRows,
+    };
+  }
+
+  async getAgentListingsPerformance(agentId: string) {
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT
+        p.id, p.title, p.status, p.price, p.currency,
+        p.created_at,
+        EXTRACT(DAY FROM NOW() - p.created_at)::int AS days_on_market,
+        p.view_count::int AS views,
+        (SELECT COUNT(*) FROM property.saved_properties s
+         WHERE s.property_id = p.id)::int AS saves,
+        (SELECT COUNT(*) FROM property.inquiries i
+         WHERE i.property_id = p.id)::int AS inquiries,
+        (SELECT COUNT(*) FROM property.viewings v
+         WHERE v.property_id = p.id AND v.status = 'completed')::int AS completed_viewings,
+        (SELECT COUNT(*) FROM sales.property_offers po
+         WHERE po.property_id = p.id AND po.status NOT IN ('withdrawn', 'expired'))::int AS offer_count,
+        pl.city, pl.region
+      FROM property.properties p
+      LEFT JOIN property.property_locations pl ON pl.property_id = p.id
+      WHERE p.agent_id = ${agentId}::uuid
+      ORDER BY p.created_at DESC
+    `;
+  }
+
+  /** Per-property statistics for the listing creator (agent or owner). */
+  async getPropertyStats(userId: string, propertyId: string) {
+    const rows = await this.prisma.$queryRaw<
+      { agent_id: string | null; owner_id: string | null }[]
+    >`
+      SELECT agent_id::text, owner_id::text
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Property not found');
+    const prop = rows[0];
+    if (prop.agent_id !== userId && prop.owner_id !== userId) {
+      throw new ForbiddenException('You can only view stats for your own listings');
+    }
+
+    const stats = await this.prisma.$queryRaw<
+      {
+        views: string;
+        saves: string;
+        inquiries: string;
+        viewings_requested: string;
+        viewings_confirmed: string;
+        viewings_completed: string;
+        viewings_declined: string;
+        viewings_cancelled: string;
+        open_houses_scheduled: string;
+        documents_count: string;
+        leads_count: string;
+        days_on_market: string;
+      }[]
+    >`
+      SELECT
+        p.view_count::text AS views,
+        (SELECT COUNT(*)::text FROM property.saved_properties
+         WHERE property_id = ${propertyId}::uuid) AS saves,
+        (SELECT COUNT(*)::text FROM property.inquiries
+         WHERE property_id = ${propertyId}::uuid) AS inquiries,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'requested') AS viewings_requested,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'confirmed') AS viewings_confirmed,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'completed') AS viewings_completed,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'declined') AS viewings_declined,
+        (SELECT COUNT(*)::text FROM property.viewings
+         WHERE property_id = ${propertyId}::uuid AND status = 'cancelled') AS viewings_cancelled,
+        (SELECT COUNT(*)::text FROM property.open_houses
+         WHERE property_id = ${propertyId}::uuid AND status = 'scheduled' AND scheduled_at > NOW()) AS open_houses_scheduled,
+        (SELECT COUNT(*)::text FROM property.verifications
+         WHERE property_id = ${propertyId}::uuid) AS documents_count,
+        (SELECT COUNT(*)::text FROM identity.leads
+         WHERE assigned_property_id = ${propertyId}::uuid) AS leads_count,
+        EXTRACT(DAY FROM NOW() - p.created_at)::text AS days_on_market
+      FROM property.properties p
+      WHERE p.id = ${propertyId}::uuid
+    `;
+    const s = stats[0];
+    const toInt = (v: string) => parseInt(v || '0', 10);
+    return {
+      views: toInt(s.views),
+      saves: toInt(s.saves),
+      inquiries: toInt(s.inquiries),
+      viewings_requested: toInt(s.viewings_requested),
+      viewings_confirmed: toInt(s.viewings_confirmed),
+      viewings_completed: toInt(s.viewings_completed),
+      viewings_declined: toInt(s.viewings_declined),
+      viewings_cancelled: toInt(s.viewings_cancelled),
+      open_houses_scheduled: toInt(s.open_houses_scheduled),
+      documents_count: toInt(s.documents_count),
+      leads_count: toInt(s.leads_count),
+      days_on_market: toInt(s.days_on_market),
+    };
+  }
+
+  /** All viewings for a single property — accessible by listing agent or owner. */
+  async getPropertyViewingsList(userId: string, propertyId: string) {
+    const rows = await this.prisma.$queryRaw<
+      { agent_id: string | null; owner_id: string | null }[]
+    >`
+      SELECT agent_id::text, owner_id::text
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!rows.length) throw new NotFoundException('Property not found');
+    if (rows[0].agent_id !== userId && rows[0].owner_id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT
+        v.id, v.scheduled_at, v.status, v.viewing_type, v.duration_minutes,
+        v.buyer_feedback, v.cancel_reason, v.declined_at, v.rescheduled_at, v.created_at,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'name'
+          ELSE bu.first_name
+        END AS buyer_first_name,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN NULL
+          ELSE bu.last_name
+        END AS buyer_last_name,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'email'
+          ELSE bu.email
+        END AS buyer_email,
+        CASE
+          WHEN v.agent_id = v.buyer_id AND v.agent_notes IS NOT NULL
+          THEN v.agent_notes::jsonb->>'phone'
+          ELSE bu.phone
+        END AS buyer_phone
+      FROM property.viewings v
+      LEFT JOIN identity.users bu ON bu.id = v.buyer_id
+      WHERE v.property_id = ${propertyId}::uuid
+      ORDER BY v.scheduled_at DESC
+      LIMIT 50
+    `;
+  }
+
+  async getAgentActivityFeed(agentId: string) {
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT al.id, al.action, al.payload, al.created_at, al.actor_id,
+             p.id AS property_id, p.title AS property_title
+      FROM property.audit_logs al
+      JOIN property.properties p ON p.id = al.resource_id
+      WHERE p.agent_id = ${agentId}::uuid
+      ORDER BY al.created_at DESC
+      LIMIT 50
+    `;
+  }
+
+  async getAgentCommissionPipeline(agentId: string) {
+    const rows = await this.prisma.$queryRaw<
+      {
+        property_id: string;
+        title: string;
+        price: string;
+        mandate_type: string;
+        commission_rate: string | null;
+        stage_name: string | null;
+      }[]
+    >`
+      SELECT
+        p.id AS property_id, p.title, p.price::text,
+        m.mandate_type, m.commission_rate::text,
+        sc.stage_name
+      FROM property.properties p
+      JOIN property.mandates m ON m.property_id = p.id AND m.status = 'active'
+      LEFT JOIN sales.property_sales ps ON ps.property_id = p.id AND ps.status = 'active'
+      LEFT JOIN sales.stage_configs sc ON sc.stage_number = ps.current_stage AND sc.country = ps.country
+      WHERE m.agent_id = ${agentId}::uuid
+      ORDER BY p.price DESC
+    `;
+
+    const deals = rows.map((r) => {
+      const price = parseFloat(r.price);
+      const rate = r.commission_rate ? parseFloat(r.commission_rate) : null;
+      return {
+        ...r,
+        estimatedCommission: rate ? Math.round(price * (rate / 100)) : null,
+      };
+    });
+
+    const totalEstimated = deals.reduce(
+      (sum, d) => sum + (d.estimatedCommission ?? 0),
+      0,
+    );
+
+    return { deals, totalEstimated };
+  }
+
+  async getFeaturedAgents(limit = 8): Promise<FeaturedAgent[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        city: string | null;
+        active_listings: string;
+        verified_listings: string;
+      }[]
+    >(
+      `
+      SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        MAX(loc.city) AS city,
+        COUNT(*)::text AS active_listings,
+        COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings
+      FROM property.properties p
+      JOIN identity.users u ON u.id = p.agent_id
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE p.status = 'active' AND p.agent_id IS NOT NULL
+      GROUP BY u.id, u.first_name, u.last_name
+      ORDER BY COUNT(*) FILTER (WHERE p.verification_status = 'verified') DESC, COUNT(*) DESC
+      LIMIT $1
+      `,
+      limit,
+    );
+
+    return rows.map((row) => {
+      const verifiedListings = parseInt(row.verified_listings, 10) || 0;
+      const activeListings = parseInt(row.active_listings, 10) || 0;
+      const tier: FeaturedAgent['tier'] =
+        verifiedListings >= 10 ? 'gold' : verifiedListings >= 5 ? 'silver' : 'bronze';
+
+      return {
+        id: row.id,
+        fullName: `${row.first_name} ${row.last_name}`.trim(),
+        location: row.city ?? 'Location unavailable',
+        tier,
+        deals: activeListings,
+      };
+    });
+  }
+
+  async getAgentProfile(agentId: string): Promise<AgentProfile> {
+    const profileRows = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone: string | null;
+        avatar_url: string | null;
+        status: string;
+        created_at: Date | null;
+        total_listings: string;
+        active_listings: string;
+        verified_listings: string;
+        primary_city: string | null;
+        primary_company_slug: string | null;
+        primary_company_name: string | null;
+        primary_company_logo_url: string | null;
+      }[]
+    >(
+      `
+      SELECT
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.phone,
+        u.avatar_url,
+        u.status,
+        u.created_at,
+        COUNT(p.id)::text AS total_listings,
+        COUNT(*) FILTER (WHERE p.status = 'active')::text AS active_listings,
+        COUNT(*) FILTER (WHERE p.verification_status = 'verified')::text AS verified_listings,
+        MAX(loc.city) AS primary_city,
+        primary_co.slug AS primary_company_slug,
+        primary_co.name AS primary_company_name,
+        primary_co.logo_url AS primary_company_logo_url
+      FROM identity.users u
+      LEFT JOIN property.properties p ON p.agent_id = u.id
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT c.slug, c.name, c.logo_url
+        FROM identity.company_members cm
+        JOIN identity.companies c ON c.id = cm.company_id
+        WHERE cm.user_id = u.id
+          AND c.is_system = false
+          AND cm.status = 'active'
+        ORDER BY c.name
+        LIMIT 1
+      ) AS primary_co ON true
+      WHERE u.id = $1::uuid
+      GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.avatar_url, u.status, u.created_at,
+               primary_co.slug, primary_co.name, primary_co.logo_url
+      LIMIT 1
+      `,
+      agentId,
+    );
+
+    if (!profileRows[0]) {
+      throw new NotFoundException('Agent not found');
+    }
+
+    const listings = await this.prisma.$queryRawUnsafe<
+      {
+        id: string;
+        title: string;
+        city: string | null;
+        region: string | null;
+        price: string;
+        currency: string;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        area_sqm: string | null;
+        status: string;
+        verification_status: string;
+        created_at: Date;
+        media_url: string | null;
+      }[]
+    >(
+      `
+      SELECT
+        p.id,
+        p.title,
+        loc.city,
+        loc.region,
+        p.price::text,
+        p.currency,
+        p.bedrooms,
+        p.bathrooms,
+        p.area_sqm::text,
+        p.status,
+        p.verification_status,
+        p.created_at,
+        (
+          SELECT pm.url
+          FROM property.property_media pm
+          WHERE pm.property_id = p.id
+          ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.created_at ASC
+          LIMIT 1
+        ) AS media_url
+      FROM property.properties p
+      LEFT JOIN property.property_locations loc ON loc.property_id = p.id
+      WHERE p.agent_id = $1::uuid
+      ORDER BY p.created_at DESC
+      LIMIT 12
+      `,
+      agentId,
+    );
+
+    const profile = profileRows[0];
+
+    return {
+      id: profile.id,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      email: profile.email,
+      phone: profile.phone,
+      avatarUrl: profile.avatar_url,
+      status: profile.status,
+      totalListings: parseInt(profile.total_listings, 10) || 0,
+      activeListings: parseInt(profile.active_listings, 10) || 0,
+      verifiedListings: parseInt(profile.verified_listings, 10) || 0,
+      primaryCity: profile.primary_city ?? 'Location unavailable',
+      primaryCompanySlug: profile.primary_company_slug ?? null,
+      primaryCompanyName: profile.primary_company_name ?? null,
+      primaryCompanyLogoUrl: profile.primary_company_logo_url ?? null,
+      createdAt: profile.created_at ?? null,
+      listings: listings.map((listing) => ({
+        id: listing.id,
+        title: listing.title,
+        location: [listing.city, listing.region].filter(Boolean).join(', ') || 'Location unavailable',
+        price: listing.price,
+        currency: listing.currency,
+        bedrooms: listing.bedrooms,
+        bathrooms: listing.bathrooms,
+        area_sqm: listing.area_sqm,
+        status: listing.status,
+        verification_status: listing.verification_status,
+        created_at: listing.created_at,
+        media_url: listing.media_url,
+      })),
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Agent Reviews
+  // ──────────────────────────────────────────────────────────
+
+  async getAgentReviews(
+    agentId: string,
+    limit = 10,
+    offset = 0,
+  ): Promise<{ reviews: AgentReviewRow[]; total: number; averageRating: number }> {
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const [rows, countRows] = await Promise.all([
+      this.prisma.$queryRaw<AgentReviewRow[]>`
+        SELECT
+          id,
+          reviewer_name  AS "reviewerName",
+          reviewer_email AS "reviewerEmail",
+          rating,
+          comment,
+          property_type  AS "propertyType",
+          property_id    AS "propertyId",
+          created_at     AS "createdAt"
+        FROM property.agent_reviews
+        WHERE agent_id = ${agentId}::uuid
+          AND status = 'published'
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `,
+      this.prisma.$queryRaw<{ total: string; avg_rating: string }[]>`
+        SELECT
+          COUNT(*)::text                               AS total,
+          COALESCE(AVG(rating), 0)::text              AS avg_rating
+        FROM property.agent_reviews
+        WHERE agent_id = ${agentId}::uuid
+          AND status = 'published'
+      `,
+    ]);
+
+    return {
+      reviews: rows,
+      total: parseInt(countRows[0]?.total ?? '0', 10),
+      averageRating:
+        Math.round(parseFloat(countRows[0]?.avg_rating ?? '0') * 10) / 10,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // Agent Contact & Schedule Call
+  // ──────────────────────────────────────────────────────────
+
+  async contactAgent(
+    agentId: string,
+    dto: {
+      message?: string;
+      requesterName?: string;
+      requesterEmail?: string;
+      requesterPhone?: string;
+    },
+    requesterId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ id: string; status: string; createdAt: Date }> {
+    // Verify the agent exists
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const rows = await this.prisma.$queryRaw<{ id: string; status: string; created_at: Date }[]>`
+      INSERT INTO property.agent_contacts
+        (agent_id, requester_id, contact_type, message, requester_name, requester_email, requester_phone, ip_address, user_agent)
+      VALUES (
+        ${agentId}::uuid,
+        ${requesterId ? requesterId : null}::uuid,
+        'contact',
+        ${dto.message ?? null},
+        ${dto.requesterName ?? null},
+        ${dto.requesterEmail ?? null},
+        ${dto.requesterPhone ?? null},
+        ${ipAddress ?? null}::inet,
+        ${userAgent ?? null}
+      )
+      RETURNING id, status, created_at
+    `;
+
+    await this.audit.log({
+      actorId: requesterId,
+      actorRole: requesterId ? 'authenticated' : 'public',
+      action: 'agent.contact.requested',
+      resourceType: 'agent',
+      resourceId: agentId,
+      payload: { contactType: 'contact', hasMessage: Boolean(dto.message) },
+      ipAddress,
+      userAgent,
+    });
+
+    return { id: rows[0].id, status: rows[0].status, createdAt: rows[0].created_at };
+  }
+
+  async scheduleAgentCall(
+    agentId: string,
+    dto: {
+      preferredDate: string;
+      message?: string;
+      requesterName?: string;
+      requesterEmail?: string;
+      requesterPhone?: string;
+    },
+    requesterId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ id: string; status: string; createdAt: Date }> {
+    // Verify the agent exists
+    const agent = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM identity.users WHERE id = ${agentId}::uuid LIMIT 1
+    `;
+    if (!agent[0]) throw new NotFoundException('Agent not found');
+
+    const preferredDateTs = new Date(dto.preferredDate);
+    if (Number.isNaN(preferredDateTs.getTime())) {
+      throw new BadRequestException('Invalid preferredDate – must be an ISO date-time string');
+    }
+
+    const rows = await this.prisma.$queryRaw<{ id: string; status: string; created_at: Date }[]>`
+      INSERT INTO property.agent_contacts
+        (agent_id, requester_id, contact_type, message, requester_name, requester_email, requester_phone, preferred_date, ip_address, user_agent)
+      VALUES (
+        ${agentId}::uuid,
+        ${requesterId ? requesterId : null}::uuid,
+        'schedule_call',
+        ${dto.message ?? null},
+        ${dto.requesterName ?? null},
+        ${dto.requesterEmail ?? null},
+        ${dto.requesterPhone ?? null},
+        ${preferredDateTs}::timestamptz,
+        ${ipAddress ?? null}::inet,
+        ${userAgent ?? null}
+      )
+      RETURNING id, status, created_at
+    `;
+
+    await this.audit.log({
+      actorId: requesterId,
+      actorRole: requesterId ? 'authenticated' : 'public',
+      action: 'agent.call.scheduled',
+      resourceType: 'agent',
+      resourceId: agentId,
+      payload: { contactType: 'schedule_call', preferredDate: dto.preferredDate },
+      ipAddress,
+      userAgent,
+    });
+
+    return { id: rows[0].id, status: rows[0].status, createdAt: rows[0].created_at };
   }
 
   // ──────────────────────────────────────────────────────────
@@ -451,46 +1576,89 @@ export class PropertyService {
     file: Express.Multer.File,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<{ id: string; url: string; mediaType: string }> {
+    const items = await this.addMediaBatch(
+      propertyId,
+      agentId,
+      agentRole,
+      [file],
+      ipAddress,
+      userAgent,
+      companyId,
+    );
+
+    return items[0];
+  }
+
+  async addMediaBatch(
+    propertyId: string,
+    agentId: string,
+    agentRole: string,
+    files: Express.Multer.File[],
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<Array<{ id: string; url: string; mediaType: string }>> {
+    if (!files.length) {
+      throw new BadRequestException('At least one media file is required');
+    }
+
     await this.assertAgentOwns(propertyId, agentId, agentRole);
 
-    // Check media count limit
-    const count = await this.prisma.$queryRaw<[{ count: string }]>`
+    const countRows = await this.prisma.$queryRaw<[{ count: string }]>`
       SELECT COUNT(*)::text as count FROM property.property_media
       WHERE property_id = ${propertyId}::uuid
     `;
-    if (parseInt(count[0].count, 10) >= MAX_MEDIA_PER_PROPERTY) {
+
+    const existingCount = parseInt(countRows[0].count, 10);
+    if (existingCount + files.length > MAX_MEDIA_PER_PROPERTY) {
       throw new BadRequestException(
         `Maximum ${MAX_MEDIA_PER_PROPERTY} media files per property`,
       );
     }
 
-    const { signedUrl, mediaType } = await this.mediaStorage.uploadPropertyMedia({
-      propertyId,
-      agentId,
-      file,
-    });
+    const uploadedItems: Array<{ id: string; url: string; mediaType: string }> = [];
+    const uploadedTypes: string[] = [];
 
-    const isFirst = parseInt(count[0].count, 10) === 0;
+    for (let index = 0; index < files.length; index += 1) {
+      const sourceFile = files[index];
+      const { signedUrl, mediaType } = await this.mediaStorage.uploadPropertyMedia({
+        propertyId,
+        agentId,
+        file: sourceFile,
+      });
 
-    const result = await this.prisma.$queryRaw<{ id: string; url: string; media_type: string }[]>`
-      INSERT INTO property.property_media (property_id, media_type, url, is_primary)
-      VALUES (${propertyId}::uuid, ${mediaType}, ${signedUrl}, ${isFirst})
-      RETURNING id, url, media_type
-    `;
+      const isPrimary = existingCount === 0 && index === 0;
+      const result = await this.prisma.$queryRaw<
+        { id: string; url: string; media_type: string }[]
+      >`
+        INSERT INTO property.property_media (property_id, media_type, url, is_primary)
+        VALUES (${propertyId}::uuid, ${mediaType}, ${signedUrl}, ${isPrimary})
+        RETURNING id, url, media_type
+      `;
+
+      uploadedItems.push({
+        id: result[0].id,
+        url: result[0].url,
+        mediaType,
+      });
+      uploadedTypes.push(mediaType);
+    }
 
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
-      action: 'property.media.added',
+      companyId,
+      action: uploadedItems.length === 1 ? 'property.media.added' : 'property.media.added_batch',
       resourceType: 'property',
       resourceId: propertyId,
-      payload: { mediaType },
+      payload: { count: uploadedItems.length, mediaTypes: uploadedTypes },
       ipAddress,
       userAgent,
     });
 
-    return { id: result[0].id, url: result[0].url, mediaType };
+    return uploadedItems;
   }
 
   async deleteMedia(
@@ -500,6 +1668,7 @@ export class PropertyService {
     agentRole: string,
     ipAddress?: string,
     userAgent?: string,
+    companyId?: string | null,
   ): Promise<void> {
     await this.assertAgentOwns(propertyId, agentId, agentRole);
 
@@ -516,7 +1685,46 @@ export class PropertyService {
     await this.audit.log({
       actorId: agentId,
       actorRole: agentRole,
+      companyId,
       action: 'property.media.deleted',
+      resourceType: 'property',
+      resourceId: propertyId,
+      payload: { mediaId },
+      ipAddress,
+      userAgent,
+    });
+  }
+
+  async setPrimaryMedia(
+    propertyId: string,
+    mediaId: string,
+    agentId: string,
+    agentRole: string,
+    ipAddress?: string,
+    userAgent?: string,
+    companyId?: string | null,
+  ): Promise<void> {
+    await this.assertAgentOwns(propertyId, agentId, agentRole);
+
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM property.property_media
+      WHERE id = ${mediaId}::uuid AND property_id = ${propertyId}::uuid
+    `;
+    if (!rows[0]) throw new NotFoundException('Media not found');
+
+    // Clear existing primary then set the new one — two raw statements
+    await this.prisma.$executeRaw`
+      UPDATE property.property_media SET is_primary = false WHERE property_id = ${propertyId}::uuid
+    `;
+    await this.prisma.$executeRaw`
+      UPDATE property.property_media SET is_primary = true WHERE id = ${mediaId}::uuid
+    `;
+
+    await this.audit.log({
+      actorId: agentId,
+      actorRole: agentRole,
+      companyId,
+      action: 'property.media.primary_set',
       resourceType: 'property',
       resourceId: propertyId,
       payload: { mediaId },
@@ -607,6 +1815,8 @@ export class PropertyService {
   private normalizeUpdateDto(dto: UpdatePropertyDto): UpdatePropertyDto {
     return {
       ...dto,
+      propertyType: dto.propertyType ?? dto.property_type,
+      listingType: dto.listingType ?? dto.listing_type,
       areaSqm: dto.areaSqm ?? dto.area_sqm,
       parkingSpaces: dto.parkingSpaces ?? dto.parking_spaces,
       location: this.normalizeLocation(dto.location),
@@ -665,6 +1875,67 @@ export class PropertyService {
     `;
   }
 
+  /** Public ownership history for a property, ordered newest-first. */
+  async getOwnershipHistory(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        owner_name: string | null;
+        transfer_date: string | null;
+        transfer_price: string | null;
+        transfer_currency: string | null;
+        title_deed_url: string | null;
+        notes: string | null;
+        created_at: string | null;
+      }[]
+    >`
+      SELECT id, owner_name, transfer_date, transfer_price,
+             transfer_currency, title_deed_url, notes, created_at
+      FROM property.ownership_history
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY transfer_date DESC NULLS LAST, created_at DESC
+    `;
+  }
+
+  /** Public price change history for a property, ordered by date. */
+  async getPriceHistory(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        old_price: string | null;
+        new_price: string;
+        currency: string;
+        changed_by: string | null;
+        change_note: string | null;
+        created_at: string;
+      }[]
+    >`
+      SELECT id, old_price, new_price, currency, changed_by, change_note, created_at
+      FROM property.price_history
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY created_at ASC
+    `;
+  }
+
+  /** Floor plan media items for a property. */
+  async getFloorPlans(propertyId: string) {
+    return this.prisma.$queryRaw<
+      {
+        id: string;
+        url: string;
+        thumbnail_url: string | null;
+        display_order: number;
+        created_at: string | null;
+      }[]
+    >`
+      SELECT id, url, thumbnail_url, display_order, created_at
+      FROM property.property_media
+      WHERE property_id = ${propertyId}::uuid
+        AND media_type = 'floor_plan'
+      ORDER BY display_order ASC, created_at ASC
+    `;
+  }
+
   private async assertAgentOwns(
     propertyId: string,
     agentId: string,
@@ -677,5 +1948,215 @@ export class PropertyService {
     if (agentRole !== 'admin' && rows[0].agent_id !== agentId) {
       throw new ForbiddenException('You can only manage your own listings');
     }
+  }
+
+  // ── Property Offers ────────────────────────────────────────────────────────
+
+  async getPropertyOffers(agentId: string, propertyId: string) {
+    // Ensure the property belongs to this agent
+    const props = await this.prisma.$queryRaw<{ agent_id: string }[]>`
+      SELECT agent_id FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    return this.prisma.$queryRaw<unknown[]>`
+      SELECT * FROM sales.property_offers
+      WHERE property_id = ${propertyId}::uuid
+      ORDER BY submitted_at DESC
+    `;
+  }
+
+  async createPropertyOffer(
+    agentId: string,
+    propertyId: string,
+    dto: {
+      buyerName: string;
+      buyerEmail?: string;
+      amount: number;
+      earnestMoney?: number;
+      financing: string;
+      contingencies: string[];
+      closingDate?: string;
+      notes?: string;
+    },
+  ) {
+    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
+      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const closingDate = dto.closingDate ? new Date(dto.closingDate) : null;
+    const rows = await this.prisma.$queryRaw<unknown[]>`
+      INSERT INTO sales.property_offers
+        (property_id, agent_id, buyer_name, buyer_email, amount, earnest_money, financing, contingencies, closing_date, notes)
+      VALUES (
+        ${propertyId}::uuid,
+        ${agentId}::uuid,
+        ${dto.buyerName},
+        ${dto.buyerEmail ?? null},
+        ${dto.amount},
+        ${dto.earnestMoney ?? null},
+        ${dto.financing},
+        ${dto.contingencies}::text[],
+        ${closingDate},
+        ${dto.notes ?? null}
+      )
+      RETURNING *
+    `;
+    return rows[0];
+  }
+
+  async updatePropertyOfferStatus(
+    agentId: string,
+    propertyId: string,
+    offerId: string,
+    status: string,
+  ) {
+    const props = await this.prisma.$queryRaw<{
+      agent_id: string;
+      title: string;
+      owner_id: string | null;
+      company_id: string | null;
+      currency: string | null;
+    }[]>`
+      SELECT agent_id, title, owner_id, company_id, currency
+      FROM property.properties
+      WHERE id = ${propertyId}::uuid
+      LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const rows = await this.prisma.$queryRaw<{
+      buyer_name: string;
+      buyer_email: string | null;
+      buyer_id: string | null;
+      amount: number;
+      deposit_amount: number | null;
+    }[]>`
+      UPDATE sales.property_offers
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
+      RETURNING id, buyer_id, buyer_name, buyer_email, amount, deposit_amount
+    `;
+    if (!rows.length) throw new NotFoundException('Offer not found');
+
+    const offer = rows[0];
+
+    // Auto-create a sale pipeline record when an offer is accepted
+    if (status === 'accepted' && offer.buyer_id) {
+      const property = props[0];
+      const ref = generateSaleReference();
+      const sellerId = property.owner_id ?? agentId;
+      const currency = property.currency ?? 'ZAR';
+
+      const saleRows = await this.prisma.$queryRaw<{ id: string }[]>`
+        INSERT INTO sales.property_sales (
+          property_id, sale_reference, seller_id, buyer_id, agent_id,
+          agreed_price, currency, deposit_amount, country, company_id
+        ) VALUES (
+          ${propertyId}::uuid,
+          ${ref},
+          ${sellerId}::uuid,
+          ${offer.buyer_id}::uuid,
+          ${agentId}::uuid,
+          ${offer.amount},
+          ${currency},
+          ${offer.deposit_amount ?? null},
+          'ZA',
+          ${property.company_id ?? null}::uuid
+        )
+        ON CONFLICT DO NOTHING
+        RETURNING id
+      `;
+
+      if (saleRows.length) {
+        const saleId = saleRows[0].id;
+        await this.prisma.$executeRaw`
+          INSERT INTO sales.sale_stage_progress (sale_id, stage_number, status)
+          SELECT ${saleId}::uuid, gs.n, 'not_started'
+          FROM generate_series(1, ${TOTAL_STAGES}) AS gs(n)
+          ON CONFLICT (sale_id, stage_number) DO NOTHING
+        `;
+        this.logger.log(
+          `Auto-created sale ${ref} (id: ${saleId}) from accepted offer ${offerId} on property ${propertyId}`,
+        );
+      }
+    }
+
+    if (offer.buyer_email) {
+      const label = status === 'accepted' ? 'Accepted 🎉' : status === 'rejected' ? 'Declined' : status;
+      const subject = `Your offer on ${props[0].title} has been ${label}`;
+      const body = status === 'accepted'
+        ? `<p>Dear ${offer.buyer_name},</p><p>Great news! Your offer of <strong>$${Number(offer.amount).toLocaleString()}</strong> on <strong>${props[0].title}</strong> has been <strong>accepted</strong>. The agent will be in touch shortly with next steps.</p><p>Regards,<br/>PRIBEC</p>`
+        : `<p>Dear ${offer.buyer_name},</p><p>Thank you for your interest in <strong>${props[0].title}</strong>. Unfortunately, your offer of <strong>$${Number(offer.amount).toLocaleString()}</strong> has not been accepted at this time.</p><p>Regards,<br/>PRIBEC</p>`;
+      await this.notifications.sendEmail(offer.buyer_email, subject, body).catch((err) =>
+        this.logger.warn(`Failed to send status email: ${err.message}`),
+      );
+    }
+
+    return offer;
+  }
+
+  async counterPropertyOffer(
+    agentId: string,
+    propertyId: string,
+    offerId: string,
+    data: {
+      counterAmount: number;
+      counterEarnestMoney?: number;
+      counterClosingDate?: string;
+      counterNotes?: string;
+    },
+  ) {
+    const props = await this.prisma.$queryRaw<{ agent_id: string; title: string }[]>`
+      SELECT agent_id, title FROM property.properties WHERE id = ${propertyId}::uuid LIMIT 1
+    `;
+    if (!props[0]) throw new NotFoundException('Property not found');
+    if (props[0].agent_id !== agentId) throw new ForbiddenException('Access denied');
+
+    const closingDate = data.counterClosingDate ? new Date(data.counterClosingDate) : null;
+
+    const rows = await this.prisma.$queryRaw<{ buyer_name: string; buyer_email: string | null; amount: number }[]>`
+      UPDATE sales.property_offers
+      SET
+        status                = 'countered',
+        counter_amount        = ${data.counterAmount}::numeric,
+        counter_earnest_money = ${data.counterEarnestMoney ?? null}::numeric,
+        counter_closing_date  = ${closingDate}::date,
+        counter_notes         = ${data.counterNotes ?? null},
+        countered_at          = NOW(),
+        updated_at            = NOW()
+      WHERE id = ${offerId}::uuid AND property_id = ${propertyId}::uuid
+      RETURNING *
+    `;
+    if (!rows.length) throw new NotFoundException('Offer not found');
+
+    const offer = rows[0];
+    if (offer.buyer_email) {
+      const formattedAmount = `$${Number(data.counterAmount).toLocaleString()}`;
+      const formattedClosing = data.counterClosingDate
+        ? new Date(data.counterClosingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'To be confirmed';
+      const subject = `Counter offer received on ${props[0].title}`;
+      const body = `
+<p>Dear ${offer.buyer_name},</p>
+<p>The agent has reviewed your offer on <strong>${props[0].title}</strong> and has submitted a counter offer.</p>
+<table style="border-collapse:collapse;width:100%;max-width:400px">
+  <tr><td style="padding:8px;font-weight:bold">Counter Amount</td><td style="padding:8px">${formattedAmount}</td></tr>
+  ${data.counterEarnestMoney != null ? `<tr><td style="padding:8px;font-weight:bold">Earnest Money</td><td style="padding:8px">$${Number(data.counterEarnestMoney).toLocaleString()}</td></tr>` : ''}
+  <tr><td style="padding:8px;font-weight:bold">Proposed Closing Date</td><td style="padding:8px">${formattedClosing}</td></tr>
+  ${data.counterNotes ? `<tr><td style="padding:8px;font-weight:bold">Notes</td><td style="padding:8px">${data.counterNotes}</td></tr>` : ''}
+</table>
+<p>Please contact the agent to accept, reject, or negotiate further.</p>
+<p>Regards,<br/>PRIBEC</p>`;
+      await this.notifications.sendEmail(offer.buyer_email, subject, body).catch((err) =>
+        this.logger.warn(`Failed to send counter offer email: ${err.message}`),
+      );
+    }
+
+    return offer;
   }
 }

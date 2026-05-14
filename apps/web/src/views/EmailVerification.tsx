@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@/lib/router-compat";
-import { Home, Mail, CheckCircle, RefreshCw, AlertCircle } from "lucide-react";
+import { Mail, CheckCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { authApi, ApiError } from "@/lib/api-client";
+import { AuthLayout } from "@/components/AuthLayout";
+
+const C = { forest: '#1A3C28', cream: '#EAD9C4', egreen: '#00E87A', parchment: '#F2E8D5', amber: '#B89040' };
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function EmailVerification() {
       setVerificationStatus("success");
       setIsVerifying(false);
       setTimeout(() => {
-        navigate("/profile-setup");
+        navigate("/role-setup");
       }, 2000);
     } catch (err) {
       setVerificationStatus("error");
@@ -61,111 +62,106 @@ export default function EmailVerification() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-            <Home className="w-7 h-7 text-white" />
+    <AuthLayout variant="centered">
+      {verificationStatus === "success" ? (
+        <div className="text-center">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ background: `${C.egreen}20` }}
+          >
+            <CheckCircle className="w-7 h-7" style={{ color: C.egreen }} />
           </div>
-          <span className="font-bold text-2xl">PropertyOS</span>
-        </Link>
+          <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 24, fontWeight: 700, color: C.forest, marginBottom: 8 }}>
+            Email Verified!
+          </h1>
+          <p className="text-sm" style={{ color: `${C.forest}70` }}>
+            Your email has been successfully verified. Redirecting you…
+          </p>
+        </div>
+      ) : (
+        <div>
+          <div className="text-center mb-6">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+              style={{ background: `${C.forest}12` }}
+            >
+              <Mail className="w-7 h-7" style={{ color: C.forest }} />
+            </div>
+            <h1 style={{ fontFamily: 'var(--font-fraunces)', fontSize: 24, fontWeight: 700, color: C.forest, marginBottom: 6 }}>
+              Verify Your Email
+            </h1>
+            <p className="text-sm mb-2" style={{ color: `${C.forest}70` }}>
+              We&apos;ve sent a verification link to
+            </p>
+            <p className="font-semibold text-sm" style={{ color: C.forest }}>
+              {email || "your email address"}
+            </p>
+          </div>
 
-        <Card className="p-8 border-gray-200">
-          {verificationStatus === "success" ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h1 className="text-2xl font-bold mb-2">Email Verified!</h1>
-              <p className="text-gray-600">
-                Your email has been successfully verified. Redirecting you...
+          {verificationStatus === "error" && (
+            <div className="mb-5 p-3.5 rounded-xl" style={{ background: '#FEF2F2', border: '1px solid #FCA5A5' }}>
+              <span className="text-sm text-red-800">{error || "Verification failed. Please try again."}</span>
+            </div>
+          )}
+
+          <div
+            className="rounded-xl p-4 mb-5"
+            style={{ background: `${C.forest}08`, border: `1px solid ${C.forest}18` }}
+          >
+            <p className="text-xs" style={{ color: `${C.forest}70` }}>
+              Click the link in the email to verify your account. If you don&apos;t see it, check your spam folder.
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            <button
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+              style={{ background: C.forest, color: C.parchment }}
+            >
+              {isVerifying ? (
+                <><RefreshCw className="w-4 h-4 animate-spin" /> Verifying…</>
+              ) : (
+                "Verify Email"
+              )}
+            </button>
+
+            <button
+              onClick={handleResend}
+              disabled={resendCooldown > 0}
+              className="w-full py-2.5 rounded-xl text-sm disabled:opacity-50"
+              style={{ border: `1.5px solid ${C.cream}`, color: C.forest }}
+            >
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : (
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4" /> Resend Email
+                </span>
+              )}
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-sm" style={{ color: `${C.forest}70` }}>
+            Wrong email?{' '}
+            <Link to="/register" className="font-semibold hover:underline" style={{ color: C.forest }}>
+              Change Email
+            </Link>
+          </p>
+
+          <div
+            className="mt-4 p-3.5 rounded-xl flex items-start gap-2.5"
+            style={{ background: `${C.amber}15`, border: `1px solid ${C.amber}40` }}
+          >
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: C.amber }} />
+            <div>
+              <p className="text-xs font-semibold mb-0.5" style={{ color: C.forest }}>Important</p>
+              <p className="text-xs" style={{ color: `${C.forest}70` }}>
+                The verification link expires in 24 hours.
               </p>
             </div>
-          ) : (
-            <>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="w-8 h-8 text-blue-600" />
-                </div>
-                <h1 className="text-2xl font-bold mb-2">Verify Your Email</h1>
-                <p className="text-gray-600 mb-4">
-                  We've sent a verification link to
-                </p>
-                <div className="font-semibold text-black">{email || "your email address"}</div>
-              </div>
-
-              {verificationStatus === "error" && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
-                  {error || "Verification failed. Please try again."}
-                </div>
-              )}
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Click the link in the email to verify your account. If you don't see the email,
-                  check your spam folder.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={handleVerify}
-                  disabled={isVerifying}
-                  className="w-full bg-black hover:bg-gray-800 text-white"
-                >
-                  {isVerifying ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify Email"
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={handleResend}
-                  disabled={resendCooldown > 0}
-                  className="w-full border-gray-300"
-                >
-                  {resendCooldown > 0 ? (
-                    `Resend in ${resendCooldown}s`
-                  ) : (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Resend Email
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Wrong email?{" "}
-                  <Link to="/register" className="text-black font-semibold hover:underline">
-                    Change Email
-                  </Link>
-                </p>
-              </div>
-
-              <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-yellow-800">
-                    <div className="font-semibold mb-1">Important</div>
-                    <div>
-                      The verification link will expire in 24 hours. Make sure to verify your
-                      email before then.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </Card>
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </AuthLayout>
   );
 }

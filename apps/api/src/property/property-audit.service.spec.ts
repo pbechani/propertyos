@@ -6,7 +6,7 @@ describe('PropertyAuditService', () => {
   let service: PropertyAuditService;
 
   const mockPrisma = {
-    $executeRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
   };
 
   let module: TestingModule;
@@ -36,7 +36,7 @@ describe('PropertyAuditService', () => {
 
   describe('log', () => {
     it('should execute raw SQL to insert an audit log', async () => {
-      mockPrisma.$executeRaw.mockResolvedValueOnce(1);
+      mockPrisma.$executeRawUnsafe.mockResolvedValueOnce(1);
 
       const logData = {
         propertyId: 'prop-uuid-0001',
@@ -50,13 +50,13 @@ describe('PropertyAuditService', () => {
 
       await service.log(logData);
 
-      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
-      const callArgs = mockPrisma.$executeRaw.mock.calls[0][0];
+      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalled();
+      const callArgs = mockPrisma.$executeRawUnsafe.mock.calls[0];
       expect(callArgs[0]).toContain('INSERT INTO property.audit_logs');
     });
 
     it('should handle missing optional fields', async () => {
-      mockPrisma.$executeRaw.mockResolvedValueOnce(1);
+      mockPrisma.$executeRawUnsafe.mockResolvedValueOnce(1);
 
       const logData = {
         propertyId: 'prop-uuid-0001',
@@ -67,7 +67,7 @@ describe('PropertyAuditService', () => {
 
       await service.log(logData);
 
-      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+      expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalled();
     });
   });
 });

@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/app">
                     <Home className="w-4 h-4 mr-2" />
-                    Dashboard
+                    Home
                   </Link>
                 </Button>
                 <Button variant="ghost" size="sm" asChild>

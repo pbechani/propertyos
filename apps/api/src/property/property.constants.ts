@@ -1,6 +1,9 @@
 export const PROPERTY_TYPES = ['land', 'residential', 'commercial', 'off_plan'] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
+export const LISTING_TYPES = ['for_sale', 'to_rent', 'development'] as const;
+export type ListingType = (typeof LISTING_TYPES)[number];
+
 export const PROPERTY_STATUSES = ['draft', 'active', 'under_offer', 'sold', 'withdrawn'] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 
@@ -38,3 +41,22 @@ export const ALLOWED_MEDIA_MIME_TYPES = new Set([
   'video/quicktime',
   'video/webm',
 ]);
+
+export function resolvePropertyActorRole(
+  roles: string[] | undefined,
+  fallback: string,
+): string {
+  if (!roles || roles.length === 0) {
+    return fallback;
+  }
+
+  if (roles.includes('admin')) {
+    return 'admin';
+  }
+
+  if (roles.includes('agent')) {
+    return 'agent';
+  }
+
+  return roles[0] ?? fallback;
+}

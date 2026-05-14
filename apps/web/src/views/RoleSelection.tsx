@@ -12,11 +12,11 @@ export default function RoleSelection() {
 
   const roles = [
     {
-      id: "buyer",
-      name: "Buyer",
+      id: "buyer_seller",
+      name: "Buyer / Seller",
       icon: User,
       color: "blue",
-      description: "Looking to buy or rent a property",
+      description: "Looking to buy, sell or rent a property",
       features: [
         "Browse verified listings",
         "Save favorite properties",
@@ -51,15 +51,15 @@ export default function RoleSelection() {
       ],
     },
     {
-      id: "property_manager",
-      name: "Property Manager",
+      id: "investor",
+      name: "Investor / Property Manager",
       icon: Building2,
       color: "green",
-      description: "Manage properties for owners",
+      description: "Invest in or manage properties",
       features: [
         "Manage multiple properties",
-        "Tenant relationship tools",
-        "Maintenance tracking",
+        "Portfolio tracking & analytics",
+        "Maintenance & tenant tools",
         "Financial reporting",
       ],
     },
@@ -154,7 +154,7 @@ export default function RoleSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
@@ -189,7 +189,7 @@ export default function RoleSelection() {
 
                 <div className="flex items-start gap-3 md:gap-4 mb-4">
                   <div
-                    className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${getIconColorClasses(
+                    className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shrink-0 ${getIconColorClasses(
                       role.color
                     )}`}
                   >
@@ -204,7 +204,7 @@ export default function RoleSelection() {
                 <div className="space-y-2">
                   {role.features.map((feature, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs md:text-sm text-gray-700">
-                      <div className="w-1 h-1 bg-gray-400 rounded-full flex-shrink-0"></div>
+                      <div className="w-1 h-1 bg-gray-400 rounded-full shrink-0"></div>
                       {feature}
                     </div>
                   ))}

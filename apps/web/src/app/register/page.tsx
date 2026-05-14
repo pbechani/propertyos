@@ -1,1 +1,10 @@
-export { default } from '@/views/Register';
+import { Suspense } from 'react';
+import Register from '@/views/Register';
+
+export default function RegisterPage() {
+	return (
+		<Suspense fallback={null}>
+			<Register />
+		</Suspense>
+	);
+}

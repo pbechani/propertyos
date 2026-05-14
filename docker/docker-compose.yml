@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
-    image: postgis/postgis:15-alpine
+    image: postgis/postgis:15-3.4-alpine
     container_name: pribec-postgres
     environment:
       POSTGRES_USER: pribec
@@ -211,6 +209,26 @@ services:
     networks:
       - pribec-network
 
+  # Mailpit - Local email catcher (SMTP + Web UI)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pribec-mailpit
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI → http://localhost:8025
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit_data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8025']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - pribec-network
+
   # PostgreSQL Exporter for Prometheus
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -240,6 +258,54 @@ services:
       - pribec-network
     restart: unless-stopped
 
+  # MindsDB — Predictive ML layer (speaks SQL, trains on PostgreSQL data)
+  # Studio UI:  http://localhost:47334
+  # MySQL wire: localhost:47335
+  mindsdb:
+    image: mindsdb/mindsdb:latest
+    container_name: pribec-mindsdb
+    environment:
+      MINDSDB_DB_CON: "postgresql://pribec:pribec_dev_password@postgres:5432/pribec_dev"
+    ports:
+      - '47334:47334'  # HTTP REST API + Studio UI
+      - '47335:47335'  # MySQL wire protocol
+    volumes:
+      - mindsdb_data:/root/mindsdb_storage
+      - ./mindsdb/init:/docker-entrypoint-initdb.d:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:47334/api/status || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
+  # DocuSeal — Self-hosted e-signature platform
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: pribec-docuseal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SECRET_KEY_BASE: change_me_in_production_use_64_char_random_hex
+      FORCE_SSL: 'false'
+      HOST: 'localhost:3010'
+      SMTP_ADDRESS: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@pribec.local
+    ports:
+      - '3010:3000'
+    volumes:
+      - docuseal_data:/data
+    networks:
+      - pribec-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
@@ -250,6 +316,9 @@ volumes:
   prometheus_data:
   grafana_data:
   vault_data:
+  mailpit_data:
+  mindsdb_data:
+  docuseal_data:
 
 networks:
   pribec-network:

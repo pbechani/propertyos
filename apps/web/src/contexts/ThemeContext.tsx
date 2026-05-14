@@ -2,50 +2,51 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
+// Enforce light mode immediately at module load time (fires on HMR too)
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('dark');
+  document.documentElement.classList.add('light');
+  try { localStorage.setItem('theme', 'light'); } catch { /* noop */ }
+}
+
 type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  isThemeLocked: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-/**
- * Reads the preferred theme synchronously during state initialisation so the
- * correct class is applied on the **first render**, eliminating FOUC.
- * The inline script in index.html applies the class before React hydrates;
- * this function keeps the React state in sync with that initial class.
- */
-function getInitialTheme(): Theme {
-  try {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") return stored;
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
-  } catch {
-    // localStorage unavailable
-  }
-  return "light";
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Initialise with the correct value synchronously — no FOUC
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme] = useState<Theme>("light");
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    root.classList.add("light");
+    localStorage.setItem("theme", "light");
+  }, []);
+
+  const setTheme = (_nextTheme: Theme) => {
+    // Theme is locked to light (Theme 2)
+  };
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    // Theme is locked to light (Theme 2)
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        toggleTheme,
+        isThemeLocked: false,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

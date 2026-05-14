@@ -1,0 +1,85 @@
+/* Print-optimized styles for property detail page */
+@media print {
+  /* Hide interactive elements */
+  .print\\:hidden,
+  nav,
+  header,
+  footer,
+  aside,
+  [role="navigation"],
+  [role="banner"],
+  [role="contentinfo"] {
+    display: none !important;
+  }
+
+  /* Reset background colors */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Ensure good contrast */
+  * {
+    color: black !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Let images keep their colours */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Prevent page breaks inside cards */
+  .rounded-lg,
+  .border {
+    page-break-inside: avoid;
+    border-color: #ccc !important;
+  }
+
+  /* Ensure headings stay with content */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+
+  /* Full width layout */
+  .grid {
+    display: block !important;
+  }
+
+  .lg\\:col-span-2 {
+    width: 100% !important;
+  }
+
+  /* Keep badges visible */
+  .bg-green-100,
+  .bg-blue-100,
+  .bg-yellow-100,
+  .bg-red-100 {
+    border: 1px solid #999 !important;
+    padding: 2px 6px !important;
+  }
+
+  /* Show link URLs */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666 !important;
+  }
+
+  /* Hide sticky elements */
+  .fixed,
+  .sticky {
+    position: static !important;
+  }
+
+  /* Maximise page usage */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+}

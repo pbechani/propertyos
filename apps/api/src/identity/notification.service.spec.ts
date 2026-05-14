@@ -53,6 +53,7 @@ describe('NotificationService', () => {
   it('sends email through SendGrid provider when configured', async () => {
     const service = new NotificationService(
       buildConfigService({
+        EMAIL_PROVIDER: 'sendgrid',
         SENDGRID_API_KEY: 'sg-key',
         SENDGRID_FROM_EMAIL: 'noreply@pribec.com',
       }),
@@ -109,6 +110,7 @@ describe('NotificationService', () => {
     mockFetch.mockResolvedValue(response(false, 500));
     const service = new NotificationService(
       buildConfigService({
+        EMAIL_PROVIDER: 'sendgrid',
         SENDGRID_API_KEY: 'sg-key',
         SENDGRID_FROM_EMAIL: 'noreply@pribec.com',
         NOTIFICATIONS_STRICT_MODE: 'true',

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listings Panel — 3 Design Options | PRIBEC</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --carbon: #0C0D10;
+  --carbon-soft: #16181D;
+  --parchment: #F2E8D5;
+  --forest: #1A3C28;
+  --egreen: #00E87A;
+  --amber: #B89040;
+  --terracotta: #C4562A;
+  --ff: 'Fraunces', serif;
+  --fm: 'IBM Plex Mono', monospace;
+  --fb: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  background: #08090B;
+  font-family: var(--fb);
+  color: var(--parchment);
+  padding: 56px 40px;
+}
+
+/* ── PAGE HEADER ── */
+.ph { text-align:center; margin-bottom:60px; }
+.ph-eye { font-family:var(--fm); font-size:10px; letter-spacing:.22em; color:var(--egreen); margin-bottom:12px; }
+.ph-title { font-family:var(--ff); font-size:2.6rem; font-weight:300; color:var(--parchment); margin-bottom:8px; }
+.ph-sub { font-size:13px; color:rgba(242,232,213,.45); }
+
+/* ── NAV TABS ── */
+.tabs { display:flex; gap:12px; justify-content:center; margin-bottom:48px; }
+.tab {
+  font-family:var(--fm); font-size:9px; letter-spacing:.18em;
+  padding:10px 24px; border-radius:100px; cursor:pointer;
+  border:1px solid rgba(255,255,255,.1); background:transparent;
+  color:rgba(242,232,213,.45); transition:all .2s;
+}
+.tab:hover { color:var(--parchment); border-color:rgba(255,255,255,.2); }
+.tab.active-a { background:rgba(0,232,122,.1); color:var(--egreen); border-color:rgba(0,232,122,.3); }
+.tab.active-b { background:rgba(184,144,64,.1); color:var(--amber); border-color:rgba(184,144,64,.3); }
+.tab.active-c { background:rgba(196,86,42,.1); color:var(--terracotta); border-color:rgba(196,86,42,.3); }
+.tab .rec { margin-left:6px; font-size:7px; opacity:.8; }
+
+/* ── PANELS ── */
+.panel { display:none; max-width:900px; margin:0 auto; animation:fadeIn .3s ease; }
+.panel.active { display:block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.panel-label {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:20px;
+}
+.plabel-badge {
+  font-family:var(--fm); font-size:9px; letter-spacing:.18em;
+  padding:5px 14px; border-radius:100px;
+}
+.plabel-a { background:rgba(0,232,122,.1); color:var(--egreen); border:1px solid rgba(0,232,122,.25); }
+.plabel-b { background:rgba(184,144,64,.1); color:var(--amber); border:1px solid rgba(184,144,64,.25); }
+.plabel-c { background:rgba(196,86,42,.1); color:var(--terracotta); border:1px solid rgba(196,86,42,.25); }
+.plabel-name { font-family:var(--ff); font-size:1.1rem; font-weight:300; }
+.rec-tag { font-family:var(--fm); font-size:8px; letter-spacing:.12em; background:rgba(0,232,122,.1); color:var(--egreen); border:1px solid rgba(0,232,122,.2); padding:3px 9px; border-radius:100px; margin-left:8px; vertical-align:middle; }
+
+/* ── PREVIEW WRAPPER ── */
+.preview {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius:20px;
+  padding: 32px;
+  margin-bottom: 20px;
+}
+.preview-label {
+  font-family:var(--fm); font-size:8px; letter-spacing:.18em;
+  color:rgba(242,232,213,.3); margin-bottom:20px; text-align:center;
+}
+
+/* ── DESC ── */
+.odesc {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
+  margin-bottom:32px;
+}
+.odesc-item { padding:16px 18px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; }
+.odesc-label { font-family:var(--fm); font-size:8px; letter-spacing:.15em; color:rgba(242,232,213,.35); margin-bottom:6px; }
+.odesc-val { font-size:12.5px; color:rgba(242,232,213,.7); line-height:1.55; }
+.odesc-val strong { color:var(--parchment); }
+
+/* ═══════════════════════════════════════
+   OPTION A — Full-bleed Dark Editorial
+═══════════════════════════════════════ */
+.oa {
+  position:relative;
+  background:var(--carbon);
+  border:1px solid rgba(0,232,122,.1);
+  border-radius:16px;
+  padding:48px 40px 40px;
+  overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+}
+.oa-grid {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,232,122,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,.035) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+.oa-shield {
+  width:64px; height:64px;
+  background:rgba(0,232,122,.07); border:1px solid rgba(0,232,122,.2); border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:26px; position:relative; z-index:1;
+}
+.oa-eye { font-family:var(--fm); font-size:9.5px; letter-spacing:.2em; color:var(--egreen); margin-bottom:14px; position:relative; z-index:1; }
+.oa-title { font-family:var(--ff); font-size:2rem; font-weight:300; color:var(--parchment); line-height:1.2; margin-bottom:14px; position:relative; z-index:1; }
+.oa-title em { font-style:normal; color:var(--egreen); }
+.oa-body { font-size:13px; color:rgba(242,232,213,.5); line-height:1.7; max-width:480px; margin:0 auto 32px; position:relative; z-index:1; }
+.oa-cards { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; width:100%; margin-bottom:22px; position:relative; z-index:1; }
+.oa-card {
+  background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+  border-radius:12px; padding:18px 16px; text-align:left;
+}
+.oa-card-g { border-top:3px solid rgba(0,232,122,.5); }
+.oa-card-a { border-top:3px solid rgba(184,144,64,.5); }
+.oa-card-t { border-top:3px solid rgba(196,86,42,.5); }
+.oa-ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:11px; }
+.oa-ico-g { background:rgba(0,232,122,.1); }
+.oa-ico-a { background:rgba(184,144,64,.1); }
+.oa-ico-t { background:rgba(196,86,42,.1); }
+.oa-clbl { font-family:var(--fm); font-size:8px; letter-spacing:.18em; margin-bottom:5px; }
+.oa-clbl-g { color:var(--egreen); }
+.oa-clbl-a { color:var(--amber); }
+.oa-clbl-t { color:var(--terracotta); }
+.oa-ch4 { font-family:var(--ff); font-size:.95rem; font-weight:400; color:var(--parchment); margin-bottom:6px; }
+.oa-cp { font-size:11px; color:rgba(242,232,213,.4); line-height:1.55; }
+.oa-hint {
+  width:100%; position:relative; z-index:1;
+  border:1px solid rgba(242,232,213,.12); border-radius:12px;
+  background:rgba(242,232,213,.03);
+  padding:14px 20px; display:flex; align-items:center; gap:12px;
+  font-size:12px; color:rgba(242,232,213,.4);
+}
+.oa-hint strong { color:rgba(242,232,213,.8); }
+
+/* ═══════════════════════════════════════
+   OPTION B — Data-first Split Panel
+═══════════════════════════════════════ */
+.ob-wrap {
+  position:relative;
+  background:var(--carbon);
+  border:1px solid rgba(184,144,64,.12);
+  border-radius:16px;
+  overflow:hidden;
+  display:grid; grid-template-columns:1.1fr 0.9fr;
+  min-height:440px;
+}
+.ob-left {
+  background:var(--carbon-soft);
+  padding:40px 36px;
+  display:flex; flex-direction:column; justify-content:center;
+  border-right:1px solid rgba(255,255,255,.05);
+}
+.ob-left-eye { font-family:var(--fm); font-size:8.5px; letter-spacing:.2em; color:var(--amber); margin-bottom:16px; }
+.ob-left-title { font-family:var(--ff); font-size:1.65rem; font-weight:300; color:var(--parchment); line-height:1.3; margin-bottom:16px; }
+.ob-left-title em { font-style:normal; color:var(--amber); }
+.ob-left-body { font-size:12px; color:rgba(242,232,213,.45); line-height:1.7; margin-bottom:26px; }
+.ob-feats { display:flex; flex-direction:column; gap:14px; }
+.ob-feat { display:flex; align-items:flex-start; gap:12px; }
+.ob-dot { width:7px; height:7px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.ob-ftitle { font-size:12.5px; color:var(--parchment); font-weight:600; display:block; margin-bottom:2px; }
+.ob-fsub { font-size:11px; color:rgba(242,232,213,.5); line-height:1.45; }
+.ob-right { background:var(--carbon); padding:32px 28px; display:flex; flex-direction:column; gap:14px; justify-content:center; }
+.ob-reye { font-family:var(--fm); font-size:8px; letter-spacing:.15em; color:rgba(242,232,213,.28); margin-bottom:4px; }
+.ob-tile { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:18px 20px; position:relative; overflow:hidden; }
+.ob-tile::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+.ob-tile-g::before { background:var(--egreen); }
+.ob-tile-a::before { background:var(--amber); }
+.ob-tile-t::before { background:var(--terracotta); }
+.ob-tnum { font-family:var(--ff); font-size:2rem; font-weight:300; line-height:1; margin-bottom:4px; }
+.ob-tile-g .ob-tnum { color:var(--egreen); }
+.ob-tile-a .ob-tnum { color:var(--amber); }
+.ob-tile-t .ob-tnum { color:var(--terracotta); }
+.ob-tlbl { font-family:var(--fm); font-size:9px; letter-spacing:.12em; color:rgba(242,232,213,.38); }
+.ob-tsub { font-size:10.5px; color:rgba(242,232,213,.28); margin-top:3px; }
+
+/* ═══════════════════════════════════════
+   OPTION C — Asymmetric Feature Grid
+═══════════════════════════════════════ */
+.oc-wrap {
+  position:relative;
+  background:var(--carbon);
+  border:1px solid rgba(196,86,42,.1);
+  border-radius:16px;
+  padding:36px 36px;
+  overflow:hidden;
+  display:flex; flex-direction:column; gap:16px;
+}
+.oc-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.oc-head-eye { font-family:var(--fm); font-size:9px; letter-spacing:.2em; color:var(--terracotta); margin-bottom:12px; }
+.oc-head-title { font-family:var(--ff); font-size:1.75rem; font-weight:300; color:var(--parchment); line-height:1.2; }
+.oc-head-title em { font-style:normal; color:var(--terracotta); }
+.oc-shield-ico { width:50px; height:50px; background:rgba(196,86,42,.08); border:1px solid rgba(196,86,42,.22); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:4px; }
+.oc-main {
+  background:rgba(0,232,122,.04); border:1px solid rgba(0,232,122,.22);
+  border-radius:14px; padding:24px 26px; position:relative; overflow:hidden;
+}
+.oc-main::after {
+  content:''; position:absolute; top:-50px; right:-50px;
+  width:140px; height:140px;
+  background:radial-gradient(circle, rgba(0,232,122,.15) 0%, transparent 70%);
+  pointer-events:none;
+}
+.oc-main-eye { font-family:var(--fm); font-size:8.5px; letter-spacing:.2em; color:var(--egreen); margin-bottom:10px; }
+.oc-main-h3 { font-family:var(--ff); font-size:1.25rem; font-weight:400; color:var(--parchment); margin-bottom:10px; }
+.oc-main-p { font-size:12px; color:rgba(242,232,213,.45); line-height:1.65; max-width:580px; }
+.oc-badge {
+  display:inline-flex; align-items:center; gap:6px; margin-top:14px;
+  font-family:var(--fm); font-size:8px; letter-spacing:.15em; color:var(--egreen);
+  background:rgba(0,232,122,.08); border:1px solid rgba(0,232,122,.22);
+  padding:5px 12px; border-radius:100px;
+}
+.oc-sub { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.oc-sc { border-radius:12px; padding:20px 20px; }
+.oc-sc-d { background:rgba(26,60,40,.45); border:1px solid rgba(26,60,40,.95); }
+.oc-sc-p { background:rgba(184,144,64,.04); border:1px solid rgba(184,144,64,.22); }
+.oc-sc-eye { font-family:var(--fm); font-size:7.5px; letter-spacing:.18em; margin-bottom:9px; }
+.oc-sc-d .oc-sc-eye { color:var(--egreen); }
+.oc-sc-p .oc-sc-eye { color:var(--amber); }
+.oc-sc-h4 { font-family:var(--ff); font-size:1rem; font-weight:400; color:var(--parchment); margin-bottom:7px; line-height:1.25; }
+.oc-sc-body { font-size:11px; line-height:1.6; color:rgba(242,232,213,.42); }
+.oc-hint { border:1px solid rgba(242,232,213,.1); border-radius:12px; background:rgba(255,255,255,.02); padding:13px 18px; display:flex; align-items:center; gap:12px; font-size:12px; color:rgba(242,232,213,.35); }
+.oc-hint strong { color:rgba(242,232,213,.75); }
+
+/* ── COMPARISON TABLE ── */
+.compare-title { font-family:var(--ff); font-size:1.3rem; font-weight:300; color:var(--parchment); text-align:center; margin:52px 0 24px; }
+.compare { max-width:900px; margin:0 auto; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.07); }
+.compare-head { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; background:rgba(255,255,255,.04); }
+.compare-head div { padding:14px 20px; font-family:var(--fm); font-size:9px; letter-spacing:.18em; color:rgba(242,232,213,.45); }
+.compare-head div:not(:first-child) { text-align:center; border-left:1px solid rgba(255,255,255,.05); }
+.compare-row { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; border-top:1px solid rgba(255,255,255,.05); }
+.compare-row:hover { background:rgba(255,255,255,.015); }
+.compare-row div { padding:13px 20px; font-size:12px; color:rgba(242,232,213,.6); }
+.compare-row div:not(:first-child) { text-align:center; border-left:1px solid rgba(255,255,255,.04); }
+.compare-row div:first-child { color:var(--parchment); font-weight:500; }
+.tick-g { color:var(--egreen); font-size:16px; }
+.tick-a { color:var(--amber); font-size:16px; }
+.tick-n { color:rgba(255,255,255,.2); font-size:16px; }
+.col-a { color:var(--egreen) !important; }
+.col-b { color:var(--amber) !important; }
+.col-c { color:var(--terracotta) !important; }
+</style>
+</head>
+<body>
+
+<div class="ph">
+  <div class="ph-eye">PRIBEC — LISTINGS PANEL REDESIGN</div>
+  <h1 class="ph-title">Three Design Directions</h1>
+  <p class="ph-sub">All use Fraunces · IBM Plex Mono · carbon · parchment · egreen · amber · terracotta</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active-a" onclick="show('a', this)">OPTION A <span class="rec">RECOMMENDED</span></button>
+  <button class="tab" onclick="show('b', this)">OPTION B</button>
+  <button class="tab" onclick="show('c', this)">OPTION C</button>
+</div>
+
+<!-- ══════════════════ PANEL A ══════════════════ -->
+<div class="panel active" id="panel-a">
+  <div class="panel-label">
+    <span class="plabel-badge plabel-a">OPTION A</span>
+    <span class="plabel-name">Full-bleed Dark Editorial <span class="rec-tag">RECOMMENDED</span></span>
+  </div>
+
+  <div class="preview">
+    <div class="preview-label">LISTINGS PAGE — EMPTY STATE (before search)</div>
+    <div class="oa">
+      <div class="oa-grid"></div>
+      <div class="oa-shield">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00E87A" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="oa-eye">PRIBEC MARKETPLACE — VERIFIED LISTINGS</div>
+      <div class="oa-title">Southern Africa's <em>Trusted</em><br>Property Platform</div>
+      <div class="oa-body">PRIBEC combines financial-grade transparency with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.</div>
+      <div class="oa-cards">
+        <div class="oa-card oa-card-g">
+          <div class="oa-ico oa-ico-g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00E87A" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="oa-clbl oa-clbl-g">PROTECTION</div>
+          <div class="oa-ch4">Fraud Protection</div>
+          <div class="oa-cp">Every listing verified against title deeds with immutable audit trails that prevent double-selling.</div>
+        </div>
+        <div class="oa-card oa-card-a">
+          <div class="oa-ico oa-ico-a"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B89040" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.5 8 14 8 14s8-8.5 8-14a8 8 0 0 0-8-8z"/></svg></div>
+          <div class="oa-clbl oa-clbl-a">DIASPORA</div>
+          <div class="oa-ch4">Diaspora Ready</div>
+          <div class="oa-cp">Geo-tagged progress photos, escrow protection, and remote oversight tools for international buyers.</div>
+        </div>
+        <div class="oa-card oa-card-t">
+          <div class="oa-ico oa-ico-t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4562A" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="oa-clbl oa-clbl-t">PIPELINE</div>
+          <div class="oa-ch4">14-Stage Pipeline</div>
+          <div class="oa-cp">Track your purchase through every legal stage with full document visibility and milestone escrow.</div>
+        </div>
+      </div>
+      <div class="oa-hint">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(242,232,213,.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Enter a location above and click <strong>&nbsp;Search&nbsp;</strong> to explore verified properties
+      </div>
+    </div>
+  </div>
+
+  <div class="odesc">
+    <div class="odesc-item">
+      <div class="odesc-label">VISUAL LANGUAGE</div>
+      <div class="odesc-val">Carbon dark + grid overlay. <strong>Identical</strong> to the homepage hero trust panel. Seamless brand continuation.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">FEATURE CARDS</div>
+      <div class="odesc-val">3 equal cards with <strong>colored top borders</strong> — egreen, amber, terracotta. Fraunces cards titles, mono eyebrows.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">COMPLEXITY</div>
+      <div class="odesc-val"><strong>Low</strong> — pure static HTML, no data fetching. Same patterns already in the codebase.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PANEL B ══════════════════ -->
+<div class="panel" id="panel-b">
+  <div class="panel-label">
+    <span class="plabel-badge plabel-b">OPTION B</span>
+    <span class="plabel-name">Data-first Split Panel</span>
+  </div>
+
+  <div class="preview">
+    <div class="preview-label">LISTINGS PAGE — EMPTY STATE (before search)</div>
+    <div class="ob-wrap">
+      <div class="ob-left">
+        <div class="ob-left-eye">PRIBEC MARKETPLACE — LIVE DATA</div>
+        <div class="ob-left-title">The platform that <em>proves</em> what it promises</div>
+        <div class="ob-left-body">Financial-grade transparency combined with real estate intelligence — protecting buyers, sellers, and diaspora investors from fraud.</div>
+        <div class="ob-feats">
+          <div class="ob-feat">
+            <div class="ob-dot" style="background:#00E87A"></div>
+            <div><span class="ob-ftitle">Fraud Protection</span><span class="ob-fsub">Verified against title deeds, prevents double-selling</span></div>
+          </div>
+          <div class="ob-feat">
+            <div class="ob-dot" style="background:#B89040"></div>
+            <div><span class="ob-ftitle">Diaspora Ready</span><span class="ob-fsub">Geo-tagged photos + remote escrow oversight</span></div>
+          </div>
+          <div class="ob-feat">
+            <div class="ob-dot" style="background:#C4562A"></div>
+            <div><span class="ob-ftitle">14-Stage Pipeline</span><span class="ob-fsub">Full legal document visibility at every step</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-right">
+        <div class="ob-reye">PLATFORM METRICS — LIVE</div>
+        <div class="ob-tile ob-tile-g">
+          <div class="ob-tnum">1,247</div>
+          <div class="ob-tlbl">ACTIVE LISTINGS</div>
+          <div class="ob-tsub">Verified properties available now</div>
+        </div>
+        <div class="ob-tile ob-tile-a">
+          <div class="ob-tnum">$48.2M</div>
+          <div class="ob-tlbl">IN ESCROW</div>
+          <div class="ob-tsub">Protected across active transactions</div>
+        </div>
+        <div class="ob-tile ob-tile-t">
+          <div class="ob-tnum">94%</div>
+          <div class="ob-tlbl">COMPLETION RATE</div>
+          <div class="ob-tsub">Successful purchase completions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="odesc">
+    <div class="odesc-item">
+      <div class="odesc-label">VISUAL LANGUAGE</div>
+      <div class="odesc-val"><strong>Split two-column</strong> — dark editorial left, live stat tiles right. More analytical, data-forward.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">LIVE DATA</div>
+      <div class="odesc-val">Reuses the <strong>usePlatformStats()</strong> hook already built. Real numbers from the database, 30s polling.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">COMPLEXITY</div>
+      <div class="odesc-val"><strong>Medium</strong> — imports and calls the existing hook. No new backend work needed.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PANEL C ══════════════════ -->
+<div class="panel" id="panel-c">
+  <div class="panel-label">
+    <span class="plabel-badge plabel-c">OPTION C</span>
+    <span class="plabel-name">Asymmetric Feature Grid</span>
+  </div>
+
+  <div class="preview">
+    <div class="preview-label">LISTINGS PAGE — EMPTY STATE (before search)</div>
+    <div class="oc-wrap">
+      <div class="oc-head">
+        <div>
+          <div class="oc-head-eye">PRIBEC MARKETPLACE — VERIFIED LISTINGS</div>
+          <div class="oc-head-title">Your property.<br><em>Fully verified.</em></div>
+        </div>
+        <div class="oc-shield-ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4562A" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+      </div>
+      <div class="oc-main">
+        <div class="oc-main-eye">FRAUD PROTECTION — SIGNATURE FEATURE</div>
+        <div class="oc-main-h3">Every listing verified against title deeds</div>
+        <div class="oc-main-p">Immutable audit trails prevent double-selling. Ledger-grade ownership tracking gives buyers and diaspora investors the confidence to transact remotely — with zero fraud exposure.</div>
+        <div class="oc-badge">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#00E87A" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          IMMUTABLE LEDGER BACKED
+        </div>
+      </div>
+      <div class="oc-sub">
+        <div class="oc-sc oc-sc-d">
+          <div class="oc-sc-eye">DIASPORA READY</div>
+          <div class="oc-sc-h4">Remote oversight, total confidence</div>
+          <div class="oc-sc-body">Geo-tagged progress photos, escrow protection, and oversight tools built for international buyers.</div>
+        </div>
+        <div class="oc-sc oc-sc-p">
+          <div class="oc-sc-eye">14-STAGE PIPELINE</div>
+          <div class="oc-sc-h4">Every legal stage, fully tracked</div>
+          <div class="oc-sc-body">Full document visibility and milestone escrow releases at each of the 14 purchase stages.</div>
+        </div>
+      </div>
+      <div class="oc-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(242,232,213,.3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Enter a location above and click <strong>&nbsp;Search&nbsp;</strong> to explore verified properties
+      </div>
+    </div>
+  </div>
+
+  <div class="odesc">
+    <div class="odesc-item">
+      <div class="odesc-label">VISUAL LANGUAGE</div>
+      <div class="odesc-val"><strong>Asymmetric hierarchy</strong> — Fraud Protection hero card full-width (egreen glow), Diaspora + Pipeline support below in contrasting styles.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">DRAMA &amp; HIERARCHY</div>
+      <div class="odesc-val"><strong>Highest</strong> of the three options. Most important USP leads, clear visual weight difference between primary and secondary cards.</div>
+    </div>
+    <div class="odesc-item">
+      <div class="odesc-label">COMPLEXITY</div>
+      <div class="odesc-val"><strong>Low</strong> — pure static HTML. More layout variation than A but same code patterns.</div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARISON TABLE -->
+<div class="compare-title">Side-by-side comparison</div>
+<div class="compare">
+  <div class="compare-head">
+    <div>Criterion</div>
+    <div class="col-a">A — Editorial</div>
+    <div class="col-b">B — Split Data</div>
+    <div class="col-c">C — Asymmetric</div>
+  </div>
+  <div class="compare-row">
+    <div>Matches homepage feel exactly</div>
+    <div><span class="tick-g">✓✓✓</span></div>
+    <div><span class="tick-a">✓✓</span></div>
+    <div><span class="tick-a">✓✓</span></div>
+  </div>
+  <div class="compare-row">
+    <div>Shows live database numbers</div>
+    <div><span class="tick-n">—</span></div>
+    <div><span class="tick-g">✓✓✓</span></div>
+    <div><span class="tick-n">—</span></div>
+  </div>
+  <div class="compare-row">
+    <div>Visual drama / hierarchy</div>
+    <div>Medium</div>
+    <div>Low</div>
+    <div><strong style="color:var(--parchment)">High</strong></div>
+  </div>
+  <div class="compare-row">
+    <div>Implementation complexity</div>
+    <div><span class="tick-g">Low</span></div>
+    <div><span class="tick-a">Medium</span></div>
+    <div><span class="tick-g">Low</span></div>
+  </div>
+  <div class="compare-row">
+    <div>Emphasises trust / fraud angle</div>
+    <div>Equal 3 cards</div>
+    <div>Bullet list</div>
+    <div><strong style="color:var(--parchment)">Fraud card leads</strong></div>
+  </div>
+  <div class="compare-row">
+    <div>Works well on mobile</div>
+    <div><span class="tick-g">✓✓✓</span></div>
+    <div><span class="tick-a">✓✓ (stacks)</span></div>
+    <div><span class="tick-g">✓✓✓</span></div>
+  </div>
+</div>
+
+<script>
+function show(opt, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => { t.className = 'tab'; });
+  document.getElementById('panel-' + opt).classList.add('active');
+  btn.classList.add('active-' + opt);
+}
+</script>
+</body>
+</html>

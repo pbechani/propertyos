@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Active Purchases — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest:        #1A3C28;
+  --forest-light:  #2D5A40;
+  --parchment:     #F2E8D5;
+  --cream:         #EAD9C4;
+  --egreen:        #00E87A;
+  --amber:         #B89040;
+  --carbon:        #0C0D10;
+  --muted:         #5A7A68;
+  --red:           #C4562A;
+  --border:        rgba(26,60,40,0.12);
+  --border-mid:    rgba(26,60,40,0.18);
+  --border-strong: rgba(26,60,40,0.28);
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --serif: 'Fraunces', Georgia, serif;
+}
+
+body {
+  font-family: var(--sans);
+  background: #F5F0E8;
+  color: var(--forest);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Shell / Chrome ─────────────────────────────── */
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+/* ── Section header ─────────────────────────────── */
+.section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--forest);
+  letter-spacing: -0.3px;
+}
+.section-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+/* ── Buttons ─────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 10px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.15s;
+  text-decoration: none;
+}
+.btn-primary { background: var(--forest); color: var(--parchment); }
+.btn-primary:hover { background: var(--forest-light); }
+.btn-outline {
+  background: white; color: var(--forest);
+  border: 1.5px solid var(--border-strong);
+}
+.btn-outline:hover { background: var(--parchment); }
+.btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 9px; }
+
+/* ── Stats strip ─────────────────────────────────── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+.stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--serif); font-size: 28px; font-weight: 600; color: var(--forest); letter-spacing: -0.8px; line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.stat-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.dot-green { background: var(--egreen); }
+.dot-amber { background: var(--amber); }
+
+/* ── Purchase cards ──────────────────────────────── */
+.purchase-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+.purchase-card:hover {
+  box-shadow: 0 8px 32px rgba(26,60,40,0.1);
+  transform: translateY(-1px);
+}
+.purchase-card.expanded {
+  box-shadow: 0 8px 40px rgba(26,60,40,0.14);
+}
+
+.card-main {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.card-body {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-price {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--forest);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+.card-addr { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* ── Status badges ───────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.badge-submitted   { background: rgba(0,232,122,0.1);   color: #1A7A40;      border: 1px solid rgba(0,232,122,0.3); }
+.badge-review      { background: rgba(184,144,64,0.1);  color: var(--amber); border: 1px solid rgba(184,144,64,0.3); }
+.badge-accepted    { background: rgba(0,232,122,0.12);  color: #1A7A40;      border: 1px solid rgba(0,232,122,0.35); }
+.badge-countered   { background: rgba(184,144,64,0.12); color: var(--amber); border: 1px solid rgba(184,144,64,0.35); }
+.badge-in-progress { background: rgba(26,60,40,0.07);   color: var(--forest); border: 1px solid rgba(26,60,40,0.2); }
+
+/* ── 14-stage pipeline ──────────────────────────── */
+.pipeline-wrap {
+  position: relative;
+}
+.pipeline-phases {
+  display: flex;
+  gap: 2px;
+  position: relative;
+}
+
+.phase-block {
+  flex: 1;
+}
+.phase-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stage-dots {
+  display: flex;
+  gap: 2px;
+  position: relative;
+}
+
+.stage-dot {
+  flex: 1;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--cream);
+  position: relative;
+  transition: all 0.3s;
+}
+.stage-dot.done {
+  background: var(--forest);
+}
+.stage-dot.active {
+  background: var(--egreen);
+  box-shadow: 0 0 0 2px rgba(0,232,122,0.3);
+}
+.stage-dot.pending {
+  background: var(--cream);
+}
+
+.pipeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.pipeline-label-start,
+.pipeline-label-end {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.stage-progress-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.stage-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--forest);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stage-num {
+  font-size: 10px;
+  background: var(--forest);
+  color: var(--parchment);
+  border-radius: 99px;
+  padding: 1px 6px;
+  font-weight: 700;
+}
+.stage-pct { font-size: 11px; color: var(--muted); }
+
+/* ── Card action row ─────────────────────────────── */
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.next-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,232,122,0.06);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  flex: 1;
+}
+.next-action-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--forest);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.next-action-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.next-action-text { font-size: 12px; font-weight: 600; color: var(--forest); }
+
+.card-btns { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── Expanded detail panel ───────────────────────── */
+.detail-panel {
+  border-top: 1px solid var(--border);
+  display: none;
+}
+.detail-panel.open { display: block; }
+
+.detail-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  padding: 24px;
+  gap: 24px;
+}
+
+.detail-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ── Stage checklist ─────────────────────────────── */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.check-box {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: white;
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.check-box.done { background: var(--forest); border-color: var(--forest); color: var(--parchment); }
+.check-box.pending { background: white; }
+.check-text { font-size: 12px; color: var(--forest); line-height: 1.4; }
+.check-text.done { text-decoration: line-through; color: var(--muted); }
+
+/* ── Contacts ────────────────────────────────────── */
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.contact-row:last-child { border-bottom: none; }
+.contact-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--forest);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 14px; color: var(--parchment); font-weight: 500;
+  flex-shrink: 0;
+}
+.contact-name { font-size: 13px; font-weight: 500; color: var(--forest); }
+.contact-role { font-size: 11px; color: var(--muted); }
+.contact-action { margin-left: auto; }
+
+/* ── Financial summary ───────────────────────────── */
+.fin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.fin-row:last-child { border-bottom: none; }
+.fin-label { color: var(--muted); }
+.fin-value { font-weight: 600; color: var(--forest); }
+.fin-value.held { color: #1A7A40; }
+
+/* ── Full pipeline strip ─────────────────────────── */
+.full-pipeline {
+  border-top: 1px solid var(--border);
+  padding: 20px 24px;
+  background: rgba(26,60,40,0.02);
+}
+.full-pipeline-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.pipeline-steps {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pipeline-step {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 60px;
+  cursor: default;
+  position: relative;
+}
+.pipeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 13px);
+  right: calc(-50% + 13px);
+  height: 2px;
+  background: var(--border);
+}
+.pipeline-step.done::after { background: var(--forest); }
+.pipeline-step.active::after { background: var(--egreen); }
+
+.step-node {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  border: 2px solid var(--border-strong);
+  background: white;
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s;
+}
+.step-node.done { background: var(--forest); border-color: var(--forest); color: var(--parchment); }
+.step-node.active { background: var(--egreen); border-color: var(--egreen); color: var(--carbon); box-shadow: 0 0 0 3px rgba(0,232,122,0.2); }
+.step-node.blocked { background: rgba(196,86,42,0.1); border-color: rgba(196,86,42,0.4); color: var(--red); }
+
+.step-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+  max-width: 60px;
+}
+.step-label.done { color: var(--forest); }
+.step-label.active { color: var(--forest); font-weight: 700; }
+
+/* ── Empty state ─────────────────────────────────── */
+.empty-state {
+  background: white;
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+  padding: 60px 24px;
+  text-align: center;
+}
+.empty-icon {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: rgba(26,60,40,0.06);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 30px;
+}
+.empty-title { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--forest); margin-bottom: 8px; }
+.empty-desc { font-size: 13px; color: var(--muted); max-width: 380px; margin: 0 auto 24px; line-height: 1.6; }
+
+/* ── Filter bar ──────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 14px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 1.5px solid var(--border-mid);
+  background: white; color: var(--forest);
+  transition: all 0.15s;
+}
+.filter-pill.active { background: var(--forest); color: var(--parchment); border-color: var(--forest); }
+.filter-pill .count {
+  font-size: 10px; background: rgba(242,232,213,0.2); border-radius: 99px;
+  padding: 1px 5px; font-weight: 700;
+}
+.filter-pill:not(.active) .count {
+  background: var(--cream); color: var(--muted);
+}
+
+.filter-sep { flex: 1; }
+
+/* ── Annotation box (for mockup notes) ──────────── */
+.annotation {
+  position: relative;
+  border: 1.5px dashed rgba(184,144,64,0.5);
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: rgba(184,144,64,0.05);
+  font-size: 12px;
+  color: var(--amber);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+.annotation::before {
+  content: '✦ Design note';
+  display: block;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+/* ── Timeline estimate ───────────────────────────── */
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.timeline-row:last-child { border-bottom: none; }
+.timeline-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.timeline-event { font-size: 12px; font-weight: 500; color: var(--forest); }
+.timeline-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+/* ── Offer status banner ─────────────────────────── */
+.offer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid;
+  margin-bottom: 0;
+}
+.offer-banner.submitted {
+  background: rgba(0,232,122,0.06);
+  border-color: rgba(0,232,122,0.25);
+}
+.offer-banner.review {
+  background: rgba(184,144,64,0.06);
+  border-color: rgba(184,144,64,0.25);
+}
+.offer-banner.accepted {
+  background: rgba(26,60,40,0.05);
+  border-color: rgba(26,60,40,0.15);
+}
+.offer-banner-icon { font-size: 18px; flex-shrink: 0; }
+.offer-banner-text { flex: 1; }
+.offer-banner-title { font-size: 13px; font-weight: 600; color: var(--forest); }
+.offer-banner-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* ── Mockup frame (mimics dashboard shell) ──────── */
+.mockup-frame {
+  background: #F5F0E8;
+  border: 1px solid rgba(26,60,40,0.15);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(26,60,40,0.15);
+}
+
+.frame-topbar {
+  background: var(--forest);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+}
+.frame-logo {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--parchment);
+  font-weight: 500;
+}
+.frame-logo span { color: var(--egreen); }
+
+.frame-tabs {
+  display: flex;
+  gap: 2px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.frame-tab {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.frame-tab.active {
+  color: var(--forest);
+  border-bottom-color: var(--forest);
+  font-weight: 600;
+}
+.frame-tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 99px;
+  background: var(--forest); color: var(--parchment);
+  font-size: 10px; font-weight: 700;
+  margin-left: 5px;
+}
+.frame-tab.active .frame-tab-badge {
+  background: var(--egreen); color: var(--carbon);
+}
+
+.frame-body {
+  padding: 28px;
+  background: #F5F0E8;
+  min-height: 600px;
+}
+
+/* ── Design notes column ─────────────────────────── */
+.design-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.design-notes-panel {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+}
+.design-notes-panel h2 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--forest);
+  margin-bottom: 16px;
+}
+.note-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.note-card h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--forest);
+  margin-bottom: 8px;
+}
+.note-card p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.note-card ul {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  padding-left: 16px;
+}
+.note-card .tag {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 10px; font-weight: 600;
+  margin-right: 4px; margin-bottom: 4px;
+}
+.tag-gap { background: rgba(196,86,42,0.1); color: var(--red); border: 1px solid rgba(196,86,42,0.25); }
+.tag-add { background: rgba(0,232,122,0.1); color: #1A7A40; border: 1px solid rgba(0,232,122,0.25); }
+.tag-s4 { background: rgba(184,144,64,0.1); color: var(--amber); border: 1px solid rgba(184,144,64,0.3); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<div class="design-layout">
+
+<!-- ── LEFT: Mockup ──────────────────────────────────────────── -->
+<div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;"></span>
+    DESIGN MOCKUP — Click cards to expand details
+  </p>
+
+  <div class="mockup-frame">
+
+    <!-- Topbar -->
+    <div class="frame-topbar">
+      <span class="frame-logo">Build<span>Trust</span></span>
+      <div style="flex:1"></div>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(242,232,213,0.2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;color:var(--parchment);">T</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="frame-tabs">
+      <div class="frame-tab">Overview</div>
+      <div class="frame-tab">Saved Properties</div>
+      <div class="frame-tab active">Active Purchases <span class="frame-tab-badge">2</span></div>
+      <div class="frame-tab">Viewings</div>
+      <div class="frame-tab">Construction</div>
+    </div>
+
+    <!-- Body -->
+    <div class="frame-body">
+
+      <!-- Header + stats -->
+      <div class="section-hd">
+        <div>
+          <div class="section-title">Active Purchases</div>
+          <div class="section-meta">2 active · 1 awaiting your action</div>
+        </div>
+        <a class="btn btn-primary btn-sm" href="#">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Start New Purchase
+        </a>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stats-strip">
+        <div class="stat-card">
+          <div class="stat-label">Under Offer</div>
+          <div class="stat-value">2</div>
+          <div class="stat-sub"><span class="stat-dot dot-green"></span>Both active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Committed</div>
+          <div class="stat-value" style="font-size:22px;">R 4.85M</div>
+          <div class="stat-sub">Across 2 properties</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Escrow Held</div>
+          <div class="stat-value" style="font-size:22px;color:#1A7A40;">R 0</div>
+          <div class="stat-sub">Pending deposit</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg. Stage</div>
+          <div class="stat-value">2<span style="font-size:16px;color:var(--muted);font-family:var(--sans);"> /14</span></div>
+          <div class="stat-sub"><span class="stat-dot dot-amber"></span>Early stage</div>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="filter-pill active">All <span class="count">2</span></div>
+        <div class="filter-pill">Offer Stage <span class="count">2</span></div>
+        <div class="filter-pill">Finance &amp; Legal <span class="count">0</span></div>
+        <div class="filter-pill">Transfer <span class="count">0</span></div>
+        <div class="filter-sep"></div>
+        <div class="filter-pill" style="gap:4px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+          Sort: Recent
+        </div>
+      </div>
+
+      <!-- ── Purchase Card 1: Counter-Offer (needs action) ──────── -->
+      <div class="purchase-card expanded" id="card1" onclick="toggleCard('card1')">
+        <div class="card-main">
+          <img class="card-img" src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop" alt="Property" />
+          <div class="card-body">
+            <div class="card-top">
+              <div>
+                <div class="card-price">R 3,500,000</div>
+                <div class="card-addr">12 Acacia Lane · Midrand, Gauteng</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                <span class="badge badge-countered">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="12"/></svg>
+                  Counter-Offer
+                </span>
+                <span style="font-size:10px;background:rgba(196,86,42,0.1);color:var(--red);border:1px solid rgba(196,86,42,0.25);border-radius:99px;padding:2px 8px;font-weight:700;">ACTION NEEDED</span>
+              </div>
+            </div>
+
+            <!-- Pipeline progress -->
+            <div class="pipeline-wrap">
+              <div class="stage-progress-text">
+                <span class="stage-name">
+                  <span class="stage-num">3</span>
+                  Offer Accepted / Negotiation
+                </span>
+                <span class="stage-pct">Stage 3 of 14 · 14%</span>
+              </div>
+              <div style="margin-top:8px;">
+                <div class="pipeline-phases">
+                  <!-- Phase 1: Offer -->
+                  <div class="phase-block" style="flex:4;">
+                    <div class="phase-label">Offer</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot done"></div>
+                      <div class="stage-dot done"></div>
+                      <div class="stage-dot active"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <!-- Phase 2: Finance -->
+                  <div class="phase-block" style="flex:3;margin-left:8px;">
+                    <div class="phase-label">Finance</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <!-- Phase 3: Due Diligence -->
+                  <div class="phase-block" style="flex:2;margin-left:8px;">
+                    <div class="phase-label">Due Diligence</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <!-- Phase 4: Transfer -->
+                  <div class="phase-block" style="flex:5;margin-left:8px;">
+                    <div class="phase-label">Transfer</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Offer status banner -->
+            <div class="offer-banner review">
+              <span class="offer-banner-icon">⚡</span>
+              <div class="offer-banner-text">
+                <div class="offer-banner-title">Counter-offer received — R 3,650,000</div>
+                <div class="offer-banner-sub">Seller responded · Expires in 2 days · Original offer: R 3,500,000</div>
+              </div>
+              <a class="btn btn-primary btn-sm" href="#" onclick="event.stopPropagation()">Respond Now</a>
+            </div>
+
+            <!-- Card actions -->
+            <div class="card-actions">
+              <div class="next-action">
+                <div class="next-action-icon">📄</div>
+                <div>
+                  <div class="next-action-label">Next step</div>
+                  <div class="next-action-text">Accept, counter, or decline seller's counter-offer</div>
+                </div>
+              </div>
+              <div class="card-btns">
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation()">View Details</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--muted);" onclick="event.stopPropagation()">▾ Collapse</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expanded detail panel -->
+        <div class="detail-panel open" id="panel1">
+          <!-- Full pipeline -->
+          <div class="full-pipeline">
+            <div class="full-pipeline-title">14-Stage Purchase Pipeline</div>
+            <div class="pipeline-steps">
+              <div class="pipeline-step done">
+                <div class="step-node done">✓</div>
+                <div class="step-label done">Property Search</div>
+              </div>
+              <div class="pipeline-step done">
+                <div class="step-node done">✓</div>
+                <div class="step-label done">Offer Submitted</div>
+              </div>
+              <div class="pipeline-step active">
+                <div class="step-node active">3</div>
+                <div class="step-label active">Negotiation</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">4</div>
+                <div class="step-label">Sale Agreement</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">5</div>
+                <div class="step-label">Deposit & Escrow</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">6</div>
+                <div class="step-label">Title Search</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">7</div>
+                <div class="step-label">Mortgage</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">8</div>
+                <div class="step-label">Inspection</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">9</div>
+                <div class="step-label">Compliance</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">10</div>
+                <div class="step-label">Transfer Docs</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">11</div>
+                <div class="step-label">Deeds Office</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">12</div>
+                <div class="step-label">Transfer Duty</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">13</div>
+                <div class="step-label">Final Payment</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">14</div>
+                <div class="step-label">Post-Purchase</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3-col detail -->
+          <div class="detail-inner">
+            <!-- Checklist -->
+            <div>
+              <div class="detail-section-title">Stage 3 Checklist</div>
+              <div class="checklist">
+                <div class="check-item">
+                  <div class="check-box done">✓</div>
+                  <div class="check-text done">Initial offer submitted</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box done">✓</div>
+                  <div class="check-text done">Seller response received</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box pending"></div>
+                  <div class="check-text">Respond to counter-offer</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box pending"></div>
+                  <div class="check-text">Agree on final purchase price</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box pending"></div>
+                  <div class="check-text">Sign Offer to Purchase (OTP)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contacts -->
+            <div>
+              <div class="detail-section-title">Key Contacts</div>
+              <div class="contact-row">
+                <div class="contact-avatar">SM</div>
+                <div>
+                  <div class="contact-name">Sarah Mokoena</div>
+                  <div class="contact-role">Listing Agent</div>
+                </div>
+                <div class="contact-action">
+                  <button class="btn btn-outline btn-sm">Message</button>
+                </div>
+              </div>
+              <div class="contact-row">
+                <div class="contact-avatar" style="background:var(--amber);">—</div>
+                <div>
+                  <div class="contact-name">Not assigned yet</div>
+                  <div class="contact-role">Conveyancer · Stage 4+</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Financial -->
+            <div>
+              <div class="detail-section-title">Financial Summary</div>
+              <div class="fin-row">
+                <span class="fin-label">Your Offer</span>
+                <span class="fin-value">R 3,500,000</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Counter-Offer</span>
+                <span class="fin-value" style="color:var(--amber);">R 3,650,000</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Deposit (10%)</span>
+                <span class="fin-value">R 350,000</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Escrow Held</span>
+                <span class="fin-value held">R 0 <span style="font-weight:400;font-size:11px;color:var(--muted);">pending</span></span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Est. Transfer Date</span>
+                <span class="fin-value">~Sep 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Purchase Card 2: Submitted, under review ──────────── -->
+      <div class="purchase-card" id="card2" onclick="toggleCard('card2')">
+        <div class="card-main">
+          <img class="card-img" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop" alt="Property" style="min-height:160px;" />
+          <div class="card-body">
+            <div class="card-top">
+              <div>
+                <div class="card-price">R 1,350,000</div>
+                <div class="card-addr">Unit 7, The Grange · Harare, Zimbabwe</div>
+              </div>
+              <span class="badge badge-submitted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="12"/></svg>
+                Under Review
+              </span>
+            </div>
+
+            <!-- Pipeline progress -->
+            <div class="pipeline-wrap">
+              <div class="stage-progress-text">
+                <span class="stage-name">
+                  <span class="stage-num">2</span>
+                  Offer Submission
+                </span>
+                <span class="stage-pct">Stage 2 of 14 · 7%</span>
+              </div>
+              <div style="margin-top:8px;">
+                <div class="pipeline-phases">
+                  <div class="phase-block" style="flex:4;">
+                    <div class="phase-label">Offer</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot done"></div>
+                      <div class="stage-dot active"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <div class="phase-block" style="flex:3;margin-left:8px;">
+                    <div class="phase-label">Finance</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <div class="phase-block" style="flex:2;margin-left:8px;">
+                    <div class="phase-label">Due Diligence</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                  <div class="phase-block" style="flex:5;margin-left:8px;">
+                    <div class="phase-label">Transfer</div>
+                    <div class="stage-dots">
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                      <div class="stage-dot pending"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Banner -->
+            <div class="offer-banner submitted">
+              <span class="offer-banner-icon">🕐</span>
+              <div class="offer-banner-text">
+                <div class="offer-banner-title">Offer submitted — awaiting seller response</div>
+                <div class="offer-banner-sub">Offer: R 1,350,000 · Expires 21 May 2026 · Submitted 14 May 2026</div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card-actions">
+              <div class="next-action">
+                <div class="next-action-icon">⏳</div>
+                <div>
+                  <div class="next-action-label">Waiting for</div>
+                  <div class="next-action-text">Seller review — you'll be notified when they respond</div>
+                </div>
+              </div>
+              <div class="card-btns">
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation()">View Offer</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--muted);" onclick="event.stopPropagation()">▾ Expand</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden expand panel -->
+        <div class="detail-panel" id="panel2">
+          <div class="full-pipeline">
+            <div class="full-pipeline-title">14-Stage Purchase Pipeline</div>
+            <div class="pipeline-steps">
+              <div class="pipeline-step done">
+                <div class="step-node done">✓</div>
+                <div class="step-label done">Property Search</div>
+              </div>
+              <div class="pipeline-step active">
+                <div class="step-node active">2</div>
+                <div class="step-label active">Offer Submitted</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">3</div>
+                <div class="step-label">Negotiation</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">4</div>
+                <div class="step-label">Sale Agreement</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">5</div>
+                <div class="step-label">Deposit & Escrow</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">6</div>
+                <div class="step-label">Title Search</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">7</div>
+                <div class="step-label">Mortgage</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">8</div>
+                <div class="step-label">Inspection</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">9</div>
+                <div class="step-label">Compliance</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">10</div>
+                <div class="step-label">Transfer Docs</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">11</div>
+                <div class="step-label">Deeds Office</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">12</div>
+                <div class="step-label">Transfer Duty</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">13</div>
+                <div class="step-label">Final Payment</div>
+              </div>
+              <div class="pipeline-step">
+                <div class="step-node">14</div>
+                <div class="step-label">Post-Purchase</div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-inner">
+            <div>
+              <div class="detail-section-title">Stage 2 Checklist</div>
+              <div class="checklist">
+                <div class="check-item">
+                  <div class="check-box done">✓</div>
+                  <div class="check-text done">Offer submitted</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box done">✓</div>
+                  <div class="check-text done">Buyer ID verified</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box pending"></div>
+                  <div class="check-text">Seller review (in progress)</div>
+                </div>
+                <div class="check-item">
+                  <div class="check-box pending"></div>
+                  <div class="check-text">Seller response received</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="detail-section-title">Key Contacts</div>
+              <div class="contact-row">
+                <div class="contact-avatar">JN</div>
+                <div>
+                  <div class="contact-name">James Ndlovu</div>
+                  <div class="contact-role">Listing Agent</div>
+                </div>
+                <div class="contact-action"><button class="btn btn-outline btn-sm">Message</button></div>
+              </div>
+            </div>
+            <div>
+              <div class="detail-section-title">Financial Summary</div>
+              <div class="fin-row">
+                <span class="fin-label">Your Offer</span>
+                <span class="fin-value">R 1,350,000</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Deposit (10%)</span>
+                <span class="fin-value">R 135,000</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Financing</span>
+                <span class="fin-value">Bond (FNB)</span>
+              </div>
+              <div class="fin-row">
+                <span class="fin-label">Offer Expires</span>
+                <span class="fin-value">21 May 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /frame-body -->
+  </div><!-- /mockup-frame -->
+
+  <!-- ── Empty state reference ──────────────────────────────── -->
+  <div style="margin-top:32px;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Empty State (when no active purchases)</p>
+    <div class="mockup-frame">
+      <div class="frame-body" style="min-height:auto;">
+        <div class="empty-state">
+          <div class="empty-icon">🏡</div>
+          <div class="empty-title">No active purchases yet</div>
+          <div class="empty-desc">
+            When you submit an offer on a property, your full purchase journey — all 14 stages from offer to registration — will appear here with live status and next-action guidance.
+          </div>
+          <div style="display:flex;gap:12px;justify-content:center;">
+            <a class="btn btn-primary" href="#">Browse Properties</a>
+            <a class="btn btn-outline" href="#">Learn About the Process</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RIGHT: Design Notes ───────────────────────────────────── -->
+<div class="design-notes-panel">
+  <h2>Design Notes</h2>
+
+  <div class="note-card">
+    <h3>What's Being Solved</h3>
+    <p>The current tab shows only a "Coming Soon" card — but <strong>we already have offer data</strong> from <code>buyerOffersApi.list()</code>. Offers = the start of the purchase pipeline. We can show real, actionable data now.</p>
+  </div>
+
+  <div class="note-card">
+    <h3>Gaps Identified</h3>
+    <span class="tag tag-gap">Gap</span> No purchase pipeline API (Sprint 04)<br>
+    <span class="tag tag-gap">Gap</span> <code>BuyerOfferResponse</code> has no property title/image<br>
+    <span class="tag tag-gap">Gap</span> No counter-offer endpoint yet<br>
+    <span class="tag tag-gap">Gap</span> No conveyancer assignment API<br>
+    <span class="tag tag-gap">Gap</span> Stage transitions not tracked<br>
+    <br>
+    <span class="tag tag-add">Fix</span> Use <code>buyerOffersApi.list()</code> + <code>propertiesApi.getById()</code> to hydrate property details<br>
+    <span class="tag tag-add">Fix</span> Map offer statuses → pipeline stage numbers<br>
+    <span class="tag tag-add">Fix</span> Show "stage X of 14" derived from offer status
+  </div>
+
+  <div class="note-card">
+    <h3>New Features Added</h3>
+    <ul>
+      <li>Stats strip (count, total committed, escrow)</li>
+      <li>Filter pills by pipeline phase</li>
+      <li>"Action Needed" alert badge</li>
+      <li>Offer status banner with CTA</li>
+      <li>Next Step indicator</li>
+      <li>Stage checklist (expandable)</li>
+      <li>14-stage visual pipeline</li>
+      <li>Key contacts panel</li>
+      <li>Financial summary per purchase</li>
+      <li>Empty state with clear onboarding CTA</li>
+    </ul>
+  </div>
+
+  <div class="note-card">
+    <h3>Data Strategy (Sprint 03)</h3>
+    <p>Since full pipeline API is Sprint 04, this sprint can:</p>
+    <ul>
+      <li>Show <strong>offers as Stage 2</strong> (submitted) or <strong>Stage 3</strong> (countered)</li>
+      <li>Hydrate property details via a second API call</li>
+      <li>Lock Stage 4–14 as "upcoming" until Sprint 04</li>
+      <li>Pipeline strip shows full 14 stages visually</li>
+    </ul>
+  </div>
+
+  <div class="note-card">
+    <h3>Sprint Scope</h3>
+    <span class="tag tag-s4">Sprint 03</span> Stats strip, cards with offer status, filter bar, empty state<br><br>
+    <span class="tag tag-s4" style="background:rgba(26,60,40,0.07);color:var(--forest);border-color:rgba(26,60,40,0.2);">Sprint 04</span> Full 14-stage pipeline, checklist, document uploads, conveyancer
+  </div>
+</div>
+
+</div><!-- /design-layout -->
+
+<script>
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  const panelId = id.replace('card', 'panel');
+  const panel = document.getElementById(panelId);
+  const isExpanded = card.classList.contains('expanded');
+
+  if (isExpanded) {
+    card.classList.remove('expanded');
+    panel.classList.remove('open');
+    const expandBtn = card.querySelector('.card-btns button:last-child');
+    if (expandBtn) expandBtn.textContent = '▾ Expand';
+  } else {
+    card.classList.add('expanded');
+    panel.classList.add('open');
+    const expandBtn = card.querySelector('.card-btns button:last-child');
+    if (expandBtn) expandBtn.textContent = '▴ Collapse';
+  }
+}
+</script>
+</body>
+</html>

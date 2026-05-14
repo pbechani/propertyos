@@ -3,12 +3,14 @@ import {
   IsOptional,
   IsNumber,
   IsIn,
+  IsUUID,
   IsArray,
   Min,
   Max,
   MaxLength,
   IsNotEmpty,
   IsDateString,
+  IsEmail,
   ValidateNested,
   ValidateIf,
 } from 'class-validator';
@@ -24,6 +26,8 @@ import {
   SortOption,
   FraudReportType,
   InquiryType,
+  LISTING_TYPES,
+  ListingType,
 } from './property.constants';
 
 // ────────────────────────────────────────────────────────────
@@ -112,6 +116,10 @@ export class CreatePropertyDto {
   @IsIn(PROPERTY_TYPES)
   property_type?: PropertyType;
 
+  @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listingType?: ListingType;
+
   @IsNumber()
   @Min(0)
   price!: number;
@@ -180,14 +188,55 @@ export class UpdatePropertyDto {
   status?: PropertyStatus;
 
   @IsOptional()
+  @IsIn(PROPERTY_TYPES)
+  propertyType?: PropertyType;
+
+  @IsOptional()
+  @IsIn(PROPERTY_TYPES)
+  property_type?: PropertyType;
+
+  @IsOptional()
+  @IsString()
+  property_subtype?: string;
+
+  @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listingType?: ListingType;
+
+  @IsOptional()
+  @IsIn(LISTING_TYPES)
+  listing_type?: ListingType;
+
+  @IsOptional()
+  @IsString()
+  listing_reference?: string;
+
+  @IsOptional()
+  @IsString()
+  title_type?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
+  @Type(() => Number)
   price?: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(3)
   currency?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_levy?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_rates?: string;
+
+  @IsOptional()
+  @IsString()
+  monthly_utilities?: string;
 
   @IsOptional()
   @IsNumber()
@@ -202,6 +251,14 @@ export class UpdatePropertyDto {
   area_sqm?: number;
 
   @IsOptional()
+  @IsString()
+  floor_area_sqm?: string;
+
+  @IsOptional()
+  @IsString()
+  erf_size_sqm?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   bedrooms?: number;
@@ -210,6 +267,18 @@ export class UpdatePropertyDto {
   @IsNumber()
   @Min(0)
   bathrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  garages?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  carports?: number;
 
   @IsOptional()
   @IsNumber()
@@ -239,6 +308,14 @@ export class UpdatePropertyDto {
 // ────────────────────────────────────────────────────────────
 
 export class SearchPropertiesDto {
+  @IsOptional()
+  @IsUUID()
+  agentId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  agent_id?: string;
+
   @IsOptional()
   @IsIn(PROPERTY_TYPES)
   type?: PropertyType;
@@ -332,6 +409,10 @@ export class SearchPropertiesDto {
   sort?: SortOption;
 
   @IsOptional()
+  @IsString()
+  q?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Type(() => Number)
@@ -386,6 +467,14 @@ export class CreateInquiryDto {
   @IsOptional()
   @IsDateString()
   preferredDate?: string;
+
+  @IsOptional()
+  @IsIn(['phone', 'email', 'whatsapp'])
+  preferredContactMethod?: string;
+
+  @IsOptional()
+  @IsIn(['morning', 'afternoon', 'evening', 'anytime'])
+  bestContactTime?: string;
 }
 
 export class RespondInquiryDto {
@@ -419,4 +508,62 @@ export class ResolveFraudReportDto {
   @IsOptional()
   @IsString()
   resolutionNotes?: string;
+}
+
+// ────────────────────────────────────────────────────────────
+// Agent Contact & Schedule Call
+// ────────────────────────────────────────────────────────────
+
+export class ContactAgentDto {
+  /** Optional free-text message for the agent */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  message?: string;
+
+  /** Requester's display name (for anonymous / public requests) */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  requesterName?: string;
+
+  /** Requester's email (for anonymous / public requests) */
+  @IsOptional()
+  @IsEmail()
+  requesterEmail?: string;
+
+  /** Requester's phone (for anonymous / public requests) */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  requesterPhone?: string;
+}
+
+export class ScheduleCallDto {
+  /** ISO date-time for the preferred call slot */
+  @IsDateString()
+  preferredDate!: string;
+
+  /** Optional message / notes for the agent */
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  message?: string;
+
+  /** Requester's display name */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  requesterName?: string;
+
+  /** Requester's email */
+  @IsOptional()
+  @IsEmail()
+  requesterEmail?: string;
+
+  /** Requester's phone */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  requesterPhone?: string;
 }

@@ -31,6 +31,7 @@ type LinkProps = Omit<NextLinkProps, 'href'> & {
   to: string;
   children?: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
   'aria-label'?: string;
   'aria-current'?: boolean | 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false';
   state?: unknown;

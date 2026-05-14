@@ -8,6 +8,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { OAuthVerificationService } from './auth/oauth-verification.service';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
+import { AdminPlatformController } from './users.controller';
 import { RolesGuard } from './rbac/roles.guard';
 import { PermissionsGuard } from './rbac/permissions.guard';
 import { KycController, AdminKycController } from './kyc.controller';
@@ -18,6 +19,36 @@ import { DocumentAccessService } from './document-access.service';
 import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
 import { IdentityBootstrapService } from './identity.bootstrap.service';
+// Sprint 01-b: Companies
+import { CompaniesController } from './companies/companies.controller';
+import { OrphanedTasksController } from './companies/orphaned-tasks.controller';
+import { PublicCompaniesController } from './companies/public-companies.controller';
+import { InvitationsController } from './companies/invitations.controller';
+import { CompaniesService } from './companies/companies.service';
+import { CompanyMembersService } from './companies/company-members.service';
+import { CompanyInvitationsService } from './companies/company-invitations.service';
+import { OrphanedTasksService } from './companies/orphaned-tasks.service';
+import { CompanyContextGuard } from './companies/guards/company-context.guard';
+import { CompanyAdminGuard } from './companies/guards/company-admin.guard';
+import { CompanyPermissionGuard } from './companies/guards/company-permission.guard';
+// Sprint 02 Enhanced: Professional Licences
+import {
+  ProfessionalLicencesController,
+  AdminProfessionalLicencesController,
+} from './professional-licences/professional-licences.controller';
+import { ProfessionalLicencesService } from './professional-licences/professional-licences.service';
+// Sprint 02 Enhanced: Sessions
+import { SessionsController } from './sessions/sessions.controller';
+import { SessionsService } from './sessions/sessions.service';
+// Sprint 02 Enhanced: MFA
+import { MfaConfigController } from './mfa/mfa-config.controller';
+import { MfaConfigService } from './mfa/mfa-config.service';
+// Sprint 02 Enhanced: Agent CRM
+import { AgentCrmController } from './agent-crm/agent-crm.controller';
+import { AgentCrmService } from './agent-crm/agent-crm.service';
+// Sprint 02 Enhanced: Notification Preferences
+import { NotificationPreferencesController } from './notification-preferences/notification-preferences.controller';
+import { NotificationPreferencesService } from './notification-preferences/notification-preferences.service';
 
 @Module({
   imports: [
@@ -37,9 +68,22 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
   controllers: [
     AuthController,
     UsersController,
+    AdminPlatformController,
     KycController,
     AdminKycController,
     AuditController,
+    // Sprint 01-b
+    CompaniesController,
+    OrphanedTasksController,
+    InvitationsController,
+    PublicCompaniesController,
+    // Sprint 02 Enhanced
+    ProfessionalLicencesController,
+    AdminProfessionalLicencesController,
+    SessionsController,
+    MfaConfigController,
+    AgentCrmController,
+    NotificationPreferencesController,
   ],
   providers: [
     AuthService,
@@ -54,6 +98,26 @@ import { IdentityBootstrapService } from './identity.bootstrap.service';
     NotificationService,
     AuditService,
     IdentityBootstrapService,
+    // Sprint 01-b
+    CompaniesService,
+    CompanyMembersService,
+    CompanyInvitationsService,
+    OrphanedTasksService,
+    CompanyContextGuard,
+    CompanyAdminGuard,
+    CompanyPermissionGuard,
+    // Sprint 02 Enhanced
+    ProfessionalLicencesService,
+    SessionsService,
+    MfaConfigService,
+    AgentCrmService,
+    NotificationPreferencesService,
+  ],
+  exports: [
+    CompanyContextGuard,
+    CompanyAdminGuard,
+    CompanyPermissionGuard,
+    NotificationService,
   ],
 })
 export class IdentityModule {}

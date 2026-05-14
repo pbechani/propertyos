@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Truck,
   Package,
@@ -219,6 +219,11 @@ export default function LogisticsDeliveryMarketplace() {
   const [signatureDrawn, setSignatureDrawn] = useState(false);
   const [itemCondition, setItemCondition] = useState<"excellent" | "good" | "damaged" | "">("");
   const [, setShowOperatorDetails] = useState<string | null>(null);
+  const [deliveryTime, setDeliveryTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDeliveryTime(new Date().toLocaleString());
+  }, []);
 
   // Calculate statistics
   const totalBookings = 1247;
@@ -402,7 +407,7 @@ export default function LogisticsDeliveryMarketplace() {
                       onClick={() => setSelectedTruck(truck)}
                     >
                       <div className="flex gap-4">
-                        <div className="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
+                        <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
                           <Truck className="w-full h-full p-4 text-gray-400" />
                         </div>
                         <div className="flex-1">
@@ -775,7 +780,7 @@ export default function LogisticsDeliveryMarketplace() {
                     {/* Escrow Information */}
                     <Card className="p-6 bg-blue-50 border-blue-200">
                       <div className="flex items-start gap-3">
-                        <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <Shield className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <h3 className="font-semibold text-blue-900 mb-2">
                             Escrow-Protected Payment
@@ -870,7 +875,7 @@ export default function LogisticsDeliveryMarketplace() {
                 <div className="col-span-2">
                   <div className="relative bg-gray-100 rounded-xl border border-gray-200 h-96 overflow-hidden">
                     {/* Simulated map background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+                    <div className="absolute inset-0 bg-linear-to-br from-gray-100 to-gray-200" />
 
                     {/* Route line */}
                     <svg className="absolute inset-0 w-full h-full">
@@ -972,7 +977,7 @@ export default function LogisticsDeliveryMarketplace() {
                 {/* Tracking Info */}
                 <div className="space-y-4">
                   {/* ETA Card */}
-                  <Card className="p-5 border-gray-200 bg-gradient-to-br from-blue-50 to-white">
+                  <Card className="p-5 border-gray-200 bg-linear-to-br from-blue-50 to-white">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
                         <Clock className="w-6 h-6 text-white" />
@@ -1019,7 +1024,7 @@ export default function LogisticsDeliveryMarketplace() {
                   {/* Escrow Status */}
                   <Card className="p-5 bg-yellow-50 border-yellow-200">
                     <div className="flex items-start gap-3">
-                      <Lock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <Lock className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
                       <div>
                         <h3 className="font-semibold text-yellow-900 mb-1">
                           Payment Secured
@@ -1093,7 +1098,7 @@ export default function LogisticsDeliveryMarketplace() {
                       {deliveryPhotos.map((photo, index) => (
                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
                           <img src={photo} alt={`Delivery ${index + 1}`} className="w-full h-full object-cover" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
                             <div className="flex items-center gap-1 text-white text-xs">
                               <MapPinned className="w-3 h-3" />
                               <span>Verified</span>
@@ -1109,7 +1114,7 @@ export default function LogisticsDeliveryMarketplace() {
 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <div className="flex items-start gap-2">
-                        <Locate className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <Locate className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                         <div className="text-sm">
                           <div className="font-medium text-green-900 mb-1">
                             Location Verified
@@ -1302,7 +1307,7 @@ export default function LogisticsDeliveryMarketplace() {
                       <Separator />
                       <div>
                         <div className="text-gray-600 mb-1">Delivery Time</div>
-                        <div className="font-medium">{new Date().toLocaleString()}</div>
+                        <div className="font-medium">{deliveryTime ?? "—"}</div>
                       </div>
                     </div>
                   </Card>
@@ -1310,7 +1315,7 @@ export default function LogisticsDeliveryMarketplace() {
                   {/* Escrow Payment Status */}
                   <Card className="p-5 bg-yellow-50 border-yellow-200">
                     <div className="flex items-start gap-3 mb-4">
-                      <Lock className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                      <Lock className="w-6 h-6 text-yellow-600 shrink-0" />
                       <div>
                         <h3 className="font-semibold text-yellow-900 mb-1">
                           Escrow Payment
@@ -1439,7 +1444,7 @@ export default function LogisticsDeliveryMarketplace() {
 
             <Card className="p-4 bg-blue-50 border-blue-200">
               <div className="flex items-start gap-2">
-                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-700">
                   Your payment will be held in secure escrow until delivery is confirmed
                 </div>

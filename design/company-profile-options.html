@@ -1,0 +1,2350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Company Profile — 3 Design Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:      #1A3C28;
+    --forest-lt:   #2D5A40;
+    --parchment:   #F2E8D5;
+    --cream:       #EAD9C4;
+    --carbon:      #0C0D10;
+    --egreen:      #00E87A;
+    --amber:       #B89040;
+    --muted:       #6B8A76;
+    --faint:       #9AAFA4;
+    --rust:        #C4562A;
+    --border:      rgba(26,60,40,.12);
+    --ff:          'Fraunces', Georgia, serif;
+    --mono:        'IBM Plex Mono', monospace;
+    --sans:        'DM Sans', system-ui, sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: #F5F0E8;
+    color: var(--carbon);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ─── Chooser nav ─────────────────────────────────────────────── */
+  .chooser {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--forest);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 24px;
+    box-shadow: 0 2px 24px rgba(0,0,0,.3);
+  }
+  .chooser-brand {
+    font-family: var(--ff);
+    font-size: 18px;
+    color: var(--parchment);
+    padding: 14px 0;
+    margin-right: 32px;
+    white-space: nowrap;
+    opacity: .8;
+  }
+  .chooser-brand span { color: var(--egreen); }
+  .chooser-tabs { display: flex; gap: 0; flex: 1; }
+  .chooser-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: rgba(242,232,213,.5);
+    text-transform: uppercase;
+    padding: 14px 24px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    position: relative;
+  }
+  .chooser-tab:hover { color: rgba(242,232,213,.85); }
+  .chooser-tab.active {
+    color: var(--egreen);
+    border-bottom-color: var(--egreen);
+  }
+  .chooser-tab .badge {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: var(--amber);
+    color: #fff;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 99px;
+    letter-spacing: 0;
+  }
+
+  /* ─── Sections ────────────────────────────────────────────────── */
+  .option-section { display: none; }
+  .option-section.active { display: block; }
+
+  .option-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 20px 32px 0;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 1 — "The Estate House"
+     Full-width editorial: forest hero banner → 3-col content grid
+  ═══════════════════════════════════════════════════════════════ */
+  #opt1 {
+    min-height: 100vh;
+    background: var(--parchment);
+  }
+
+  /* Back bar */
+  .o1-topbar {
+    background: var(--forest);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .o1-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: rgba(242,232,213,.7);
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-transform: uppercase;
+  }
+  .o1-back-btn svg { width: 14px; height: 14px; }
+  .o1-topbar-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(242,232,213,.2);
+  }
+  .o1-topbar-crumb {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(242,232,213,.4);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  /* Hero */
+  .o1-hero {
+    position: relative;
+    background: linear-gradient(135deg, var(--forest) 0%, #0f2518 50%, #1a2f1a 100%);
+    padding: 56px 32px 64px;
+    overflow: hidden;
+  }
+  .o1-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 80% 50%, rgba(0,232,122,.07) 0%, transparent 70%),
+      repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(242,232,213,.015) 40px, rgba(242,232,213,.015) 41px);
+  }
+  .o1-hero-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .o1-logo-box {
+    width: 96px;
+    height: 96px;
+    border-radius: 16px;
+    background: rgba(242,232,213,.1);
+    border: 1.5px solid rgba(242,232,213,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 36px;
+    color: var(--parchment);
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+  }
+  .o1-hero-meta { flex: 1; }
+  .o1-verified-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,232,122,.15);
+    border: 1px solid rgba(0,232,122,.3);
+    color: var(--egreen);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 99px;
+    margin-bottom: 12px;
+  }
+  .o1-company-name {
+    font-family: var(--ff);
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 600;
+    color: var(--parchment);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .o1-category {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(242,232,213,.5);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .o1-hero-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .o1-hstat-val {
+    font-family: var(--ff);
+    font-size: 28px;
+    color: var(--parchment);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .o1-hstat-val span { color: var(--egreen); }
+  .o1-hstat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,.4);
+  }
+  .o1-hstat-divider {
+    width: 1px;
+    background: rgba(242,232,213,.1);
+    align-self: stretch;
+  }
+
+  /* CTA block top-right */
+  .o1-hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .o1-cta-primary {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    background: var(--egreen);
+    color: var(--carbon);
+    border: none;
+    padding: 11px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .o1-cta-secondary {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
+    background: rgba(242,232,213,.1);
+    color: rgba(242,232,213,.8);
+    border: 1px solid rgba(242,232,213,.2);
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .o1-fraud-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: rgba(196,86,42,.8);
+    background: rgba(196,86,42,.1);
+    border: 1px solid rgba(196,86,42,.25);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+  }
+
+  /* Wave divider */
+  .o1-wave {
+    display: block;
+    width: 100%;
+    margin-top: -2px;
+    background: var(--forest);
+  }
+  .o1-wave svg { display: block; width: 100%; }
+
+  /* Content grid */
+  .o1-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 320px;
+    gap: 28px;
+    align-items: start;
+  }
+  .o1-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(26,60,40,.1);
+    overflow: hidden;
+  }
+  .o1-card-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(26,60,40,.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .o1-card-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(26,60,40,.07);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .o1-card-title {
+    font-family: var(--ff);
+    font-size: 16px;
+    color: var(--forest);
+  }
+  .o1-card-body { padding: 20px; }
+  .o1-card-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    background: rgba(26,60,40,.06);
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+
+  /* Info grid inside card */
+  .o1-info-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(26,60,40,.06);
+  }
+  .o1-info-row:last-child { border-bottom: none; }
+  .o1-info-icon { color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+  .o1-info-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--faint);
+    margin-bottom: 2px;
+  }
+  .o1-info-val { font-size: 13px; color: var(--forest); }
+  .o1-info-val a { color: var(--amber); text-decoration: none; }
+
+  /* Agent pills */
+  .o1-agent-list { display: flex; flex-direction: column; gap: 12px; }
+  .o1-agent-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(26,60,40,.03);
+    border: 1px solid rgba(26,60,40,.07);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .o1-agent-row:hover { background: rgba(26,60,40,.07); }
+  .o1-agent-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--forest), var(--forest-lt));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--parchment);
+    font-family: var(--ff);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .o1-agent-name { font-size: 13px; font-weight: 600; color: var(--forest); }
+  .o1-agent-role {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: .06em;
+  }
+  .o1-agent-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--amber);
+    background: rgba(184,144,64,.1);
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: .05em;
+  }
+
+  /* Listings mini-grid */
+  .o1-listing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .o1-listing-tile {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(26,60,40,.1);
+    cursor: pointer;
+    transition: transform .15s;
+    background: var(--parchment);
+  }
+  .o1-listing-tile:hover { transform: translateY(-2px); }
+  .o1-listing-img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #c8d8c0, #b0c8a8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 20px;
+  }
+  .o1-listing-info { padding: 8px 10px; }
+  .o1-listing-price {
+    font-family: var(--ff);
+    font-size: 13px;
+    color: var(--rust);
+    margin-bottom: 2px;
+  }
+  .o1-listing-addr {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .o1-listing-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: .08em;
+    color: var(--forest);
+    background: rgba(26,60,40,.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  /* Sidebar (col 3) */
+  .o1-sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .o1-contact-card {
+    background: var(--forest);
+    border-radius: 16px;
+    padding: 24px;
+    color: var(--parchment);
+  }
+  .o1-contact-title {
+    font-family: var(--ff);
+    font-size: 18px;
+    margin-bottom: 18px;
+    color: var(--parchment);
+  }
+  .o1-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(242,232,213,.1);
+  }
+  .o1-contact-row:last-of-type { border-bottom: none; }
+  .o1-contact-icon-bg {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(242,232,213,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .o1-contact-label { font-family: var(--mono); font-size: 9px; color: rgba(242,232,213,.4); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 2px; }
+  .o1-contact-val { font-size: 12px; color: rgba(242,232,213,.85); }
+  .o1-map-placeholder {
+    height: 120px;
+    border-radius: 10px;
+    margin-top: 16px;
+    background: linear-gradient(135deg, rgba(242,232,213,.05), rgba(0,232,122,.08));
+    border: 1px solid rgba(242,232,213,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(242,232,213,.3);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    gap: 8px;
+  }
+  .o1-trust-score-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(26,60,40,.1);
+    text-align: center;
+  }
+  .o1-trust-ring {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 12px;
+    position: relative;
+  }
+  .o1-trust-ring svg { transform: rotate(-90deg); }
+  .o1-trust-ring-val {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 22px;
+    color: var(--forest);
+    transform: rotate(0deg);
+  }
+  .o1-trust-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+  .o1-trust-sub { font-size: 11px; color: var(--faint); }
+  .o1-docs-card {
+    background: rgba(26,60,40,.04);
+    border: 1px solid rgba(26,60,40,.08);
+    border-radius: 16px;
+    padding: 18px 20px;
+  }
+  .o1-doc-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(26,60,40,.06);
+  }
+  .o1-doc-row:last-child { border-bottom: none; }
+  .o1-doc-icon { color: var(--egreen); flex-shrink: 0; }
+  .o1-doc-name { font-size: 12px; color: var(--forest); flex: 1; }
+  .o1-doc-status {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+  .o1-doc-status.verified { background: rgba(0,232,122,.15); color: var(--egreen); }
+  .o1-doc-status.pending { background: rgba(184,144,64,.15); color: var(--amber); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 2 — "The Registry"
+     Sticky dark sidebar + scrollable main content
+  ═══════════════════════════════════════════════════════════════ */
+  #opt2 {
+    min-height: 100vh;
+    background: var(--carbon);
+    display: flex;
+  }
+
+  /* Sidebar */
+  .o2-sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: #111417;
+    border-right: 1px solid rgba(242,232,213,.06);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+  .o2-sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid rgba(242,232,213,.06);
+  }
+  .o2-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: rgba(242,232,213,.35);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  .o2-logo-box {
+    width: 72px;
+    height: 72px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--forest), var(--forest-lt));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 28px;
+    color: var(--parchment);
+    margin-bottom: 14px;
+  }
+  .o2-co-name {
+    font-family: var(--ff);
+    font-size: 22px;
+    color: var(--parchment);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .o2-co-cat {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: rgba(242,232,213,.35);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .o2-verified-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,232,122,.12);
+    border: 1px solid rgba(0,232,122,.25);
+    color: var(--egreen);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+
+  /* Sidebar contact section */
+  .o2-sidebar-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(242,232,213,.04);
+  }
+  .o2-section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,.25);
+    margin-bottom: 14px;
+  }
+  .o2-contact-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .o2-contact-row:last-child { margin-bottom: 0; }
+  .o2-ci {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(242,232,213,.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgba(242,232,213,.5);
+  }
+  .o2-contact-txt { font-size: 12px; color: rgba(242,232,213,.65); line-height: 1.5; }
+  .o2-contact-sublabel { font-family: var(--mono); font-size: 9px; color: rgba(242,232,213,.25); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+
+  /* Sidebar stats bar */
+  .o2-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(242,232,213,.04);
+    border: 1px solid rgba(242,232,213,.06);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .o2-stat {
+    background: #111417;
+    padding: 14px;
+    text-align: center;
+  }
+  .o2-stat-val {
+    font-family: var(--ff);
+    font-size: 22px;
+    color: var(--parchment);
+    margin-bottom: 2px;
+  }
+  .o2-stat-val em { font-style: normal; color: var(--egreen); }
+  .o2-stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: rgba(242,232,213,.3); text-transform: uppercase; }
+
+  /* Sidebar CTAs */
+  .o2-cta-zone {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .o2-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: var(--egreen);
+    color: var(--carbon);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .o2-btn-ghost {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: rgba(242,232,213,.05);
+    color: rgba(242,232,213,.7);
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(242,232,213,.1);
+    cursor: pointer;
+    width: 100%;
+  }
+  .o2-btn-fraud {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(196,86,42,.08);
+    color: rgba(196,86,42,.8);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 9px;
+    border-radius: 10px;
+    border: 1px solid rgba(196,86,42,.2);
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* Main content */
+  .o2-main {
+    flex: 1;
+    background: #16191e;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  .o2-main-header {
+    padding: 28px 40px 0;
+    border-bottom: 1px solid rgba(242,232,213,.04);
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .o2-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,.35);
+    padding: 14px 22px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    transition: color .15s;
+  }
+  .o2-tab.active { color: var(--egreen); border-bottom-color: var(--egreen); }
+  .o2-tab:hover { color: rgba(242,232,213,.7); }
+
+  .o2-content-area { padding: 32px 40px; }
+
+  /* Overview cards */
+  .o2-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .o2-ov-card {
+    background: #1e2228;
+    border: 1px solid rgba(242,232,213,.06);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .o2-ov-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: rgba(0,232,122,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    color: var(--egreen);
+  }
+  .o2-ov-val {
+    font-family: var(--ff);
+    font-size: 26px;
+    color: var(--parchment);
+    margin-bottom: 3px;
+  }
+  .o2-ov-label { font-family: var(--mono); font-size: 9px; color: rgba(242,232,213,.3); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* Agent table */
+  .o2-section-title {
+    font-family: var(--ff);
+    font-size: 20px;
+    color: var(--parchment);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .o2-section-title span {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(242,232,213,.3);
+    background: rgba(242,232,213,.05);
+    padding: 2px 10px;
+    border-radius: 99px;
+    letter-spacing: .06em;
+  }
+  .o2-agent-table { width: 100%; border-collapse: collapse; margin-bottom: 36px; }
+  .o2-agent-table th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,.25);
+    text-align: left;
+    padding: 0 16px 10px;
+    border-bottom: 1px solid rgba(242,232,213,.06);
+  }
+  .o2-agent-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(242,232,213,.04);
+    vertical-align: middle;
+  }
+  .o2-agent-table tr:hover td { background: rgba(242,232,213,.02); }
+  .o2-at-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--forest), var(--forest-lt));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 14px;
+    color: var(--parchment);
+  }
+  .o2-at-name { font-size: 13px; color: rgba(242,232,213,.85); }
+  .o2-at-role { font-family: var(--mono); font-size: 10px; color: rgba(242,232,213,.3); letter-spacing: .06em; }
+  .o2-at-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    padding: 2px 8px;
+    border-radius: 99px;
+    text-transform: uppercase;
+  }
+  .o2-at-badge.senior { background: rgba(184,144,64,.15); color: var(--amber); }
+  .o2-at-badge.associate { background: rgba(154,175,164,.1); color: var(--faint); }
+  .o2-at-badge.principal { background: rgba(0,232,122,.12); color: var(--egreen); }
+  .o2-at-score { font-family: var(--mono); font-size: 12px; color: var(--egreen); }
+  .o2-at-listings { font-family: var(--mono); font-size: 12px; color: rgba(242,232,213,.5); }
+
+  /* Listings carousel */
+  .o2-listing-strip {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(242,232,213,.1) transparent;
+    margin-bottom: 32px;
+  }
+  .o2-listing-card {
+    min-width: 220px;
+    background: #1e2228;
+    border: 1px solid rgba(242,232,213,.07);
+    border-radius: 14px;
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform .15s, border-color .15s;
+  }
+  .o2-listing-card:hover { transform: translateY(-3px); border-color: rgba(0,232,122,.3); }
+  .o2-lc-img {
+    height: 110px;
+    background: linear-gradient(135deg, #1e3a28, #2a4a35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .o2-lc-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(22,25,30,.8) 0%, transparent 60%);
+  }
+  .o2-lc-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: var(--forest);
+    color: var(--egreen);
+    padding: 2px 7px;
+    border-radius: 4px;
+    z-index: 1;
+  }
+  .o2-lc-body { padding: 12px; }
+  .o2-lc-price { font-family: var(--ff); font-size: 16px; color: var(--parchment); margin-bottom: 4px; }
+  .o2-lc-addr { font-size: 11px; color: rgba(242,232,213,.4); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o2-lc-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .o2-lc-chip {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(242,232,213,.06);
+    color: rgba(242,232,213,.4);
+    letter-spacing: .06em;
+  }
+
+
+  /* ═══════════════════════════════════════════════════════════════
+     OPTION 3 — "Trust Dossier"
+     Light parchment; compact info-dense card grid; report-card feel
+  ═══════════════════════════════════════════════════════════════ */
+  #opt3 {
+    min-height: 100vh;
+    background: #F7F2E9;
+  }
+
+  /* Top band */
+  .o3-topband {
+    background: var(--parchment);
+    border-bottom: 1px solid rgba(26,60,40,.12);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 52px;
+  }
+  .o3-back {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  .o3-topband-crumb {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .o3-topband-crumb::before { content: '/'; margin-right: 6px; opacity: .4; }
+  .o3-fraud-topbtn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--rust);
+    background: rgba(196,86,42,.08);
+    border: 1px solid rgba(196,86,42,.2);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* Cover strip */
+  .o3-cover {
+    background: var(--forest);
+    padding: 40px 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .o3-cover::before {
+    content: '';
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: rgba(0,232,122,.05);
+  }
+  .o3-cover::after {
+    content: '';
+    position: absolute;
+    right: 80px;
+    bottom: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(184,144,64,.06);
+  }
+  .o3-cover-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding-bottom: 0;
+  }
+  .o3-co-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 14px 14px 0 0;
+    background: rgba(242,232,213,.1);
+    border: 1.5px solid rgba(242,232,213,.2);
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 32px;
+    color: var(--parchment);
+    flex-shrink: 0;
+  }
+  .o3-cover-meta { padding-bottom: 20px; }
+  .o3-co-name {
+    font-family: var(--ff);
+    font-size: clamp(22px, 3vw, 36px);
+    color: var(--parchment);
+    margin-bottom: 5px;
+  }
+  .o3-co-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: rgba(242,232,213,.4);
+    text-transform: uppercase;
+  }
+  .o3-cover-actions {
+    margin-left: auto;
+    padding-bottom: 20px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .o3-pill-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,232,122,.15);
+    border: 1px solid rgba(0,232,122,.3);
+    color: var(--egreen);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+    height: fit-content;
+  }
+
+  /* Stat ribbon */
+  .o3-ribbon {
+    background: var(--cream);
+    border-bottom: 1px solid rgba(26,60,40,.1);
+    display: flex;
+    padding: 0 40px;
+  }
+  .o3-rstat {
+    flex: 1;
+    padding: 18px 24px;
+    border-right: 1px solid rgba(26,60,40,.1);
+    text-align: center;
+  }
+  .o3-rstat:last-child { border-right: none; }
+  .o3-rstat-val {
+    font-family: var(--ff);
+    font-size: 26px;
+    color: var(--forest);
+    margin-bottom: 3px;
+  }
+  .o3-rstat-val em { font-style: normal; color: var(--rust); }
+  .o3-rstat-label { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+  /* Body grid */
+  .o3-body {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 36px 40px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Left column */
+  .o3-left { display: flex; flex-direction: column; gap: 18px; }
+  .o3-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid rgba(26,60,40,.09);
+    overflow: hidden;
+  }
+  .o3-panel-head {
+    background: rgba(26,60,40,.04);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(26,60,40,.07);
+  }
+  .o3-panel-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--forest);
+  }
+  .o3-panel-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--faint);
+  }
+  .o3-panel-body { padding: 14px 18px; }
+
+  /* Info rows */
+  .o3-info-row {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(26,60,40,.05);
+  }
+  .o3-info-row:last-child { border-bottom: none; }
+  .o3-info-ic { color: var(--muted); }
+  .o3-info-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 2px; }
+  .o3-info-val { font-size: 12px; color: var(--forest); }
+
+  /* Agent list in left col */
+  .o3-agent-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(26,60,40,.05);
+    cursor: pointer;
+  }
+  .o3-agent-item:last-child { border-bottom: none; }
+  .o3-agent-ava {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--forest), var(--forest-lt));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--ff);
+    font-size: 13px;
+    color: var(--parchment);
+    flex-shrink: 0;
+  }
+  .o3-agent-nm { font-size: 12px; font-weight: 600; color: var(--forest); }
+  .o3-agent-role { font-family: var(--mono); font-size: 9px; color: var(--faint); letter-spacing: .06em; }
+  .o3-agent-score {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--egreen);
+  }
+
+  /* Docs panel */
+  .o3-doc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(26,60,40,.05);
+  }
+  .o3-doc-item:last-child { border-bottom: none; }
+  .o3-doc-ic { color: var(--muted); flex-shrink: 0; }
+  .o3-doc-nm { font-size: 12px; color: var(--forest); flex: 1; }
+  .o3-doc-st {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+  .o3-doc-st.verified { background: rgba(0,232,122,.12); color: #00994D; }
+  .o3-doc-st.pending { background: rgba(184,144,64,.15); color: var(--amber); }
+
+  /* Right column */
+  .o3-right { display: flex; flex-direction: column; gap: 24px; }
+  .o3-section-label {
+    font-family: var(--ff);
+    font-size: 20px;
+    color: var(--forest);
+    margin-bottom: 14px;
+  }
+  .o3-section-label em { font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--faint); margin-left: 8px; }
+
+  /* Listings grid */
+  .o3-listings-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .o3-listing-card {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(26,60,40,.09);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .o3-listing-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26,60,40,.1); }
+  .o3-lc-img {
+    height: 100px;
+    background: linear-gradient(135deg, #d4e8c8, #b8d4a8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    position: relative;
+  }
+  .o3-lc-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: var(--forest);
+    color: var(--egreen);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .o3-lc-body { padding: 12px; }
+  .o3-lc-price { font-family: var(--ff); font-size: 15px; color: var(--rust); margin-bottom: 4px; }
+  .o3-lc-addr { font-size: 11px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .o3-lc-chips { display: flex; gap: 4px; }
+  .o3-lc-chip {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(26,60,40,.07);
+    color: var(--muted);
+    letter-spacing: .06em;
+  }
+
+  /* Contact + CTA block */
+  .o3-contact-cta {
+    background: var(--forest);
+    border-radius: 16px;
+    padding: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .o3-cc-title { font-family: var(--ff); font-size: 18px; color: var(--parchment); margin-bottom: 16px; }
+  .o3-cc-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+  .o3-cc-ic {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(242,232,213,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgba(242,232,213,.6);
+  }
+  .o3-cc-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: rgba(242,232,213,.35); margin-bottom: 2px; }
+  .o3-cc-val { font-size: 12px; color: rgba(242,232,213,.8); }
+  .o3-cc-actions { display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+  .o3-cc-btn-primary {
+    display: flex; align-items: center; justify-content: center;
+    gap: 7px; background: var(--egreen); color: var(--carbon);
+    font-weight: 700; font-size: 13px; padding: 13px 20px;
+    border-radius: 10px; border: none; cursor: pointer; width: 100%;
+  }
+  .o3-cc-btn-ghost {
+    display: flex; align-items: center; justify-content: center;
+    gap: 7px; background: rgba(242,232,213,.08); color: rgba(242,232,213,.75);
+    font-size: 12px; padding: 11px 20px; border-radius: 10px;
+    border: 1px solid rgba(242,232,213,.15); cursor: pointer; width: 100%;
+  }
+  .o3-cc-fraud {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; background: rgba(196,86,42,.1); color: rgba(196,86,42,.85);
+    font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; padding: 9px 20px; border-radius: 10px;
+    border: 1px solid rgba(196,86,42,.2); cursor: pointer; width: 100%;
+  }
+
+  /* Trust score ring in option 3 */
+  .o3-trust-panel {
+    text-align: center;
+    padding: 20px;
+  }
+  .o3-trust-title { font-family: var(--ff); font-size: 16px; color: var(--forest); margin-bottom: 16px; }
+  .o3-ring-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 8px; }
+  .o3-ring-wrap svg { transform: rotate(-90deg); }
+  .o3-ring-val {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--ff); font-size: 24px; color: var(--forest);
+    transform: rotate(0);
+  }
+  .o3-trust-sub { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* ─── SVG icons (inline) ──────────────────────────────────────── */
+  .ico { display: inline-block; vertical-align: middle; }
+
+  /* ─── util ────────────────────────────────────────────────────── */
+  .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ─── option intro label ──────────────────────────────────────── */
+  .option-header {
+    padding: 0 0 0 0;
+    position: relative;
+  }
+  .option-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 99px;
+  }
+  .option-pill.o1 { background: rgba(26,60,40,.12); color: var(--forest); }
+  .option-pill.o2 { background: rgba(12,13,16,.15); color: rgba(242,232,213,.9); }
+  .option-pill.o3 { background: rgba(184,144,64,.15); color: var(--amber); }
+</style>
+</head>
+<body>
+
+<!-- ═══════ Chooser nav ═══════ -->
+<nav class="chooser">
+  <div class="chooser-brand">PRIBEC <span>·</span> Company Profile</div>
+  <div class="chooser-tabs">
+    <button class="chooser-tab active" onclick="selectOption(1, this)">Option 1 — Estate House <span class="badge">Editorial</span></button>
+    <button class="chooser-tab" onclick="selectOption(2, this)">Option 2 — The Registry <span class="badge" style="background:var(--muted)">Dark</span></button>
+    <button class="chooser-tab" onclick="selectOption(3, this)">Option 3 — Trust Dossier <span class="badge" style="background:var(--amber)">Compact</span></button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OPTION 1 — "The Estate House"
+     Aesthetic: Editorial luxury real-estate magazine spread.
+     Full-width forest hero → 3-column content grid on parchment.
+     Feel: Authoritative, warm, magazine-quality.
+════════════════════════════════════════════════════════════════════ -->
+<div id="opt1" class="option-section active">
+
+  <div class="o1-topbar">
+    <button class="o1-back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+      Back to listing
+    </button>
+    <div class="o1-topbar-divider"></div>
+    <span class="o1-topbar-crumb">Property / Agents / Company</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="o1-hero">
+    <div class="o1-hero-inner">
+      <!-- Logo -->
+      <div class="o1-logo-box">B</div>
+
+      <!-- Meta -->
+      <div class="o1-hero-meta">
+        <div class="o1-verified-pill">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 8l4 4 8-8"/></svg>
+          Verified Agency
+        </div>
+        <div class="o1-company-name">Bechani Properties</div>
+        <div class="o1-category">Real Estate Agent · Agency</div>
+
+        <div class="o1-hero-stats">
+          <div>
+            <div class="o1-hstat-val"><span>24</span></div>
+            <div class="o1-hstat-label">Active Listings</div>
+          </div>
+          <div class="o1-hstat-divider"></div>
+          <div>
+            <div class="o1-hstat-val">8</div>
+            <div class="o1-hstat-label">Agents</div>
+          </div>
+          <div class="o1-hstat-divider"></div>
+          <div>
+            <div class="o1-hstat-val">142</div>
+            <div class="o1-hstat-label">Sales Closed</div>
+          </div>
+          <div class="o1-hstat-divider"></div>
+          <div>
+            <div class="o1-hstat-val">96%</div>
+            <div class="o1-hstat-label">Trust Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="o1-hero-actions">
+        <button class="o1-cta-primary">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2h12v10H8l-4 3V2z"/></svg>
+          Contact Agency
+        </button>
+        <button class="o1-cta-secondary">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+          Schedule Call
+        </button>
+        <button class="o1-fraud-btn">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 6v5c0 3 4 5 6 5s6-2 6-5V6L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+          Report Fraud
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wave -->
+  <div class="o1-wave">
+    <svg viewBox="0 0 1440 40" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="40" fill="#F2E8D5">
+      <path d="M0,40 C240,10 480,0 720,20 C960,40 1200,30 1440,10 L1440,40 Z"/>
+    </svg>
+  </div>
+
+  <!-- 3-column grid -->
+  <div class="o1-content">
+    <!-- Col 1: Info + Agents -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <!-- Company Info -->
+      <div class="o1-card">
+        <div class="o1-card-header">
+          <div class="o1-card-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--forest)" stroke-width="1.8"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 3V2m6 1V2M2 7h12"/></svg>
+          </div>
+          <span class="o1-card-title">Company Information</span>
+        </div>
+        <div class="o1-card-body">
+          <div class="o1-info-row">
+            <div class="o1-info-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg></div>
+            <div>
+              <div class="o1-info-label">Head Office</div>
+              <div class="o1-info-val">14 Rivonia Road, Sandton<br/>Johannesburg, 2196</div>
+            </div>
+          </div>
+          <div class="o1-info-row">
+            <div class="o1-info-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h10v10H3z M5 6h6M5 9h4"/></svg></div>
+            <div>
+              <div class="o1-info-label">Registration No.</div>
+              <div class="o1-info-val">2019/123456/07</div>
+            </div>
+          </div>
+          <div class="o1-info-row">
+            <div class="o1-info-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M6 7c0-1.1.9-2 2-2s2 .9 2 2c0 1.8-2 3-2 3M8 12v.5"/></svg></div>
+            <div>
+              <div class="o1-info-label">FFC Number</div>
+              <div class="o1-info-val">FFC 20241892</div>
+            </div>
+          </div>
+          <div class="o1-info-row">
+            <div class="o1-info-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 3"/></svg></div>
+            <div>
+              <div class="o1-info-label">Est.</div>
+              <div class="o1-info-val">2019 · 5 years in operation</div>
+            </div>
+          </div>
+          <div class="o1-info-row">
+            <div class="o1-info-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M5 8c0-1.7 1.3-3 3-3"/><path d="M8 11c1.7 0 3-1.3 3-3"/></svg></div>
+            <div>
+              <div class="o1-info-label">Website</div>
+              <div class="o1-info-val"><a href="#">bechaniproperties.co.za</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agents -->
+      <div class="o1-card">
+        <div class="o1-card-header">
+          <div class="o1-card-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--forest)" stroke-width="1.8"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.5-5 5-5M12 11l1.5 1.5L16 10"/><circle cx="12" cy="8" r="3"/></svg>
+          </div>
+          <span class="o1-card-title">Our Agents</span>
+          <span class="o1-card-count">8 agents</span>
+        </div>
+        <div class="o1-card-body">
+          <div class="o1-agent-list">
+            <div class="o1-agent-row">
+              <div class="o1-agent-avatar">JB</div>
+              <div>
+                <div class="o1-agent-name">James Bechani</div>
+                <div class="o1-agent-role">Principal Agent</div>
+              </div>
+              <span class="o1-agent-badge">Principal</span>
+            </div>
+            <div class="o1-agent-row">
+              <div class="o1-agent-avatar" style="background:linear-gradient(135deg,#2D5A40,#4a8a60)">SN</div>
+              <div>
+                <div class="o1-agent-name">Sarah Nkosi</div>
+                <div class="o1-agent-role">Senior Agent</div>
+              </div>
+              <span class="o1-agent-badge">Senior</span>
+            </div>
+            <div class="o1-agent-row">
+              <div class="o1-agent-avatar" style="background:linear-gradient(135deg,#3a5228,#5a7840)">TM</div>
+              <div>
+                <div class="o1-agent-name">Thabo Molefe</div>
+                <div class="o1-agent-role">Associate Agent</div>
+              </div>
+              <span class="o1-agent-badge">Associate</span>
+            </div>
+            <div class="o1-agent-row">
+              <div class="o1-agent-avatar" style="background:linear-gradient(135deg,#1c3c2c,#2a5a3c)">LP</div>
+              <div>
+                <div class="o1-agent-name">Lerato Petersen</div>
+                <div class="o1-agent-role">Associate Agent</div>
+              </div>
+              <span class="o1-agent-badge">Associate</span>
+            </div>
+            <div class="o1-agent-row" style="opacity:.5;pointer-events:none;">
+              <div class="o1-agent-avatar" style="background:rgba(26,60,40,.3)">+4</div>
+              <div>
+                <div class="o1-agent-name" style="color:var(--muted)">4 more agents</div>
+                <div class="o1-agent-role">View all</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 2: Listings -->
+    <div class="o1-card">
+      <div class="o1-card-header">
+        <div class="o1-card-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--forest)" stroke-width="1.8"><path d="M2 6L8 2l6 4v8H2V6z"/><path d="M6 14V9h4v5"/></svg>
+        </div>
+        <span class="o1-card-title">Active Listings</span>
+        <span class="o1-card-count">24 properties</span>
+      </div>
+      <div class="o1-card-body">
+        <div class="o1-listing-grid">
+          <div class="o1-listing-tile">
+            <div class="o1-listing-img">🏡</div>
+            <div class="o1-listing-info">
+              <div class="o1-listing-price">R 3,200,000</div>
+              <div class="o1-listing-addr">Sandton, Johannesburg</div>
+              <span class="o1-listing-tag">For Sale</span>
+            </div>
+          </div>
+          <div class="o1-listing-tile">
+            <div class="o1-listing-img">🏢</div>
+            <div class="o1-listing-info">
+              <div class="o1-listing-price">R 18,500/mo</div>
+              <div class="o1-listing-addr">Rosebank, JHB</div>
+              <span class="o1-listing-tag">To Let</span>
+            </div>
+          </div>
+          <div class="o1-listing-tile">
+            <div class="o1-listing-img">🏠</div>
+            <div class="o1-listing-info">
+              <div class="o1-listing-price">R 1,850,000</div>
+              <div class="o1-listing-addr">Pretoria East</div>
+              <span class="o1-listing-tag">For Sale</span>
+            </div>
+          </div>
+          <div class="o1-listing-tile">
+            <div class="o1-listing-img">🏗️</div>
+            <div class="o1-listing-info">
+              <div class="o1-listing-price">R 4,750,000</div>
+              <div class="o1-listing-addr">Waterfall Estate</div>
+              <span class="o1-listing-tag">Off-Plan</span>
+            </div>
+          </div>
+          <div class="o1-listing-tile">
+            <div class="o1-listing-img">🏘️</div>
+            <div class="o1-listing-info">
+              <div class="o1-listing-price">R 2,100,000</div>
+              <div class="o1-listing-addr">Centurion</div>
+              <span class="o1-listing-tag">For Sale</span>
+            </div>
+          </div>
+          <div class="o1-listing-tile" style="display:flex;align-items:center;justify-content:center;min-height:120px;">
+            <div style="text-align:center;color:var(--muted);">
+              <div style="font-family:var(--ff);font-size:24px;color:var(--forest);">+19</div>
+              <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;">View All</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 3: Sidebar -->
+    <div class="o1-sidebar">
+      <!-- Contact card -->
+      <div class="o1-contact-card">
+        <div class="o1-contact-title">Get in Touch</div>
+        <div class="o1-contact-row">
+          <div class="o1-contact-icon-bg">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(242,232,213,.7)" stroke-width="1.8"><path d="M2 3h12v10H2z M2 5l6 5 6-5"/></svg>
+          </div>
+          <div>
+            <div class="o1-contact-label">Email</div>
+            <div class="o1-contact-val">info@bechaniprops.co.za</div>
+          </div>
+        </div>
+        <div class="o1-contact-row">
+          <div class="o1-contact-icon-bg">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(242,232,213,.7)" stroke-width="1.8"><path d="M3 2l2.5 1-1 3 1.5 1.5C7 9 9 11 11 12.5l1.5 1.5 3-1 1 2.5c-2 1-5 1-8-2S2 6 3 4L3 2z"/></svg>
+          </div>
+          <div>
+            <div class="o1-contact-label">Phone</div>
+            <div class="o1-contact-val">+27 11 234 5678</div>
+          </div>
+        </div>
+        <div class="o1-contact-row">
+          <div class="o1-contact-icon-bg">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(242,232,213,.7)" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg>
+          </div>
+          <div>
+            <div class="o1-contact-label">Address</div>
+            <div class="o1-contact-val">14 Rivonia Rd, Sandton</div>
+          </div>
+        </div>
+        <div class="o1-map-placeholder">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg>
+          Map View
+        </div>
+      </div>
+
+      <!-- Trust score -->
+      <div class="o1-trust-score-card">
+        <div class="o1-trust-label">Trust Score</div>
+        <div class="o1-trust-ring">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(26,60,40,.08)" stroke-width="8"/>
+            <circle cx="36" cy="36" r="30" fill="none" stroke="#00E87A" stroke-width="8"
+              stroke-dasharray="188.5" stroke-dashoffset="15" stroke-linecap="round"/>
+          </svg>
+          <div class="o1-trust-ring-val">96</div>
+        </div>
+        <div class="o1-trust-sub">Based on 142 completed transactions</div>
+      </div>
+
+      <!-- Docs -->
+      <div class="o1-docs-card">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Verification Documents</div>
+        <div class="o1-doc-row">
+          <svg class="o1-doc-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+          <span class="o1-doc-name">Business Registration</span>
+          <span class="o1-doc-status verified">Verified</span>
+        </div>
+        <div class="o1-doc-row">
+          <svg class="o1-doc-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+          <span class="o1-doc-name">FFC Certificate</span>
+          <span class="o1-doc-status verified">Verified</span>
+        </div>
+        <div class="o1-doc-row">
+          <svg class="o1-doc-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+          <span class="o1-doc-name">Tax Clearance</span>
+          <span class="o1-doc-status pending">Pending</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /opt1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OPTION 2 — "The Registry"
+     Aesthetic: Dark-mode intelligence dashboard.
+     Sticky dark sidebar with all company info + CTAs.
+     Scrollable dark main panel with tabs (Overview / Agents / Listings).
+     Feel: Premium, data-dense, SaaS-grade, professional.
+════════════════════════════════════════════════════════════════════ -->
+<div id="opt2" class="option-section">
+  <div style="display:flex;min-height:calc(100vh - 52px);">
+
+    <!-- Sticky sidebar -->
+    <aside class="o2-sidebar">
+      <div class="o2-sidebar-header">
+        <button class="o2-back">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+          Back to listing
+        </button>
+
+        <div class="o2-logo-box">B</div>
+        <div class="o2-co-name">Bechani Properties</div>
+        <div class="o2-co-cat">Real Estate Agency</div>
+        <div class="o2-verified-pill">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 8l4 4 8-8"/></svg>
+          Verified
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="o2-sidebar-section">
+        <div class="o2-section-label">Overview</div>
+        <div class="o2-stats-grid">
+          <div class="o2-stat">
+            <div class="o2-stat-val"><em>24</em></div>
+            <div class="o2-stat-label">Listings</div>
+          </div>
+          <div class="o2-stat">
+            <div class="o2-stat-val">8</div>
+            <div class="o2-stat-label">Agents</div>
+          </div>
+          <div class="o2-stat">
+            <div class="o2-stat-val">142</div>
+            <div class="o2-stat-label">Sales</div>
+          </div>
+          <div class="o2-stat">
+            <div class="o2-stat-val">96%</div>
+            <div class="o2-stat-label">Trust</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="o2-sidebar-section">
+        <div class="o2-section-label">Contact</div>
+        <div class="o2-contact-row">
+          <div class="o2-ci"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h12v10H2z M2 5l6 5 6-5"/></svg></div>
+          <div>
+            <div class="o2-contact-sublabel">Email</div>
+            <div class="o2-contact-txt">info@bechaniprops.co.za</div>
+          </div>
+        </div>
+        <div class="o2-contact-row">
+          <div class="o2-ci"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 2l2.5 1-1 3 1.5 1.5C7 9 9 11 11 12.5l1.5 1.5 3-1 1 2.5c-2 1-5 1-8-2S2 6 3 4L3 2z"/></svg></div>
+          <div>
+            <div class="o2-contact-sublabel">Phone</div>
+            <div class="o2-contact-txt">+27 11 234 5678</div>
+          </div>
+        </div>
+        <div class="o2-contact-row">
+          <div class="o2-ci"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg></div>
+          <div>
+            <div class="o2-contact-sublabel">Address</div>
+            <div class="o2-contact-txt">14 Rivonia Rd, Sandton<br>Johannesburg, 2196</div>
+          </div>
+        </div>
+        <div class="o2-contact-row">
+          <div class="o2-ci"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M5 8c0-1.7 1.3-3 3-3"/><path d="M8 11c1.7 0 3-1.3 3-3"/></svg></div>
+          <div>
+            <div class="o2-contact-sublabel">Website</div>
+            <div class="o2-contact-txt">bechaniproperties.co.za</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Docs -->
+      <div class="o2-sidebar-section">
+        <div class="o2-section-label">Verification</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:rgba(242,232,213,.6);">Business Reg.</span>
+            <span class="o2-at-badge senior" style="font-size:9px;">Verified</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:rgba(242,232,213,.6);">FFC Certificate</span>
+            <span class="o2-at-badge principal">Verified</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:rgba(242,232,213,.6);">Tax Clearance</span>
+            <span class="o2-at-badge associate">Pending</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTAs -->
+      <div class="o2-cta-zone">
+        <button class="o2-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2h12v10H8l-4 3V2z"/></svg>
+          Contact Agency
+        </button>
+        <button class="o2-btn-ghost">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+          Schedule Call
+        </button>
+        <button class="o2-btn-fraud">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 6v5c0 3 4 5 6 5s6-2 6-5V6L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+          Report Fraud
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <main class="o2-main">
+      <div class="o2-main-header">
+        <button class="o2-tab active">Overview</button>
+        <button class="o2-tab">Agents</button>
+        <button class="o2-tab">Listings</button>
+        <button class="o2-tab">Reviews</button>
+      </div>
+
+      <div class="o2-content-area">
+        <!-- KPI overview -->
+        <div class="o2-overview-grid">
+          <div class="o2-ov-card">
+            <div class="o2-ov-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 6L8 2l6 4v8H2V6z"/></svg></div>
+            <div class="o2-ov-val">24</div>
+            <div class="o2-ov-label">Active Listings</div>
+          </div>
+          <div class="o2-ov-card">
+            <div class="o2-ov-icon" style="background:rgba(184,144,64,.12);color:var(--amber);"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2.5-5 5-5h2c2.5 0 5 2 5 5"/></svg></div>
+            <div class="o2-ov-val">8</div>
+            <div class="o2-ov-label">Active Agents</div>
+          </div>
+          <div class="o2-ov-card">
+            <div class="o2-ov-icon" style="background:rgba(196,86,42,.1);color:var(--rust);"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 14V6l4-4h4l4 4v8H2z"/><path d="M6 14V9h4v5"/></svg></div>
+            <div class="o2-ov-val">142</div>
+            <div class="o2-ov-label">Deals Closed</div>
+          </div>
+          <div class="o2-ov-card">
+            <div class="o2-ov-icon" style="background:rgba(154,175,164,.1);color:var(--faint);"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M2 8l4 4 8-8"/></svg></div>
+            <div class="o2-ov-val">96%</div>
+            <div class="o2-ov-label">Trust Score</div>
+          </div>
+        </div>
+
+        <!-- Agents table -->
+        <div class="o2-section-title">
+          Agents <span>8 total</span>
+        </div>
+        <table class="o2-agent-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Role</th>
+              <th>Trust Score</th>
+              <th>Listings</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="o2-at-avatar">JB</div>
+                  <div>
+                    <div class="o2-at-name">James Bechani</div>
+                    <div class="o2-at-role">james@bechaniprops.co.za</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="o2-at-badge principal">Principal</span></td>
+              <td><span class="o2-at-score">98%</span></td>
+              <td><span class="o2-at-listings">12</span></td>
+              <td><span class="o2-at-badge principal">Active</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="o2-at-avatar" style="background:linear-gradient(135deg,#2D5A40,#4a8a60)">SN</div>
+                  <div>
+                    <div class="o2-at-name">Sarah Nkosi</div>
+                    <div class="o2-at-role">sarah@bechaniprops.co.za</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="o2-at-badge senior">Senior</span></td>
+              <td><span class="o2-at-score">94%</span></td>
+              <td><span class="o2-at-listings">8</span></td>
+              <td><span class="o2-at-badge principal">Active</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div class="o2-at-avatar" style="background:linear-gradient(135deg,#3a5228,#5a7840)">TM</div>
+                  <div>
+                    <div class="o2-at-name">Thabo Molefe</div>
+                    <div class="o2-at-role">thabo@bechaniprops.co.za</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="o2-at-badge associate">Associate</span></td>
+              <td><span class="o2-at-score">87%</span></td>
+              <td><span class="o2-at-listings">4</span></td>
+              <td><span class="o2-at-badge principal">Active</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Listings strip -->
+        <div class="o2-section-title">
+          Active Listings <span>24 properties</span>
+        </div>
+        <div class="o2-listing-strip">
+          <div class="o2-listing-card">
+            <div class="o2-lc-img" style="font-size:32px;">🏡
+              <span class="o2-lc-badge">For Sale</span>
+            </div>
+            <div class="o2-lc-body">
+              <div class="o2-lc-price">R 3,200,000</div>
+              <div class="o2-lc-addr">Sandton, Johannesburg</div>
+              <div class="o2-lc-chips">
+                <span class="o2-lc-chip">4 Bed</span>
+                <span class="o2-lc-chip">3 Bath</span>
+                <span class="o2-lc-chip">Pool</span>
+              </div>
+            </div>
+          </div>
+          <div class="o2-listing-card">
+            <div class="o2-lc-img" style="font-size:32px;background:linear-gradient(135deg,#1e3c3c,#2a4a4a)">🏢
+              <span class="o2-lc-badge">To Let</span>
+            </div>
+            <div class="o2-lc-body">
+              <div class="o2-lc-price">R 18,500/mo</div>
+              <div class="o2-lc-addr">Rosebank, Johannesburg</div>
+              <div class="o2-lc-chips">
+                <span class="o2-lc-chip">2 Bed</span>
+                <span class="o2-lc-chip">Modern</span>
+              </div>
+            </div>
+          </div>
+          <div class="o2-listing-card">
+            <div class="o2-lc-img" style="font-size:32px;background:linear-gradient(135deg,#2a3c1c,#3a4a2a)">🏠
+              <span class="o2-lc-badge">For Sale</span>
+            </div>
+            <div class="o2-lc-body">
+              <div class="o2-lc-price">R 1,850,000</div>
+              <div class="o2-lc-addr">Pretoria East</div>
+              <div class="o2-lc-chips">
+                <span class="o2-lc-chip">3 Bed</span>
+                <span class="o2-lc-chip">2 Bath</span>
+              </div>
+            </div>
+          </div>
+          <div class="o2-listing-card">
+            <div class="o2-lc-img" style="font-size:32px;background:linear-gradient(135deg,#1c2a3c,#2a3a4a)">🏗️
+              <span class="o2-lc-badge">Off-Plan</span>
+            </div>
+            <div class="o2-lc-body">
+              <div class="o2-lc-price">R 4,750,000</div>
+              <div class="o2-lc-addr">Waterfall Estate</div>
+              <div class="o2-lc-chips">
+                <span class="o2-lc-chip">5 Bed</span>
+                <span class="o2-lc-chip">New</span>
+              </div>
+            </div>
+          </div>
+          <div class="o2-listing-card" style="display:flex;align-items:center;justify-content:center;min-width:140px;">
+            <div style="text-align:center;padding:20px;">
+              <div style="font-family:var(--ff);font-size:28px;color:rgba(242,232,213,.5);">+20</div>
+              <div style="font-family:var(--mono);font-size:9px;color:rgba(242,232,213,.25);letter-spacing:.1em;text-transform:uppercase;">View All</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /o2-content-area -->
+    </main>
+  </div>
+</div><!-- /opt2 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     OPTION 3 — "Trust Dossier"
+     Aesthetic: Light professional dossier / property report card.
+     Compact ribbon stats. Two-column: left sidebar info panel + right listings/content.
+     Contact & CTA in a forest-colored block at the bottom of the right column.
+     Feel: Crisp, trustworthy, ZA-market focused, like a professional registry card.
+════════════════════════════════════════════════════════════════════ -->
+<div id="opt3" class="option-section">
+
+  <div class="o3-topband">
+    <button class="o3-back">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 3L5 8l5 5"/></svg>
+      Back
+    </button>
+    <span class="o3-topband-crumb">Property Detail</span>
+    <span class="o3-topband-crumb">Bechani Properties</span>
+    <button class="o3-fraud-topbtn">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 6v5c0 3 4 5 6 5s6-2 6-5V6L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+      Report Fraud
+    </button>
+  </div>
+
+  <!-- Cover -->
+  <div class="o3-cover">
+    <div class="o3-cover-inner">
+      <div class="o3-co-logo">B</div>
+      <div class="o3-cover-meta">
+        <div class="o3-co-name">Bechani Properties</div>
+        <div class="o3-co-sub">Real Estate Agency · Est. 2019 · Johannesburg</div>
+      </div>
+      <div class="o3-cover-actions">
+        <div class="o3-pill-verified">
+          <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 8l4 4 8-8"/></svg>
+          PPRA Verified
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat ribbon -->
+  <div class="o3-ribbon">
+    <div class="o3-rstat">
+      <div class="o3-rstat-val">24</div>
+      <div class="o3-rstat-label">Active Listings</div>
+    </div>
+    <div class="o3-rstat">
+      <div class="o3-rstat-val">8</div>
+      <div class="o3-rstat-label">Agents</div>
+    </div>
+    <div class="o3-rstat">
+      <div class="o3-rstat-val">142</div>
+      <div class="o3-rstat-label">Deals Closed</div>
+    </div>
+    <div class="o3-rstat">
+      <div class="o3-rstat-val"><em>96%</em></div>
+      <div class="o3-rstat-label">Trust Score</div>
+    </div>
+    <div class="o3-rstat">
+      <div class="o3-rstat-val">5 yrs</div>
+      <div class="o3-rstat-label">In Operation</div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="o3-body">
+    <!-- Left column -->
+    <div class="o3-left">
+
+      <!-- Company Info panel -->
+      <div class="o3-panel">
+        <div class="o3-panel-head">
+          <span class="o3-panel-title">Company Details</span>
+        </div>
+        <div class="o3-panel-body">
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg>
+            <div>
+              <div class="o3-info-lbl">Head Office</div>
+              <div class="o3-info-val">14 Rivonia Road, Sandton<br>Johannesburg, 2196</div>
+            </div>
+          </div>
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 2h10v12H3z M5 6h6M5 9h6M5 12h4"/></svg>
+            <div>
+              <div class="o3-info-lbl">Reg. Number</div>
+              <div class="o3-info-val">2019/123456/07</div>
+            </div>
+          </div>
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+            <div>
+              <div class="o3-info-lbl">FFC Number</div>
+              <div class="o3-info-val">FFC 20241892</div>
+            </div>
+          </div>
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 2l2.5 1-1 3 1.5 1.5C7 9 9 11 11 12.5l1.5 1.5 3-1 1 2.5c-2 1-5 1-8-2S2 6 3 4L3 2z"/></svg>
+            <div>
+              <div class="o3-info-lbl">Phone</div>
+              <div class="o3-info-val">+27 11 234 5678</div>
+            </div>
+          </div>
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h12v10H2z M2 5l6 5 6-5"/></svg>
+            <div>
+              <div class="o3-info-lbl">Email</div>
+              <div class="o3-info-val" style="color:var(--amber);">info@bechaniprops.co.za</div>
+            </div>
+          </div>
+          <div class="o3-info-row">
+            <svg class="o3-info-ic" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M5 8c0-1.7 1.3-3 3-3"/><path d="M8 11c1.7 0 3-1.3 3-3"/></svg>
+            <div>
+              <div class="o3-info-lbl">Website</div>
+              <div class="o3-info-val" style="color:var(--amber);">bechaniproperties.co.za</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agents panel -->
+      <div class="o3-panel">
+        <div class="o3-panel-head">
+          <span class="o3-panel-title">Agents</span>
+          <span class="o3-panel-count">8 total</span>
+        </div>
+        <div class="o3-panel-body">
+          <div class="o3-agent-item">
+            <div class="o3-agent-ava">JB</div>
+            <div>
+              <div class="o3-agent-nm">James Bechani</div>
+              <div class="o3-agent-role">Principal · 12 listings</div>
+            </div>
+            <div class="o3-agent-score">98%</div>
+          </div>
+          <div class="o3-agent-item">
+            <div class="o3-agent-ava" style="background:linear-gradient(135deg,#2D5A40,#4a8a60)">SN</div>
+            <div>
+              <div class="o3-agent-nm">Sarah Nkosi</div>
+              <div class="o3-agent-role">Senior · 8 listings</div>
+            </div>
+            <div class="o3-agent-score">94%</div>
+          </div>
+          <div class="o3-agent-item">
+            <div class="o3-agent-ava" style="background:linear-gradient(135deg,#3a5228,#5a7840)">TM</div>
+            <div>
+              <div class="o3-agent-nm">Thabo Molefe</div>
+              <div class="o3-agent-role">Associate · 4 listings</div>
+            </div>
+            <div class="o3-agent-score">87%</div>
+          </div>
+          <div class="o3-agent-item">
+            <div class="o3-agent-ava" style="background:rgba(26,60,40,.3);color:var(--muted)">+5</div>
+            <div>
+              <div class="o3-agent-nm" style="color:var(--muted)">5 more agents</div>
+              <div class="o3-agent-role">Click to view all</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust + Docs -->
+      <div class="o3-panel">
+        <div class="o3-panel-head">
+          <span class="o3-panel-title">Trust & Verification</span>
+        </div>
+        <div class="o3-trust-panel">
+          <div class="o3-trust-title">Trust Score</div>
+          <div class="o3-ring-wrap">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="33" fill="none" stroke="rgba(26,60,40,.08)" stroke-width="9"/>
+              <circle cx="40" cy="40" r="33" fill="none" stroke="#00E87A" stroke-width="9"
+                stroke-dasharray="207" stroke-dashoffset="17" stroke-linecap="round"/>
+            </svg>
+            <div class="o3-ring-val">96</div>
+          </div>
+          <div class="o3-trust-sub">142 completed transactions</div>
+        </div>
+        <div style="padding:0 14px 14px;">
+          <div class="o3-doc-item">
+            <svg class="o3-doc-ic" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+            <span class="o3-doc-nm">Business Registration</span>
+            <span class="o3-doc-st verified">✓ Verified</span>
+          </div>
+          <div class="o3-doc-item">
+            <svg class="o3-doc-ic" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+            <span class="o3-doc-nm">FFC Certificate</span>
+            <span class="o3-doc-st verified">✓ Verified</span>
+          </div>
+          <div class="o3-doc-item">
+            <svg class="o3-doc-ic" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h8l2 2v10H2V2z"/><path d="M9 2v3h3M5 8h6M5 11h4"/></svg>
+            <span class="o3-doc-nm">Tax Clearance</span>
+            <span class="o3-doc-st pending">⏳ Pending</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /o3-left -->
+
+    <!-- Right column -->
+    <div class="o3-right">
+
+      <!-- Listings -->
+      <div>
+        <div class="o3-section-label">Active Listings <em>24 properties</em></div>
+        <div class="o3-listings-grid">
+          <div class="o3-listing-card">
+            <div class="o3-lc-img">🏡<span class="o3-lc-badge">For Sale</span></div>
+            <div class="o3-lc-body">
+              <div class="o3-lc-price">R 3,200,000</div>
+              <div class="o3-lc-addr">Sandton, Johannesburg</div>
+              <div class="o3-lc-chips">
+                <span class="o3-lc-chip">4 Bed</span>
+                <span class="o3-lc-chip">Pool</span>
+              </div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-lc-img" style="background:linear-gradient(135deg,#c8e0e0,#a8d0d0)">🏢<span class="o3-lc-badge">To Let</span></div>
+            <div class="o3-lc-body">
+              <div class="o3-lc-price">R 18,500/mo</div>
+              <div class="o3-lc-addr">Rosebank, JHB</div>
+              <div class="o3-lc-chips">
+                <span class="o3-lc-chip">2 Bed</span>
+                <span class="o3-lc-chip">Modern</span>
+              </div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-lc-img" style="background:linear-gradient(135deg,#dde8c8,#c4d8a8)">🏠<span class="o3-lc-badge">For Sale</span></div>
+            <div class="o3-lc-body">
+              <div class="o3-lc-price">R 1,850,000</div>
+              <div class="o3-lc-addr">Pretoria East</div>
+              <div class="o3-lc-chips">
+                <span class="o3-lc-chip">3 Bed</span>
+              </div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-lc-img" style="background:linear-gradient(135deg,#e8d4b8,#d4c0a0)">🏗️<span class="o3-lc-badge">Off-Plan</span></div>
+            <div class="o3-lc-body">
+              <div class="o3-lc-price">R 4,750,000</div>
+              <div class="o3-lc-addr">Waterfall Estate</div>
+              <div class="o3-lc-chips">
+                <span class="o3-lc-chip">5 Bed</span>
+                <span class="o3-lc-chip">New</span>
+              </div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-lc-img" style="background:linear-gradient(135deg,#c8d8e8,#b0c4d8)">🏘️<span class="o3-lc-badge">For Sale</span></div>
+            <div class="o3-lc-body">
+              <div class="o3-lc-price">R 2,100,000</div>
+              <div class="o3-lc-addr">Centurion</div>
+              <div class="o3-lc-chips">
+                <span class="o3-lc-chip">3 Bed</span>
+              </div>
+            </div>
+          </div>
+          <div class="o3-listing-card" style="display:flex;align-items:center;justify-content:center;min-height:160px;background:rgba(26,60,40,.03);border-style:dashed;">
+            <div style="text-align:center;">
+              <div style="font-family:var(--ff);font-size:28px;color:var(--muted);">+19</div>
+              <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);">View All</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact + CTA block -->
+      <div class="o3-contact-cta">
+        <div>
+          <div class="o3-cc-title">Get in Touch</div>
+          <div class="o3-cc-row">
+            <div class="o3-cc-ic"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h12v10H2z M2 5l6 5 6-5"/></svg></div>
+            <div>
+              <div class="o3-cc-lbl">Email</div>
+              <div class="o3-cc-val">info@bechaniprops.co.za</div>
+            </div>
+          </div>
+          <div class="o3-cc-row">
+            <div class="o3-cc-ic"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 2l2.5 1-1 3 1.5 1.5C7 9 9 11 11 12.5l1.5 1.5 3-1 1 2.5c-2 1-5 1-8-2S2 6 3 4L3 2z"/></svg></div>
+            <div>
+              <div class="o3-cc-lbl">Phone</div>
+              <div class="o3-cc-val">+27 11 234 5678</div>
+            </div>
+          </div>
+          <div class="o3-cc-row">
+            <div class="o3-cc-ic"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2C5.8 2 4 3.8 4 6c0 3.5 4 8 4 8s4-4.5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg></div>
+            <div>
+              <div class="o3-cc-lbl">Address</div>
+              <div class="o3-cc-val">14 Rivonia Rd, Sandton<br>Johannesburg, 2196</div>
+            </div>
+          </div>
+        </div>
+        <div class="o3-cc-actions">
+          <button class="o3-cc-btn-primary">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 2h12v10H8l-4 3V2z"/></svg>
+            Send Message
+          </button>
+          <button class="o3-cc-btn-ghost">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+            Schedule Call
+          </button>
+          <button class="o3-cc-fraud">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 6v5c0 3 4 5 6 5s6-2 6-5V6L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+            Report Fraud
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /o3-right -->
+  </div>
+</div><!-- /opt3 -->
+
+<script>
+  function selectOption(n, btn) {
+    document.querySelectorAll('.option-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.chooser-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('opt' + n).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

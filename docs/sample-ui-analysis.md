@@ -27,7 +27,7 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `OAuthConnect.tsx` | `/oauth-connect` | Sprint 2 — social login |
 | `SessionExpired.tsx` | `/session-expired` | Sprint 2 — token expiry |
 | `RoleSelection.tsx` | `/role-selection` | Sprint 2 — role assignment |
-| `ProfileSetup.tsx` | `/profile-setup` | Sprint 2 — onboarding |
+| `ProfileSetup.tsx` | `/role-setup` (legacy alias: `/profile-setup`) | Sprint 2 — role onboarding |
 | `KYCUpload.tsx` | `/kyc-upload` | Sprint 2 — identity verification |
 | `ProfileDashboard.tsx` | `/profile-dashboard` | Sprint 2 — user profile |
 
@@ -39,6 +39,12 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `PropertyDetailEnhanced.tsx` | `/app/property/:id` | Sprint 3 — property view |
 | `PropertyComparison.tsx` | `/compare` | Sprint 3 — comparison |
 | `PropertyLifecycleDashboard.tsx` | `/property-lifecycle` | Sprint 3/4 — lifecycle view |
+
+Navigation note:
+- Selecting a property from `Listings.tsx` (grid cards or map markers) routes to `/app/property/:id`, which renders `PropertyDetailEnhanced.tsx`.
+- Property detail links from comparison and agent views are also standardized to `/app/property/:id`.
+- Agent profile links opened from `PropertyDetailEnhanced.tsx` include a return path (`?back=`), so the back action returns users to the originating property detail screen.
+- Typical agent profile flow from property detail: `/agent-profile/:id?back=/app/property/:id`.
 
 ### Sales Progression (14 Stages)
 | Page File | Route | Maps To |
@@ -59,10 +65,10 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 |-----------|-------|---------|
 | `ConstructionProjectDashboard.tsx` | `/construction` | Sprint 6 — project dashboard |
 
-### Contractor & Supplier Marketplace
+### Service Provider Marketplace
 | Page File | Route | Maps To |
 |-----------|-------|---------|
-| `ContractorSupplierMarketplace.tsx` | `/contractor-supplier-marketplace` | Sprint 7 |
+| `ServiceProviderMarketplace.tsx` | `/service-providers` | Sprint 7 |
 
 ### BOQ System
 | Page File | Route | Maps To |
@@ -91,7 +97,7 @@ The prototype contains **43 pages** that map directly to PRIBEC modules:
 | `AdminDashboard.tsx` | `/admin` | Cross-sprint — admin panel |
 | `AdminVerificationPanel.tsx` | `/admin/verification` | Sprint 2/9 |
 | `AgentDashboardEnhanced.tsx` | `/app/agent` | Sprint 3/4 — agent portal |
-| `AgentProfile.tsx` | `/agent-profile` | Sprint 7 |
+| `AgentProfile.tsx` | `/agent-profile/:id` | Sprint 7 |
 
 ---
 
@@ -262,7 +268,7 @@ For each sprint, the corresponding sample_ui page provides the **complete visual
 | Sprint 4 — Sales Progression | `PropertySaleWorkspace`, `BuyerDashboardEnhanced`, `ConveyancerView` | High — 14-stage state machine |
 | Sprint 5 — Escrow & Payments | `EscrowFinancialDashboard` | High — financial ledger display |
 | Sprint 6 — Construction | `ConstructionProjectDashboard` | High — recharts + offline indicators |
-| Sprint 7 — Contractor/Supplier | `ContractorSupplierMarketplace`, `AgentProfile` | Medium |
+| Sprint 7 — Service Providers | `ServiceProviderMarketplace`, `AgentProfile` | Medium |
 | Sprint 8 — BOQ | `IntelligentBOQWorkspace` | High — dynamic calculations |
 | Sprint 9 — Inspections | `InspectionVerificationModule` | Medium |
 | Sprint 10 — Logistics | `LogisticsDeliveryMarketplace` | Medium |

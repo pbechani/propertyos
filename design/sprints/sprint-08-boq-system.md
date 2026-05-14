@@ -226,6 +226,72 @@ GET  /api/v1/boq/:id/procurement-status             — status of all items
 
 ---
 
+## AI Cost Estimation Engine
+
+ML regression model that estimates cost for new BOQ line items before supplier pricing is available. Trained on historical project data from completed projects.
+
+### Training Features
+| Feature | Type | Example |
+|---------|------|---------|
+| Material category | categorical | `structural`, `finishes`, `electrical` |
+| Material type ID | categorical | UUID of `material_master` |
+| Unit of measure | categorical | `m2`, `m3`, `bag`, `piece` |
+| Quantity | numeric | 240.5 |
+| Project type | categorical | `residential`, `commercial` |
+| Country / region | categorical | `ZW`, `ZA` |
+| Build year | numeric | 2025 |
+| Historical avg supplier price (90d) | numeric | 11.50 |
+
+### Model
+```python
+# apps/ai-services/risk_scoring/boq_cost_estimator.py
+import mlflow
+import xgboost as xgb
+import numpy as np
+from sklearn.metrics import mean_absolute_error
+
+def train_boq_cost_model(X_train, y_train, X_val, y_val):
+    with mlflow.start_run(run_name="boq_cost_estimator_v1"):
+        params = {"n_estimators": 200, "learning_rate": 0.05, "max_depth": 5, "subsample": 0.8}
+        mlflow.log_params(params)
+        
+        model = xgb.XGBRegressor(**params)
+        model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+        
+        preds = model.predict(X_val)
+        mae = mean_absolute_error(y_val, preds)
+        mape = np.mean(np.abs((y_val - preds) / y_val)) * 100  # % error
+        mlflow.log_metric("mae", mae)
+        mlflow.log_metric("mape", mape)
+        mlflow.xgboost.log_model(model, "boq_cost_estimator")
+    return model
+
+def estimate_item_cost(model, features: dict) -> dict:
+    """Returns {estimated_unit_price, confidence_interval, model_version}"""
+    X = pd.DataFrame([features])
+    prediction = model.predict(X)[0]
+    return {
+        "estimated_unit_price": round(float(prediction), 2),
+        "confidence_interval": [round(prediction * 0.85, 2), round(prediction * 1.15, 2)],
+        "model_version": mlflow.MlflowClient().get_latest_versions("BOQCostEstimator")[0].version
+    }
+```
+
+### Budget Alignment AI (Optimize Endpoint)
+The `POST /api/v1/boq/:id/optimize` endpoint calls the LLM Gateway with the current BOQ JSON and target budget. Claude generates a ranked list of tier-swap suggestions ordered by cost saving vs quality impact.
+
+```typescript
+// Prompt strategy for budget optimization
+const systemPrompt = `You are a construction cost optimizer. 
+You will receive a BOQ with current costs and a target budget. 
+Suggest material tier swaps (standard→budget) from lowest quality impact to highest.
+Return JSON: [{item_id, current_tier, suggested_tier, saving, quality_impact: "low|medium|high", rationale}]`;
+```
+
+*Requires Sprint 11 AI engine to be deployed.*
+
+---
+
 ## Acceptance Criteria
 - [ ] BOQ auto-generated from floor plan dimensions produces accurate quantities (±10% of manual calc)
 - [ ] User switches cement from standard to budget: total cost recalculates instantly (< 200ms)

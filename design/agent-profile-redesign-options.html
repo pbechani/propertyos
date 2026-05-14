@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent Profile — 3 Design Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ─── Brand Tokens ──────────────────────────────────────────────────── */
+  :root {
+    --parchment:     #F2E8D5;
+    --cream:         #EAD9C4;
+    --forest:        #1A3C28;
+    --forest-light:  #2D5A40;
+    --terracotta:    #C4562A;
+    --carbon:        #0C0D10;
+    --carbon-soft:   #1A1B1F;
+    --carbon-mid:    #2A2B30;
+    --egreen:        #00E87A;
+    --amber:         #B89040;
+    --border-light:  rgba(26,60,40,0.12);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0EBE1; padding: 0; }
+
+  /* ─── Selector Nav ──────────────────────────────────────────────────── */
+  .option-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--carbon);
+    display: flex; align-items: center; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 0 2rem;
+  }
+  .option-nav h1 {
+    font-family: 'Fraunces', serif;
+    color: var(--parchment);
+    font-size: 1rem; font-weight: 500;
+    padding-right: 2rem;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    margin-right: 1.5rem;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .tab-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: rgba(242,232,213,0.5);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8125rem; font-weight: 600;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s; letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .tab-btn:hover { color: var(--parchment); }
+  .tab-btn.active { color: var(--egreen); border-bottom-color: var(--egreen); }
+  .option-panel { display: none; }
+  .option-panel.active { display: block; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     OPTION 1 — "Heritage Ledger"
+     Parchment base · Forest green authority · editorial two-column
+  ═══════════════════════════════════════════════════════════════════════ */
+  .o1 { background: var(--parchment); min-height: 100vh; }
+
+  /* topbar */
+  .o1-topbar {
+    background: var(--forest);
+    padding: 0.875rem 2.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .o1-topbar a { color: var(--parchment); opacity: 0.65; font-size: 0.8125rem; text-decoration: none; }
+  .o1-topbar span { color: rgba(242,232,213,0.3); font-size: 0.75rem; }
+  .o1-topbar .current { color: var(--parchment); opacity: 1; font-weight: 600; font-size: 0.8125rem; }
+
+  /* hero */
+  .o1-hero {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 60%, #3A7050 100%);
+    padding: 3.5rem 2.5rem 6rem;
+    position: relative; overflow: hidden;
+  }
+  .o1-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .o1-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+  .o1-agent-row { display: flex; gap: 2rem; align-items: flex-start; }
+  .o1-avatar {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 4px solid var(--egreen);
+    background: var(--forest-light);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 2.5rem; color: var(--egreen);
+    flex-shrink: 0; position: relative;
+  }
+  .o1-verified-badge {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--egreen); border: 3px solid var(--forest);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .o1-verified-badge svg { width: 14px; height: 14px; color: var(--carbon); }
+  .o1-agent-info { flex: 1; }
+  .o1-role-pill {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    background: rgba(0,232,122,0.15); border: 1px solid rgba(0,232,122,0.3);
+    color: var(--egreen); font-size: 0.6875rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.25rem 0.75rem; border-radius: 2rem; margin-bottom: 0.75rem;
+  }
+  .o1-agent-name {
+    font-family: 'Fraunces', serif; font-size: 2.75rem; font-weight: 700;
+    color: var(--parchment); line-height: 1.05; margin-bottom: 0.375rem;
+    letter-spacing: -0.02em;
+  }
+  .o1-agent-city { color: rgba(242,232,213,0.6); font-size: 0.9375rem; display: flex; align-items: center; gap: 0.375rem; margin-bottom: 1.25rem; }
+  .o1-trust-bar { display: flex; align-items: center; gap: 1.5rem; }
+  .o1-trust-pill {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(0,232,122,0.12); border: 1px solid rgba(0,232,122,0.25);
+    padding: 0.5rem 1rem; border-radius: 0.5rem;
+  }
+  .o1-trust-pill .score { font-family: 'IBM Plex Mono', monospace; font-size: 1.25rem; font-weight: 700; color: var(--egreen); }
+  .o1-trust-pill .label { font-size: 0.75rem; color: rgba(242,232,213,0.6); }
+  .o1-stars { display: flex; align-items: center; gap: 0.25rem; }
+  .star { color: var(--amber); font-size: 1rem; }
+  .o1-rating-text { color: rgba(242,232,213,0.8); font-size: 0.875rem; margin-left: 0.25rem; }
+
+  /* action buttons (on hero) */
+  .o1-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+  .btn-primary-egreen {
+    background: var(--egreen); color: var(--carbon);
+    border: none; border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem; font-size: 0.875rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.01em;
+    transition: opacity 0.15s;
+  }
+  .btn-primary-egreen:hover { opacity: 0.9; }
+  .btn-outline-parchment {
+    background: transparent; color: var(--parchment);
+    border: 1.5px solid rgba(242,232,213,0.35);
+    border-radius: 0.5rem; padding: 0.75rem 1.5rem;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-outline-parchment:hover { border-color: rgba(242,232,213,0.7); background: rgba(242,232,213,0.05); }
+
+  /* KPI strip */
+  .o1-kpi-strip {
+    max-width: 1100px; margin: -2.5rem auto 0; position: relative; z-index: 10;
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 1px;
+    background: var(--border-light);
+    border-radius: 1rem; overflow: hidden;
+    box-shadow: 0 4px 32px rgba(26,60,40,0.15);
+  }
+  .o1-kpi {
+    background: white; padding: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .o1-kpi-icon {
+    width: 48px; height: 48px; border-radius: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; flex-shrink: 0;
+  }
+  .o1-kpi-icon.forest { background: rgba(26,60,40,0.1); color: var(--forest); }
+  .o1-kpi-icon.egreen { background: rgba(0,232,122,0.12); color: #009950; }
+  .o1-kpi-icon.amber  { background: rgba(184,144,64,0.15); color: var(--amber); }
+  .o1-kpi-icon.terra  { background: rgba(196,86,42,0.12); color: var(--terracotta); }
+  .o1-kpi-val { font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 700; color: var(--forest); line-height: 1; }
+  .o1-kpi-lbl { font-size: 0.75rem; color: #6B8A76; margin-top: 0.2rem; }
+
+  /* main grid */
+  .o1-body { max-width: 1100px; margin: 3.5rem auto 4rem; padding: 0 2.5rem; display: grid; grid-template-columns: 1fr 340px; gap: 2rem; }
+
+  .o1-card {
+    background: white; border-radius: 1rem; padding: 1.75rem;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 1px 4px rgba(26,60,40,0.06);
+    margin-bottom: 1.5rem;
+  }
+  .o1-section-title {
+    font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600;
+    color: var(--forest); margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.625rem;
+    padding-bottom: 0.875rem; border-bottom: 1px solid var(--border-light);
+  }
+  .o1-section-icon { width: 22px; height: 22px; }
+
+  /* listing row */
+  .listing-row { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-light); }
+  .listing-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .listing-img { width: 90px; height: 70px; border-radius: 0.625rem; object-fit: cover; background: var(--cream); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .listing-img-placeholder { font-size: 1.5rem; }
+  .listing-title { font-size: 0.9375rem; font-weight: 600; color: var(--forest); margin-bottom: 0.25rem; }
+  .listing-loc { font-size: 0.8125rem; color: #6B8A76; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem; }
+  .listing-price { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: var(--forest); }
+  .listing-meta { font-size: 0.75rem; color: #9AAFA4; }
+
+  /* review card */
+  .review-card { padding: 1rem 0; border-bottom: 1px solid var(--border-light); }
+  .review-card:last-child { border-bottom: none; }
+  .reviewer-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.625rem; }
+  .reviewer-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 0.8125rem; font-weight: 700; color: var(--forest-light); flex-shrink: 0; }
+  .reviewer-name { font-weight: 600; font-size: 0.875rem; color: var(--forest); }
+  .reviewer-date { font-size: 0.75rem; color: #9AAFA4; margin-left: auto; }
+  .review-stars { display: flex; gap: 0.125rem; margin-bottom: 0.5rem; }
+  .review-text { font-size: 0.875rem; color: #4A6A5A; line-height: 1.6; }
+
+  /* sidebar */
+  .o1-sidebar-card { background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border-light); box-shadow: 0 1px 4px rgba(26,60,40,0.06); margin-bottom: 1.25rem; }
+  .o1-sidebar-title { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6B8A76; margin-bottom: 1rem; }
+  .contact-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border-light); }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-icon { width: 34px; height: 34px; border-radius: 0.5rem; background: rgba(26,60,40,0.08); display: flex; align-items: center; justify-content: center; font-size: 0.875rem; color: var(--forest); flex-shrink: 0; }
+  .contact-val { font-size: 0.875rem; color: var(--forest); font-weight: 500; }
+  .contact-lbl { font-size: 0.75rem; color: #9AAFA4; }
+
+  .spec-tag { display: inline-flex; background: rgba(26,60,40,0.07); color: var(--forest-light); border-radius: 2rem; padding: 0.3rem 0.8rem; font-size: 0.8125rem; font-weight: 500; margin: 0.25rem; }
+
+  /* trust breakdown */
+  .trust-metric { margin-bottom: 1rem; }
+  .trust-metric-label { display: flex; justify-content: space-between; font-size: 0.8125rem; color: var(--forest); margin-bottom: 0.375rem; }
+  .trust-bar-track { height: 6px; background: var(--cream); border-radius: 3px; overflow: hidden; }
+  .trust-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--forest-light), var(--egreen)); }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     OPTION 2 — "Carbon Professional"
+     Dark carbon base · Electric green accents · data-dense dashboard feel
+  ═══════════════════════════════════════════════════════════════════════ */
+  .o2 { background: var(--carbon); min-height: 100vh; color: var(--parchment); }
+
+  .o2-topbar {
+    background: var(--carbon-soft); border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0.875rem 2.5rem; display: flex; align-items: center; gap: 0.75rem;
+  }
+  .o2-topbar a { color: rgba(242,232,213,0.45); font-size: 0.8125rem; text-decoration: none; }
+  .o2-topbar span { color: rgba(242,232,213,0.2); }
+  .o2-topbar .current { color: var(--parchment); font-weight: 600; font-size: 0.8125rem; }
+
+  /* hero strip */
+  .o2-hero {
+    background: var(--carbon-soft);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 2.5rem;
+  }
+  .o2-hero-inner { max-width: 1100px; margin: 0 auto; display: flex; gap: 2.5rem; align-items: flex-start; }
+  .o2-avatar {
+    width: 108px; height: 108px; border-radius: 1rem;
+    background: var(--carbon-mid); border: 2px solid rgba(0,232,122,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 2.5rem; color: var(--egreen);
+    flex-shrink: 0; position: relative;
+  }
+  .o2-verified {
+    position: absolute; top: -6px; right: -6px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--egreen); border: 2px solid var(--carbon-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; color: var(--carbon);
+  }
+  .o2-agent-info { flex: 1; }
+  .o2-role-tag {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--egreen); margin-bottom: 0.625rem;
+  }
+  .o2-agent-name {
+    font-family: 'Fraunces', serif; font-size: 2.25rem; font-weight: 700;
+    color: var(--parchment); line-height: 1.05; margin-bottom: 0.375rem;
+    letter-spacing: -0.02em;
+  }
+  .o2-agent-city { color: rgba(242,232,213,0.45); font-size: 0.875rem; display: flex; align-items: center; gap: 0.375rem; margin-bottom: 1.25rem; }
+  .o2-badges { display: flex; gap: 0.625rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .o2-badge {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    padding: 0.35rem 0.875rem; border-radius: 0.375rem;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .o2-badge.egreen { background: rgba(0,232,122,0.12); border: 1px solid rgba(0,232,122,0.25); color: var(--egreen); }
+  .o2-badge.amber  { background: rgba(184,144,64,0.12); border: 1px solid rgba(184,144,64,0.25); color: var(--amber); }
+  .o2-badge.forest { background: rgba(45,90,64,0.3); border: 1px solid rgba(45,90,64,0.5); color: #7ABFA0; }
+
+  .o2-actions { display: flex; gap: 0.75rem; }
+  .o2-btn-primary {
+    background: var(--egreen); color: var(--carbon);
+    border: none; border-radius: 0.5rem; padding: 0.6875rem 1.375rem;
+    font-size: 0.875rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: opacity 0.15s;
+  }
+  .o2-btn-primary:hover { opacity: 0.88; }
+  .o2-btn-outline {
+    background: transparent; color: var(--parchment);
+    border: 1px solid rgba(242,232,213,0.2); border-radius: 0.5rem;
+    padding: 0.6875rem 1.375rem; font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: border-color 0.15s;
+  }
+  .o2-btn-outline:hover { border-color: rgba(242,232,213,0.45); }
+
+  /* stats row */
+  .o2-stats { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2.5rem; display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: rgba(255,255,255,0.05); border-radius: 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .o2-stat { background: var(--carbon-soft); padding: 1.25rem 1.5rem; }
+  .o2-stat-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.75rem; font-weight: 700; color: var(--parchment); line-height: 1; margin-bottom: 0.25rem; }
+  .o2-stat-label { font-size: 0.75rem; color: rgba(242,232,213,0.45); }
+  .o2-stat-badge { display: inline-block; margin-top: 0.375rem; font-size: 0.6875rem; font-weight: 700; background: rgba(0,232,122,0.12); color: var(--egreen); padding: 0.15rem 0.5rem; border-radius: 0.25rem; }
+
+  /* body */
+  .o2-body { max-width: 1100px; margin: 0 auto; padding: 2rem 2.5rem 4rem; display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; }
+  .o2-card {
+    background: var(--carbon-soft); border-radius: 0.875rem; padding: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.06); margin-bottom: 1.25rem;
+  }
+  .o2-section-title {
+    font-family: 'Fraunces', serif; font-size: 1.0625rem; font-weight: 600;
+    color: var(--parchment); margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.625rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .o2-section-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--egreen); flex-shrink: 0; }
+
+  /* listing grid cards for dark mode */
+  .o2-listing { background: var(--carbon-mid); border-radius: 0.75rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.07); }
+  .o2-listing-img { width: 100%; height: 130px; background: var(--forest); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .o2-listing-body { padding: 1rem; }
+  .o2-listing-title { font-size: 0.9rem; font-weight: 600; color: var(--parchment); margin-bottom: 0.25rem; }
+  .o2-listing-loc { font-size: 0.8rem; color: rgba(242,232,213,0.45); display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem; }
+  .o2-listing-price { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; font-weight: 600; color: var(--egreen); }
+
+  .o2-review { padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .o2-review:last-child { border-bottom: none; }
+  .o2-reviewer-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .o2-reviewer-av { width: 32px; height: 32px; border-radius: 0.375rem; background: var(--carbon-mid); color: var(--egreen); display: flex; align-items: center; justify-content: center; font-size: 0.8125rem; font-weight: 700; }
+  .o2-reviewer-name { font-weight: 600; font-size: 0.875rem; color: var(--parchment); }
+  .o2-reviewer-date { font-size: 0.75rem; color: rgba(242,232,213,0.3); margin-left: auto; }
+  .o2-review-text { font-size: 0.875rem; color: rgba(242,232,213,0.6); line-height: 1.6; }
+
+  /* sidebar dark */
+  .o2-sidebar-card { background: var(--carbon-soft); border-radius: 0.875rem; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 1.25rem; }
+  .o2-sidebar-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(242,232,213,0.4); margin-bottom: 0.875rem; }
+  .o2-contact-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .o2-contact-row:last-child { border-bottom: none; }
+  .o2-contact-icon { width: 32px; height: 32px; border-radius: 0.5rem; background: rgba(0,232,122,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.875rem; }
+  .o2-contact-val { font-size: 0.875rem; color: var(--parchment); font-weight: 500; }
+  .o2-contact-lbl { font-size: 0.75rem; color: rgba(242,232,213,0.35); }
+
+  .o2-spec-tag { display: inline-flex; background: rgba(45,90,64,0.4); border: 1px solid rgba(45,90,64,0.6); color: #7ABFA0; border-radius: 0.375rem; padding: 0.3rem 0.75rem; font-size: 0.8125rem; font-weight: 500; margin: 0.25rem; }
+
+  /* trust meter */
+  .o2-trust-ring { display: flex; align-items: center; gap: 1.25rem; padding: 0.75rem; background: rgba(0,232,122,0.06); border: 1px solid rgba(0,232,122,0.15); border-radius: 0.75rem; margin-bottom: 1rem; }
+  .o2-trust-big { font-family: 'IBM Plex Mono', monospace; font-size: 2.25rem; font-weight: 700; color: var(--egreen); line-height: 1; }
+  .o2-trust-lbl { font-size: 0.75rem; color: rgba(242,232,213,0.5); margin-top: 0.125rem; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     OPTION 3 — "Terracotta Split"
+     Split-panel · warm terracotta hero · parchment content · magazine layout
+  ═══════════════════════════════════════════════════════════════════════ */
+  .o3 { background: var(--parchment); min-height: 100vh; }
+
+  .o3-topbar {
+    background: var(--parchment); border-bottom: 1px solid rgba(26,60,40,0.15);
+    padding: 0.875rem 3rem; display: flex; align-items: center; gap: 0.75rem;
+  }
+  .o3-topbar a { color: rgba(26,60,40,0.5); font-size: 0.8125rem; text-decoration: none; }
+  .o3-topbar span { color: rgba(26,60,40,0.25); }
+  .o3-topbar .current { color: var(--forest); font-weight: 600; font-size: 0.8125rem; }
+
+  /* split layout */
+  .o3-split { display: flex; min-height: calc(100vh - 48px); }
+
+  /* left panel — sticky sidebar */
+  .o3-sidebar-panel {
+    width: 360px; flex-shrink: 0;
+    background: linear-gradient(180deg, var(--terracotta) 0%, #9A3E1A 100%);
+    padding: 3rem 2.5rem;
+    position: sticky; top: 48px; height: calc(100vh - 48px);
+    overflow-y: auto; display: flex; flex-direction: column;
+  }
+  .o3-avatar-wrap { position: relative; margin-bottom: 1.75rem; }
+  .o3-avatar {
+    width: 110px; height: 110px; border-radius: 1.25rem;
+    background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 2.5rem; color: white;
+  }
+  .o3-verified-badge {
+    position: absolute; bottom: -8px; right: -8px;
+    background: var(--egreen); border: 3px solid var(--terracotta);
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; color: var(--carbon); font-weight: 700;
+  }
+  .o3-agent-name-panel {
+    font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700;
+    color: white; line-height: 1.1; margin-bottom: 0.375rem; letter-spacing: -0.02em;
+  }
+  .o3-role-panel { color: rgba(255,255,255,0.65); font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .o3-city-panel { color: rgba(255,255,255,0.5); font-size: 0.8125rem; display: flex; align-items: center; gap: 0.25rem; margin-bottom: 1.5rem; }
+  .o3-trust-panel {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 0.75rem; padding: 1.125rem; margin-bottom: 1.5rem;
+  }
+  .o3-trust-score { font-family: 'Fraunces', serif; font-size: 2.5rem; font-weight: 700; color: var(--egreen); line-height: 1; }
+  .o3-trust-label { font-size: 0.75rem; color: rgba(255,255,255,0.55); margin-top: 0.25rem; }
+  .o3-trust-bar-track { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin-top: 0.75rem; overflow: hidden; }
+  .o3-trust-bar-fill { height: 100%; background: var(--egreen); border-radius: 2px; width: 88%; }
+  .o3-panel-actions { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+  .o3-btn-white {
+    background: white; color: var(--terracotta); border: none;
+    border-radius: 0.625rem; padding: 0.875rem 1.25rem;
+    font-size: 0.875rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 0.625rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: opacity 0.15s;
+  }
+  .o3-btn-white:hover { opacity: 0.92; }
+  .o3-btn-outline-white {
+    background: transparent; color: white;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 0.625rem; padding: 0.875rem 1.25rem;
+    font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 0.625rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: border-color 0.15s;
+  }
+  .o3-btn-outline-white:hover { border-color: rgba(255,255,255,0.75); }
+
+  .o3-panel-contact { margin-top: auto; }
+  .o3-contact-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .o3-contact-item:last-child { border-bottom: none; }
+  .o3-contact-ico { font-size: 0.875rem; color: rgba(255,255,255,0.5); }
+  .o3-contact-val { font-size: 0.875rem; color: rgba(255,255,255,0.85); font-weight: 500; }
+
+  /* right panel — content */
+  .o3-main { flex: 1; padding: 3rem; overflow-y: auto; max-width: 780px; }
+
+  .o3-kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2.5rem; }
+  .o3-kpi { padding: 1.25rem; border-radius: 1rem; border: 1px solid rgba(26,60,40,0.12); background: white; }
+  .o3-kpi-icon { font-size: 1.375rem; margin-bottom: 0.5rem; }
+  .o3-kpi-val { font-family: 'Fraunces', serif; font-size: 1.75rem; font-weight: 700; color: var(--forest); line-height: 1; }
+  .o3-kpi-label { font-size: 0.75rem; color: #6B8A76; margin-top: 0.25rem; }
+
+  .o3-section { background: white; border-radius: 1rem; padding: 1.75rem; border: 1px solid rgba(26,60,40,0.1); margin-bottom: 1.5rem; }
+  .o3-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem; padding-bottom: 0.875rem;
+    border-bottom: 2px solid var(--parchment);
+  }
+  .o3-section-title-text {
+    font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600;
+    color: var(--forest); display: flex; align-items: center; gap: 0.625rem;
+  }
+  .o3-section-title-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--terracotta); flex-shrink: 0; }
+  .o3-listing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .o3-listing-card { border: 1px solid rgba(26,60,40,0.1); border-radius: 0.875rem; overflow: hidden; }
+  .o3-listing-img { width: 100%; height: 130px; background: linear-gradient(135deg, var(--cream), var(--parchment)); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .o3-listing-body { padding: 1rem; }
+  .o3-listing-title { font-size: 0.9375rem; font-weight: 600; color: var(--forest); margin-bottom: 0.25rem; }
+  .o3-listing-loc { font-size: 0.8125rem; color: #6B8A76; display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem; }
+  .o3-listing-price { font-family: 'Fraunces', serif; font-size: 1.125rem; font-weight: 700; color: var(--terracotta); }
+
+  .o3-review { padding: 1.125rem 0; border-bottom: 1px solid var(--cream); }
+  .o3-review:last-child { border-bottom: none; }
+  .o3-reviewer-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.625rem; }
+  .o3-reviewer-av { width: 38px; height: 38px; border-radius: 50%; background: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 700; color: var(--terracotta); }
+  .o3-reviewer-name { font-weight: 600; font-size: 0.875rem; color: var(--forest); }
+  .o3-reviewer-date { font-size: 0.75rem; color: #9AAFA4; margin-left: auto; }
+  .o3-review-text { font-size: 0.875rem; color: #4A6A5A; line-height: 1.65; padding-left: 3rem; }
+
+  .o3-spec-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .o3-spec-tag { background: rgba(196,86,42,0.08); border: 1px solid rgba(196,86,42,0.2); color: var(--terracotta); border-radius: 2rem; padding: 0.3rem 0.875rem; font-size: 0.8125rem; font-weight: 600; }
+
+  /* ─── Shared helpers ────────────────────────────────────────────────── */
+  .flex { display: flex; }
+  .flex-1 { flex: 1; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-3 { gap: 0.75rem; }
+  .gap-4 { gap: 1rem; }
+  .items-center { align-items: center; }
+  .items-start { align-items: flex-start; }
+  .justify-between { justify-content: space-between; }
+  .flex-wrap { flex-wrap: wrap; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .mt-auto { margin-top: auto; }
+
+  .star-filled { color: #F5A623; }
+  .star-empty { color: #D9C4A6; }
+
+  .o3-trust-metrics { margin-top: 1rem; }
+  .o3-trust-metric { margin-bottom: 0.875rem; }
+  .o3-trust-metric-row { display: flex; justify-content: space-between; font-size: 0.8125rem; color: white; opacity: 0.8; margin-bottom: 0.3rem; }
+  .o3-track { height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+  .o3-fill { height: 100%; border-radius: 2px; background: var(--egreen); }
+
+  /* label chip for option banners */
+  .design-label {
+    background: var(--carbon); color: var(--parchment);
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.375rem 1rem;
+    border-radius: 0 0 0.75rem 0; display: inline-block; position: absolute;
+    top: 0; left: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── Option Nav ──────────────────────────────────────────────────────── -->
+<nav class="option-nav">
+  <h1>Agent Profile — Redesign Options</h1>
+  <button class="tab-btn active" onclick="showOption(1, this)">Option 1 — Heritage Ledger</button>
+  <button class="tab-btn" onclick="showOption(2, this)">Option 2 — Carbon Professional</button>
+  <button class="tab-btn" onclick="showOption(3, this)">Option 3 — Terracotta Split</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     OPTION 1 — Heritage Ledger
+     Parchment background · forest green · editorial two-column
+     Best for: buyers browsing the marketplace; light/open reading experience
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="option-panel active" id="panel-1">
+<div class="o1" style="position:relative;">
+
+  <!-- topbar breadcrumb -->
+  <div class="o1-topbar">
+    <a href="#">Home</a>
+    <span>›</span>
+    <a href="#">Agents</a>
+    <span>›</span>
+    <span class="current">Themba Dlamini</span>
+  </div>
+
+  <!-- hero -->
+  <div class="o1-hero">
+    <div class="o1-hero-inner">
+      <div class="o1-agent-row">
+        <div class="o1-avatar">
+          T
+          <div class="o1-verified-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="o1-agent-info">
+          <div class="o1-role-pill">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Verified Property Agent
+          </div>
+          <div class="o1-agent-name">Themba Dlamini</div>
+          <div class="o1-agent-city">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Johannesburg, Gauteng
+          </div>
+          <div class="o1-trust-bar">
+            <div class="o1-trust-pill">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00E87A" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div>
+                <div class="score">88%</div>
+                <div class="label">Trust Score</div>
+              </div>
+            </div>
+            <div class="o1-stars">
+              <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star" style="opacity:0.3;">★</span>
+              <span class="o1-rating-text">4.3 · 42 reviews</span>
+            </div>
+          </div>
+          <div class="o1-actions">
+            <button class="btn-primary-egreen">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Contact Agent
+            </button>
+            <button class="btn-outline-parchment">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Schedule Call
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="o1-kpi-strip">
+    <div class="o1-kpi">
+      <div class="o1-kpi-icon forest">🏠</div>
+      <div><div class="o1-kpi-val">47</div><div class="o1-kpi-lbl">Total Listings</div></div>
+    </div>
+    <div class="o1-kpi">
+      <div class="o1-kpi-icon egreen">✅</div>
+      <div><div class="o1-kpi-val">41</div><div class="o1-kpi-lbl">Active Listings</div></div>
+    </div>
+    <div class="o1-kpi">
+      <div class="o1-kpi-icon amber">🏅</div>
+      <div><div class="o1-kpi-val">2019</div><div class="o1-kpi-lbl">Member Since</div></div>
+    </div>
+    <div class="o1-kpi">
+      <div class="o1-kpi-icon terra">📊</div>
+      <div><div class="o1-kpi-val">88%</div><div class="o1-kpi-lbl">Verified Rate</div></div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="o1-body">
+    <div class="o1-main">
+
+      <!-- About -->
+      <div class="o1-card">
+        <div class="o1-section-title">
+          <svg class="o1-section-icon" viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          About
+        </div>
+        <p style="font-size:0.9375rem;color:#3A5A48;line-height:1.75;margin-bottom:1rem;">
+          Themba Dlamini is a verified property agent on BuildTrust with over 5 years of experience specialising in Gauteng residential and commercial properties. With 47 total listings and 41 active properties, Themba brings deep local market knowledge and a commitment to transparent, fraud-free transactions.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:0.375rem;">
+          <span class="spec-tag">Residential Sales</span>
+          <span class="spec-tag">Commercial Leasing</span>
+          <span class="spec-tag">Off-Plan Developments</span>
+          <span class="spec-tag">Property Advisory</span>
+        </div>
+      </div>
+
+      <!-- Recent Listings -->
+      <div class="o1-card">
+        <div class="o1-section-title">
+          <svg class="o1-section-icon" viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          Recent Listings
+        </div>
+        <div class="listing-row">
+          <div class="listing-img"><span class="listing-img-placeholder">🏡</span></div>
+          <div class="flex-1">
+            <div class="listing-title">Modern 3-Bed Villa — Sandton</div>
+            <div class="listing-loc">📍 Sandton, Johannesburg</div>
+            <div class="flex items-center justify-between">
+              <div class="listing-price">R 3,200,000</div>
+              <div class="listing-meta">Listed: 2026-04-01</div>
+            </div>
+          </div>
+        </div>
+        <div class="listing-row">
+          <div class="listing-img"><span class="listing-img-placeholder">🏢</span></div>
+          <div class="flex-1">
+            <div class="listing-title">Commercial Office Suite — Rosebank</div>
+            <div class="listing-loc">📍 Rosebank, Johannesburg</div>
+            <div class="flex items-center justify-between">
+              <div class="listing-price">R 6,800,000</div>
+              <div class="listing-meta">Listed: 2026-03-15</div>
+            </div>
+          </div>
+        </div>
+        <div class="listing-row">
+          <div class="listing-img"><span class="listing-img-placeholder">🏘️</span></div>
+          <div class="flex-1">
+            <div class="listing-title">2-Bed Apartment — Fourways</div>
+            <div class="listing-loc">📍 Fourways, Johannesburg</div>
+            <div class="flex items-center justify-between">
+              <div class="listing-price">R 1,450,000</div>
+              <div class="listing-meta">Listed: 2026-03-02</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Listings grid -->
+      <div class="o1-card">
+        <div class="o1-section-title">
+          <svg class="o1-section-icon" viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Active Listings
+        </div>
+        <div class="grid-2">
+          <div style="border:1px solid rgba(26,60,40,0.12);border-radius:0.75rem;overflow:hidden;">
+            <div style="height:120px;background:linear-gradient(135deg,#EAD9C4,#D9C4A6);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🏡</div>
+            <div style="padding:0.875rem;">
+              <div class="listing-title">Luxury 4-Bed — Hyde Park</div>
+              <div class="listing-loc">📍 Hyde Park</div>
+              <div class="listing-price">R 7,500,000</div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(26,60,40,0.12);border-radius:0.75rem;overflow:hidden;">
+            <div style="height:120px;background:linear-gradient(135deg,#EAD9C4,#D9C4A6);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🏘️</div>
+            <div style="padding:0.875rem;">
+              <div class="listing-title">Garden Cottage — Melville</div>
+              <div class="listing-loc">📍 Melville</div>
+              <div class="listing-price">R 980,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="o1-card">
+        <div class="o1-section-title" style="justify-content:space-between;">
+          <span style="display:flex;align-items:center;gap:0.625rem;">
+            <svg class="o1-section-icon" viewBox="0 0 24 24" fill="none" stroke="#1A3C28" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            Client Reviews
+          </span>
+          <span style="font-size:0.875rem;color:#6B8A76;">★★★★☆ 4.3 · 42 reviews</span>
+        </div>
+        <div class="review-card">
+          <div class="reviewer-row">
+            <div class="reviewer-avatar">PP</div>
+            <div>
+              <div class="reviewer-name">Precious Phiri</div>
+              <div class="review-stars"><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span></div>
+            </div>
+            <div class="reviewer-date">2026-03-14</div>
+          </div>
+          <div class="review-text">"Themba was incredibly professional and transparent throughout our purchase. The verified listings and clear documentation gave us total confidence — especially as diaspora buyers. Highly recommend."</div>
+        </div>
+        <div class="review-card">
+          <div class="reviewer-row">
+            <div class="reviewer-avatar">KM</div>
+            <div>
+              <div class="reviewer-name">Kagiso Motsepe</div>
+              <div class="review-stars"><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-filled">★</span><span class="star-empty">★</span></div>
+            </div>
+            <div class="reviewer-date">2026-02-28</div>
+          </div>
+          <div class="review-text">"Very knowledgeable about the Sandton market. The escrow process was seamless and I always knew where my money was. Would use again."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="o1-sidebar">
+      <div class="o1-sidebar-card">
+        <div class="o1-sidebar-title">Contact Details</div>
+        <div class="contact-row">
+          <div class="contact-icon">📞</div>
+          <div><div class="contact-val">+27 82 345 6789</div><div class="contact-lbl">Mobile</div></div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-icon">✉️</div>
+          <div><div class="contact-val">themba@buildtrust.co.za</div><div class="contact-lbl">Email</div></div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-icon">🏢</div>
+          <div><div class="contact-val">Prestige Properties SA</div><div class="contact-lbl">Agency</div></div>
+        </div>
+      </div>
+
+      <div class="o1-sidebar-card">
+        <div class="o1-sidebar-title">Trust Breakdown</div>
+        <div class="trust-metric">
+          <div class="trust-metric-label"><span>Verified Listings</span><span style="color:#1A3C28;font-weight:700;">88%</span></div>
+          <div class="trust-bar-track"><div class="trust-bar-fill" style="width:88%;"></div></div>
+        </div>
+        <div class="trust-metric">
+          <div class="trust-metric-label"><span>Document Completeness</span><span style="color:#1A3C28;font-weight:700;">95%</span></div>
+          <div class="trust-bar-track"><div class="trust-bar-fill" style="width:95%;"></div></div>
+        </div>
+        <div class="trust-metric">
+          <div class="trust-metric-label"><span>Response Rate</span><span style="color:#1A3C28;font-weight:700;">92%</span></div>
+          <div class="trust-bar-track"><div class="trust-bar-fill" style="width:92%;"></div></div>
+        </div>
+      </div>
+
+      <div class="o1-sidebar-card">
+        <div class="o1-sidebar-title">Specialisations</div>
+        <div style="display:flex;flex-wrap:wrap;">
+          <span class="spec-tag">Residential</span>
+          <span class="spec-tag">Commercial</span>
+          <span class="spec-tag">Off-Plan</span>
+          <span class="spec-tag">Advisory</span>
+        </div>
+      </div>
+
+      <div class="o1-sidebar-card" style="background:var(--forest);border-color:transparent;">
+        <div style="font-size:0.8125rem;font-weight:700;color:rgba(242,232,213,0.55);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.75rem;">Member Since</div>
+        <div style="font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--egreen);">2019</div>
+        <div style="font-size:0.8125rem;color:rgba(242,232,213,0.5);">5+ years on BuildTrust</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /panel-1 -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     OPTION 2 — Carbon Professional
+     Dark carbon · electric green · IBM mono data readouts
+     Best for: agents/admin reviewing profiles; data-dense power users
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="option-panel" id="panel-2">
+<div class="o2">
+
+  <div class="o2-topbar">
+    <a href="#">Home</a>
+    <span>›</span>
+    <a href="#">Agents</a>
+    <span>›</span>
+    <span class="current">Themba Dlamini</span>
+  </div>
+
+  <!-- hero -->
+  <div class="o2-hero">
+    <div class="o2-hero-inner">
+      <div class="o2-avatar">
+        T
+        <div class="o2-verified">✓</div>
+      </div>
+      <div class="o2-agent-info">
+        <div class="o2-role-tag">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Verified Property Agent
+        </div>
+        <div class="o2-agent-name">Themba Dlamini</div>
+        <div class="o2-agent-city">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Johannesburg, Gauteng
+        </div>
+        <div class="o2-badges">
+          <span class="o2-badge egreen">✓ Identity Verified</span>
+          <span class="o2-badge amber">★ 4.3 Rating</span>
+          <span class="o2-badge forest">5 yrs Experience</span>
+        </div>
+        <div class="o2-actions">
+          <button class="o2-btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Contact Agent
+          </button>
+          <button class="o2-btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Schedule Call
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- stats strip -->
+  <div class="o2-stats">
+    <div class="o2-stat">
+      <div class="o2-stat-val">47</div>
+      <div class="o2-stat-label">Total Listings</div>
+      <div class="o2-stat-badge">+4 this month</div>
+    </div>
+    <div class="o2-stat">
+      <div class="o2-stat-val">41</div>
+      <div class="o2-stat-label">Active Listings</div>
+    </div>
+    <div class="o2-stat">
+      <div class="o2-stat-val">88%</div>
+      <div class="o2-stat-label">Verified Rate</div>
+      <div class="o2-stat-badge">Trust Score</div>
+    </div>
+    <div class="o2-stat">
+      <div class="o2-stat-val">42</div>
+      <div class="o2-stat-label">Client Reviews</div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div class="o2-body">
+    <div>
+      <!-- About -->
+      <div class="o2-card">
+        <div class="o2-section-title">
+          <div class="o2-section-dot"></div>
+          About
+        </div>
+        <p style="font-size:0.9rem;color:rgba(242,232,213,0.65);line-height:1.75;margin-bottom:1rem;">
+          Themba Dlamini is a verified property agent with 5 years of experience in Gauteng residential and commercial real estate. Specialising in transparent, fraud-protected transactions on the BuildTrust platform.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;">
+          <span class="o2-spec-tag">Residential Sales</span>
+          <span class="o2-spec-tag">Commercial Leasing</span>
+          <span class="o2-spec-tag">Off-Plan</span>
+          <span class="o2-spec-tag">Property Advisory</span>
+        </div>
+      </div>
+
+      <!-- Listings -->
+      <div class="o2-card">
+        <div class="o2-section-title">
+          <div class="o2-section-dot"></div>
+          Active Listings
+        </div>
+        <div class="grid-2" style="gap:0.875rem;">
+          <div class="o2-listing">
+            <div class="o2-listing-img">🏡</div>
+            <div class="o2-listing-body">
+              <div class="o2-listing-title">Modern 3-Bed Villa — Sandton</div>
+              <div class="o2-listing-loc">📍 Sandton</div>
+              <div class="o2-listing-price">R 3,200,000</div>
+            </div>
+          </div>
+          <div class="o2-listing">
+            <div class="o2-listing-img">🏢</div>
+            <div class="o2-listing-body">
+              <div class="o2-listing-title">Commercial Suite — Rosebank</div>
+              <div class="o2-listing-loc">📍 Rosebank</div>
+              <div class="o2-listing-price">R 6,800,000</div>
+            </div>
+          </div>
+          <div class="o2-listing">
+            <div class="o2-listing-img">🏘️</div>
+            <div class="o2-listing-body">
+              <div class="o2-listing-title">Garden Cottage — Melville</div>
+              <div class="o2-listing-loc">📍 Melville</div>
+              <div class="o2-listing-price">R 980,000</div>
+            </div>
+          </div>
+          <div class="o2-listing">
+            <div class="o2-listing-img">🏠</div>
+            <div class="o2-listing-body">
+              <div class="o2-listing-title">Luxury 4-Bed — Hyde Park</div>
+              <div class="o2-listing-loc">📍 Hyde Park</div>
+              <div class="o2-listing-price">R 7,500,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="o2-card">
+        <div class="o2-section-title" style="justify-content:space-between;">
+          <span style="display:flex;align-items:center;gap:0.625rem;"><div class="o2-section-dot"></div>Client Reviews</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.875rem;color:rgba(0,232,122,0.8);">4.3 / 5.0 · 42 reviews</span>
+        </div>
+        <div class="o2-review">
+          <div class="o2-reviewer-row">
+            <div class="o2-reviewer-av">PP</div>
+            <div>
+              <div class="o2-reviewer-name">Precious Phiri</div>
+              <div style="color:#F5A623;font-size:0.8125rem;">★★★★★</div>
+            </div>
+            <div class="o2-reviewer-date">2026-03-14</div>
+          </div>
+          <div class="o2-review-text">"Themba was professional and transparent. The verified listings gave us confidence as diaspora buyers."</div>
+        </div>
+        <div class="o2-review">
+          <div class="o2-reviewer-row">
+            <div class="o2-reviewer-av">KM</div>
+            <div>
+              <div class="o2-reviewer-name">Kagiso Motsepe</div>
+              <div style="color:#F5A623;font-size:0.8125rem;">★★★★☆</div>
+            </div>
+            <div class="o2-reviewer-date">2026-02-28</div>
+          </div>
+          <div class="o2-review-text">"Knowledgeable about Sandton market. The escrow process was seamless."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+      <div class="o2-sidebar-card">
+        <div class="o2-trust-ring">
+          <div>
+            <div class="o2-trust-big">88%</div>
+            <div class="o2-trust-lbl">Trust Score</div>
+          </div>
+          <div style="flex:1;">
+            <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:0.5rem;">
+              <div style="height:100%;width:88%;background:var(--egreen);border-radius:3px;"></div>
+            </div>
+            <div style="font-size:0.75rem;color:rgba(242,232,213,0.4);">88 of 100 points</div>
+          </div>
+        </div>
+        <div class="o2-sidebar-title" style="margin-top:0.5rem;">Trust Metrics</div>
+        <div style="margin-bottom:0.625rem;">
+          <div style="display:flex;justify-content:space-between;font-size:0.8125rem;color:rgba(242,232,213,0.6);margin-bottom:0.3rem;"><span>Verified Listings</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--egreen);">88%</span></div>
+          <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="height:100%;width:88%;background:linear-gradient(90deg,var(--forest-light),var(--egreen));"></div></div>
+        </div>
+        <div style="margin-bottom:0.625rem;">
+          <div style="display:flex;justify-content:space-between;font-size:0.8125rem;color:rgba(242,232,213,0.6);margin-bottom:0.3rem;"><span>Doc Completeness</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--egreen);">95%</span></div>
+          <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="height:100%;width:95%;background:linear-gradient(90deg,var(--forest-light),var(--egreen));"></div></div>
+        </div>
+      </div>
+
+      <div class="o2-sidebar-card">
+        <div class="o2-sidebar-title">Contact</div>
+        <div class="o2-contact-row">
+          <div class="o2-contact-icon">📞</div>
+          <div><div class="o2-contact-val">+27 82 345 6789</div><div class="o2-contact-lbl">Mobile</div></div>
+        </div>
+        <div class="o2-contact-row">
+          <div class="o2-contact-icon">✉️</div>
+          <div><div class="o2-contact-val">themba@buildtrust.co.za</div><div class="o2-contact-lbl">Email</div></div>
+        </div>
+        <div class="o2-contact-row">
+          <div class="o2-contact-icon">🏢</div>
+          <div><div class="o2-contact-val">Prestige Properties SA</div><div class="o2-contact-lbl">Agency</div></div>
+        </div>
+      </div>
+
+      <div class="o2-sidebar-card">
+        <div class="o2-sidebar-title">Member Since</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;color:var(--egreen);">2019</div>
+        <div style="font-size:0.8125rem;color:rgba(242,232,213,0.4);">5+ years on platform</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /panel-2 -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     OPTION 3 — Terracotta Split
+     Sticky sidebar with terracotta gradient · scrollable parchment content
+     Best for: marketplace-first; bold brand moment; mobile-responsive feel
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="option-panel" id="panel-3">
+<div class="o3">
+
+  <div class="o3-topbar">
+    <a href="#">Home</a>
+    <span>›</span>
+    <a href="#">Agents</a>
+    <span>›</span>
+    <span class="current">Themba Dlamini</span>
+  </div>
+
+  <div class="o3-split">
+
+    <!-- sticky left panel -->
+    <div class="o3-sidebar-panel">
+      <div class="o3-avatar-wrap">
+        <div class="o3-avatar">T</div>
+        <div class="o3-verified-badge">✓</div>
+      </div>
+      <div class="o3-agent-name-panel">Themba Dlamini</div>
+      <div class="o3-role-panel">Verified Property Agent</div>
+      <div class="o3-city-panel">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Johannesburg, Gauteng
+      </div>
+
+      <div class="o3-trust-panel">
+        <div class="o3-trust-score">88%</div>
+        <div class="o3-trust-label">Trust Score · Verified Agent</div>
+        <div class="o3-trust-bar-track"><div class="o3-trust-bar-fill"></div></div>
+        <div class="o3-trust-metrics">
+          <div class="o3-trust-metric">
+            <div class="o3-trust-metric-row"><span>Verified Listings</span><span>88%</span></div>
+            <div class="o3-track"><div class="o3-fill" style="width:88%;"></div></div>
+          </div>
+          <div class="o3-trust-metric">
+            <div class="o3-trust-metric-row"><span>Doc Completeness</span><span>95%</span></div>
+            <div class="o3-track"><div class="o3-fill" style="width:95%;"></div></div>
+          </div>
+          <div class="o3-trust-metric" style="margin-bottom:0;">
+            <div class="o3-trust-metric-row"><span>Response Rate</span><span>92%</span></div>
+            <div class="o3-track"><div class="o3-fill" style="width:92%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.55);letter-spacing:0.05em;text-transform:uppercase;font-weight:700;margin-bottom:0.25rem;">★★★★☆ 4.3 · 42 reviews</div>
+
+      <div class="o3-panel-actions" style="margin-top:1.25rem;">
+        <button class="o3-btn-white">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Contact Agent
+        </button>
+        <button class="o3-btn-outline-white">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Schedule Call
+        </button>
+      </div>
+
+      <div class="o3-panel-contact" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.15);">
+        <div class="o3-contact-item">
+          <span class="o3-contact-ico">📞</span>
+          <span class="o3-contact-val">+27 82 345 6789</span>
+        </div>
+        <div class="o3-contact-item">
+          <span class="o3-contact-ico">✉️</span>
+          <span class="o3-contact-val">themba@buildtrust.co.za</span>
+        </div>
+        <div class="o3-contact-item">
+          <span class="o3-contact-ico">🏢</span>
+          <span class="o3-contact-val">Prestige Properties SA</span>
+        </div>
+        <div class="o3-contact-item" style="margin-top:1rem;border-top:1px solid rgba(255,255,255,0.1);padding-top:1rem;border-bottom:none;">
+          <span class="o3-contact-ico">📅</span>
+          <span class="o3-contact-val">Member since 2019</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- scrollable right content -->
+    <div class="o3-main">
+      <!-- KPI row -->
+      <div class="o3-kpi-row">
+        <div class="o3-kpi">
+          <div class="o3-kpi-icon">🏠</div>
+          <div class="o3-kpi-val">47</div>
+          <div class="o3-kpi-label">Total Listings</div>
+        </div>
+        <div class="o3-kpi">
+          <div class="o3-kpi-icon">✅</div>
+          <div class="o3-kpi-val">41</div>
+          <div class="o3-kpi-label">Active</div>
+        </div>
+        <div class="o3-kpi">
+          <div class="o3-kpi-icon">📊</div>
+          <div class="o3-kpi-val">88%</div>
+          <div class="o3-kpi-label">Verified Rate</div>
+        </div>
+        <div class="o3-kpi">
+          <div class="o3-kpi-icon">⭐</div>
+          <div class="o3-kpi-val">4.3</div>
+          <div class="o3-kpi-label">Rating</div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="o3-section">
+        <div class="o3-section-header">
+          <div class="o3-section-title-text">
+            <div class="o3-section-title-dot"></div>
+            About Themba
+          </div>
+        </div>
+        <p style="font-size:0.9375rem;color:#3A5A48;line-height:1.75;margin-bottom:1.25rem;">
+          Themba Dlamini is a verified property agent with over 5 years of experience specialising in Gauteng residential and commercial properties. Known for transparency, fraud-free processes, and excellent communication with both local and diaspora buyers.
+        </p>
+        <div class="o3-spec-tags">
+          <span class="o3-spec-tag">Residential Sales</span>
+          <span class="o3-spec-tag">Commercial Leasing</span>
+          <span class="o3-spec-tag">Off-Plan Developments</span>
+          <span class="o3-spec-tag">Property Advisory</span>
+        </div>
+      </div>
+
+      <!-- Listings -->
+      <div class="o3-section">
+        <div class="o3-section-header">
+          <div class="o3-section-title-text">
+            <div class="o3-section-title-dot"></div>
+            Active Listings
+          </div>
+          <span style="font-size:0.8125rem;color:var(--terracotta);font-weight:600;cursor:pointer;">View All →</span>
+        </div>
+        <div class="o3-listing-grid">
+          <div class="o3-listing-card">
+            <div class="o3-listing-img">🏡</div>
+            <div class="o3-listing-body">
+              <div class="o3-listing-title">Modern 3-Bed Villa</div>
+              <div class="o3-listing-loc">📍 Sandton, JHB</div>
+              <div class="o3-listing-price">R 3,200,000</div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-listing-img">🏢</div>
+            <div class="o3-listing-body">
+              <div class="o3-listing-title">Commercial Suite</div>
+              <div class="o3-listing-loc">📍 Rosebank, JHB</div>
+              <div class="o3-listing-price">R 6,800,000</div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-listing-img">🏘️</div>
+            <div class="o3-listing-body">
+              <div class="o3-listing-title">Garden Cottage</div>
+              <div class="o3-listing-loc">📍 Melville, JHB</div>
+              <div class="o3-listing-price">R 980,000</div>
+            </div>
+          </div>
+          <div class="o3-listing-card">
+            <div class="o3-listing-img">🏠</div>
+            <div class="o3-listing-body">
+              <div class="o3-listing-title">Luxury 4-Bed</div>
+              <div class="o3-listing-loc">📍 Hyde Park, JHB</div>
+              <div class="o3-listing-price">R 7,500,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="o3-section">
+        <div class="o3-section-header">
+          <div class="o3-section-title-text">
+            <div class="o3-section-title-dot"></div>
+            Client Reviews
+          </div>
+          <span style="font-size:0.875rem;color:#6B8A76;">42 reviews</span>
+        </div>
+        <div class="o3-review">
+          <div class="o3-reviewer-row">
+            <div class="o3-reviewer-av">PP</div>
+            <div>
+              <div class="o3-reviewer-name">Precious Phiri</div>
+              <div style="color:#F5A623;font-size:0.8125rem;margin-top:0.1rem;">★★★★★</div>
+            </div>
+            <div class="o3-reviewer-date">2026-03-14</div>
+          </div>
+          <div class="o3-review-text">"Themba was incredibly professional and transparent. The verified listings gave us total confidence — especially as diaspora buyers. Highly recommend."</div>
+        </div>
+        <div class="o3-review">
+          <div class="o3-reviewer-row">
+            <div class="o3-reviewer-av">KM</div>
+            <div>
+              <div class="o3-reviewer-name">Kagiso Motsepe</div>
+              <div style="color:#F5A623;font-size:0.8125rem;margin-top:0.1rem;">★★★★☆</div>
+            </div>
+            <div class="o3-reviewer-date">2026-02-28</div>
+          </div>
+          <div class="o3-review-text">"Very knowledgeable about the Sandton market. The escrow process was seamless and I always knew where my money was."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /panel-3 -->
+
+<script>
+function showOption(num, btn) {
+  document.querySelectorAll('.option-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + num).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Filter Label — Visual Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a1a0f;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 24px;
+    gap: 48px;
+    color: #F2E8D5;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: #F2E8D5;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.35);
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .section {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: rgba(242,232,213,0.3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(242,232,213,0.08);
+  }
+
+  /* The filter bar container */
+  .filter-bar {
+    background: #0F2318;
+    border-radius: 12px;
+    border: 1px solid rgba(242,232,213,0.12);
+    display: inline-flex;
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  /* Individual filter button */
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    transition: background 0.15s;
+    color: rgba(242,232,213,0.75);
+  }
+  .filter-btn:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  .filter-btn:last-child {
+    border-right: none;
+  }
+
+  /* Active (value selected) state — OLD behaviour */
+  .filter-btn.active-old {
+    color: #00E87A;
+  }
+
+  /* Active (value selected) state — NEW behaviour */
+  .filter-btn.active-new {
+    color: rgba(242,232,213,0.75);
+  }
+
+  /* NEW: the value pill inside the button */
+  .value-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,232,122,0.15);
+    border: 1px solid rgba(0,232,122,0.45);
+    color: #00E87A;
+    border-radius: 20px;
+    padding: 1px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+
+  /* chevron icon */
+  .chevron {
+    width: 12px;
+    height: 12px;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  /* Comparison table */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .compare-card {
+    background: #0F2318;
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .compare-card h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .compare-card.old h3 { color: rgba(242,232,213,0.4); }
+  .compare-card.new h3 { color: #00E87A; }
+
+  .compare-card .demo-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .demo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .demo-item .state-label {
+    font-size: 11px;
+    color: rgba(242,232,213,0.3);
+    font-family: 'IBM Plex Mono', monospace;
+    min-width: 80px;
+  }
+
+  /* Full filter bar real-world demo */
+  .full-demo {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .full-bar {
+    background: #0F2318;
+    border: 1px solid rgba(242,232,213,0.12);
+    border-radius: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .annotation {
+    font-size: 11px;
+    color: rgba(242,232,213,0.4);
+    margin-top: 10px;
+    line-height: 1.6;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .badge.new { background: rgba(0,232,122,0.12); color: #00E87A; border: 1px solid rgba(0,232,122,0.3); }
+  .badge.old { background: rgba(242,232,213,0.06); color: rgba(242,232,213,0.4); border: 1px solid rgba(242,232,213,0.12); }
+
+  .highlight-box {
+    background: rgba(0,232,122,0.06);
+    border: 1px solid rgba(0,232,122,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .highlight-box p {
+    font-size: 13px;
+    color: rgba(242,232,213,0.7);
+    line-height: 1.7;
+  }
+
+  .highlight-box strong {
+    color: #00E87A;
+  }
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+  <h1>Filter Dropdown Label — Visual Mockup</h1>
+  <p class="subtitle">Bathrooms · Bedrooms · Parking — selected state behaviour</p>
+</div>
+
+<!-- Highlight summary -->
+<div class="highlight-box">
+  <p>
+    <strong>Proposed change:</strong> When a filter value is selected, display both the <strong>label</strong> (e.g. "Bathrooms") and the <strong>selected value</strong> (e.g. <span style="background:rgba(0,232,122,0.15);border:1px solid rgba(0,232,122,0.4);color:#00E87A;border-radius:20px;padding:1px 8px;font-size:11px;font-family:'IBM Plex Mono',monospace;">1+</span>) side by side — matching the design shown in the reference image. No change to the unselected state.
+  </p>
+</div>
+
+<!-- BEFORE / AFTER comparison -->
+<div class="compare">
+  <div class="compare-card old">
+    <h3>❌ Current — value only</h3>
+    <div class="demo-row">
+      <div class="demo-item">
+        <span class="state-label">Unselected</span>
+        <div class="filter-bar">
+          <button class="filter-btn">
+            Bathrooms
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="demo-item">
+        <span class="state-label">1+ selected</span>
+        <div class="filter-bar">
+          <button class="filter-btn active-old">
+            1+
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <span class="badge old">label dropped</span>
+      </div>
+      <div class="demo-item">
+        <span class="state-label">3+ selected</span>
+        <div class="filter-bar">
+          <button class="filter-btn active-old">
+            3+
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <span class="badge old">label dropped</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="compare-card new">
+    <h3>✓ Proposed — label + value pill</h3>
+    <div class="demo-row">
+      <div class="demo-item">
+        <span class="state-label">Unselected</span>
+        <div class="filter-bar">
+          <button class="filter-btn">
+            Bathrooms
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="demo-item">
+        <span class="state-label">1+ selected</span>
+        <div class="filter-bar">
+          <button class="filter-btn active-new">
+            Bathrooms
+            <span class="value-pill">1+</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <span class="badge new">matches image</span>
+      </div>
+      <div class="demo-item">
+        <span class="state-label">3+ selected</span>
+        <div class="filter-bar">
+          <button class="filter-btn active-new">
+            Bathrooms
+            <span class="value-pill">3+</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <span class="badge new">matches image</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full filter bar in context -->
+<div class="full-demo">
+  <div class="section-label">Full filter bar — real-world context (proposed)</div>
+  <div class="full-bar">
+    <!-- Min Price — unselected -->
+    <button class="filter-btn">
+      Min Price
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <!-- Max Price — unselected -->
+    <button class="filter-btn">
+      Max Price
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <!-- Bedrooms — value selected -->
+    <button class="filter-btn active-new">
+      Bedrooms
+      <span class="value-pill">2+</span>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <!-- Bathrooms — value selected -->
+    <button class="filter-btn active-new">
+      Bathrooms
+      <span class="value-pill">1+</span>
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <!-- Parking — unselected -->
+    <button class="filter-btn">
+      Parking / Garage
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <!-- Floor Size — unselected -->
+    <button class="filter-btn">
+      Floor Size (m²)
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+  <p class="annotation">
+    Active filters retain their category label so users always know <em>what</em> was filtered, and the green pill shows exactly <em>what value</em> is set. Inactive filters appear unchanged.
+  </p>
+</div>
+
+<!-- Edge cases -->
+<div class="section">
+  <div class="section-label">Edge cases — all filters with values</div>
+  <div class="full-bar">
+    <button class="filter-btn active-new">Bedrooms <span class="value-pill">5+</span> <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button class="filter-btn active-new">Bathrooms <span class="value-pill">4+</span> <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button class="filter-btn active-new">Parking / Garage <span class="value-pill">2+</span> <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button class="filter-btn active-new">Floor Size (m²) <span class="value-pill">80+</span> <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+    <button class="filter-btn active-new">Erf Size (m²) <span class="value-pill">200+</span> <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+  </div>
+</div>
+
+</body>
+</html>

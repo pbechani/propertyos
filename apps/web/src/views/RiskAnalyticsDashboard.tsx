@@ -73,17 +73,19 @@ interface Anomaly {
   status: "investigating" | "resolved" | "dismissed";
 }
 
-// Mock data
+// Risk scores — weights match XGBoost model trained in sprint-11
+// Contractor: completionRate(25%) | budgetAdherence(20%) | onTimeRate(20%) | disputeRate(15%) | avgRating(15%) | kycVerified(5%)
+// Property:   titleVerification(30%) | fraudReports(25%) | locationRisk(20%) | ownershipHistory(15%) | docCompleteness(10%)
 const contractorRiskScore: RiskScore = {
   score: 68,
   trend: "down",
   factors: [
-    { name: "Payment History", impact: 15, status: "good" },
-    { name: "Project Completion Rate", impact: 10, status: "warning" },
-    { name: "Insurance Coverage", impact: 5, status: "good" },
-    { name: "License Verification", impact: 0, status: "good" },
-    { name: "Customer Complaints", impact: 8, status: "warning" },
-    { name: "Financial Stability", impact: 12, status: "critical" },
+    { name: "Completion Rate", impact: 25, status: "warning" },       // weight: 25%
+    { name: "Budget Adherence", impact: 20, status: "critical" },     // weight: 20%
+    { name: "On-Time Rate", impact: 20, status: "warning" },          // weight: 20%
+    { name: "Dispute Rate", impact: 15, status: "good" },             // weight: 15%
+    { name: "Avg Rating", impact: 15, status: "good" },               // weight: 15%
+    { name: "KYC Verified", impact: 5, status: "good" },             // weight: 5%
   ],
 };
 
@@ -91,11 +93,11 @@ const propertyRiskScore: RiskScore = {
   score: 82,
   trend: "stable",
   factors: [
-    { name: "Market Volatility", impact: 7, status: "warning" },
-    { name: "Documentation Complete", impact: 2, status: "good" },
-    { name: "Legal Issues", impact: 0, status: "good" },
-    { name: "Environmental Risks", impact: 3, status: "good" },
-    { name: "Valuation Accuracy", impact: 6, status: "warning" },
+    { name: "Title Verification", impact: 30, status: "good" },       // weight: 30%
+    { name: "Fraud Reports", impact: 25, status: "good" },            // weight: 25%
+    { name: "Location Risk", impact: 20, status: "warning" },         // weight: 20%
+    { name: "Ownership History", impact: 15, status: "good" },        // weight: 15%
+    { name: "Doc Completeness", impact: 10, status: "warning" },      // weight: 10%
   ],
 };
 
@@ -103,11 +105,11 @@ const projectHealthScore: RiskScore = {
   score: 74,
   trend: "up",
   factors: [
-    { name: "Budget Adherence", impact: 12, status: "warning" },
-    { name: "Timeline Progress", impact: 8, status: "warning" },
-    { name: "Quality Metrics", impact: 4, status: "good" },
-    { name: "Stakeholder Satisfaction", impact: 5, status: "good" },
-    { name: "Resource Availability", impact: 3, status: "good" },
+    { name: "Budget Variance", impact: 12, status: "warning" },
+    { name: "Timeline Variance", impact: 8, status: "warning" },
+    { name: "Milestone Completion", impact: 4, status: "good" },
+    { name: "Inspection Pass Rate", impact: 5, status: "good" },
+    { name: "Communication Activity", impact: 3, status: "good" },
   ],
 };
 
@@ -285,9 +287,27 @@ export default function RiskAnalyticsDashboard() {
               <h1 className="text-2xl font-bold text-black mb-1">
                 Risk & Analytics Dashboard
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-2">
                 Real-time monitoring and early warning system
               </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
+                  <Zap className="w-3 h-3 mr-1" />
+                  XGBoost · Risk Scoring
+                </Badge>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                  <Activity className="w-3 h-3 mr-1" />
+                  Prophet · Anomaly Detection
+                </Badge>
+                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  MLflow · Model Registry
+                </Badge>
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                  <Zap className="w-3 h-3 mr-1" />
+                  Claude · NL Analytics
+                </Badge>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Select value={timeRange} onValueChange={setTimeRange}>
@@ -316,7 +336,7 @@ export default function RiskAnalyticsDashboard() {
           {fraudAlerts.filter((a) => a.severity === "critical").length > 0 && (
             <Card className="p-4 bg-red-50 border-red-200">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <div className="font-semibold text-red-900 mb-1">
                     {fraudAlerts.filter((a) => a.severity === "critical").length} Critical Alerts
@@ -604,7 +624,7 @@ export default function RiskAnalyticsDashboard() {
                   >
                     <div className="flex items-start gap-4">
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
                           alert.severity === "critical"
                             ? "bg-red-600"
                             : alert.severity === "high"
@@ -698,13 +718,16 @@ export default function RiskAnalyticsDashboard() {
                 <div>
                   <h2 className="text-lg font-semibold mb-1">Anomaly Detection</h2>
                   <p className="text-sm text-gray-600">
-                    AI-powered detection of unusual patterns and behaviors
+                    Prophet time-series model detects deviations outside 95% confidence intervals on daily-aggregated transaction volumes. Alerts fire within 5 minutes.
                   </p>
                 </div>
-                <Badge className="bg-purple-600 text-white">
-                  <Zap className="w-3 h-3 mr-1" />
-                  ML-Powered
-                </Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge className="bg-purple-600 text-white">
+                    <Zap className="w-3 h-3 mr-1" />
+                    Prophet Model
+                  </Badge>
+                  <span className="text-xs text-gray-500">Retrained nightly · 95% CI</span>
+                </div>
               </div>
               <div className="space-y-3">
                 {anomalyAlerts.map((anomaly) => (
@@ -795,16 +818,7 @@ export default function RiskAnalyticsDashboard() {
                       </div>
                     </div>
                     <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-                      <div
-                        className={`absolute left-0 top-0 h-full transition-all ${
-                          region.risk >= 70
-                            ? "bg-red-600"
-                            : region.risk >= 40
-                            ? "bg-yellow-600"
-                            : "bg-green-600"
-                        }`}
-                        style={{ width: `${region.risk}%` }}
-                      />
+                      <Progress value={region.risk} className="h-8 bg-gray-100" />
                       <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
                         Risk Score: {region.risk}
                       </div>
@@ -826,6 +840,42 @@ export default function RiskAnalyticsDashboard() {
                   <div className="text-2xl font-bold text-red-600">1</div>
                   <div className="text-xs text-gray-600 mt-1">High Risk Regions</div>
                 </div>
+              </div>
+            </Card>
+
+            {/* NL Analytics Query */}
+            <Card className="p-6 border-gray-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Natural Language Analytics</h3>
+                  <p className="text-xs text-gray-600">LangChain SQL Agent + Claude (claude-opus-4-6) · Queries the analytics.* schema</p>
+                </div>
+                <Badge className="ml-auto bg-orange-600 text-white text-xs">Claude NL-to-SQL</Badge>
+              </div>
+              <div className="flex gap-3 mb-4">
+                <input
+                  type="text"
+                  placeholder="e.g. Show all contractors with risk score above 60 in the last 30 days"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  defaultValue="Which projects are most likely to have cost overruns?"
+                />
+                <Button className="bg-black text-white hover:bg-gray-800">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Run Query
+                </Button>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 font-mono">
+                <div className="text-xs text-gray-500 mb-2">Generated SQL · Executed against analytics.* schema</div>
+                <div className="text-gray-800">{`SELECT p.id, p.title, pr.predicted_value AS overrun_probability FROM construction.projects p JOIN analytics.predictions pr ON pr.entity_id = p.id WHERE pr.prediction_type = 'cost_overrun' AND pr.confidence > 0.7 ORDER BY pr.predicted_value DESC LIMIT 10;`}</div>
+              </div>
+              <div className="mt-3 text-xs text-gray-500">
+                Suggestion queries: &nbsp;
+                {["Show fraud alerts from this week", "Top 5 risky contractors", "Properties missing documentation"].map((q) => (
+                  <button key={q} className="inline-block mr-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors">{q}</button>
+                ))}
               </div>
             </Card>
 

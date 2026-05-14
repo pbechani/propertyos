@@ -19,7 +19,10 @@ export class SendGridEmailProvider implements EmailProvider {
         personalizations: [{ to: [{ email: message.to }] }],
         from: { email: this.fromEmail },
         subject: message.subject,
-        content: [{ type: 'text/plain', value: message.body }],
+        content: [
+          { type: 'text/plain', value: message.body },
+          ...(message.html ? [{ type: 'text/html', value: message.html }] : []),
+        ],
       }),
     });
 

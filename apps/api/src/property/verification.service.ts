@@ -8,12 +8,14 @@ import {
 import { PrismaService } from '../database';
 import { PropertyAuditService } from './property-audit.service';
 import { AdminRejectDto, AdminVerifyDto, SubmitVerificationDto } from './property.dto';
+import { VerificationStorageService } from './verification-storage.service';
 
 @Injectable()
 export class VerificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: PropertyAuditService,
+    private readonly verificationStorageService: VerificationStorageService,
   ) {}
 
   async submitVerificationRequest(
@@ -56,15 +58,18 @@ export class VerificationService {
       );
     }
 
-    // Stub: real file upload would be handled by MediaStorageService / S3
-    const titleDeedUrl = `https://storage.pribec.local/verifications/${propertyId}/title-deed-${Date.now()}.pdf`;
+    const uploadedTitleDeed = await this.verificationStorageService.uploadTitleDeed({
+      propertyId,
+      agentId,
+      file: titleDeedFile,
+    });
 
     const result = await this.prisma.$queryRaw<{ id: string; status: string }[]>`
       INSERT INTO property.verifications
         (property_id, title_deed_url, deed_number, registry_reference)
       VALUES (
         ${propertyId}::uuid,
-        ${titleDeedUrl},
+        ${uploadedTitleDeed.storagePath},
         ${dto.deedNumber ?? null},
         ${dto.registryReference ?? null}
       )

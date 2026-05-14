@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>On Show — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --forest:    #1A3C28;
+    --parchment: #F2E8D5;
+    --cream:     #EAD9C4;
+    --terra:     #C4562A;
+    --egreen:    #00E87A;
+    --amber:     #B89040;
+    --gold:      #F5C87A;
+    --fraunces:  'Fraunces', Georgia, serif;
+    --mono:      'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, sans-serif;
+    background: #0E1614;
+    color: var(--parchment);
+    padding: 40px 32px 80px;
+    min-height: 100vh;
+  }
+
+  /* ── Page header ─────────────────────────────────────────────────────── */
+  .doc-title {
+    font-family: var(--fraunces);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--parchment);
+    margin-bottom: 6px;
+  }
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--terra);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 32px;
+  }
+
+  /* ── Section ─────────────────────────────────────────────────────────── */
+  .section {
+    margin-bottom: 56px;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,0.35);
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(242,232,213,0.07);
+    padding-bottom: 8px;
+  }
+
+  /* ── Compare columns ──────────────────────────────────────────────────── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .compare-panel {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(242,232,213,0.08);
+  }
+  .compare-header {
+    background: rgba(242,232,213,0.05);
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(242,232,213,0.45);
+    border-bottom: 1px solid rgba(242,232,213,0.07);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .compare-header .badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.55rem;
+    font-weight: 600;
+  }
+  .badge-before { background: rgba(197,86,42,0.18); color: var(--terra); }
+  .badge-after  { background: rgba(0,232,122,0.14); color: var(--egreen); }
+
+  /* ── Sidebar mock ─────────────────────────────────────────────────────── */
+  .sidebar-mock {
+    background: var(--forest);
+    padding: 16px 12px;
+    min-height: 420px;
+  }
+  .sidebar-logo {
+    font-family: var(--fraunces);
+    font-size: 1rem;
+    color: var(--parchment);
+    font-weight: 700;
+    padding: 4px 8px 16px;
+    border-bottom: 1px solid rgba(242,232,213,0.08);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sidebar-logo span { color: var(--egreen); }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(242,232,213,0.55);
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-item.active {
+    background: rgba(242,232,213,0.1);
+    color: var(--parchment);
+  }
+  .nav-item .icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+  .nav-item.active .icon { opacity: 1; }
+
+  /* sub-items (before) */
+  .sub-nav {
+    margin-left: 12px;
+    border-left: 1px solid rgba(242,232,213,0.1);
+    padding-left: 8px;
+    margin-bottom: 4px;
+  }
+  .sub-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    color: rgba(242,232,213,0.42);
+    margin-bottom: 1px;
+  }
+  .sub-item.active { background: rgba(59,130,246,0.12); color: #60a5fa; }
+
+  /* collapse toggle */
+  .nav-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(242,232,213,0.55);
+    margin-bottom: 2px;
+    background: rgba(242,232,213,0.08);
+    cursor: pointer;
+    width: 100%;
+  }
+  .nav-toggle .chevron {
+    margin-left: auto;
+    opacity: 0.5;
+  }
+
+  /* ── DELETE tag ─────────────────────────────────────────────────────── */
+  .strike {
+    position: relative;
+    opacity: 0.4;
+  }
+  .strike::after {
+    content: '';
+    position: absolute;
+    left: -4px; right: -4px; top: 50%;
+    height: 1px;
+    background: var(--terra);
+  }
+
+  /* ── Icon SVGs ──────────────────────────────────────────────────────── */
+  svg.icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Full page preview ─────────────────────────────────────────────── */
+  .page-preview {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(242,232,213,0.1);
+    background: var(--parchment);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .preview-layout {
+    display: flex;
+    height: 680px;
+  }
+  .preview-sidebar {
+    width: 200px;
+    background: var(--forest);
+    flex-shrink: 0;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .preview-sidebar-logo {
+    font-family: var(--fraunces);
+    font-size: 0.9rem;
+    color: var(--parchment);
+    font-weight: 700;
+    padding: 4px 8px 14px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(242,232,213,0.08);
+  }
+  .p-nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 7px;
+    font-size: 0.72rem; font-weight: 500;
+    color: rgba(242,232,213,0.48);
+  }
+  .p-nav.active {
+    background: rgba(196,86,42,0.18);
+    color: var(--parchment);
+  }
+  .p-nav.on-show-active {
+    background: rgba(242,232,213,0.12);
+    color: var(--parchment);
+    font-weight: 600;
+    border-left: 2px solid var(--egreen);
+    padding-left: 8px;
+  }
+
+  .preview-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Forest header */
+  .on-show-header {
+    background: var(--forest);
+    padding: 22px 28px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .header-circle1 {
+    position: absolute; top: -50px; right: -50px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: var(--terra);
+    opacity: 0.07;
+    pointer-events: none;
+  }
+  .header-circle2 {
+    position: absolute; bottom: -30px; left: 35%;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: var(--egreen);
+    opacity: 0.04;
+    pointer-events: none;
+  }
+  .header-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--terra);
+    margin-bottom: 7px;
+    position: relative;
+  }
+  .header-h1 {
+    font-family: var(--fraunces);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--parchment);
+    line-height: 1.1;
+    margin-bottom: 5px;
+    position: relative;
+  }
+  .header-subtitle {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: rgba(242,232,213,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .header-actions {
+    position: absolute;
+    top: 22px; right: 28px;
+    display: flex; gap: 8px;
+    z-index: 1;
+  }
+  .btn-ghost-header {
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid rgba(242,232,213,0.18);
+    background: rgba(242,232,213,0.05);
+    color: rgba(242,232,213,0.6);
+    font-size: 0.7rem; font-weight: 500;
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+  .btn-terra {
+    padding: 6px 12px;
+    border-radius: 7px;
+    background: var(--terra);
+    color: #fff;
+    font-size: 0.7rem; font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--mono);
+  }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .kpi-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,232,213,0.1);
+    border-radius: 9px;
+    padding: 10px 12px;
+  }
+  .kpi-val {
+    font-family: var(--fraunces);
+    font-size: 1.4rem;
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .kpi-lbl {
+    font-family: var(--mono);
+    font-size: 0.54rem;
+    color: rgba(242,232,213,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 28px;
+    background: var(--forest);
+    border-top: 1px solid rgba(242,232,213,0.07);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    overflow-x: auto;
+    position: relative;
+  }
+  .tab-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    color: rgba(242,232,213,0.42);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--terra);
+    color: #fff;
+  }
+  .tab-btn.hover-demo {
+    background: rgba(242,232,213,0.07);
+    color: rgba(242,232,213,0.7);
+  }
+
+  /* Content area */
+  .content-area {
+    flex: 1;
+    background: var(--parchment);
+    padding: 20px 28px;
+    overflow-y: auto;
+  }
+
+  /* Dashboard content preview */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .dash-card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid rgba(26,60,40,0.08);
+    box-shadow: 0 1px 4px rgba(26,60,40,0.05);
+  }
+  .dash-card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(26,60,40,0.35);
+    margin-bottom: 6px;
+  }
+  .dash-card-val {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: #1A3C28;
+    line-height: 1;
+  }
+  .dash-card-sub {
+    font-size: 0.68rem;
+    color: rgba(26,60,40,0.4);
+    margin-top: 4px;
+  }
+  .content-placeholder {
+    background: rgba(26,60,40,0.04);
+    border-radius: 8px;
+    height: 120px;
+    border: 1px dashed rgba(26,60,40,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: rgba(26,60,40,0.3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Annotation callouts ─────────────────────────────────────────────── */
+  .annotation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 24px;
+  }
+  .annotation {
+    background: rgba(242,232,213,0.04);
+    border: 1px solid rgba(242,232,213,0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .annotation-num {
+    font-family: var(--fraunces);
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--terra);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .annotation-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--parchment);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .annotation-body {
+    font-size: 0.78rem;
+    color: rgba(242,232,213,0.55);
+    line-height: 1.6;
+  }
+  .annotation-body code {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--egreen);
+    background: rgba(0,232,122,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── Migration table ────────────────────────────────────────────────── */
+  table.migration {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    color: rgba(242,232,213,0.7);
+    margin-top: 16px;
+  }
+  table.migration th {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(242,232,213,0.35);
+    border-bottom: 1px solid rgba(242,232,213,0.08);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  table.migration td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(242,232,213,0.05);
+    vertical-align: top;
+  }
+  table.migration tr:hover td { background: rgba(242,232,213,0.03); }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    font-weight: 600;
+  }
+  .pill-del { background: rgba(196,86,42,0.15); color: var(--terra); }
+  .pill-add { background: rgba(0,232,122,0.12); color: var(--egreen); }
+  .pill-chg { background: rgba(245,200,122,0.15); color: var(--gold); }
+
+  /* ── Responsive ─────────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .preview-layout { height: auto; flex-direction: column; }
+    .preview-sidebar { width: 100%; height: 120px; flex-direction: row; flex-wrap: wrap; }
+    .annotation-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width: 1100px; margin: 0 auto;">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <div class="doc-eyebrow">PRIBEC · Agent UX · Design Mockup</div>
+  <div class="doc-title">On Show — Redesign</div>
+  <p style="font-size: 0.85rem; color: rgba(242,232,213,0.5); margin-bottom: 48px; max-width: 640px; line-height: 1.7;">
+    Flattens the collapsible "Open Houses" sidebar sub-menu into a single direct nav item labelled <strong style="color:var(--parchment)">"On Show"</strong>, and moves all 9 sub-sections into horizontal tabs on a new unified page. Header matches My Listings branding.
+  </p>
+
+  <!-- ── Section 1: Sidebar change ─────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">① Sidebar Change — Before vs After</div>
+    <div class="compare-grid">
+
+      <!-- BEFORE -->
+      <div class="compare-panel">
+        <div class="compare-header">
+          <span>Before</span>
+          <span class="badge badge-before">Current</span>
+        </div>
+        <div class="sidebar-mock">
+          <div class="sidebar-logo">P<span>·</span>ribec</div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Agent Dashboard
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+            My Listings
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            My Calendar
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            My Sales
+          </div>
+
+          <!-- Expandable Open Houses -->
+          <div class="nav-toggle">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            <span style="font-size:0.8rem; font-weight:500; color:rgba(242,232,213,0.75);">Open Houses</span>
+            <svg class="icon chevron" style="width:11px;height:11px;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="sub-nav">
+            <div class="sub-item active">
+              <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Dashboard
+            </div>
+            <div class="sub-item">
+              <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Properties
+            </div>
+            <div class="sub-item">
+              <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Open Houses
+            </div>
+            <div class="sub-item">
+              <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Leads
+            </div>
+            <div class="sub-item">
+              <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Marketing
+            </div>
+            <div class="sub-item" style="opacity:0.5;">···</div>
+            <div style="font-family:var(--mono); font-size:0.55rem; color:rgba(196,86,42,0.6); padding: 4px 8px; letter-spacing:0.08em; text-transform:uppercase;">
+              + 4 more items
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div class="compare-panel">
+        <div class="compare-header">
+          <span>After</span>
+          <span class="badge badge-after">Proposed</span>
+        </div>
+        <div class="sidebar-mock">
+          <div class="sidebar-logo">P<span>·</span>ribec</div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Agent Dashboard
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+            My Listings
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            My Calendar
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+            My Sales
+          </div>
+          <!-- Single On Show link — no expander, no sub-nav -->
+          <div class="nav-item active" style="border-left: 2px solid var(--egreen); padding-left: 8px;">
+            <svg class="icon" viewBox="0 0 24 24" style="color: var(--egreen);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            <span style="color:var(--parchment);">On Show</span>
+            <span style="font-family:var(--mono); font-size:0.55rem; background:rgba(0,232,122,0.12); color:var(--egreen); padding: 1px 6px; border-radius:20px; margin-left: auto;">New</span>
+          </div>
+          <div style="margin: 10px 4px 6px; font-family:var(--mono); font-size:0.56rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(242,232,213,0.22);">Other</div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Safety
+          </div>
+          <div class="nav-item">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Analytics
+          </div>
+          <div style="font-family:var(--mono); font-size:0.6rem; color:rgba(0,232,122,0.5); text-align:center; margin-top:12px; padding:8px; background:rgba(0,232,122,0.05); border-radius:6px; border:1px solid rgba(0,232,122,0.1);">
+            No sub-menus — all sections accessible via tabs on the On Show page
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Section 2: Full page preview ──────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">② On Show Page — Full Layout Preview</div>
+    <div class="page-preview">
+      <div class="preview-layout">
+
+        <!-- Sidebar (condensed) -->
+        <div class="preview-sidebar">
+          <div class="preview-sidebar-logo">P·ribec</div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Agent Dashboard
+          </div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+            My Listings
+          </div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            My Calendar
+          </div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            My Sales
+          </div>
+          <div class="p-nav on-show-active">
+            <svg class="icon" style="width:13px;height:13px; color:var(--egreen);" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            On Show
+          </div>
+          <div class="p-nav" style="margin-top:8px;">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Safety
+          </div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Analytics
+          </div>
+          <div class="p-nav">
+            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83"/></svg>
+            AI Intelligence
+          </div>
+        </div>
+
+        <!-- Main content area -->
+        <div class="preview-main">
+
+          <!-- Forest header -->
+          <div class="on-show-header">
+            <div class="header-circle1"></div>
+            <div class="header-circle2"></div>
+            <div class="header-actions">
+              <button class="btn-ghost-header">Export</button>
+              <button class="btn-terra">+ New On Show</button>
+            </div>
+            <div class="header-eyebrow">Agent Cockpit › On Show Headquarters</div>
+            <h1 class="header-h1">On Show</h1>
+            <p class="header-subtitle">24 active properties · 8 events this week · 142 leads captured</p>
+            <!-- KPI strip -->
+            <div class="kpi-strip">
+              <div class="kpi-card">
+                <div class="kpi-val" style="color:var(--egreen);">24</div>
+                <div class="kpi-lbl">Active Properties</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-val" style="color:var(--parchment);">8</div>
+                <div class="kpi-lbl">Events This Week</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-val" style="color:var(--gold);">142</div>
+                <div class="kpi-lbl">Leads Captured</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-val" style="color:var(--parchment);">3</div>
+                <div class="kpi-lbl">Active Workflows</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-val" style="color:var(--amber);">12</div>
+                <div class="kpi-lbl">Pending Tasks</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab bar -->
+          <div class="tab-bar">
+            <button class="tab-btn active">Dashboard</button>
+            <button class="tab-btn hover-demo">Properties</button>
+            <button class="tab-btn">On Show</button>
+            <button class="tab-btn">Leads</button>
+            <button class="tab-btn">Marketing</button>
+            <button class="tab-btn">Workflows</button>
+            <button class="tab-btn">Tasks</button>
+            <button class="tab-btn">Analytics</button>
+            <button class="tab-btn">Settings</button>
+          </div>
+
+          <!-- Dashboard tab content -->
+          <div class="content-area">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:0.58rem; text-transform:uppercase; letter-spacing:0.08em; color:rgba(26,60,40,0.35); margin-bottom:12px;">Dashboard Overview</div>
+            <div class="dashboard-grid">
+              <div class="dash-card">
+                <div class="dash-card-label">Upcoming Events</div>
+                <div class="dash-card-val">8</div>
+                <div class="dash-card-sub">Next: Sat 12 Apr · 10:00</div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">New Leads Today</div>
+                <div class="dash-card-val" style="color:var(--terra);">14</div>
+                <div class="dash-card-sub">↑ 3 from yesterday</div>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-label">Conversion Rate</div>
+                <div class="dash-card-val">38%</div>
+                <div class="dash-card-sub">Lead → Viewing</div>
+              </div>
+            </div>
+            <div class="content-placeholder">Events Timeline / Calendar Strip</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+              <div class="content-placeholder" style="height:80px;">Recent Leads</div>
+              <div class="content-placeholder" style="height:80px;">Active Tasks</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 3: Tab breakdown ──────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">③ Tab Mapping — Old Routes → New Tabs</div>
+    <table class="migration">
+      <thead>
+        <tr>
+          <th>Old Sub-Nav Label</th>
+          <th>Old Route</th>
+          <th>New Tab Label</th>
+          <th>New URL</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dashboard</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/dashboard</td>
+          <td>Dashboard</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=dashboard</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Properties</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/properties</td>
+          <td>Properties</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=properties</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Open Houses</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/events</td>
+          <td style="color:var(--egreen);">On Show</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=on-show</td>
+          <td><span class="pill pill-chg">Rename + Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Leads</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/leads</td>
+          <td>Leads</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=leads</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Marketing</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/marketing</td>
+          <td>Marketing</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=marketing</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Workflows</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/workflows</td>
+          <td>Workflows</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=workflows</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Tasks</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/tasks</td>
+          <td>Tasks</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=tasks</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Analytics</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/analytics</td>
+          <td>Analytics</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=analytics</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td>Settings</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/open-houses/settings</td>
+          <td>Settings</td>
+          <td style="font-family:var(--mono); font-size:0.72rem;">/app/on-show?tab=settings</td>
+          <td><span class="pill pill-chg">Redirect</span></td>
+        </tr>
+        <tr>
+          <td colspan="2" style="color:rgba(242,232,213,0.3); font-style:italic;">Collapsible "Open Houses" sidebar group</td>
+          <td colspan="2" style="color:rgba(242,232,213,0.3); font-style:italic;">Single flat "On Show" nav item</td>
+          <td><span class="pill pill-del">Remove group</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Section 4: Annotations ─────────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">④ Design Decisions</div>
+    <div class="annotation-grid">
+      <div class="annotation">
+        <div class="annotation-num">1</div>
+        <div class="annotation-title">Query-param tabs</div>
+        <div class="annotation-body">
+          Tab state stored in URL as <code>?tab=dashboard</code> so deep-links work perfectly and browser back/forward navigation moves between tabs without page reload.
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="annotation-num">2</div>
+        <div class="annotation-title">Old routes → redirects</div>
+        <div class="annotation-body">
+          All 9 <code>/app/open-houses/*</code> pages become <code>redirect()</code> calls pointing to <code>/app/on-show?tab=*</code>. Existing external links and bookmarks continue to work.
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="annotation-num">3</div>
+        <div class="annotation-title">Forest header parity</div>
+        <div class="annotation-body">
+          Same forest header block, decorative circles, IBM Plex Mono eyebrow, Fraunces h1, and parchment subtitle as My Listings and the newly redesigned My Calendar.
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="annotation-num">4</div>
+        <div class="annotation-title">5-cell KPI strip</div>
+        <div class="annotation-body">
+          Active Properties (egreen), Events This Week (parchment), Leads Captured (gold), Active Workflows (parchment), Pending Tasks (amber) — all computed from existing view data.
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="annotation-num">5</div>
+        <div class="annotation-title">Sidebar cleanup</div>
+        <div class="annotation-body">
+          Remove <code>showOpenHouses</code> state, <code>openHousesNavigation</code> array, and the toggle button. Replace with a single flat <code>Link</code> to <code>/app/on-show</code>.
+        </div>
+      </div>
+      <div class="annotation">
+        <div class="annotation-num">6</div>
+        <div class="annotation-title">"Open Houses" → "On Show"</div>
+        <div class="annotation-body">
+          The tab that was "Open Houses" inside the events section becomes "On Show". The tab within <code>OHOpenHousesView</code> changes its label — any reference in that view saying "Open Houses" becomes "On Show".
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 5: Files to change ─────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">⑤ File Inventory</div>
+    <table class="migration">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Change</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/on-show/page.tsx</td>
+          <td>CREATE — new unified hub page with forest header + 9 tabs</td>
+          <td><span class="pill pill-add">Create</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/page.tsx</td>
+          <td>Replace redirect target from <code>dashboard</code> → <code>/app/on-show</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/dashboard/page.tsx</td>
+          <td>Replace <code>DashboardView</code> render with <code>redirect('/app/on-show?tab=dashboard')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/events/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=on-show')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/properties/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=properties')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/leads/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=leads')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/marketing/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=marketing')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/workflows/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=workflows')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/tasks/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=tasks')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/analytics/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=analytics')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/app/app/open-houses/settings/page.tsx</td>
+          <td>Replace with <code>redirect('/app/on-show?tab=settings')</code></td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/components/AppSidebar.tsx</td>
+          <td>Remove <code>openHousesNavigation</code>, <code>showOpenHouses</code> state, collapsible group; add single "On Show" link (×2 locations in file)</td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--mono); font-size:0.7rem;">apps/web/src/views/open-houses/OHOpenHousesView.tsx</td>
+          <td>Rename any "Open Houses" heading/label text → "On Show"</td>
+          <td><span class="pill pill-chg">Edit</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Approval CTA ──────────────────────────────────────────────────── -->
+  <div style="background: rgba(196,86,42,0.08); border: 1px solid rgba(196,86,42,0.2); border-radius: 12px; padding: 20px 24px; margin-top: 8px;">
+    <div style="font-family:var(--mono); font-size:0.6rem; color:var(--terra); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">Awaiting Approval</div>
+    <div style="font-family:var(--fraunces); font-size:1.1rem; color:var(--parchment); margin-bottom:6px;">Ready for implementation upon approval</div>
+    <div style="font-size:0.82rem; color:rgba(242,232,213,0.5); line-height:1.6;">
+      Approve this mockup and the migration document will be written first, followed by implementation of all file changes listed above.
+      The calendar redesign (already live) and this On Show migration share the same forest-header design language.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

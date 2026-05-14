@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database';
 
 type AuditLogParams = {
-  eventId: string;
+  eventId?: string;
   actorId?: string | null;
   actorRole?: string | null;
+  /** Active company context at the time of the action. */
+  companyId?: string | null;
   action: string;
   resourceType?: string | null;
   resourceId?: string | null;
@@ -20,11 +23,13 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async log(entry: AuditLogParams): Promise<void> {
+    const eventId = entry.eventId ?? randomUUID();
     await this.prisma.$executeRaw`
       INSERT INTO identity.audit_logs (
         event_id,
         actor_id,
         actor_role,
+        company_id,
         action,
         resource_type,
         resource_id,
@@ -33,9 +38,10 @@ export class AuditService {
         user_agent,
         device_metadata
       ) VALUES (
-        ${entry.eventId},
+        ${eventId},
         ${entry.actorId ?? null}::uuid,
         ${entry.actorRole ?? null},
+        ${entry.companyId ?? null}::uuid,
         ${entry.action},
         ${entry.resourceType ?? null},
         ${entry.resourceId ?? null}::uuid,
@@ -50,6 +56,7 @@ export class AuditService {
   async findAdminLogs(filters: {
     actorId?: string;
     resourceType?: string;
+    action?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -63,6 +70,10 @@ export class AuditService {
 
     if (filters.resourceType) {
       conditions.push(Prisma.sql`resource_type = ${filters.resourceType}`);
+    }
+
+    if (filters.action) {
+      conditions.push(Prisma.sql`action = ${filters.action}`);
     }
 
     if (filters.from) {
@@ -102,5 +113,32 @@ export class AuditService {
       ORDER BY created_at DESC
       LIMIT ${safeLimit} OFFSET ${offset}
     `;
+  }
+
+  async findByCompany(
+    companyId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<unknown[]> {
+    const safeLimit = Math.min(limit, 200);
+    return this.prisma.$queryRaw`
+      SELECT al.id, al.actor_id, al.actor_role, al.action, al.resource_type, al.resource_id, al.payload, al.created_at,
+             u.first_name, u.last_name, u.email
+      FROM identity.audit_logs al
+      LEFT JOIN identity.users u ON u.id = al.actor_id
+      WHERE al.company_id = ${companyId}::uuid
+      ORDER BY al.created_at DESC
+      LIMIT ${safeLimit} OFFSET ${offset}
+    `;
+  }
+
+  async countTodayByCompany(companyId: string): Promise<number> {
+    const rows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+      SELECT COUNT(*) AS cnt
+      FROM identity.audit_logs
+      WHERE company_id = ${companyId}::uuid
+        AND created_at >= CURRENT_DATE::timestamptz
+    `;
+    return Number(rows[0]?.cnt ?? 0);
   }
 }

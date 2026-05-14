@@ -20,10 +20,23 @@ export class SentryExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
+    // For HttpExceptions (including ValidationPipe 400s), getResponse() returns
+    // the full error object with the message array from class-validator.
+    const exceptionResponse =
       exception instanceof HttpException
-        ? exception.message
-        : 'Internal server error';
+        ? (exception.getResponse() as
+            | string
+            | { message?: string | string[]; error?: string })
+        : null;
+
+    const message = (() => {
+      if (!exceptionResponse) return 'Internal server error';
+      if (typeof exceptionResponse === 'string') return exceptionResponse;
+      if (Array.isArray(exceptionResponse.message)) {
+        return exceptionResponse.message.join('; ');
+      }
+      return exceptionResponse.message ?? (exception instanceof HttpException ? exception.message : 'Internal server error');
+    })();
 
     // Only report 5xx errors to Sentry
     if (status >= 500) {

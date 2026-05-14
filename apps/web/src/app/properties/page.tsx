@@ -2,95 +2,6 @@ import Link from 'next/link';
 import Navbar from '@/components/property/Navbar';
 import PropertyCard, { PropertyCardData } from '@/components/property/PropertyCard';
 
-const MOCK_LISTINGS: PropertyCardData[] = [
-  {
-    id: '1',
-    title: '4-Bed Executive Home, Sandton',
-    price: 4800000,
-    currency: 'ZAR',
-    location: 'Sandton, Johannesburg',
-    bedrooms: 4,
-    bathrooms: 3,
-    sqm: 280,
-    propertyType: 'Residential',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 3,
-    agentName: 'Sarah Mokoena',
-    agentTier: 'gold',
-  },
-  {
-    id: '2',
-    title: 'Prime Commercial Land, Accra',
-    price: 620000,
-    currency: 'USD',
-    location: 'East Legon, Accra',
-    sqm: 1200,
-    propertyType: 'Land',
-    verified: true,
-    escrowReady: true,
-    pipelineStage: 1,
-    agentName: 'Kwame Asante',
-    agentTier: 'gold',
-  },
-  {
-    id: '3',
-    title: 'Off-Plan Luxury Apartment',
-    price: 2100000,
-    currency: 'ZAR',
-    location: 'Umhlanga, Durban',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 180,
-    propertyType: 'Off-Plan',
-    verified: true,
-    pipelineStage: 5,
-    agentName: 'Thabo Dlamini',
-    agentTier: 'silver',
-  },
-  {
-    id: '4',
-    title: '3-Bed Family Home',
-    price: 1750000,
-    currency: 'ZAR',
-    location: 'Midrand, Gauteng',
-    bedrooms: 3,
-    bathrooms: 2,
-    sqm: 210,
-    propertyType: 'Residential',
-    verified: true,
-    pipelineStage: 2,
-    agentName: 'Linda Sithole',
-    agentTier: 'silver',
-  },
-  {
-    id: '5',
-    title: 'Commercial Office Block',
-    price: 8500000,
-    currency: 'ZAR',
-    location: 'Rosebank, Johannesburg',
-    sqm: 950,
-    propertyType: 'Commercial',
-    verified: true,
-    escrowReady: true,
-    agentName: 'Bongani Ndlovu',
-    agentTier: 'gold',
-  },
-  {
-    id: '6',
-    title: 'Agricultural Land, Limpopo',
-    price: 980000,
-    currency: 'ZAR',
-    location: 'Tzaneen, Limpopo',
-    sqm: 50000,
-    propertyType: 'Agricultural',
-    verified: false,
-    fraudAlert: true,
-    agentName: 'Sipho Mahlangu',
-    agentTier: 'bronze',
-  },
-];
-
 const TRUST_FEATURES = [
   {
     icon: '🛡',
@@ -114,12 +25,13 @@ const TRUST_FEATURES = [
   },
 ];
 
-const AGENTS = [
-  { name: 'Sarah Mokoena', location: 'Johannesburg', tier: 'gold', deals: 142, rating: 4.9 },
-  { name: 'Kwame Asante', location: 'Accra, Ghana', tier: 'gold', deals: 98, rating: 4.8 },
-  { name: 'Fatima Al-Hassan', location: 'Lagos, Nigeria', tier: 'gold', deals: 76, rating: 4.9 },
-  { name: 'Thabo Dlamini', location: 'Durban', tier: 'silver', deals: 54, rating: 4.7 },
-];
+type FeaturedAgent = {
+  id: string;
+  fullName: string;
+  location: string;
+  tier: 'gold' | 'silver' | 'bronze';
+  deals: number;
+};
 
 const TIER_COLORS: Record<string, string> = {
   gold: 'bg-[#F5A623] text-[#0A1628]',
@@ -127,7 +39,115 @@ const TIER_COLORS: Record<string, string> = {
   bronze: 'bg-amber-700 text-white',
 };
 
-export default function PropertyMarketplace() {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001/api/v1';
+
+type ApiPropertyListing = {
+  id: string;
+  title: string;
+  price: string;
+  currency: string;
+  property_type: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqm?: string | null;
+  verification_status: string;
+  company_is_system?: boolean | null;
+  company_name?: string | null;
+  company_logo_url?: string | null;
+  company_brand_color?: string | null;
+  company_status?: string | null;
+  location?: {
+    city?: string | null;
+    region?: string | null;
+  } | null;
+  media?: Array<{
+    url: string;
+    is_primary: boolean;
+  }>;
+};
+
+type ApiSearchResponse = {
+  data: ApiPropertyListing[];
+};
+
+async function fetchFeaturedListings(): Promise<PropertyCardData[]> {
+  try {
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '6',
+      sort: 'newest',
+      verification_status: 'verified',
+    });
+
+    const response = await fetch(`${API_BASE_URL}/properties?${params.toString()}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as ApiSearchResponse;
+
+    if (!payload.data || payload.data.length === 0) {
+      return [];
+    }
+
+    return payload.data.map((item) => {
+      const city = item.location?.city ?? '';
+      const region = item.location?.region ?? '';
+      const location = [city, region].filter(Boolean).join(', ') || 'Location unavailable';
+      const imageUrl = item.media?.find((media) => media.is_primary)?.url;
+      const parsedPrice = Number(item.price);
+
+      return {
+        id: item.id,
+        title: item.title,
+        price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+        currency: item.currency,
+        location,
+        bedrooms: item.bedrooms ?? undefined,
+        bathrooms: item.bathrooms ?? undefined,
+        sqm: item.area_sqm ? Number(item.area_sqm) : undefined,
+        propertyType: item.property_type.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()),
+        verified: item.verification_status === 'verified',
+        fraudAlert: item.verification_status === 'flagged',
+        underInvestigation: item.company_status === 'under_investigation',
+        imageUrl,
+        isPrivateListing: item.company_is_system !== false,
+        companyLogoUrl: item.company_logo_url,
+        companyName: item.company_name,
+        companyBrandColor: item.company_brand_color,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchFeaturedAgents(): Promise<FeaturedAgent[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/properties/agents/featured?limit=4`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return (await response.json()) as FeaturedAgent[];
+  } catch {
+    return [];
+  }
+}
+
+export default async function PropertyMarketplace() {
+  const [featuredListings, featuredAgents] = await Promise.all([
+    fetchFeaturedListings(),
+    fetchFeaturedAgents(),
+  ]);
+
   return (
     <div className="min-h-screen bg-white font-manrope">
       <Navbar />
@@ -149,10 +169,7 @@ export default function PropertyMarketplace() {
 
       {/* ── HERO ── */}
       <section className="bg-[#0A1628] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }} />
+        <div className="absolute inset-0 opacity-5 hero-grid-pattern" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center max-w-4xl mx-auto">
@@ -185,17 +202,21 @@ export default function PropertyMarketplace() {
               </div>
               <div className="p-4 flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 focus-within:border-[#F5A623] focus-within:ring-1 focus-within:ring-[#F5A623] transition">
-                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <input className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400 bg-transparent" placeholder="City, area or neighbourhood" />
                 </div>
-                <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 min-w-[160px] focus-within:border-[#F5A623] transition">
-                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 min-w-40 focus-within:border-[#F5A623] transition">
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <select className="flex-1 outline-none text-sm text-gray-700 bg-transparent">
+                  <select
+                    className="flex-1 outline-none text-sm text-gray-700 bg-transparent"
+                    aria-label="Price range"
+                    title="Price range"
+                  >
                     <option>Any Price</option>
                     <option>Under R1M</option>
                     <option>R1M – R3M</option>
@@ -277,10 +298,15 @@ export default function PropertyMarketplace() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_LISTINGS.map((listing) => (
-              <PropertyCard key={listing.id} property={listing} />
+            {featuredListings.map((listing) => (
+              <PropertyCard key={listing.id} property={listing} refParam="/properties" />
             ))}
           </div>
+          {featuredListings.length === 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+              No featured listings available from the database yet.
+            </div>
+          )}
           <div className="mt-10 text-center">
             <Link
               href="/properties/search"
@@ -308,21 +334,19 @@ export default function PropertyMarketplace() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {AGENTS.map((agent) => (
-              <div key={agent.name} className="bg-[#0F2040] border border-white/10 rounded-2xl p-5 hover:border-[#F5A623]/40 transition-colors">
+            {featuredAgents.map((agent) => (
+              <div key={agent.id} className="bg-[#0F2040] border border-white/10 rounded-2xl p-5 hover:border-[#F5A623]/40 transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-full bg-[#F5A623] flex items-center justify-center text-[#0A1628] text-lg font-bold">
-                    {agent.name.charAt(0)}
+                    {agent.fullName.charAt(0)}
                   </div>
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${TIER_COLORS[agent.tier]}`}>
                     {agent.tier.charAt(0).toUpperCase() + agent.tier.slice(1)}
                   </span>
                 </div>
-                <h3 className="text-white font-bold">{agent.name}</h3>
+                <h3 className="text-white font-bold">{agent.fullName}</h3>
                 <p className="text-white/50 text-xs mt-0.5">{agent.location}</p>
                 <div className="flex items-center gap-3 mt-3 text-xs text-white/60">
-                  <span>⭐ {agent.rating}</span>
-                  <span>|</span>
                   <span>{agent.deals} deals</span>
                 </div>
                 <Link
@@ -334,6 +358,11 @@ export default function PropertyMarketplace() {
               </div>
             ))}
           </div>
+          {featuredAgents.length === 0 && (
+            <div className="rounded-xl border border-white/15 bg-[#0F2040] p-6 text-center text-sm text-white/70">
+              No featured agents available from the database yet.
+            </div>
+          )}
         </div>
       </section>
 
@@ -345,7 +374,7 @@ export default function PropertyMarketplace() {
             Join 12,000+ buyers and investors using PRIBEC to make fraud-free property transactions.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/register" className="bg-[#0A1628] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#0F2040] transition-colors">
+            <Link href="/register" className="bg-[#0A1628] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#0F2040] transition-colors">
               Create Free Account
             </Link>
             <Link href="/properties/search" className="bg-white text-[#0A1628] font-bold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors">

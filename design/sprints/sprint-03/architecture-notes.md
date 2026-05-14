@@ -59,6 +59,14 @@ private async assertAgentOwns(propertyId, agentId, agentRole): Promise<void> {
 }
 ```
 
+### Actor Role Resolution (multi-role safe)
+Sprint-03 gap closure added a dedicated role resolver to avoid relying on `roles[0]` ordering.
+
+- Source: `apps/api/src/property/property.constants.ts`
+- Precedence: `admin` → `agent` → fallback role
+
+This is now used in property controllers to ensure admin override remains correct even when JWT role arrays are ordered differently.
+
 ### Verification State Machine
 States: `unverified` → `pending` → `verified` | `flagged`
 
@@ -147,12 +155,39 @@ Sprint 03 adds no new environment variables. Database/S3/cache config inherited 
 | Buyer can save, inquire, schedule viewing | ✅ | Save + inquiry endpoints |
 | Fraud report visible in admin dashboard | ✅ | GET /admin/fraud-reports |
 | All property CRUD audited | ✅ | PropertyAuditService on every mutation |
+| Listing page renders with SSR metadata + structured data | ✅ | Implemented in `apps/web/src/app/properties/[id]/page.tsx` |
+
+---
+
+## 2026-02-23 Gap Closure Addendum
+
+### Web integration updates
+- `apps/web/src/app/properties/search/page.tsx`
+  - Replaced mock-backed result flow with live `propertiesApi.search()` calls.
+  - Added URL query synchronization for `city`, `verified`, `sort`, and `page`.
+  - Added loading/empty/error states and API-driven pagination.
+
+- `apps/web/src/app/properties/[id]/page.tsx`
+  - Added live server-side property fetch (`/api/v1/properties/:id`) with graceful fallback.
+  - Added route-level SEO metadata + Open Graph + canonical + JSON-LD (`RealEstateListing`).
+
+- `apps/web/src/app/properties/page.tsx`
+  - Featured listings now load from live property search endpoint (verified, newest) with fallback.
+
+- `apps/web/src/components/property/PropertyActions.tsx`
+  - Added authenticated buyer actions: save listing, submit inquiry, submit fraud report.
+
+- `apps/web/src/lib/api-client.ts`
+  - Added typed Sprint-03 `propertiesApi` surface for search/detail/create/update/delete/save/unsave/inquiry/verification/fraud actions.
+
+### Validation snapshot
+- Web type-check: `cd apps/web && npx tsc --noEmit` ✅
+- Property module targeted tests: 5 suites / 50 tests passing ✅
 
 ---
 
 ## Known Limitations / Out of Scope (MVP)
 
-- **SSR Listing Pages**: Next.js SSR pages with meta tags / Open Graph / schema.org structured data are frontend work (not implemented in this PR — backend API is ready)
 - **Elasticsearch indexing**: Search currently uses PostgreSQL full-table scan with indexes. Elasticsearch integration deferred to Sprint 07
 - **RabbitMQ events**: `property.listed` event not yet published (wired in Sprint 07)
 - **EXIF validation**: Geo-tagged photo EXIF validation for construction progress applies to Sprint 09 (Monitoring), not Sprint 03

@@ -4,7 +4,7 @@ import { CheckCircle, Clock, XCircle, AlertCircle, User } from "lucide-react";
 interface TimelineItem {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   timestamp: string;
   type: "success" | "pending" | "error" | "info";
   user?: string;
@@ -43,35 +43,37 @@ const typeConfig = {
 
 export function ActivityTimeline({ items }: ActivityTimelineProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {items.map((item, index) => {
         const config = typeConfig[item.type];
         const Icon = config.icon;
         const isLast = index === items.length - 1;
 
         return (
-          <div key={item.id} className="relative flex gap-4">
+          <div key={item.id} className="relative flex gap-3">
             {/* Timeline Line */}
             {!isLast && (
               <div
-                className={`absolute left-5 top-10 w-0.5 h-full ${config.lineColor}`}
+                className={`absolute left-5 top-9 w-0.5 h-full ${config.lineColor}`}
               ></div>
             )}
 
             {/* Icon */}
             <div
-              className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}
+              className={`relative z-10 shrink-0 w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}
             >
               <Icon className={`w-5 h-5 ${config.color}`} />
             </div>
 
             {/* Content */}
-            <div className="flex-1 pb-8">
+            <div className="flex-1 pb-4">
               <div className="flex items-start justify-between mb-1">
                 <h4 className="font-semibold text-gray-900">{item.title}</h4>
                 <span className="text-xs text-gray-500">{item.timestamp}</span>
               </div>
-              <p className="text-sm text-gray-600 mb-1">{item.description}</p>
+              {item.description && (
+                <p className="text-sm text-gray-600 mb-1">{item.description}</p>
+              )}
               {item.user && (
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <User className="w-3 h-3" />

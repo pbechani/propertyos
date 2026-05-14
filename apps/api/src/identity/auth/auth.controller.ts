@@ -1,21 +1,25 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto, RefreshTokenDto } from './dto/token.dto';
 import {
+  ChangePasswordDto,
   ForgotPasswordDto,
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto/password.dto';
 import { OAuthLoginDto } from './dto/oauth.dto';
+import { SelectContextDto } from './dto/context.dto';
 import { JwtAuthGuard } from '../rbac/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
 import { Permissions } from '../rbac/permissions.decorator';
 
 type RequestUser = {
   sub: string;
+  email?: string;
   roles?: string[];
 };
 
@@ -26,6 +30,7 @@ type RequestMeta = {
 };
 
 @ApiTags('Auth')
+@Throttle({ default: { limit: 10, ttl: 60000 } }) // strict: 10 req/min for login, register, refresh
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -101,12 +106,47 @@ export class AuthController {
     return { success: true };
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
+  @Post('change-password')
+  async changePassword(
+    @Req() req: RequestMeta,
+    @Body() body: ChangePasswordDto,
+  ): Promise<{ success: boolean }> {
+    await this.authService.changePassword(
+      req.user!.sub,
+      body.currentPassword,
+      body.newPassword,
+      {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] ?? null,
+      },
+    );
+
+    return { success: true };
+  }
+
   @Post('verify-email')
   async verifyEmail(
     @Req() req: RequestMeta,
     @Body() body: VerifyEmailDto,
   ): Promise<{ success: boolean }> {
     await this.authService.verifyEmail(body.token, {
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+    return { success: true };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
+  @Post('resend-verification-email')
+  async resendVerificationEmail(
+    @Req() req: RequestMeta,
+  ): Promise<{ success: boolean }> {
+    await this.authService.resendVerificationEmail(req.user!.sub, {
       ip: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });
@@ -144,5 +184,31 @@ export class AuthController {
       ip: req.ip,
       userAgent: req.headers['user-agent'] ?? null,
     });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions({ resource: 'users', action: 'self' })
+  @Get('contexts')
+  getContexts(@Req() req: RequestMeta): Promise<unknown> {
+    return this.authService.getUserContexts(req.user!.sub);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('contexts/select')
+  selectContext(
+    @Req() req: RequestMeta,
+    @Body() body: SelectContextDto,
+  ): Promise<unknown> {
+    return this.authService.selectContext(
+      req.user!.sub,
+      req.user!.email!,
+      body.company_id,
+      {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] ?? null,
+      },
+    );
   }
 }

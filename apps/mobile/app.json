@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "jsEngine": "hermes",
+    "name": "PRIBEC",
+    "slug": "pribec",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pribec.app"
+    },
+    "android": {
+      "jsEngine": "jsc",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.pribec.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        { "cameraPermission": "Allow PRIBEC to access your camera for progress photos." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "Allow PRIBEC to access your photos for project documentation." }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow PRIBEC to access location for geo-tagged progress photos."
+        }
+      ]
+    ]
+  }
+}

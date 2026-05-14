@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Calendar — Rebrand Approaches</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Brand Design Tokens ───────────────────────────── */
+    :root {
+      --parchment: #F2E8D5;
+      --cream:     #EAD9C4;
+      --forest:    #1A3C28;
+      --forest-l:  #2D5A40;
+      --terra:     #C4562A;
+      --carbon:    #0C0D10;
+      --carbon-s:  #1A1B1F;
+      --carbon-m:  #2A2B30;
+      --egreen:    #00E87A;
+      --amber:     #B89040;
+      --font-d:    'Fraunces', Georgia, serif;
+      --font-b:    'Plus Jakarta Sans', sans-serif;
+      --font-m:    'IBM Plex Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #e8e0d4; font-family: var(--font-b); color: #1a1a1a; }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .page-wrapper { max-width: 1340px; margin: 0 auto; padding: 40px 24px; }
+    .page-title {
+      font-family: var(--font-d);
+      font-size: 2.25rem;
+      color: var(--forest);
+      margin-bottom: 8px;
+      font-weight: 400;
+    }
+    .page-sub {
+      font-size: 0.78rem;
+      color: #5a5a50;
+      margin-bottom: 48px;
+      font-family: var(--font-m);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .approach-label {
+      display: inline-block;
+      font-family: var(--font-m);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+    }
+    .approach-title {
+      font-family: var(--font-d);
+      font-size: 1.6rem;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    .approach-desc {
+      font-size: 0.82rem;
+      color: #5a5a50;
+      margin-bottom: 24px;
+      max-width: 560px;
+      line-height: 1.65;
+    }
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      margin: 64px 0;
+    }
+    .recommend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-m);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--carbon);
+      background: var(--egreen);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 12px;
+      vertical-align: middle;
+    }
+
+    /* ── Shared Shell ──────────────────────────────────── */
+    .preview-shell {
+      position: relative;
+      padding-left: 52px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 60px rgba(0,0,0,0.14);
+      min-height: 580px;
+      font-size: 12px;
+    }
+    .sidebar {
+      width: 52px;
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: var(--forest);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 0;
+      gap: 9px;
+    }
+    .sidebar-logo {
+      width: 28px; height: 28px;
+      background: var(--egreen);
+      border-radius: 7px;
+      margin-bottom: 6px;
+    }
+    .s-dot { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.07); }
+    .s-dot.active { background: rgba(255,255,255,0.20); }
+    .s-dot.active-g { background: rgba(0,232,122,0.20); border: 1px solid rgba(0,232,122,0.40); }
+
+    /* ── Calendar Grid Shared ──────────────────────────── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .cal-day-header {
+      text-align: center;
+      font-family: var(--font-m);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 0 6px;
+    }
+    .cal-cell {
+      min-height: 72px;
+      padding: 5px 5px 4px;
+      position: relative;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      border-right: 1px solid rgba(0,0,0,0.06);
+    }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-num {
+      display: inline-flex;
+      width: 22px; height: 22px;
+      align-items: center; justify-content: center;
+      font-size: 11px;
+      border-radius: 50%;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+    .cal-num.today-num {
+      background: var(--terra);
+      color: #fff;
+      font-weight: 600;
+    }
+    .event-pill {
+      display: block;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+    .faded { opacity: 0.38; }
+
+    /* ── APPROACH A: Warm Ledger ────────────────────────── */
+    .a-wrap { background: var(--parchment); }
+    .a-topbar {
+      background: var(--parchment);
+      border-bottom: 1px solid rgba(26,60,40,0.12);
+      padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .a-topbar-title {
+      font-family: var(--font-d);
+      font-size: 1.55rem;
+      color: var(--forest);
+      font-weight: 400;
+    }
+    .a-topbar-sub {
+      font-family: var(--font-m);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      color: rgba(26,60,40,0.45);
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+    .a-nav-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px;
+      background: var(--parchment);
+      border-bottom: 1px solid rgba(26,60,40,0.08);
+    }
+    .a-nav-month {
+      font-family: var(--font-d);
+      font-size: 1.15rem;
+      color: var(--forest);
+      font-weight: 300;
+    }
+    .a-nav-arrows { display: flex; gap: 6px; }
+    .a-arrow-btn {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 7px;
+      background: rgba(26,60,40,0.07);
+      font-size: 12px;
+      color: var(--forest);
+    }
+    .a-view-toggle { display: flex; gap: 4px; }
+    .a-vt-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(26,60,40,0.45);
+    }
+    .a-vt-btn.on {
+      background: var(--forest);
+      color: var(--egreen);
+    }
+    .a-new-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      background: var(--forest);
+      color: var(--egreen);
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .a-body { display: flex; }
+    .a-calendar-area { flex: 1; padding: 0 0 0 0; }
+    .a-day-header { color: rgba(26,60,40,0.45); border-bottom: 1px solid rgba(26,60,40,0.08); }
+    .a-cell {
+      background: var(--parchment);
+      border-color: rgba(26,60,40,0.07);
+    }
+    .a-cell.other-month { background: rgba(234,217,196,0.45); }
+    .a-cell-num { color: var(--forest); }
+    .a-today-num { background: var(--terra) !important; color: #fff !important; }
+    .a-pill-viewing { background: rgba(26,60,40,0.10); color: var(--forest); }
+    .a-pill-open { background: rgba(196,86,42,0.12); color: var(--terra); }
+    .a-pill-meeting { background: rgba(184,144,64,0.15); color: var(--amber); }
+    .a-sidebar-panel {
+      width: 210px;
+      border-left: 1px solid rgba(26,60,40,0.1);
+      padding: 14px 14px;
+      background: rgba(234,217,196,0.45);
+    }
+    .a-sp-title {
+      font-family: var(--font-d);
+      font-size: 0.95rem;
+      color: var(--forest);
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+    .a-event-card {
+      background: var(--parchment);
+      border: 1px solid rgba(26,60,40,0.1);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+    }
+    .a-ec-time { font-family: var(--font-m); font-size: 9px; color: rgba(26,60,40,0.5); margin-bottom: 3px; }
+    .a-ec-name { font-size: 11px; font-weight: 600; color: var(--forest); margin-bottom: 2px; }
+    .a-ec-prop { font-size: 10px; color: rgba(26,60,40,0.55); }
+    .a-legend { margin-top: 14px; }
+    .a-legend-title { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(26,60,40,0.4); margin-bottom: 7px; }
+    .a-legend-item { display: flex; align-items: center; gap: 7px; font-size: 10px; color: rgba(26,60,40,0.6); margin-bottom: 5px; }
+    .a-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── APPROACH B: Command Dark Header ────────────────── */
+    .b-wrap { background: var(--parchment); }
+    .b-header {
+      background: var(--forest);
+      padding: 14px 20px 0;
+    }
+    .b-header-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding-bottom: 14px;
+    }
+    .b-title {
+      font-family: var(--font-d);
+      font-size: 1.55rem;
+      color: #fff;
+      font-weight: 300;
+    }
+    .b-sub { font-family: var(--font-m); font-size: 9px; color: rgba(255,255,255,0.4); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+    .b-new-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 13px;
+      background: var(--egreen);
+      color: var(--carbon);
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .b-stats-row {
+      display: flex; gap: 2px;
+      padding-bottom: 0;
+    }
+    .b-stat {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px 8px 0 0;
+      padding: 8px 12px;
+      text-align: center;
+    }
+    .b-stat-num {
+      font-family: var(--font-d);
+      font-size: 1.4rem;
+      color: #fff;
+      font-weight: 300;
+      line-height: 1;
+    }
+    .b-stat-label { font-family: var(--font-m); font-size: 8px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px; }
+    .b-stat-num.eg { color: var(--egreen); }
+    .b-nav-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px;
+      background: rgba(26,60,40,0.04);
+      border-bottom: 1px solid rgba(26,60,40,0.09);
+    }
+    .b-month { font-family: var(--font-d); font-size: 1.1rem; color: var(--forest); font-weight: 400; }
+    .b-nav-arrows { display: flex; gap: 5px; }
+    .b-arr { width: 26px; height: 26px; border-radius: 7px; background: rgba(26,60,40,0.08); display: flex; align-items: center; justify-content: center; font-size: 11px;color: var(--forest); }
+    .b-view-toggle { display: flex; gap: 3px; }
+    .b-vt { padding: 4px 9px; border-radius: 6px; font-size: 10px; color: rgba(26,60,40,0.45); }
+    .b-vt.on { background: var(--forest); color: var(--egreen); }
+    .b-day-h { color: rgba(26,60,40,0.4); border-bottom: 1px solid rgba(26,60,40,0.07); background: var(--parchment); }
+    .b-cell { background: var(--parchment); border-color: rgba(26,60,40,0.07); }
+    .b-cell.other-month { background: rgba(234,217,196,0.4); }
+    .b-cell-num { color: var(--forest); }
+    .b-pill-viewing { background: rgba(26,60,40,0.10); color: var(--forest); }
+    .b-pill-open { background: rgba(196,86,42,0.12); color: var(--terra); }
+    .b-pill-meeting { background: rgba(184,144,64,0.13); color: var(--amber); }
+    .b-body { display: flex; }
+    .b-cal { flex: 1; }
+    .b-sidebar {
+      width: 200px;
+      background: var(--carbon-s);
+      padding: 14px;
+    }
+    .b-sp-title { font-family: var(--font-d); font-size: 0.9rem; color: #fff; font-weight: 300; margin-bottom: 10px; }
+    .b-card { background: var(--carbon-m); border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; border-left: 3px solid; }
+    .b-card.viewing { border-color: var(--egreen); }
+    .b-card.open { border-color: var(--terra); }
+    .b-card.meeting { border-color: var(--amber); }
+    .b-c-time { font-family: var(--font-m); font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+    .b-c-name { font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 1px; }
+    .b-c-prop { font-size: 10px; color: rgba(255,255,255,0.4); }
+    .b-legend { margin-top: 14px; }
+    .b-leg-title { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 7px; }
+    .b-leg-item { display: flex; align-items: center; gap: 7px; font-size: 10px; color: rgba(255,255,255,0.45); margin-bottom: 5px; }
+    .b-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── APPROACH C: Editorial Split (Recommended) ──────── */
+    .c-wrap { background: var(--parchment); display: flex; flex-direction: column; }
+    .c-topbar {
+      background: var(--parchment);
+      border-bottom: 1px solid rgba(26,60,40,0.1);
+      padding: 12px 0;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .c-topbar-left { padding-left: 20px; }
+    .c-topbar-right { padding-right: 20px; display: flex; gap: 8px; align-items: center; }
+    .c-title {
+      font-family: var(--font-d);
+      font-size: 1.5rem;
+      color: var(--forest);
+      font-weight: 400;
+    }
+    .c-sub { font-family: var(--font-m); font-size: 9px; color: rgba(26,60,40,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1px; }
+    .c-new-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 13px;
+      background: var(--forest);
+      color: var(--egreen);
+      border-radius: 8px;
+      font-size: 10px; font-weight: 600;
+    }
+    .c-filter-btn {
+      padding: 7px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(26,60,40,0.15);
+      background: transparent;
+      font-size: 10px;
+      color: rgba(26,60,40,0.55);
+    }
+    .c-content { display: flex; flex: 1; }
+    .c-left {
+      flex: 1;
+      display: flex; flex-direction: column;
+      border-right: 1px solid rgba(26,60,40,0.1);
+    }
+    .c-nav-row {
+      padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(26,60,40,0.07);
+    }
+    .c-month { font-family: var(--font-d); font-size: 1.1rem; color: var(--forest); font-weight: 300; }
+    .c-arrows { display: flex; gap: 5px; }
+    .c-arr { width: 26px; height: 26px; border-radius: 7px; background: rgba(26,60,40,0.07); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--forest); }
+    .c-toggle { display: flex; gap: 3px; }
+    .c-vt { padding: 4px 9px; border-radius: 6px; font-size: 10px; color: rgba(26,60,40,0.4); }
+    .c-vt.on { background: var(--forest); color: var(--egreen); }
+    .c-day-h { color: rgba(26,60,40,0.4); border-bottom: 1px solid rgba(26,60,40,0.07); }
+    .c-cell { background: var(--parchment); border-color: rgba(26,60,40,0.07); }
+    .c-cell.other-month { background: rgba(234,217,196,0.38); }
+    .c-cell-num { color: var(--forest); }
+    .c-today-ring {
+      display: inline-flex; width: 22px; height: 22px;
+      align-items: center; justify-content: center;
+      background: var(--terra); color: #fff;
+      border-radius: 50%; font-weight: 600; font-size: 11px;
+    }
+    /* border-left accent pills */
+    .c-pill-v { border-left: 2px solid var(--forest); background: rgba(26,60,40,0.08); color: var(--forest); padding-left: 4px; border-radius: 0 3px 3px 0; }
+    .c-pill-o { border-left: 2px solid var(--terra); background: rgba(196,86,42,0.09); color: var(--terra); padding-left: 4px; border-radius: 0 3px 3px 0; }
+    .c-pill-m { border-left: 2px solid var(--amber); background: rgba(184,144,64,0.10); color: var(--amber); padding-left: 4px; border-radius: 0 3px 3px 0; }
+    /* Right forest panel */
+    .c-right {
+      width: 220px;
+      background: var(--forest);
+      display: flex; flex-direction: column;
+    }
+    .c-right-date {
+      padding: 18px 16px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .c-right-day-num {
+      font-family: var(--font-d);
+      font-size: 3rem;
+      color: #fff;
+      font-weight: 300;
+      line-height: 1;
+    }
+    .c-right-day-label { font-family: var(--font-m); font-size: 9px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+    .c-right-month-tag { display: inline-block; margin-top: 6px; background: rgba(0,232,122,0.15); border: 1px solid rgba(0,232,122,0.3); color: var(--egreen); font-family: var(--font-m); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; }
+    .c-today-events { padding: 12px 14px; flex: 1; overflow: hidden; }
+    .c-te-header { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 9px; }
+    .c-te-card { background: rgba(255,255,255,0.07); border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; border-left: 3px solid; }
+    .c-te-card.v { border-color: var(--egreen); }
+    .c-te-card.o { border-color: var(--terra); }
+    .c-te-card.m { border-color: var(--amber); }
+    .c-te-time { font-family: var(--font-m); font-size: 9px; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+    .c-te-name { font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 1px; }
+    .c-te-prop { font-size: 10px; color: rgba(255,255,255,0.45); }
+    .c-mini-stats { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 6px; }
+    .c-ms-item { flex: 1; text-align: center; }
+    .c-ms-num { font-family: var(--font-d); font-size: 1.2rem; color: #fff; font-weight: 300; line-height: 1; }
+    .c-ms-num.eg { color: var(--egreen); }
+    .c-ms-label { font-family: var(--font-m); font-size: 8px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <p class="page-title">Agent Calendar — Rebrand Approaches</p>
+  <p class="page-sub">Three directions · Route: /app/calendar · Live data from viewings & open-houses API</p>
+
+  <!-- ══════════════════════════════════════════════════════
+       APPROACH A — WARM LEDGER
+  ══════════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background:rgba(26,60,40,0.1);color:var(--forest);">Option A</span>
+    <p class="approach-title" style="color:var(--forest);">Warm Ledger</p>
+    <p class="approach-desc">Full parchment canvas — minimal, document-like calm. Event pills use translucent brand tones. Fraunces month title and sidebar day count feel like a printed schedule. Safe, consistent, lowest implementation risk.</p>
+  </div>
+
+  <div class="preview-shell">
+    <div class="sidebar">
+      <div class="sidebar-logo"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot active-g"></div>
+      <div class="s-dot active"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+    </div>
+
+    <div class="a-wrap" style="height:100%;">
+      <!-- Top bar -->
+      <div class="a-topbar">
+        <div>
+          <div class="a-topbar-title">My Calendar</div>
+          <div class="a-topbar-sub">Agent Cockpit · April 2026</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="padding:6px 12px;border-radius:8px;border:1px solid rgba(26,60,40,0.15);font-size:10px;color:rgba(26,60,40,0.5);">Filter</div>
+          <div class="a-new-btn">+ New Event</div>
+        </div>
+      </div>
+
+      <!-- Nav row -->
+      <div class="a-nav-row">
+        <div class="a-nav-arrows">
+          <div class="a-arrow-btn">‹</div>
+          <div class="a-nav-month">April 2026</div>
+          <div class="a-arrow-btn">›</div>
+        </div>
+        <div class="a-view-toggle">
+          <div class="a-vt-btn on">Month</div>
+          <div class="a-vt-btn">Week</div>
+          <div class="a-vt-btn">Day</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="a-body" style="height:calc(100% - 98px);">
+        <!-- Calendar -->
+        <div class="a-calendar-area">
+          <div class="cal-grid">
+            <div class="cal-day-header a-day-header">Sun</div>
+            <div class="cal-day-header a-day-header">Mon</div>
+            <div class="cal-day-header a-day-header">Tue</div>
+            <div class="cal-day-header a-day-header">Wed</div>
+            <div class="cal-day-header a-day-header">Thu</div>
+            <div class="cal-day-header a-day-header">Fri</div>
+            <div class="cal-day-header a-day-header">Sat</div>
+            <!-- Row 1 (Mar 29 – Apr 4) -->
+            <div class="cal-cell a-cell other-month"><span class="cal-num a-cell-num faded">29</span></div>
+            <div class="cal-cell a-cell other-month"><span class="cal-num a-cell-num faded">30</span></div>
+            <div class="cal-cell a-cell other-month"><span class="cal-num a-cell-num faded">31</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">1</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">2</span><span class="event-pill a-pill-viewing">Viewing · Sunrise Estate</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">3</span><span class="event-pill a-pill-open">Open House · Mabelreign</span><span class="event-pill a-pill-meeting">Team call 14:00</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">4</span></div>
+            <!-- Row 2 -->
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">5</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">6</span><span class="event-pill a-pill-viewing">Viewing · Borrowdale</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">7</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">8</span><span class="event-pill a-pill-viewing">Viewing · Avondale</span><span class="event-pill a-pill-meeting">Offer review</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">9</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">10</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">11</span></div>
+            <!-- Row 3 (today = Apr 3) -->
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">12</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">13</span><span class="event-pill a-pill-open">Open House · Msasa</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">14</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">15</span><span class="event-pill a-pill-viewing">Viewing · Mt Pleasant</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">16</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">17</span><span class="event-pill a-pill-open">Open House · Highlands</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">18</span></div>
+            <!-- Row 4 -->
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">19</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">20</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">21</span><span class="event-pill a-pill-viewing">Viewing · Greendale</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">22</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">23</span><span class="event-pill a-pill-meeting">Contract signing</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">24</span></div>
+            <div class="cal-cell a-cell"><span class="cal-num a-cell-num">25</span></div>
+          </div>
+        </div>
+
+        <!-- Side panel -->
+        <div class="a-sidebar-panel">
+          <div class="a-sp-title">Today's Schedule</div>
+          <div class="a-event-card">
+            <div class="a-ec-time">09:30</div>
+            <div class="a-ec-name">Viewing — Miller family</div>
+            <div class="a-ec-prop">Sunrise Estate, 4-bed</div>
+          </div>
+          <div class="a-event-card">
+            <div class="a-ec-time">11:00</div>
+            <div class="a-ec-name">Open House</div>
+            <div class="a-ec-prop">Mabelreign, 3-bed villa</div>
+          </div>
+          <div class="a-event-card">
+            <div class="a-ec-time">14:00</div>
+            <div class="a-ec-name">Team Call</div>
+            <div class="a-ec-prop">Q2 pipeline review</div>
+          </div>
+          <div class="a-legend">
+            <div class="a-legend-title">Legend</div>
+            <div class="a-legend-item"><div class="a-legend-dot" style="background:rgba(26,60,40,0.35)"></div>Viewing</div>
+            <div class="a-legend-item"><div class="a-legend-dot" style="background:var(--terra)"></div>Open House</div>
+            <div class="a-legend-item"><div class="a-legend-dot" style="background:var(--amber)"></div>Meeting / Call</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /preview-shell A -->
+
+  <hr class="section-divider" />
+
+  <!-- ══════════════════════════════════════════════════════
+       APPROACH B — COMMAND DARK HEADER
+  ══════════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background:var(--forest);color:var(--egreen);">Option B</span>
+    <p class="approach-title" style="color:var(--carbon);">Command Dark Header</p>
+    <p class="approach-desc">Forest-green header acts as a command deck — KPI stats embedded above the grid. Calendar grid stays warm parchment with branded event pills. Dark carbon sidebar for upcoming events gives a bold split contrast. Executive management feel.</p>
+  </div>
+
+  <div class="preview-shell">
+    <div class="sidebar">
+      <div class="sidebar-logo"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot active-g"></div>
+      <div class="s-dot active"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+    </div>
+
+    <div class="b-wrap" style="height:100%;">
+      <!-- Forest header -->
+      <div class="b-header">
+        <div class="b-header-top">
+          <div>
+            <div class="b-title">My Calendar</div>
+            <div class="b-sub">April 2026 · 8 events scheduled</div>
+          </div>
+          <div class="b-new-btn">+ New Event</div>
+        </div>
+        <!-- Stat cards -->
+        <div class="b-stats-row">
+          <div class="b-stat">
+            <div class="b-stat-num eg">4</div>
+            <div class="b-stat-label">Viewings</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-num">3</div>
+            <div class="b-stat-label">Open Houses</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-num">1</div>
+            <div class="b-stat-label">Meetings</div>
+          </div>
+          <div class="b-stat">
+            <div class="b-stat-num eg">8</div>
+            <div class="b-stat-label">Total Events</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav row -->
+      <div class="b-nav-row">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div class="b-arr">‹</div>
+          <span class="b-month">April 2026</span>
+          <div class="b-arr">›</div>
+        </div>
+        <div class="b-view-toggle">
+          <div class="b-vt on">Month</div>
+          <div class="b-vt">Week</div>
+          <div class="b-vt">Day</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="b-body" style="height:calc(100% - 162px);">
+        <div class="b-cal" style="flex:1;">
+          <div class="cal-grid">
+            <div class="cal-day-header b-day-h">Sun</div>
+            <div class="cal-day-header b-day-h">Mon</div>
+            <div class="cal-day-header b-day-h">Tue</div>
+            <div class="cal-day-header b-day-h">Wed</div>
+            <div class="cal-day-header b-day-h">Thu</div>
+            <div class="cal-day-header b-day-h">Fri</div>
+            <div class="cal-day-header b-day-h">Sat</div>
+            <div class="cal-cell b-cell other-month"><span class="cal-num b-cell-num faded">29</span></div>
+            <div class="cal-cell b-cell other-month"><span class="cal-num b-cell-num faded">30</span></div>
+            <div class="cal-cell b-cell other-month"><span class="cal-num b-cell-num faded">31</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">1</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">2</span><span class="event-pill b-pill-viewing">Viewing · Sunrise</span></div>
+            <div class="cal-cell b-cell" style="background:rgba(242,232,213,0.92);"><span class="cal-num" style="background:var(--terra);color:#fff;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;font-weight:600;">3</span><span class="event-pill b-pill-open">Open House</span><span class="event-pill b-pill-meeting">Team call</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">4</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">5</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">6</span><span class="event-pill b-pill-viewing">Viewing · Borrowdale</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">7</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">8</span><span class="event-pill b-pill-viewing">Viewing · Avondale</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">9</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">10</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">11</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">12</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">13</span><span class="event-pill b-pill-open">Open House · Msasa</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">14</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">15</span><span class="event-pill b-pill-viewing">Viewing · Mt Pleasant</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">16</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">17</span><span class="event-pill b-pill-open">Open House</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">18</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">19</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">20</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">21</span><span class="event-pill b-pill-viewing">Viewing · Greendale</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">22</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">23</span><span class="event-pill b-pill-meeting">Contract signing</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">24</span></div>
+            <div class="cal-cell b-cell"><span class="cal-num b-cell-num">25</span></div>
+          </div>
+        </div>
+
+        <!-- Dark sidebar -->
+        <div class="b-sidebar">
+          <div class="b-sp-title">Today</div>
+          <div class="b-card viewing">
+            <div class="b-c-time">09:30</div>
+            <div class="b-c-name">Miller family viewing</div>
+            <div class="b-c-prop">Sunrise Estate, 4-bed</div>
+          </div>
+          <div class="b-card open">
+            <div class="b-c-time">11:00</div>
+            <div class="b-c-name">Open House</div>
+            <div class="b-c-prop">Mabelreign, 3-bed villa</div>
+          </div>
+          <div class="b-card meeting">
+            <div class="b-c-time">14:00</div>
+            <div class="b-c-name">Team Call</div>
+            <div class="b-c-prop">Q2 pipeline review</div>
+          </div>
+          <div class="b-legend">
+            <div class="b-leg-title">Legend</div>
+            <div class="b-leg-item"><div class="b-leg-dot" style="background:var(--egreen)"></div>Viewing</div>
+            <div class="b-leg-item"><div class="b-leg-dot" style="background:var(--terra)"></div>Open House</div>
+            <div class="b-leg-item"><div class="b-leg-dot" style="background:var(--amber)"></div>Meeting / Call</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /preview-shell B -->
+
+  <hr class="section-divider" />
+
+  <!-- ══════════════════════════════════════════════════════
+       APPROACH C — EDITORIAL SPLIT (RECOMMENDED)
+  ══════════════════════════════════════════════════════ -->
+  <div>
+    <span class="approach-label" style="background:var(--forest);color:#fff;">Option C</span>
+    <span class="recommend-badge">★ Recommended</span>
+    <p class="approach-title" style="color:var(--forest);margin-top:14px;">Editorial Split</p>
+    <p class="approach-desc">Parchment grid (⅔) meets a forest-green sidebar panel (⅓). The panel shows today's large Fraunces date, scrollable event cards, and mini stats. Border-left accent pills on the grid make event types instantly scannable. Closest match to the homepage's editorial warmth — no full-dark panels, stays readable on all screens.</p>
+  </div>
+
+  <div class="preview-shell">
+    <div class="sidebar">
+      <div class="sidebar-logo"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot active-g"></div>
+      <div class="s-dot active"></div>
+      <div class="s-dot"></div>
+      <div class="s-dot"></div>
+    </div>
+
+    <div class="c-wrap" style="height:100%;">
+      <!-- Top bar -->
+      <div class="c-topbar">
+        <div class="c-topbar-left">
+          <div class="c-title">My Calendar</div>
+          <div class="c-sub">Agent Cockpit · April 2026</div>
+        </div>
+        <div class="c-topbar-right">
+          <div class="c-filter-btn">Filter</div>
+          <div class="c-new-btn">+ New Event</div>
+        </div>
+      </div>
+
+      <!-- Body split -->
+      <div class="c-content" style="height:calc(100% - 58px);">
+        <!-- Left: calendar -->
+        <div class="c-left">
+          <div class="c-nav-row">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div class="c-arr">‹</div>
+              <span class="c-month">April 2026</span>
+              <div class="c-arr">›</div>
+            </div>
+            <div class="c-toggle">
+              <div class="c-vt on">Month</div>
+              <div class="c-vt">Week</div>
+              <div class="c-vt">Day</div>
+            </div>
+          </div>
+
+          <div class="cal-grid">
+            <div class="cal-day-header c-day-h">Sun</div>
+            <div class="cal-day-header c-day-h">Mon</div>
+            <div class="cal-day-header c-day-h">Tue</div>
+            <div class="cal-day-header c-day-h">Wed</div>
+            <div class="cal-day-header c-day-h">Thu</div>
+            <div class="cal-day-header c-day-h">Fri</div>
+            <div class="cal-day-header c-day-h">Sat</div>
+            <!-- Row 1 -->
+            <div class="cal-cell c-cell other-month"><span class="cal-num c-cell-num faded">29</span></div>
+            <div class="cal-cell c-cell other-month"><span class="cal-num c-cell-num faded">30</span></div>
+            <div class="cal-cell c-cell other-month"><span class="cal-num c-cell-num faded">31</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">1</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">2</span><span class="event-pill c-pill-v">Viewing · Sunrise</span></div>
+            <div class="cal-cell c-cell" style="background:rgba(196,86,42,0.04);">
+              <span class="c-today-ring">3</span>
+              <span class="event-pill c-pill-o" style="margin-top:2px;">Open House</span>
+              <span class="event-pill c-pill-m">Team call 14:00</span>
+            </div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">4</span></div>
+            <!-- Row 2 -->
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">5</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">6</span><span class="event-pill c-pill-v">Viewing · Borrowdale</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">7</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">8</span><span class="event-pill c-pill-v">Viewing · Avondale</span><span class="event-pill c-pill-m">Offer review</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">9</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">10</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">11</span></div>
+            <!-- Row 3 -->
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">12</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">13</span><span class="event-pill c-pill-o">Open House · Msasa</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">14</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">15</span><span class="event-pill c-pill-v">Viewing · Mt Pleasant</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">16</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">17</span><span class="event-pill c-pill-o">Open House · Highlands</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">18</span></div>
+            <!-- Row 4 -->
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">19</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">20</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">21</span><span class="event-pill c-pill-v">Viewing · Greendale</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">22</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">23</span><span class="event-pill c-pill-m">Contract signing</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">24</span></div>
+            <div class="cal-cell c-cell"><span class="cal-num c-cell-num">25</span></div>
+          </div>
+        </div>
+
+        <!-- Right: forest panel -->
+        <div class="c-right">
+          <!-- Big date display -->
+          <div class="c-right-date">
+            <div style="font-family:var(--font-m);font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Today</div>
+            <div class="c-right-day-num">3</div>
+            <div class="c-right-day-label">Thursday · April 2026</div>
+            <div class="c-right-month-tag">April 2026</div>
+          </div>
+
+          <!-- Today's events -->
+          <div class="c-today-events">
+            <div class="c-te-header">3 events today</div>
+            <div class="c-te-card v">
+              <div class="c-te-time">09:30 · 60 min</div>
+              <div class="c-te-name">Miller family</div>
+              <div class="c-te-prop">Sunrise Estate, 4-bed</div>
+            </div>
+            <div class="c-te-card o">
+              <div class="c-te-time">11:00 · 90 min</div>
+              <div class="c-te-name">Open House</div>
+              <div class="c-te-prop">Mabelreign, 3-bed villa</div>
+            </div>
+            <div class="c-te-card m">
+              <div class="c-te-time">14:00 · 30 min</div>
+              <div class="c-te-name">Team Call</div>
+              <div class="c-te-prop">Q2 pipeline review</div>
+            </div>
+          </div>
+
+          <!-- Mini stats -->
+          <div class="c-mini-stats">
+            <div class="c-ms-item">
+              <div class="c-ms-num eg">4</div>
+              <div class="c-ms-label">Viewings</div>
+            </div>
+            <div class="c-ms-item">
+              <div class="c-ms-num">3</div>
+              <div class="c-ms-label">Open</div>
+            </div>
+            <div class="c-ms-item">
+              <div class="c-ms-num">1</div>
+              <div class="c-ms-label">Meetings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /preview-shell C -->
+
+</div><!-- /page-wrapper -->
+</body>
+</html>

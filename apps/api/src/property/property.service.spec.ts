@@ -6,6 +6,7 @@ import {
 import { PropertyService } from './property.service';
 import { MediaStorageService } from './media-storage.service';
 import { PropertyAuditService } from './property-audit.service';
+import { NotificationService } from '../identity/notification.service';
 import { PrismaService } from '../database';
 
 describe('PropertyService', () => {
@@ -23,6 +24,12 @@ describe('PropertyService', () => {
 
   const mockAudit = {
     log: jest.fn(),
+  };
+
+  const mockNotifications = {
+    sendNotification: jest.fn(),
+    notifyAgentNewEnquiry: jest.fn(),
+    sendEmail: jest.fn().mockResolvedValue(undefined),
   };
 
   const agentId = 'agent-uuid-0001';
@@ -47,6 +54,7 @@ describe('PropertyService', () => {
     verified_at: null,
     created_at: new Date('2026-02-21'),
     updated_at: new Date('2026-02-21'),
+    view_count: 0,
   };
 
   let module: TestingModule;
@@ -58,6 +66,7 @@ describe('PropertyService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: MediaStorageService, useValue: mockMediaStorage },
         { provide: PropertyAuditService, useValue: mockAudit },
+        { provide: NotificationService, useValue: mockNotifications },
       ],
     }).compile();
 
@@ -80,6 +89,7 @@ describe('PropertyService', () => {
 
   describe('create', () => {
     it('inserts a property and returns the created record', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]); // INSERT
       // No location dto — no extra calls
 
@@ -105,6 +115,7 @@ describe('PropertyService', () => {
     });
 
     it('upserts location when location dto is provided', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]); // INSERT property
       mockPrisma.$executeRaw.mockResolvedValueOnce(1); // upsert location (no lat/lng)
 
@@ -125,6 +136,7 @@ describe('PropertyService', () => {
     });
 
     it('supports snake_case create payload aliases', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ company_id: 'self-co-uuid' }]); // self-company lookup
       mockPrisma.$queryRaw.mockResolvedValueOnce([baseProperty]);
       mockPrisma.$executeRaw.mockResolvedValueOnce(1);
 
@@ -182,6 +194,104 @@ describe('PropertyService', () => {
       await expect(service.findById('non-existent-uuid')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('increments view_count and logs property.viewed for an authenticated non-owner visitor', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      mockPrisma.$executeRaw.mockResolvedValueOnce(1); // UPDATE view_count
+      await service.findById(propertyId, { actorId: 'visitor-uuid-9999', actorRole: 'buyer' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed', actorId: 'visitor-uuid-9999' }),
+      );
+    });
+
+    it('does NOT increment view_count or log property.viewed when actor is the listing agent', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      await service.findById(propertyId, { actorId: agentId, actorRole: 'agent' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(mockAudit.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed' }),
+      );
+    });
+
+    it('does NOT increment view_count when actor is the owner', async () => {
+      const ownedProperty = { ...baseProperty, agent_id: null, owner_id: 'owner-uuid-7777' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([ownedProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      await service.findById(propertyId, { actorId: 'owner-uuid-7777', actorRole: 'buyer_seller' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(mockAudit.log).not.toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed' }),
+      );
+    });
+
+    it('does NOT increment view_count for unauthenticated requests with no IP (SSR/bot)', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])  // location
+        .mockResolvedValueOnce([]); // media
+      // No actorId, no ipAddress — simulates a Next.js SSR internal call
+      await service.findById(propertyId, { actorRole: 'public' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('increments view_count for a first-time anonymous visitor with an IP address', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])             // location
+        .mockResolvedValueOnce([])             // media
+        .mockResolvedValueOnce([{ cnt: '0' }]); // dedup check → no prior view
+      mockPrisma.$executeRaw
+        .mockResolvedValueOnce(1)  // INSERT anonymous_view_logs
+        .mockResolvedValueOnce(1); // UPDATE view_count
+      await service.findById(propertyId, { actorRole: 'public', ipAddress: '203.0.113.42' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'property.viewed', actorId: undefined }),
+      );
+    });
+
+    it('does NOT increment view_count for the same anonymous IP within 1 hour', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])             // location
+        .mockResolvedValueOnce([])             // media
+        .mockResolvedValueOnce([{ cnt: '1' }]); // dedup check → already counted
+      await service.findById(propertyId, { actorRole: 'public', ipAddress: '203.0.113.42' });
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('increments view_count for each unique anonymous IP', async () => {
+      // First IP
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ cnt: '0' }]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await service.findById(propertyId, { actorRole: 'public', ipAddress: '203.0.113.10' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+
+      jest.clearAllMocks();
+
+      // Second distinct IP
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([baseProperty])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ cnt: '0' }]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      await service.findById(propertyId, { actorRole: 'public', ipAddress: '198.51.100.77' });
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -354,6 +464,60 @@ describe('PropertyService', () => {
       const countCall = mockPrisma.$queryRawUnsafe.mock.calls[0];
       expect(countCall[1]).toBe(200000);
     });
+
+    it('filters by agent_id when provided', async () => {
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([baseProperty]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      await service.search({ agent_id: agentId });
+
+      const countCall = mockPrisma.$queryRawUnsafe.mock.calls[0];
+      expect(countCall[1]).toBe(agentId);
+    });
+
+    it('returns company_brand_color when company has one set', async () => {
+      const propertyWithBrandColor = {
+        ...baseProperty,
+        company_id: 'company-uuid-001',
+        company_is_system: false,
+        company_name: 'SurdoProp',
+        company_logo_url: '/storage/logos/surdoprop.png',
+        company_brand_color: '#4A9E8E',
+        company_status: 'active',
+      };
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([propertyWithBrandColor]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.search({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toHaveProperty('company_brand_color', '#4A9E8E');
+      expect(result.data[0]).toHaveProperty('company_name', 'SurdoProp');
+    });
+
+    it('returns null company_brand_color for private listings', async () => {
+      const privateListing = {
+        ...baseProperty,
+        company_id: 'self-co-uuid',
+        company_is_system: true,
+        company_name: 'Self',
+        company_logo_url: null,
+        company_brand_color: null,
+        company_status: 'active',
+      };
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([{ total: '1' }])
+        .mockResolvedValueOnce([privateListing]);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.search({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toHaveProperty('company_brand_color', null);
+      expect(result.data[0]).toHaveProperty('company_is_system', true);
+    });
   });
 
   // ─── addMedia ─────────────────────────────────────────────────────────────
@@ -407,7 +571,9 @@ describe('PropertyService', () => {
           { status: 'draft', count: '2' },
         ])
         .mockResolvedValueOnce([{ count: '3' }])
-        .mockResolvedValueOnce([{ verification_status: 'verified', count: '3' }]);
+        .mockResolvedValueOnce([{ verification_status: 'verified', count: '3' }])
+        .mockResolvedValueOnce([{ current_views: '12', previous_views: '8' }])
+        .mockResolvedValueOnce([{ total_inquiries: '10', responded_inquiries: '7' }]);
 
       const result = await service.getAgentDashboard(agentId);
 
@@ -415,6 +581,339 @@ describe('PropertyService', () => {
       expect(result.byStatus.active).toBe(5);
       expect(result.newInquiries7d).toBe(3);
       expect(result.verificationSummary.verified).toBe(3);
+      expect(result.listingViewsLast7d).toBe(12);
+      expect(result.listingViewsPrevious7d).toBe(8);
+      expect(result.listingViewsTrendPct).toBe(50);
+      expect(result.inquiryResponseRatePct).toBe(70);
+    });
+  });
+
+  // ─── getFeaturedAgents ───────────────────────────────────────────────────
+
+  describe('getFeaturedAgents', () => {
+    it('returns aggregated featured agents with derived tiers', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([
+        {
+          id: 'agent-1',
+          first_name: 'Alex',
+          last_name: 'Moyo',
+          city: 'Cape Town',
+          active_listings: '12',
+          verified_listings: '10',
+        },
+        {
+          id: 'agent-2',
+          first_name: 'Sam',
+          last_name: 'Ndlovu',
+          city: null,
+          active_listings: '3',
+          verified_listings: '2',
+        },
+      ]);
+
+      const result = await service.getFeaturedAgents(4);
+
+      expect(result).toEqual([
+        {
+          id: 'agent-1',
+          fullName: 'Alex Moyo',
+          location: 'Cape Town',
+          tier: 'gold',
+          deals: 12,
+        },
+        {
+          id: 'agent-2',
+          fullName: 'Sam Ndlovu',
+          location: 'Location unavailable',
+          tier: 'bronze',
+          deals: 3,
+        },
+      ]);
+    });
+  });
+
+  // ─── getAgentProfile ─────────────────────────────────────────────────────
+
+  describe('getAgentProfile', () => {
+    it('returns agent profile with listings', async () => {
+      mockPrisma.$queryRawUnsafe
+        .mockResolvedValueOnce([
+          {
+            id: agentId,
+            first_name: 'Alex',
+            last_name: 'Moyo',
+            email: 'alex@example.com',
+            phone: '+27110000000',
+            avatar_url: null,
+            status: 'active',
+            total_listings: '3',
+            active_listings: '2',
+            verified_listings: '1',
+            primary_city: 'Cape Town',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: propertyId,
+            title: 'Beautiful 3BR Home',
+            city: 'Cape Town',
+            region: 'Western Cape',
+            price: '250000.00',
+            currency: 'USD',
+            bedrooms: 3,
+            bathrooms: 2,
+            area_sqm: '145.00',
+            status: 'active',
+            verification_status: 'verified',
+            created_at: new Date('2026-02-21'),
+            media_url: null,
+          },
+        ]);
+
+      const result = await service.getAgentProfile(agentId);
+
+      expect(result.id).toBe(agentId);
+      expect(result.totalListings).toBe(3);
+      expect(result.listings).toHaveLength(1);
+      expect(result.listings[0].location).toContain('Cape Town');
+    });
+
+    it('throws NotFoundException when agent does not exist', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([]);
+
+      await expect(service.getAgentProfile(agentId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  // ─── getOwnershipHistory ──────────────────────────────────────────────────
+
+  describe('getOwnershipHistory', () => {
+    it('returns ownership history records ordered by transfer date', async () => {
+      const mockHistory = [
+        {
+          id: 'oh-1',
+          owner_name: 'Alice Moyo',
+          transfer_date: '2024-03-15',
+          transfer_price: '1500000.00',
+          transfer_currency: 'ZAR',
+          title_deed_url: 'https://example.com/deed-1.pdf',
+          notes: 'Purchase',
+          created_at: '2024-03-15T10:00:00Z',
+        },
+        {
+          id: 'oh-2',
+          owner_name: 'Bob Nkosi',
+          transfer_date: '2020-08-01',
+          transfer_price: '1200000.00',
+          transfer_currency: 'ZAR',
+          title_deed_url: null,
+          notes: null,
+          created_at: '2020-08-01T10:00:00Z',
+        },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockHistory);
+
+      const result = await service.getOwnershipHistory(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].owner_name).toBe('Alice Moyo');
+      expect(result[1].owner_name).toBe('Bob Nkosi');
+    });
+
+    it('returns empty array when no history exists', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getOwnershipHistory(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── getPriceHistory ──────────────────────────────────────────────────────
+
+  describe('getPriceHistory', () => {
+    it('returns price history records ordered by date ascending', async () => {
+      const mockHistory = [
+        {
+          id: 'ph-1',
+          old_price: null,
+          new_price: '1000000.00',
+          currency: 'ZAR',
+          changed_by: agentId,
+          change_note: 'Initial listing',
+          created_at: '2024-01-15T10:00:00Z',
+        },
+        {
+          id: 'ph-2',
+          old_price: '1000000.00',
+          new_price: '1200000.00',
+          currency: 'ZAR',
+          changed_by: agentId,
+          change_note: 'Price increase',
+          created_at: '2024-06-20T10:00:00Z',
+        },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockHistory);
+
+      const result = await service.getPriceHistory(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].new_price).toBe('1000000.00');
+      expect(result[1].new_price).toBe('1200000.00');
+    });
+
+    it('returns empty array when no price history exists', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getPriceHistory(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── getFloorPlans ────────────────────────────────────────────────────────
+
+  describe('getFloorPlans', () => {
+    it('returns floor plan media ordered by display_order', async () => {
+      const mockPlans = [
+        { id: 'fm-1', url: '/floor1.png', thumbnail_url: '/floor1-thumb.png', display_order: 1, created_at: '2024-01-01T00:00:00Z' },
+        { id: 'fm-2', url: '/floor2.png', thumbnail_url: null, display_order: 2, created_at: '2024-01-02T00:00:00Z' },
+      ];
+
+      mockPrisma.$queryRaw.mockResolvedValueOnce(mockPlans);
+
+      const result = await service.getFloorPlans(propertyId);
+      expect(result).toHaveLength(2);
+      expect(result[0].display_order).toBe(1);
+      expect(result[1].thumbnail_url).toBeNull();
+    });
+
+    it('returns empty array when no floor plans exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getFloorPlans(propertyId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ─── update – price change logging ────────────────────────────────────────
+
+  describe('update – price change logging', () => {
+    it('inserts a price_history record when price changes', async () => {
+      const existingProperty = { ...baseProperty, price: '250000.00', currency: 'USD' };
+      const updatedProperty = { ...baseProperty, price: '300000.00', currency: 'USD' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([existingProperty])  // SELECT existing
+        .mockResolvedValueOnce(1);                   // INSERT price_history
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([updatedProperty]); // UPDATE
+
+      await service.update(propertyId, agentId, 'agent', { price: 300000 });
+
+      // $queryRaw called at least 2 times: SELECT existing + INSERT price_history
+      expect(mockPrisma.$queryRaw.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('does not insert price_history when price stays the same', async () => {
+      const existingProperty = { ...baseProperty, price: '250000.00' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([existingProperty]);
+      mockPrisma.$queryRawUnsafe.mockResolvedValueOnce([existingProperty]);
+
+      await service.update(propertyId, agentId, 'agent', { title: 'New Title' });
+
+      // $queryRaw called once for SELECT existing, no INSERT for price_history
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ─── updatePropertyOfferStatus ────────────────────────────────────────────
+
+  describe('updatePropertyOfferStatus', () => {
+    const offerId = 'offer-uuid-0001';
+    const buyerId = 'buyer-uuid-0001';
+
+    const propertyWithOwner = {
+      agent_id: agentId,
+      title: 'Test Property',
+      owner_id: 'owner-uuid-0001',
+      company_id: 'company-uuid-0001',
+      currency: 'ZAR',
+    };
+
+    const offerRow = {
+      id: offerId,
+      buyer_id: buyerId,
+      buyer_name: 'Jane Buyer',
+      buyer_email: 'jane@example.com',
+      amount: 500000,
+      deposit_amount: 50000,
+    };
+
+    it('auto-creates a property_sale and stage rows when offer is accepted', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([propertyWithOwner]) // SELECT property
+        .mockResolvedValueOnce([offerRow])           // UPDATE offer RETURNING
+        .mockResolvedValueOnce([{ id: 'sale-uuid-0001' }]); // INSERT property_sales
+
+      mockPrisma.$executeRaw.mockResolvedValueOnce(16); // stage progress insert
+
+      const result = await service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'accepted');
+
+      // Sale INSERT and stage progress INSERT must have been called
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(3);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(result.buyer_id).toBe(buyerId);
+    });
+
+    it('does NOT create a sale when offer is rejected', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([propertyWithOwner])
+        .mockResolvedValueOnce([{ ...offerRow, buyer_email: null }]);
+
+      const result = await service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'rejected');
+
+      // Only 2 queries: property SELECT + offer UPDATE; no sale INSERT
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      expect(result.buyer_name).toBe('Jane Buyer');
+    });
+
+    it('does NOT create a sale when accepted offer has no buyer_id', async () => {
+      const anonymousOffer = { ...offerRow, buyer_id: null };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([propertyWithOwner])
+        .mockResolvedValueOnce([anonymousOffer]);
+
+      await service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'accepted');
+
+      // No sale INSERT when buyer_id is null
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when property does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(
+        service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'accepted'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException when agent does not own the property', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ ...propertyWithOwner, agent_id: 'other-agent' }]);
+
+      await expect(
+        service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'accepted'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFoundException when offer does not exist', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([propertyWithOwner])
+        .mockResolvedValueOnce([]); // UPDATE returns no rows
+
+      await expect(
+        service.updatePropertyOfferStatus(agentId, propertyId, offerId, 'accepted'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

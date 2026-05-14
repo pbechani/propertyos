@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Make Offer — BuildTrust Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --forest:       #1A3C28;
+    --forest-light: #2D5A40;
+    --parchment:    #F2E8D5;
+    --cream:        #EAD9C4;
+    --egreen:       #00E87A;
+    --amber:        #B89040;
+    --carbon:       #0C0D10;
+    --muted:        #5A7A68;
+    --border:       rgba(26,60,40,0.14);
+    --border-mid:   rgba(26,60,40,0.22);
+    --border-strong:rgba(26,60,40,0.32);
+    --red:          #C4562A;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --serif: 'Fraunces', Georgia, serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--parchment);
+    color: var(--forest);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Top nav bar ───────────────────────────────────── */
+  .topbar {
+    background: var(--forest);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo { font-family: var(--serif); font-size: 18px; color: var(--parchment); font-weight: 500; letter-spacing: -0.3px; }
+  .topbar-logo span { color: var(--egreen); }
+  .topbar-sep { flex: 1; }
+  .topbar-breadcrumb { font-size: 12px; color: rgba(242,232,213,0.55); display: flex; align-items: center; gap: 6px; }
+  .topbar-breadcrumb a { color: rgba(242,232,213,0.7); text-decoration: none; }
+  .topbar-breadcrumb a:hover { color: var(--parchment); }
+  .chevron { opacity: 0.4; }
+
+  /* ── Layout ────────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    min-height: calc(100vh - 56px);
+    max-width: 1260px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  /* ── LEFT — property context ───────────────────────── */
+  .sidebar {
+    background: white;
+    border-right: 1px solid var(--border);
+    padding: 32px 28px 40px;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .prop-img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+  }
+  .prop-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .badge-verified { background: #00E87A22; color: #1A7A40; border: 1px solid #00E87A44; }
+  .badge-sale { background: rgba(26,60,40,0.08); color: var(--forest); border: 1px solid var(--border-mid); }
+  .badge-amber { background: rgba(184,144,64,0.12); color: var(--amber); border: 1px solid rgba(184,144,64,0.3); }
+
+  .prop-price {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--forest);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .prop-addr { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .prop-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .meta-chip {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--forest);
+    background: var(--cream);
+    padding: 4px 10px; border-radius: 8px;
+  }
+
+  .divider { height: 1px; background: var(--border); }
+
+  .sidebar-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .agent-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--parchment);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .agent-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--forest);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 15px; color: var(--parchment); font-weight: 500;
+    flex-shrink: 0;
+  }
+  .agent-name { font-size: 13px; font-weight: 500; color: var(--forest); }
+  .agent-title { font-size: 11px; color: var(--muted); }
+
+  .offer-notice {
+    background: rgba(184,144,64,0.08);
+    border: 1px solid rgba(184,144,64,0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--forest);
+    line-height: 1.5;
+  }
+  .offer-notice strong { color: var(--amber); }
+
+  /* ── RIGHT — form area ─────────────────────────────── */
+  .main {
+    padding: 40px 52px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  .form-header h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--forest);
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .form-header p { font-size: 13px; color: var(--muted); max-width: 480px; line-height: 1.6; }
+
+  /* ── Stepper ────────────────────────────────────────── */
+  .stepper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+  }
+  .stepper::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    height: 2px;
+    background: var(--border-mid);
+    z-index: 0;
+  }
+  .step-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+  .step-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    transition: all 0.2s;
+    border: 2px solid var(--border-strong);
+    background: white;
+    color: var(--muted);
+  }
+  .step-dot.done {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: var(--parchment);
+  }
+  .step-dot.active {
+    background: var(--egreen);
+    border-color: var(--egreen);
+    color: var(--carbon);
+    box-shadow: 0 0 0 4px rgba(0,232,122,0.18);
+  }
+  .step-label { font-size: 11px; font-weight: 500; color: var(--muted); text-align: center; line-height: 1.3; }
+  .step-label.active { color: var(--forest); font-weight: 600; }
+  .step-label.done { color: var(--forest); }
+  .step-sub { font-size: 10px; color: var(--muted); text-align: center; margin-top: 1px; opacity: 0.7; }
+
+  /* ── Step panels (tab switching) ─────────────────────── */
+  .step-panel { display: none; }
+  .step-panel.active { display: flex; flex-direction: column; gap: 32px; }
+
+  /* ── Section card ───────────────────────────────────── */
+  .section-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: rgba(26,60,40,0.07);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-icon svg { width: 16px; height: 16px; }
+  .section-head-title { font-family: var(--serif); font-size: 16px; font-weight: 500; color: var(--forest); }
+  .section-head-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .section-body { padding: 24px; }
+
+  /* ── Form grid ──────────────────────────────────────── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .col-span-2 { grid-column: span 2; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field-required::after { content: ' *'; color: var(--red); }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border-mid);
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--forest);
+    background: white;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--forest);
+    box-shadow: 0 0 0 3px rgba(26,60,40,0.1);
+  }
+  .field input.has-prefix { padding-left: 56px; }
+  .field textarea { resize: vertical; min-height: 88px; }
+
+  .input-wrapper {
+    position: relative;
+  }
+  .input-prefix {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    border-right: 1.5px solid var(--border-mid);
+    pointer-events: none;
+    background: var(--cream);
+    border-radius: 10px 0 0 10px;
+  }
+  .input-suffix {
+    position: absolute;
+    right: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; color: var(--muted); pointer-events: none;
+  }
+
+  /* ── Radio cards ─────────────────────────────────────── */
+  .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .radio-card {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border-mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px; font-weight: 500;
+    color: var(--forest);
+    background: white;
+    user-select: none;
+  }
+  .radio-card:hover { border-color: var(--forest); background: var(--parchment); }
+  .radio-card.selected {
+    border-color: var(--forest);
+    background: var(--forest);
+    color: var(--parchment);
+  }
+  .radio-card.selected .radio-dot { background: var(--egreen); }
+  .radio-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentColor;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .radio-dot::after {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--egreen);
+    display: none;
+  }
+  .radio-card.selected .radio-dot::after { display: block; }
+
+  /* ── Upload zone ─────────────────────────────────────── */
+  .upload-zone {
+    border: 2px dashed var(--border-strong);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--parchment);
+  }
+  .upload-zone:hover { border-color: var(--forest); background: rgba(26,60,40,0.03); }
+  .upload-icon { font-size: 22px; margin-bottom: 6px; }
+  .upload-label { font-size: 13px; font-weight: 500; color: var(--forest); }
+  .upload-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Escalation card ─────────────────────────────────── */
+  .feature-card {
+    background: var(--parchment);
+    border: 1px solid var(--border-mid);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .feature-card-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+  .feature-card-title { font-size: 13px; font-weight: 600; color: var(--forest); margin-bottom: 2px; }
+  .feature-card-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 13px; font-weight: 500; color: var(--forest); }
+  .toggle-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .toggle {
+    width: 42px; height: 24px; background: var(--border-strong);
+    border-radius: 99px; cursor: pointer; position: relative;
+    flex-shrink: 0; transition: background 0.2s;
+  }
+  .toggle.on { background: var(--forest); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* ── Review step ─────────────────────────────────────── */
+  .review-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .review-row:last-child { border-bottom: none; }
+  .review-key { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .review-val { font-size: 13px; font-weight: 500; color: var(--forest); text-align: right; }
+  .review-val.price { font-family: var(--serif); font-size: 20px; font-weight: 600; color: var(--forest); }
+  .review-val.egreen { color: #1A7A40; }
+
+  .legal-box {
+    background: rgba(26,60,40,0.04);
+    border: 1px solid var(--border-mid);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .legal-box a { color: var(--forest); font-weight: 500; }
+
+  .checkbox-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer;
+  }
+  .checkbox {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 1.5px solid var(--border-strong);
+    background: white;
+    flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .checkbox.checked {
+    background: var(--forest); border-color: var(--forest);
+  }
+  .checkbox.checked::after {
+    content: '';
+    width: 10px; height: 6px;
+    border-left: 2px solid var(--parchment);
+    border-bottom: 2px solid var(--parchment);
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+  .checkbox-label { font-size: 13px; color: var(--forest); line-height: 1.5; }
+
+  /* ── CTA bar ─────────────────────────────────────────── */
+  .cta-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: white;
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 16px 16px;
+  }
+  .cta-bar-left { font-size: 12px; color: var(--muted); }
+  .cta-bar-left strong { color: var(--forest); }
+  .cta-bar-right { display: flex; gap: 10px; }
+
+  .btn {
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border-strong);
+    color: var(--forest);
+  }
+  .btn-outline:hover { background: var(--parchment); }
+  .btn-primary {
+    background: var(--forest);
+    color: var(--parchment);
+  }
+  .btn-primary:hover { background: var(--forest-light); }
+  .btn-green {
+    background: var(--egreen);
+    color: var(--carbon);
+  }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-lg { padding: 13px 32px; font-size: 14px; border-radius: 12px; }
+
+  /* ── Pill tags ───────────────────────────────────────── */
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    padding: 5px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 500;
+    background: var(--cream); color: var(--forest);
+    border: 1px solid var(--border-mid);
+    display: flex; align-items: center; gap: 4px;
+    cursor: pointer;
+  }
+  .tag.active { background: var(--forest); color: var(--parchment); border-color: var(--forest); }
+  .tag-x { font-size: 13px; line-height: 1; opacity: 0.5; }
+
+  /* ── Deposit slider ──────────────────────────────────── */
+  .deposit-visual {
+    height: 8px; border-radius: 99px;
+    background: var(--cream);
+    overflow: hidden; margin: 10px 0 4px;
+    position: relative;
+  }
+  .deposit-bar {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--egreen);
+    border-radius: 99px;
+    width: 20%;
+    transition: width 0.3s;
+  }
+  .deposit-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+  /* ── Price context ───────────────────────────────────── */
+  .price-context {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .price-context-item { }
+  .price-context-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .price-context-val { font-family: var(--serif); font-size: 15px; font-weight: 500; color: var(--forest); margin-top: 2px; }
+  .price-context-val.amber { color: var(--amber); }
+
+  /* ── Step nav buttons below stepper ─────────────────── */
+  .step-btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+
+  /* ── Tag input area ──────────────────────────────────── */
+  .conditions-input {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border-mid);
+    border-radius: 10px;
+    min-height: 46px;
+    align-items: center;
+    background: white;
+    cursor: text;
+  }
+  .conditions-input input {
+    border: none; outline: none; flex: 1;
+    font-family: var(--sans); font-size: 14px; color: var(--forest);
+    min-width: 80px; padding: 0; background: transparent;
+  }
+
+  /* ── Validity bar ────────────────────────────────────── */
+  .validity-strip {
+    background: rgba(0,232,122,0.08);
+    border: 1px solid rgba(0,232,122,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--forest);
+  }
+  .validity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--egreen); flex-shrink: 0; }
+
+  /* ── Hover state note ────────────────────────────────── */
+  .note-tip {
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 4px; margin-top: 4px;
+  }
+  .note-tip svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* scroll */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ─────────────────────────────────────────── -->
+<div class="topbar">
+  <div class="topbar-logo">Build<span>Trust</span></div>
+  <div class="topbar-sep"></div>
+  <nav class="topbar-breadcrumb">
+    <a href="#">My Dashboard</a>
+    <span class="chevron">›</span>
+    <a href="#">Saved Properties</a>
+    <span class="chevron">›</span>
+    <span>Make Offer</span>
+  </nav>
+</div>
+
+<!-- ── Main layout ─────────────────────────────────────── -->
+<div class="layout">
+
+  <!-- LEFT: Property context card -->
+  <aside class="sidebar">
+    <div>
+      <img
+        class="prop-img"
+        src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=680&h=510&fit=crop"
+        alt="6 Thornbury Estate"
+      />
+    </div>
+
+    <div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <span class="prop-badge badge-verified">✓ Verified</span>
+        <span class="prop-badge badge-sale">For Sale</span>
+        <span class="prop-badge badge-amber">New Listing</span>
+      </div>
+      <div class="prop-price">R 3,250,000</div>
+      <div class="prop-addr">6 Thornbury Estate, Sandton, Gauteng</div>
+      <div class="prop-meta">
+        <span class="meta-chip">🛏 4 Beds</span>
+        <span class="meta-chip">🚿 3 Baths</span>
+        <span class="meta-chip">📐 320 m²</span>
+        <span class="meta-chip">🚗 Double Garage</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sidebar-section-title">Listing Agent</div>
+      <div class="agent-row">
+        <div class="agent-avatar">SK</div>
+        <div>
+          <div class="agent-name">Sarah Khumalo</div>
+          <div class="agent-title">Senior Property Consultant · Pam Golding</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sidebar-section-title">Offer Context</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span style="color:var(--muted)">Days on market</span>
+          <span style="font-weight:600;color:var(--forest)">12 days</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span style="color:var(--muted)">Active offers</span>
+          <span style="font-weight:600;color:var(--red)">2 competing offers</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span style="color:var(--muted)">Viewings this week</span>
+          <span style="font-weight:600;color:var(--forest)">7 viewings</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span style="color:var(--muted)">Last sold nearby</span>
+          <span style="font-weight:600;color:var(--forest)">R 3.1M — 3 weeks ago</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="offer-notice">
+      <strong>⚡ Competitive market.</strong> There are currently 2 other offers on this property. Consider setting an escalation clause to stay competitive.
+    </div>
+  </aside>
+
+  <!-- RIGHT: Form -->
+  <main class="main">
+
+    <!-- Header -->
+    <div class="form-header">
+      <h1>Make an Offer</h1>
+      <p>Complete all sections below. Your offer will be formally submitted to the seller's agent for review. All fields marked * are required.</p>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper" id="stepper">
+      <div class="step-item" onclick="goTo(0)">
+        <div class="step-dot done" id="dot-0">✓</div>
+        <div class="step-label done" id="lbl-0">Buyer Info</div>
+        <div class="step-sub">Identity & financials</div>
+      </div>
+      <div class="step-item" onclick="goTo(1)">
+        <div class="step-dot active" id="dot-1">2</div>
+        <div class="step-label active" id="lbl-1">Offer Details</div>
+        <div class="step-sub">Price & conditions</div>
+      </div>
+      <div class="step-item" onclick="goTo(2)">
+        <div class="step-dot" id="dot-2">3</div>
+        <div class="step-label" id="lbl-2">Review & Submit</div>
+        <div class="step-sub">Confirm & sign off</div>
+      </div>
+    </div>
+
+    <!-- ══════════ STEP 1 — BUYER INFORMATION ══════════ -->
+    <div class="step-panel" id="panel-0">
+
+      <!-- Identity -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Identity</div>
+            <div class="section-head-sub">Legal name and identification as it appears on your ID document</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-required">First Name(s)</label>
+              <input type="text" placeholder="Thabo" value="Thabo" />
+            </div>
+            <div class="field">
+              <label class="field-required">Surname</label>
+              <input type="text" placeholder="Mokoena" value="Mokoena" />
+            </div>
+            <div class="field">
+              <label class="field-required">ID / Passport Number</label>
+              <input type="text" placeholder="8501015026085" value="8501015026085" />
+            </div>
+            <div class="field">
+              <label class="field-required">Nationality</label>
+              <select>
+                <option selected>South African</option>
+                <option>Zimbabwean</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field col-span-2">
+              <label>Upload ID / Passport Copy</label>
+              <div class="upload-zone">
+                <div class="upload-icon">📎</div>
+                <div class="upload-label">Drag & drop or click to upload</div>
+                <div class="upload-sub">PDF, JPG or PNG · Max 5MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Details -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3z"/><path d="m3 5 9 8 9-8"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Contact Details</div>
+            <div class="section-head-sub">Used for all correspondence and legal notifications</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-required">Email Address</label>
+              <input type="email" placeholder="thabo@example.com" value="thabo.mokoena@gmail.com" />
+            </div>
+            <div class="field">
+              <label class="field-required">Mobile Number</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">+27</div>
+                <input type="tel" class="has-prefix" placeholder="72 000 0000" value="82 556 7821" />
+              </div>
+            </div>
+            <div class="field col-span-2">
+              <label class="field-required">Residential Address</label>
+              <input type="text" placeholder="12 Acacia Drive, Midrand, Gauteng, 1685" value="45 Protea Ave, Fourways, Sandton, 2191" />
+            </div>
+            <div class="field">
+              <label>WhatsApp Number</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">+27</div>
+                <input type="tel" class="has-prefix" placeholder="Same as above" />
+              </div>
+              <span class="note-tip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>Used to send offer status updates</span>
+            </div>
+            <div class="field">
+              <label>Preferred Contact Method</label>
+              <select>
+                <option>Email</option>
+                <option selected>WhatsApp</option>
+                <option>Phone Call</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Qualification -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 10a2 2 0 0 0-4 0v4a2 2 0 0 0 4 0"/><path d="M2 10h20"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Financial Qualification</div>
+            <div class="section-head-sub">Demonstrates your ability to complete the purchase</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field col-span-2">
+              <label class="field-required">Pre-Qualification Status</label>
+              <div class="radio-group">
+                <div class="radio-card selected" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Pre-approved — bond approved
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Pre-qualified — conditional
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Cash buyer
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Not yet applied
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Bank / Lender</label>
+              <select>
+                <option>Standard Bank</option>
+                <option selected>FNB</option>
+                <option>ABSA</option>
+                <option>Nedbank</option>
+                <option>SA Home Loans</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Pre-Approval Reference</label>
+              <input type="text" placeholder="FNB-2024-PRE-00821" />
+            </div>
+            <div class="field col-span-2">
+              <label>Upload Proof of Funds / Pre-Approval Letter</label>
+              <div class="upload-zone">
+                <div class="upload-icon">🏦</div>
+                <div class="upload-label">Bank letter or statement</div>
+                <div class="upload-sub">PDF only · Max 10MB · Document is kept confidential</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buying Entity -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7h18M9 3h6M6 7v14m12-14v14M9 11h6m-6 4h6"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Buying Entity / Company</div>
+            <div class="section-head-sub">Are you purchasing as an individual or through a legal entity?</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field col-span-2">
+              <label class="field-required">Purchase In The Name Of</label>
+              <div class="radio-group">
+                <div class="radio-card selected" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Natural Person (Individual)
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Company / CC
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Trust
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Joint Purchase
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Are You Represented By An Agent?</label>
+              <select>
+                <option>No — buying directly</option>
+                <option>Yes — my agent's details below</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Agent Name (if applicable)</label>
+              <input type="text" placeholder="Leave blank if buying directly" />
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <span class="cta-bar-left">Step <strong>1 of 3</strong> — Buyer Information</span>
+          <div class="cta-bar-right">
+            <button class="btn btn-outline">Save Draft</button>
+            <button class="btn btn-primary" onclick="goTo(1)">Continue to Offer Details →</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-0 -->
+
+    <!-- ══════════ STEP 2 — OFFER DETAILS ══════════ -->
+    <div class="step-panel active" id="panel-1">
+
+      <!-- Price -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2m-3-5h6m-3-3v6"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Offer Price</div>
+            <div class="section-head-sub">Your formal purchase price offer for this property</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="price-context" style="margin-bottom:18px;">
+            <div class="price-context-item">
+              <div class="price-context-label">Asking Price</div>
+              <div class="price-context-val">R 3,250,000</div>
+            </div>
+            <div class="price-context-item">
+              <div class="price-context-label">Area Avg (320m²)</div>
+              <div class="price-context-val">R 3,100,000</div>
+            </div>
+            <div class="price-context-item">
+              <div class="price-context-label">Last Sold Nearby</div>
+              <div class="price-context-val amber">R 3,100,000</div>
+            </div>
+            <div class="price-context-item">
+              <div class="price-context-label">Your Offer</div>
+              <div class="price-context-val" style="color:var(--egreen);font-weight:600;">R 3,100,000</div>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-required">Offer Amount</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">R</div>
+                <input type="text" class="has-prefix" placeholder="3 250 000" value="3 100 000" />
+              </div>
+              <span class="note-tip" style="color:#C4562A;">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                4.6% below asking · R 150,000 discount requested
+              </span>
+            </div>
+            <div class="field">
+              <label class="field-required">Offer Currency</label>
+              <select>
+                <option selected>ZAR — South African Rand</option>
+                <option>USD</option>
+                <option>GBP</option>
+                <option>EUR</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deposit -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Deposit</div>
+            <div class="section-head-sub">Held in regulated trust by the conveyancer until transfer</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-required">Deposit Amount</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">R</div>
+                <input type="text" class="has-prefix" placeholder="310 000" value="310 000" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Deposit Percentage</label>
+              <div class="input-wrapper">
+                <input type="text" placeholder="10%" value="10%" />
+                <span class="input-suffix">of offer</span>
+              </div>
+            </div>
+            <div class="field col-span-2">
+              <label>Deposit Visualisation</label>
+              <div class="deposit-visual"><div class="deposit-bar"></div></div>
+              <div class="deposit-labels">
+                <span>R 0</span>
+                <span style="color:var(--forest);font-weight:600;">Deposit: 10% (R 310,000)</span>
+                <span>R 3.1M</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-required">Deposit Due Within</label>
+              <select>
+                <option>3 days of acceptance</option>
+                <option selected>5 days of acceptance</option>
+                <option>7 days of acceptance</option>
+                <option>10 days of acceptance</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Deposit Held By</label>
+              <select>
+                <option selected>Conveyancer's Trust Account</option>
+                <option>Seller's Attorney</option>
+                <option>Estate Agency Trust</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financing -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Financing Type</div>
+            <div class="section-head-sub">How the purchase will be funded</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field col-span-2">
+              <label class="field-required">Financing Method</label>
+              <div class="radio-group">
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Cash — no bond required
+                </div>
+                <div class="radio-card selected" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Home Loan (Bond)
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Part Cash / Part Bond
+                </div>
+                <div class="radio-card" onclick="selectRadio(this)">
+                  <div class="radio-dot"></div>Subject to bond approval
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Bond Amount Required</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">R</div>
+                <input type="text" class="has-prefix" value="2 790 000" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Preferred Lender</label>
+              <select>
+                <option selected>FNB Home Loans</option>
+                <option>Standard Bank</option>
+                <option>ABSA</option>
+                <option>Nedbank</option>
+                <option>SA Home Loans</option>
+              </select>
+            </div>
+            <div class="field col-span-2">
+              <label>Bond Suspensive Condition Deadline</label>
+              <input type="date" value="2026-06-15" />
+              <span class="note-tip">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                If bond is not approved by this date, the offer lapses automatically
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conditions & Special Terms -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 0 0 1.946-.806 3.42 3.42 0 0 1 4.438 0 3.42 3.42 0 0 0 1.946.806 3.42 3.42 0 0 1 3.138 3.138 3.42 3.42 0 0 0 .806 1.946 3.42 3.42 0 0 1 0 4.438 3.42 3.42 0 0 0-.806 1.946 3.42 3.42 0 0 1-3.138 3.138 3.42 3.42 0 0 0-1.946.806 3.42 3.42 0 0 1-4.438 0 3.42 3.42 0 0 0-1.946-.806 3.42 3.42 0 0 1-3.138-3.138 3.42 3.42 0 0 0-.806-1.946 3.42 3.42 0 0 1 0-4.438 3.42 3.42 0 0 0 .806-1.946 3.42 3.42 0 0 1 3.138-3.138z"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Conditions &amp; Special Terms</div>
+            <div class="section-head-sub">Suspensive or resolutive conditions attached to this offer</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid full" style="gap:14px;">
+            <div class="field">
+              <label>Standard Conditions (select all that apply)</label>
+              <div style="margin-top:4px;">
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-label">Subject to Satisfactory Building Inspection</div>
+                    <div class="toggle-desc">Offer lapses if inspection reveals material defects</div>
+                  </div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-label">Subject to Bond Approval</div>
+                    <div class="toggle-desc">Offer lapses if home loan is not approved</div>
+                  </div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-label">Subject to Sale of My Current Property</div>
+                    <div class="toggle-desc">Offer is contingent on selling my existing property first</div>
+                  </div>
+                  <div class="toggle" onclick="this.classList.toggle('on')"></div>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-label">Vacant Occupation on Transfer</div>
+                    <div class="toggle-desc">Property must be vacant when title transfers</div>
+                  </div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                </div>
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-label">Electrical Compliance Certificate Required</div>
+                    <div class="toggle-desc">Seller must provide valid CoC at own cost</div>
+                  </div>
+                  <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Specific Inclusions (voetstoots exclusions)</label>
+              <div class="conditions-input">
+                <span class="tag active">Pool &amp; equipment <span class="tag-x">×</span></span>
+                <span class="tag active">Garden irrigation <span class="tag-x">×</span></span>
+                <span class="tag active">Built-in braai <span class="tag-x">×</span></span>
+                <span class="tag">+ Add inclusion</span>
+                <input placeholder="Type and press Enter…" />
+              </div>
+              <span class="note-tip">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                List fixtures and fittings that must remain with the property
+              </span>
+            </div>
+
+            <div class="field">
+              <label>Custom / Special Conditions</label>
+              <textarea placeholder="e.g. Seller to repaint interior in agreed colours prior to occupation. Carport to be cleared by seller before transfer date."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Escalation Clause (bonus feature) -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8-8 8-4-4-6 6"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Escalation Clause <span class="prop-badge badge-amber" style="vertical-align:middle;margin-left:6px;">Optional</span></div>
+            <div class="section-head-sub">Automatically increase your offer to stay competitive against other buyers</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="feature-card" style="margin-bottom:18px;">
+            <div class="feature-card-icon">⚡</div>
+            <div>
+              <div class="feature-card-title">Smart Escalation</div>
+              <div class="feature-card-desc">If a competing offer is received that exceeds yours, your offer will automatically increase by your chosen increment — up to your maximum cap. You'll be notified of any escalation.</div>
+            </div>
+          </div>
+          <div class="toggle-row" style="margin-bottom:16px;">
+            <div>
+              <div class="toggle-label">Enable Escalation Clause</div>
+              <div class="toggle-desc">Auto-increase offer if a better competing offer arrives</div>
+            </div>
+            <div class="toggle on" id="escalation-toggle" onclick="this.classList.toggle('on');document.getElementById('escalation-fields').style.display=this.classList.contains('on')?'grid':'none'"></div>
+          </div>
+          <div class="form-grid" id="escalation-fields">
+            <div class="field">
+              <label>Escalation Increment</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">R</div>
+                <input type="text" class="has-prefix" placeholder="10 000" value="10 000" />
+              </div>
+              <span class="note-tip">Amount to increase per competing offer</span>
+            </div>
+            <div class="field">
+              <label>Maximum Escalation Cap</label>
+              <div class="input-wrapper">
+                <div class="input-prefix">R</div>
+                <input type="text" class="has-prefix" placeholder="3 300 000" value="3 250 000" />
+              </div>
+              <span class="note-tip">Never exceed this price regardless of competition</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferred Transfer Date + Expiry -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Dates &amp; Validity</div>
+            <div class="section-head-sub">When the offer expires and when you would like to take occupation</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-required">Offer Expiry Date</label>
+              <input type="date" value="2026-05-20" />
+              <span class="note-tip">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+                Seller has until this date to accept or counter
+              </span>
+            </div>
+            <div class="field">
+              <label class="field-required">Offer Expiry Time</label>
+              <select>
+                <option>09:00</option>
+                <option>12:00</option>
+                <option selected>17:00</option>
+                <option>23:59</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Preferred Occupation Date</label>
+              <input type="date" value="2026-07-01" />
+              <span class="note-tip">Date you wish to move in / take possession</span>
+            </div>
+            <div class="field">
+              <label>Preferred Transfer Date</label>
+              <input type="date" value="2026-07-01" />
+              <span class="note-tip">Date for Deeds Office registration of transfer</span>
+            </div>
+          </div>
+          <div class="validity-strip" style="margin-top:16px;">
+            <div class="validity-dot"></div>
+            <span>Your offer will be valid for <strong>7 days</strong> (until 17:00 on 20 May 2026). You'll be notified immediately when the seller responds.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Message -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Personal Message to Seller <span class="prop-badge badge-sale" style="vertical-align:middle;margin-left:6px;">Optional</span></div>
+            <div class="section-head-sub">Humanise your offer — buyers who include a note often stand out</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="form-grid full">
+            <div class="field">
+              <label>Message</label>
+              <textarea placeholder="e.g. We are a young family who fell in love with this property's character and location. We take great care of our properties and would be honoured to continue its story…" style="min-height:100px;">Dear Seller, we are a young family who fell in love with the generous proportions and the mature garden. We intend to raise our children here and will take excellent care of the property. We hope you will consider our offer favourably.</textarea>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <span class="cta-bar-left">Step <strong>2 of 3</strong> — Offer Details</span>
+          <div class="cta-bar-right">
+            <button class="btn btn-outline" onclick="goTo(0)">← Back</button>
+            <button class="btn btn-outline">Save Draft</button>
+            <button class="btn btn-primary" onclick="goTo(2)">Review &amp; Submit →</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-1 -->
+
+    <!-- ══════════ STEP 3 — REVIEW & SUBMIT ══════════ -->
+    <div class="step-panel" id="panel-2">
+
+      <!-- Offer Summary -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Offer Summary</div>
+            <div class="section-head-sub">Please review carefully before submitting</div>
+          </div>
+        </div>
+        <div class="section-body">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Buyer</div>
+              <div class="review-row"><span class="review-key">Full Name</span><span class="review-val">Thabo Mokoena</span></div>
+              <div class="review-row"><span class="review-key">ID Number</span><span class="review-val">8501015026085</span></div>
+              <div class="review-row"><span class="review-key">Contact</span><span class="review-val">+27 82 556 7821</span></div>
+              <div class="review-row"><span class="review-key">Buying As</span><span class="review-val">Natural Person</span></div>
+              <div class="review-row"><span class="review-key">Pre-Approval</span><span class="review-val egreen">✓ FNB — Approved</span></div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Offer</div>
+              <div class="review-row"><span class="review-key">Offer Price</span><span class="review-val price">R 3,100,000</span></div>
+              <div class="review-row"><span class="review-key">Deposit (10%)</span><span class="review-val">R 310,000</span></div>
+              <div class="review-row"><span class="review-key">Financing</span><span class="review-val">Home Loan — FNB</span></div>
+              <div class="review-row"><span class="review-key">Occupation Date</span><span class="review-val">1 July 2026</span></div>
+              <div class="review-row"><span class="review-key">Offer Expires</span><span class="review-val">20 May 2026 · 17:00</span></div>
+            </div>
+
+          </div>
+
+          <div style="margin-top:20px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Active Conditions</div>
+            <div class="tags">
+              <span class="tag active">✓ Bond Approval</span>
+              <span class="tag active">✓ Building Inspection</span>
+              <span class="tag active">✓ Vacant Occupation</span>
+              <span class="tag active">✓ Electrical CoC</span>
+              <span class="tag active">✓ Escalation Clause (cap R 3.25M)</span>
+              <span class="tag active">Pool &amp; equipment included</span>
+              <span class="tag active">Garden irrigation included</span>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="background:var(--parchment);border:1px solid var(--border);border-radius:10px;padding:10px 14px;flex:1;min-width:180px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Documents Attached</div>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:6px;">
+                  <span>📄</span> SA_ID_Mokoena.pdf
+                </div>
+                <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:6px;">
+                  <span>🏦</span> FNB_PreApproval_Letter.pdf
+                </div>
+              </div>
+            </div>
+            <div style="background:rgba(0,232,122,0.07);border:1px solid rgba(0,232,122,0.25);border-radius:10px;padding:10px 14px;flex:1;min-width:180px;">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Platform Protection</div>
+              <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:6px;"><span>✓</span> Escrow-ready on acceptance</div>
+                <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:6px;"><span>✓</span> Immutable audit trail recorded</div>
+                <div style="font-size:12px;color:var(--forest);display:flex;align-items:center;gap:6px;"><span>✓</span> Verified listing — fraud checked</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legal & Declaration -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="section-head-title">Declaration &amp; Consent</div>
+            <div class="section-head-sub">Read carefully before signing</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="legal-box" style="margin-bottom:18px;">
+            This Offer to Purchase ("Offer") is submitted electronically via the BuildTrust platform and constitutes a binding and irrevocable offer to purchase the above-described property on the terms and conditions set out herein, pending acceptance by the Seller. The Offer shall be governed by the Alienation of Land Act 68 of 1981. By proceeding, you acknowledge that you have read and understood all conditions and are authorised to make this offer.
+            The deposit will be held in a regulated attorney trust account and released only upon successful transfer of the property at the Deeds Office.
+            <br /><br />
+            View full <a href="#">Terms &amp; Conditions</a> · <a href="#">Privacy Policy</a> · <a href="#">Escrow Policy</a>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="checkbox-row" onclick="this.querySelector('.checkbox').classList.toggle('checked')">
+              <div class="checkbox checked"></div>
+              <span class="checkbox-label">I confirm that all information provided is accurate and complete to the best of my knowledge.</span>
+            </div>
+            <div class="checkbox-row" onclick="this.querySelector('.checkbox').classList.toggle('checked')">
+              <div class="checkbox checked"></div>
+              <span class="checkbox-label">I authorise BuildTrust to share this offer with the seller's agent and conveyancer for the purpose of processing.</span>
+            </div>
+            <div class="checkbox-row" onclick="this.querySelector('.checkbox').classList.toggle('checked')">
+              <div class="checkbox checked"></div>
+              <span class="checkbox-label">I understand this offer is binding upon acceptance and I have capacity to enter into a legal agreement.</span>
+            </div>
+            <div class="checkbox-row" onclick="this.querySelector('.checkbox').classList.toggle('checked')">
+              <div class="checkbox"></div>
+              <span class="checkbox-label">I consent to receive SMS / WhatsApp / email updates regarding the status of this offer.</span>
+            </div>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <span class="cta-bar-left" style="max-width:340px;line-height:1.4;">Submitting this offer is <strong>legally binding</strong> if accepted. You can retract before acceptance.</span>
+          <div class="cta-bar-right">
+            <button class="btn btn-outline" onclick="goTo(1)">← Back</button>
+            <button class="btn btn-outline">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download Draft PDF
+            </button>
+            <button class="btn btn-green btn-lg">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              Submit Offer
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-2 -->
+
+  </main>
+</div>
+
+<script>
+  let current = 1; // start on step 2 to show Offer Details by default
+
+  function updateStepper(step) {
+    for (let i = 0; i < 3; i++) {
+      const dot = document.getElementById('dot-' + i);
+      const lbl = document.getElementById('lbl-' + i);
+      const panel = document.getElementById('panel-' + i);
+      dot.className = 'step-dot';
+      lbl.className = 'step-label';
+      panel.classList.remove('active');
+      if (i < step) {
+        dot.classList.add('done');
+        dot.textContent = '✓';
+        lbl.classList.add('done');
+      } else if (i === step) {
+        dot.classList.add('active');
+        dot.textContent = i + 1;
+        lbl.classList.add('active');
+        panel.classList.add('active');
+      } else {
+        dot.textContent = i + 1;
+      }
+    }
+    current = step;
+    window.scrollTo({ top: 80, behavior: 'smooth' });
+  }
+
+  function goTo(step) {
+    updateStepper(step);
+  }
+
+  function selectRadio(el) {
+    // deselect siblings in same radio group
+    el.closest('.radio-group').querySelectorAll('.radio-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // Init
+  updateStepper(current);
+</script>
+
+</body>
+</html>
